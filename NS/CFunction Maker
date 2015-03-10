@@ -1,0 +1,1 @@
+DefGlobalVar('plainC, {});plainCClass := vars.functions.Time.class;foreach f in streamFile_plainC.entryPoints do	plainC.(f.name) := { class: plainCClass, funcPtr: f.offset, numArgs: f.numArgs };

@@ -1,0 +1,13 @@
+
+DEFSTR(STRdrawing)
+DEFSTR(STRnan)
+DEFSTR(STRnTooLarge)
+DEFSTR(STRnTooSmall)
+DEFSTR(STRextrasSoupName)
+DEFSTR(STRspace)
+DEFSTR(STRuPackageNeedsCardAlertText)
+
+DEFMPSTR(cardFileSoupName, MAKEMAGICPTR(47))
+DEFMPSTR(dataName, MAKEMAGICPTR(63))
+DEFSTR(inkName)
+DEFMPSTR(shapeName, MAKEMAGICPTR(261))

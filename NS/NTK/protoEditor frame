@@ -1,0 +1,723 @@
+// Just here for reference.
+// This is actually pre-compiled in the EditorCommands stream file, which is read by NTK at launch.
+
+vars.protoEditor := {
+
+_proto: vars.protoProtoEditor,
+
+DoubleClick: func(offset)
+	begin
+	:SelectWord(offset)
+	end,
+
+TripleClick: func(offset)
+	begin
+	local line := :FindLine(offset);
+	local ls := :LineStart(line);
+	local next := if line + 1 < :NumberOfLines() then :LineStart(line + 1) else :TextLength();
+	:SetSelection(ls, next - ls)
+	end,
+
+// •••• Move
+
+prefix: nil,
+
+rightMargin: 450,	// not used?
+
+MoveCharForward: func(selOffset, selLength)
+	begin
+	if prefix then		
+		begin
+		local i := selOffset + selLength + prefix;
+		if i > :TextLength() then
+			i := :TextLength();
+		prefix := nil;
+		:SetSelection(i, 0)
+		end
+	else if selLength = 0 then
+		begin
+		if selOffset < :TextLength() then
+			:SetSelection(selOffset + 1, 0)
+		end
+	else
+		:SetSelection(selOffset + selLength, 0)
+	end,
+
+MoveCharBackward: func(selOffset, selLength)
+	begin
+	if prefix then		
+		begin
+		local i := selOffset - prefix;
+		if i < 0 then
+			i := 0;
+		prefix := nil;
+		:SetSelection(i, 0)
+		end
+	else if selLength = 0 then
+		begin
+		if selOffset > 0 then
+			:SetSelection(selOffset - 1, 0)
+		end
+	else
+		:SetSelection(selOffset, 0);
+	prefix := nil
+	end,
+
+MoveWordForward: func(selOffset, selLength)
+	begin
+	local len := :TextLength();
+	local p := if prefix then prefix else 1;
+	prefix := nil;
+	loop 
+		begin
+		if selOffset >= len then
+			break;
+		selOffset := :TokenEnd(selOffset);
+		if :CharacterClass(:Peek(:TokenStart(selOffset - 1))) = 1 then
+			begin
+			p := p - 1;
+			if p <= 0 then break
+			end
+		end;
+	:SetSelection(selOffset, 0)
+	end,
+
+MoveWordBackward: func(selOffset, selLength)
+	begin
+	local p := if prefix then prefix else 1;
+	prefix := nil;
+	loop 
+		begin
+		if selOffset <= 0 then
+			break;
+		selOffset := :TokenStart(selOffset - 1);
+		if :CharacterClass(:Peek(selOffset)) = 1 then
+			begin
+			p := p - 1;
+			if p <= 0 then break
+			end
+		end;
+	:SetSelection(selOffset, 0)
+	end,
+
+MoveToBeginningOfLine: func(selOffset, selLength)
+	begin
+	:SetSelection(:LineStart(:FindLine(selOffset)), 0)
+	end,
+
+MoveToEndOfLine: func(selOffset, selLength)
+	begin
+	local line := :FindLine(selOffset + selLength);
+	local le := if line + 1 < :NumberOfLines() then :LineStart(line + 1) - 1 else :TextLength();
+	:SetSelection(le, 0)
+	end,
+
+MoveLineUp: func(selOffset, selLength)
+	begin
+	local p := :FindLine(selOffset) - (if prefix then prefix else 1) + 1;
+	prefix := nil;
+	if p < 0 then
+		p := 0;
+	:SetSelection(:PointToOffset(:LeftEdge(selOffset), :LineTop(p) - 2), 0)
+	end,
+
+MoveLineDown: func(selOffset, selLength)
+	begin
+	selOffset := selOffset + selLength;
+	local p := :FindLine(selOffset) + (if prefix then prefix else 1) - 1;
+	prefix := nil;
+	if p >= :NumberOfLines() then
+		p := :NumberOfLines() - 1;
+	:SetSelection(:PointToOffset(:LeftEdge(selOffset), :LineBottom(p) + 2), 0)
+	end,
+
+MovePageUp: func(selOffset, selLength)
+	begin
+	local p := :LineTop(:FindLine(selOffset)) - (if prefix then prefix else 1) * :VisibleHeight() + 1;
+	prefix := nil;
+	:SetSelection(:PointToOffset(:LeftEdge(selOffset), p), 0)
+	end,
+
+MovePageDown: func(selOffset, selLength)
+	begin
+	selOffset := selOffset + selLength;
+	local p := :LineBottom(:FindLine(selOffset)) + (if prefix then prefix else 1) * :VisibleHeight() - 1;
+	prefix := nil;
+	:SetSelection(:PointToOffset(:LeftEdge(selOffset), p), 0)
+	end,
+
+MoveToBeginningOfText: func(selOffset, selLength)
+	begin
+	prefix := nil;
+	:SetSelection(0, 0)
+	end,
+
+MoveToEndOfText: func(selOffset, selLength)
+	begin
+	prefix := nil;
+	:SetSelection(:TextLength(), 0)
+	end,
+
+// •••• Select
+
+SpaceBar: func(selOffset, selLength)
+	begin
+	:ReplaceSelection(" ");
+	:TellUser("");
+	:SetSelection(selOffset + :WordWrap(selOffset + 1) + 1, 0)
+	end,
+
+ExtendSelectionForward: func(offset)
+	begin
+	local o := :SelectionOffset();
+	local l := :SelectionLength();
+	:SetSelection(offset, o + l - offset)
+	end,
+
+ExtendSelectionBackward: func(offsetPlusLen)
+	begin
+	local o := :SelectionOffset();
+	:SetSelection(o, offsetPlusLen - o)
+	end,
+
+AdvanceSelection: func()
+	begin
+	:SetSelection(:SelectionOffset() + :SelectionLength(), 0)
+	end,
+
+SelectCharForward: func(selOffset, selLength)
+	begin
+	if selOffset + selLength < :TextLength() then :SetSelection(selOffset, selLength + 1)
+	end,
+
+SelectCharBackward: func(selOffset, selLength)
+	begin
+	selOffset > 0 and :SetSelection(selOffset - 1, selLength + 1)
+	end,
+
+SelectWord: func(offset)
+	begin
+	local st := :TokenStart(offset);
+	:SetSelection(st, :TokenEnd(offset) - st)
+	end,
+
+SelectWordForward: func(selOffset, selLength)
+	begin
+	:MoveWordForward(selOffset + selLength, 0);
+	:ExtendSelectionForward(selOffset)
+	end,
+
+SelectWordBackward: func(selOffset, selLength)
+	begin
+	:MoveWordBackward(selOffset, 0);
+	:ExtendSelectionBackward(selOffset + selLength)
+	end,
+
+SelectToBeginningOfLine: func(selOffset, selLength)
+	begin
+	local o := :LineStart(:FindLine(selOffset));
+	:SetSelection(o, selOffset + selLength - o)
+	end,
+
+SelectToEndOfLine: func(selOffset, selLength)
+	begin
+	:MoveToEndOfLine(selOffset, selLength);
+	:ExtendSelectionForward(selOffset)
+	end,
+
+SelectLineUp: func(selOffset, selLength)
+	begin
+	:MoveLineUp(selOffset, 0);
+	:ExtendSelectionBackward(selOffset + selLength)
+	end,
+
+SelectLineDown: func(selOffset, selLength)
+	begin
+	:MoveLineDown(selOffset + selLength, 0);
+	:ExtendSelectionForward(selOffset)
+	end,
+
+SelectPageUp: func(selOffset, selLength)
+	begin
+	:MovePageUp(selOffset, selLength);
+	:ExtendSelectionBackward(selOffset + selLength)
+	end,
+
+SelectPageDown: func(selOffset, selLength)
+	begin
+	:MovePageDown(selOffset, selLength);
+	:ExtendSelectionForward(selOffset)
+	end,
+
+SelectToBeginningOfText: func(selOffset, selLength)
+	begin
+	:SetSelection(0, selOffset + selLength)
+	end,
+
+SelectToEndOfText: func(selOffset, selLength)
+	begin
+	:SetSelection(selOffset, :TextLength() - selOffset)
+	end,
+
+// •••• Delete
+
+Clear: func(selOffset, selLength)
+	begin
+	if selLength <> 0 then
+		:ReplaceSelection("");
+	prefix := nil
+	end,
+
+Delete: func(selOffset, selLength)
+	begin
+	if selLength = 0 then
+		begin
+		local p := selOffset - (if prefix then prefix else 1);
+		if p < 0 then
+			p := 0;
+		:SetSelection(p, selOffset - p)
+		end;
+	:ReplaceSelection("");
+	prefix := nil
+	end,
+
+DeleteForward: func(selOffset, selLength)
+	begin
+	if selLength = 0 then
+		begin
+		local p := selOffset + (if prefix then prefix else 1);
+		if p > :TextLength() then
+			p := :TextLength();
+		:SetSelection(selOffset, p - selOffset);
+		end;
+	:ReplaceSelection("");
+	prefix := nil
+	end,
+
+DeleteWordForward: func(selOffset, selLength)
+	begin
+	if selLength <> 0 then
+		:DeleteForward(selOffset, selLength)
+	else 
+		begin
+		:MoveWordForward(selOffset, selLength);
+		:SetSelection(selOffset, :SelectionOffset() - selOffset);
+		:ReplaceSelection("")
+		end
+	end,
+
+DeleteWordBackward: func(selOffset, selLength)
+	begin
+	if selLength <> 0 then
+		:Delete(selOffset, selLength)
+	else 
+		begin
+		:MoveWordBackward(selOffset, selLength);
+		local back := :SelectionOffset();
+		:SetSelection(back, selOffset - back);
+		:ReplaceSelection("")
+		end
+	end,
+
+DeleteToEndOfLine: func(selOffset, selLength)
+	begin
+	if selLength = 0 then
+		begin
+		local line := :FindLine(selOffset);
+		local p := if prefix then prefix else 1;
+		prefix := nil;
+		local tlen := :TextLength();
+		local eol := if line + p < :NumberOfLines() then :LineStart(line + p) - 1 else tlen;
+		if eol = selOffset and eol < tlen then
+			eol := eol + 1;
+		:SetSelection(selOffset, eol - selOffset);
+		end;
+	:ReplaceSelection("")
+	end,
+
+DeleteToEndOfText: func(selOffset, selLength)
+	begin
+	prefix := nil;
+	:SetSelection(selOffset, :TextLength() - selOffset);
+	:ReplaceSelection("")
+	end,
+
+// •••• Find
+
+NextToken: func(offset)
+	begin
+	if offset > :TextLength() then
+		""
+	else if :CharacterClass(:Peek(offset)) = 0 then
+		:NextToken(:TokenEnd(offset))
+	else if :CharacterClass(:Peek(offset)) = 2 then
+		begin
+		:SetSelection(offset, 1);
+		:Selection()
+		end
+	else 
+		begin
+		:SetSelection(offset, :TokenEnd(offset) - offset);
+		:Selection()
+		end
+	end,
+
+PrevToken: func(offset)
+	begin
+	if offset < 0 then
+		""
+	else 
+		begin
+		offset := :TokenStart(offset);
+		if :CharacterClass(:Peek(offset)) = 0 then
+			:PrevToken(offset - 1)
+		else if :CharacterClass(:Peek(offset)) = 2 then
+			begin
+			:SetSelection(offset, 1);
+			:Selection()
+			end
+		else 
+			begin
+			:SetSelection(offset, :TokenEnd(offset) - offset);
+			:Selection()
+			end
+		end
+	end,
+
+// •••• Format
+
+IndentSelectionLeft: func(selOffset, selLength)
+	begin
+	prefix := nil;
+	local line1 := :FindLine(selOffset);
+	local line2 := if selLength > 0 then :FindLine(selOffset + selLength - 1) else line1;
+	local tabsize := 0;
+	for line := line1 to line2 do
+		begin
+		local ls := :LineStart(line);
+		local ch := :Peek(ls);
+		if ch = $\t then
+			begin
+			:SetSelection(ls, 1);
+			:ReplaceSelection("")
+			end
+		else if ch = $  then
+			begin
+			if tabsize = 0 then
+				begin
+				:SetSelection(ls, 0);
+				:ReplaceSelection("\t");
+				tabsize := :LeftEdge(ls + 1);
+				:SetSelection(ls, 1);
+				:ReplaceSelection("")
+				end;
+			ls2 := ls + 1;
+			loop 
+				begin
+				if ls2 >= :TextLength() then
+					break;
+				ch := :Peek(ls2);
+				if ch <> $  and ch <> $\t then
+					break;
+				if :LeftEdge(ls2) >= tabsize then
+					break;
+				ls2 := ls2 + 1
+				end;
+			:SetSelection(ls, ls2 - ls);
+			:ReplaceSelection("")
+			end
+		end;
+	local ls1 := :LineStart(line1);
+	local ls2 := if line2 + 1 >= :NumberOfLines() then :TextLength() else :LineStart(line2 + 1);
+	:SetSelection(ls1, ls2 - ls1)
+	end,
+
+IndentSelectionRight: func(selOffset, selLength)
+	begin
+	prefix := nil;
+	local line1 := :FindLine(selOffset);
+	local line2 := if selLength > 0 then :FindLine(selOffset + selLength - 1) else line1;
+	for line := line1 to line2 do
+		begin
+		:SetSelection(:LineStart(line), 0);
+		:ReplaceSelection("\t")
+		end;
+	local ls1 := :LineStart(line1);
+	local ls2 := if line2 + 1 >= :NumberOfLines() then :TextLength() else :LineStart(line2 + 1);
+	:SetSelection(ls1, ls2 - ls1)
+	end,
+
+AutoIndent: func(offset)
+	begin
+	local strLen;
+	if not autoIndenting then
+		strLen := 0
+	else 
+		begin
+		local line := :FindLine(offset);
+		local prev := :LineStart(line - 1);
+		if :CharacterClass(:Peek(prev)) <> 0 then
+			strLen := 0
+		else 
+			begin
+			local w := :TokenEnd(prev);
+			local ww := :LineStart(line);
+			if w >= ww then
+				w := ww - 1;
+			:SetSelection(prev, w - prev);
+			local white := :Selection();
+			:SetSelection(offset, 0);
+			:ReplaceSelection(white);
+			strLen := :SelectionLength()
+			end;
+		end;
+	:SetSelection(offset + strLen, 0);
+	strLen
+	end,
+
+autoIndenting: true,
+
+Newline: func(selOffset, selLength)
+	begin
+	:ReplaceSelection("\n");
+	:TellUser("");
+	:AutoIndent(selOffset + 1)
+	end,
+
+TransposeCharacters: func(selOffset, selLength)
+	begin
+	local sel, ch;
+	if selLength = 0 then
+		begin
+		if selOffset > 0 then
+			begin
+			selLength := 1;
+			selOffset := selOffset - 1;
+			:SetSelection(selOffset, selLength)
+			end
+		else
+			return
+		end;
+	if selOffset + selLength < :TextLength() then
+		begin
+		sel := :Selection();
+		ch := :Peek(selOffset + selLength);
+		:SetSelection(selOffset, selLength + 1);
+		:ReplaceSelection(ch & sel);
+		:SetSelection(selOffset + selLength + 1, 0)
+		end
+	end,
+
+WordWrap: func(offset)
+	begin
+	if wordwrapping and :LeftEdge(offset) > rightMargin then
+		begin
+		loop 
+			begin
+			if offset <= 0 then
+				break;
+			offset := :TokenStart(offset - 1);
+			if offset <= 0 then
+				break;
+			if :CharacterClass(:Peek(offset - 1)) = 0 and :LeftEdge(offset) <= rightMargin then
+				break;
+			end;
+		:SetSelection(offset, 0);
+		:ReplaceSelection("\n");
+		:AutoIndent(offset + 1) + 1
+		end
+	else
+		0
+	end,
+
+wordWrapping: nil,
+
+
+// •••• Function completion
+
+lpar: func(selOffset, selLength)
+	begin
+	:ReplaceSelection("(");
+	:FindFunctionAndPromptArgs(selOffset + 1);
+	:SetSelection(selOffset + 1, 0)
+	end,
+
+rpar: func(selOffset, selLength)
+	begin
+	:ReplaceSelection(")");
+	:TellUser("");
+	:SetSelection(selOffset + 1, 0)
+	end,
+
+FindFunctionAndPromptArgs: func(offset)
+	begin
+	if offset >= 2 then
+		begin
+		local fname := :PrevToken(offset - 2);
+		if Length(fname) > 2 then
+			begin
+			local f0 := fname[0];
+			if ($A <= f0 and f0 <= $Z) or ($a <= f0 and f0 <= $z) then
+				begin
+				local fsym := Intern(fname);
+				local info, objTypeInfo, whenAvail;
+				if vars.GlobalFnHelpStrings exists
+				and (info := GlobalFnHelpStrings.(fsym)) then
+					begin
+					if info[0] = 'globalFn then
+						objTypeInfo := ""
+					else
+						objTypeInfo := info[0] & ":";
+					whenAvail := if Length(info) < 3 then ""
+							  else if info[2] = 'run then " / run time"
+							  else if info[2] = 'compile then " / compile time"
+							  else if info[2] = 'both then " / compile time and run time";
+					:TellUser(objTypeInfo & fname & info[1] & whenAvail)
+					end
+				else
+					:TellUser("")	// no GlobalFnHelpStrings
+				end
+			else
+				:TellUser("")	// not a function name
+			end
+		end
+	end,
+
+EvaluateSelection: func(selOffset, selLength)
+	begin
+	if selLength = 0 then
+		begin
+		local line := :FindLine(selOffset);
+		local ls := :LineStart(line);
+		:SetSelection(ls, :LineStart(line + 1) - ls)
+		end;
+	local text := :Selection();
+	line := :FindLine(selOffset + selLength - 1);
+	local nx := :LineStart(line + 1);
+	:SetSelection(if :FindLine(nx) = line then nx else nx - 1, 0);
+	:ReplaceSelection("\n");
+	:AdvanceSelection();
+	local code := Compile(text);
+	vars.this := self;
+	local result := call code with ();
+	vars.this := nil;
+	Print(result)
+	end,
+
+
+// •••• Miscellaneous
+
+DefineKey: func(key, symbol)
+	begin
+	AddArraySlot(self.keys, key);
+	AddArraySlot(self.keys, symbol);
+	if vars.this then
+		this:SetKeyHandler(key, symbol)
+	end,
+
+SetPrefix: func(selOffset, selLength)
+	begin
+	self.prefix := if self.prefix then 4 * self.prefix else 4
+	end,
+
+QuotePrefix: func(selOffset, selLength)
+	begin
+	:QuoteCharacter()
+	end,
+
+MetaPrefix: func(selOffset, selLength)
+	begin
+	:SetMetaBit()
+	end,
+
+MetaDot: func(selOffset, selLength)
+	begin
+	:SetSelection(:TokenEnd(selOffset), 0);
+	:ReplaceSelection("\nmetaDot not available here.\n")
+	end,
+
+
+// •••• Keys
+
+keys: [
+	36, 								'Newline,
+	$(, 								'lpar,
+	$), 								'rpar,
+	49, 								'SpaceBar,
+  123, 								'MoveCharBackward,
+  124, 								'MoveCharForward,
+  126, 								'MoveLineUp,
+  125, 								'MoveLineDown,
+	51, 								'Delete,
+  117, 								'DeleteForward,
+	55, 								'MetaPrefix,
+	{key:  51, shift: true},	'Delete,
+	{key: 117, shift: true},	'DeleteForward,
+	{key: 123, shift: true},	'SelectCharBackward,
+	{key: 124, shift: true},	'SelectCharForward,
+	{key: 125, shift: true},	'SelectLineDown,
+	{key: 126, shift: true},	'SelectLineUp,
+  115,								'MoveToBeginningOfText,
+  119,								'MoveToEndOfText,
+  121,								'MovePageDown,
+  116,								'MovePageUp,
+	{key: $[, command: true},	'IndentSelectionLeft,
+	{key: $], command: true},	'IndentSelectionRight,
+	{key: $f, option: true},	'MoveWordForward,
+	{key: $b, option: true, },	'MoveWordBackward,
+	{key: $d, option: true},	'DeleteWordForward,
+	{key: 51, option: true},	'DeleteWordBackward,
+	{key: $<, option: true},	'MoveToBeginningOfText,
+	{key: $>, option: true},	'MoveToEndOfText,
+	71,								'Clear,
+	{key:  71, shift: true},	'Clear,
+	{key:  51, command: true},	'DeleteToEndOfText,
+	{key: 117, command: true},	'DeleteToEndOfText,
+	{key: 123, command: true},	'MoveToBeginningOfLine,
+	{key: 124, command: true},	'MoveToEndOfLine,
+	{key: 125, command: true},	'MovePageDown,
+	{key: 126, command: true},	'MovePageUp,
+	{key: 123, command: true, shift: true},	'SelectToBeginningOfLine,
+	{key: 124, command: true, shift: true},	'SelectToEndOfLine,
+	{key: 125, command: true, shift: true},	'SelectPageDown,
+	{key: 126, command: true, shift: true},	'SelectPageUp,
+	{key:  51, option: true},	'DeleteWordBackward,
+	{key: 117, option: true},	'DeleteWordForward,
+	{key: 123, option: true},	'MoveWordBackward,
+	{key: 124, option: true},	'MoveWordForward,
+	{key: 125, option: true},	'MoveLineDown,
+	{key: 126, option: true},	'MoveLineUp,
+	{key:  51, command: true, option: true},	'DeleteToEndOfText,
+	{key: 117, command: true, option: true},	'DeleteToEndOfText,
+	{key: 123, command: true, option: true},	'MoveToBeginningOfLine,
+	{key: 124, command: true, option: true},	'MoveToEndOfLine,
+	{key: 125, command: true, option: true},	'MoveToEndOfText,
+	{key: 126, command: true, option: true},	'MoveToBeginningOfText,
+	{key: 123, option: true, shift: true},		'SelectWordBackward,
+	{key: 124, option: true, shift: true},		'SelectWordForward,
+	{key: 125, option: true, shift: true},		'SelectLineDown,
+	{key: 126, option: true, shift: true},		'SelectLineUp,
+	{key: 123, command: true, option: true, shift: true},	'SelectToBeginningOfLine,
+	{key: 124, command: true, option: true, shift: true},	'SelectToEndOfLine,
+	{key: 125, command: true, option: true, shift: true},	'SelectToEndOfText,
+	{key: 126, command: true, option: true, shift: true},	'SelectToBeginningOfText,
+
+// EMACS compatiblilty
+	{key: $v, control: true},	'MovePageDown,
+	{key: $v, option: true},	'MovePageUp,
+	{key: $n, control: true},	'MoveLineDown,
+	{key: $p, control: true},	'MoveLineUp,
+	{key: $a, control: true},	'MoveToBeginningOfLine,
+	{key: $e, control: true},	'MoveToEndOfLine,
+	{key: $d, control: true},	'DeleteForward,
+	{key: $k, control: true},	'DeleteToEndOfLine,
+	{key: $t, control: true},	'TransposeCharacters,
+	{key: $u, control: true},	'SetPrefix,
+	{key: $[, control: true},	'MetaPrefix,
+	{key: $f, control: true},	'MoveCharForward,
+	{key: $b, control: true},	'MoveCharBackward,
+	{key: $q, control: true},	'QuotePrefix,
+
+	{key: $=, command: true},	'EvaluateSelection
+]
+};

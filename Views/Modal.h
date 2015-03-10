@@ -1,0 +1,1 @@
+/*	File:		Modal.h	Contains:	Modal view declarations.	Written by:	Newton Research Group.*/#if !defined(__MODAL_H)#define __MODAL_H 1extern int		gModalCount;extern void		SetModalView(CView * inView);extern void		ModalSafeShow(CView * inView);extern void		RealExitModalDialog(CView * inView);extern void		RemoveModalSafeView(CView * inView);#endif	/* __MODAL_H */

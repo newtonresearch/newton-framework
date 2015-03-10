@@ -1,0 +1,256 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F41EF3D50695ED8E00430084 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F41EF3D40695ED8E00430084 /* CoreServices.framework */; };
+		F434ACD10C984BAC005AB44D /* ResMaker.cc in Sources */ = {isa = PBXBuildFile; fileRef = F434ACCF0C984BAC005AB44D /* ResMaker.cc */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		F41EF3D40695ED8E00430084 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
+		F42998F5069580EB00CAA2A8 /* ResMaker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResMaker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F434ACCE0C984BAC005AB44D /* Info-ResMaker.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info-ResMaker.plist"; sourceTree = "<group>"; };
+		F434ACCF0C984BAC005AB44D /* ResMaker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ResMaker.cc; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F42998F1069580EB00CAA2A8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F41EF3D50695ED8E00430084 /* CoreServices.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F4BA0CC6069482A200BE8E9A = {
+			isa = PBXGroup;
+			children = (
+				F434ACCE0C984BAC005AB44D /* Info-ResMaker.plist */,
+				F434ACCF0C984BAC005AB44D /* ResMaker.cc */,
+				F41EF3D40695ED8E00430084 /* CoreServices.framework */,
+				F4BA0CE306948A3B00BE8E9A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F4BA0CE306948A3B00BE8E9A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F42998F5069580EB00CAA2A8 /* ResMaker.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		F42998EE069580EB00CAA2A8 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		F42998ED069580EB00CAA2A8 /* ResMaker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F4F9288B0C81CD920077CA66 /* Build configuration list for PBXNativeTarget "ResMaker" */;
+			buildPhases = (
+				F42998EE069580EB00CAA2A8 /* Headers */,
+				F42998EF069580EB00CAA2A8 /* Resources */,
+				F42998F0069580EB00CAA2A8 /* Sources */,
+				F42998F1069580EB00CAA2A8 /* Frameworks */,
+				F42998F2069580EB00CAA2A8 /* Rez */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ResMaker;
+			productInstallPath = "$(USER_APPS_DIR)";
+			productName = MachOtoNTK;
+			productReference = F42998F5069580EB00CAA2A8 /* ResMaker.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F4BA0CCA069482A200BE8E9A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+			};
+			buildConfigurationList = F4F9288F0C81CD920077CA66 /* Build configuration list for PBXProject "ResMaker" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = F4BA0CC6069482A200BE8E9A;
+			productRefGroup = F4BA0CE306948A3B00BE8E9A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F42998ED069580EB00CAA2A8 /* ResMaker */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F42998EF069580EB00CAA2A8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXRezBuildPhase section */
+		F42998F2069580EB00CAA2A8 /* Rez */ = {
+			isa = PBXRezBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXRezBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F42998F0069580EB00CAA2A8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F434ACD10C984BAC005AB44D /* ResMaker.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F4F9288C0C81CD920077CA66 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = "Info-ResMaker.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PREBINDING = NO;
+				PRODUCT_NAME = ResMaker;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+			};
+			name = Development;
+		};
+		F4F9288D0C81CD920077CA66 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = "Info-MachOtoNTK.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = MachOtoNTK;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+			};
+			name = Deployment;
+		};
+		F4F9288E0C81CD920077CA66 /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = "Info-MachOtoNTK.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = MachOtoNTK;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+			};
+			name = Default;
+		};
+		F4F928900C81CD920077CA66 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				SDKROOT = macosx;
+			};
+			name = Development;
+		};
+		F4F928910C81CD920077CA66 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				SDKROOT = macosx;
+			};
+			name = Deployment;
+		};
+		F4F928920C81CD920077CA66 /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
+				SDKROOT = macosx;
+			};
+			name = Default;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F4F9288B0C81CD920077CA66 /* Build configuration list for PBXNativeTarget "ResMaker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4F9288C0C81CD920077CA66 /* Development */,
+				F4F9288D0C81CD920077CA66 /* Deployment */,
+				F4F9288E0C81CD920077CA66 /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+		F4F9288F0C81CD920077CA66 /* Build configuration list for PBXProject "ResMaker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4F928900C81CD920077CA66 /* Development */,
+				F4F928910C81CD920077CA66 /* Deployment */,
+				F4F928920C81CD920077CA66 /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F4BA0CCA069482A200BE8E9A /* Project object */;
+}

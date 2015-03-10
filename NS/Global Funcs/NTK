@@ -1,0 +1,1 @@
+{	DefineGlobalConstant:	plainC.FDefineGlobalConstant,	UnDefineGlobalConstant:	plainC.FUnDefineGlobalConstant,	DefPureFn:					func(sym, fn) constantFunctions.(EnsureInternal(sym)) := fn,	StuffHex:					plainC.FStuffHex}

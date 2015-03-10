@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SchemeUserState</key>
+	<dict>
+		<key>FrameWork.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>11</integer>
+		</dict>
+		<key>MessagePad.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>10</integer>
+		</dict>
+		<key>NTKFrameWork.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>12</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>F486D45710DA690400176ED0</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>F4A8B53005738194004D6931</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>F4B8094406F217930042F1D4</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>F4ECC2E90DE492E70023D27A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,1287 @@
+plainC
+; The name above is the name of your code module.
+; This name will be used in NewtonScript to call your C functions. 
+;    e.g. “ Call myModuleName.aFunction with (...) ” 
+; Below, add one line per function naming each of your plain C NewtonScript interface functions.
+;
+; freq-func math operators
+FAdd 2
+FSubtract 2
+FMultiply 2
+FDivide 2
+FDiv 2
+FMod 2
+FNegate 1
+FNot 1
+FEqual 2
+FUnorderedLessOrGreater 2
+FLessThan 2
+FLessOrEqual 2
+FGreaterThan 2
+FGreaterOrEqual 2
+FAref 2
+FSetAref 3
+FNewIterator 2
+;
+; Possibly obsolete interpreter functions
+;Fand 2
+;For 2
+;Fcollect 2
+;FforLoop 3
+;FgetPath 2
+;FsetPath 3
+;FsetSlot 3
+;FgetSiblingSlot 2
+;FhasSiblingSlot 2
+;FGetVar 1
+;FlocalVar 1
+;
+; Object System
+;FObjectPid 1
+;FPidToPkgRef 1
+;FPssidToPkgRef 2
+;FPssidToPid 2
+;FGetPkgInfoFromPssid 2
+;FPidToPackage 1
+;FPidToPackageLite 1
+;
+; Display
+FGetLCDContrast 0
+FSetLCDContrast 1
+;
+FGetOrientation 0
+FSetOrientation 1
+;
+; References to Views
+FChildViewFramesX 0
+FParentX 0
+FGetRoot 0
+FGetView 1
+FGetId 1
+;
+; Displaying, Hiding and Redrawing Views
+FOpenX 0
+FCloseX 0
+FToggleX 0
+FShowX 0
+FHideX 0
+FDirtyX 0
+FFrameDirty 1
+FOffsetView 3
+FRefreshViews 0
+FSetValue 3
+FSyncViewX 0
+FMoveBehindX 1
+FDoDrawing 2
+;
+FGrayShrink 2
+;
+; Dynamically Adding Views
+FAddStepView 2
+FRemoveStepView 2
+FAddView 2
+FRemoveView 2
+FBuildContext 1
+;
+; Making Modal Views
+FFilterDialog 0
+FModalDialog 0
+FExitModalDialog 0
+FModalState 0
+;
+; Setting the Bounds of Views
+FRelBounds 4
+FSetBounds 4
+FGlobalBoxX 0
+FGlobalOuterBoxX 0
+FLocalBoxX 0
+FVisibleBox 0
+FGetDrawBoxX 0
+FDirtyBoxX 1
+;
+; Animating Views
+FEffectX 5
+FSlideEffectX 5
+FRevealEffectX 5
+FDeleteX 2
+FDoScrubEffect 1
+;
+; Dragging and Dropping
+FDragX 2
+FDragAndDrop 4
+FDragAndDropLtd 4
+;
+; Scrolling View Contents
+FSetOriginX 2
+FSyncScrollX 3
+;
+; View Highlighting
+FHiliter 1
+FHiliteX 1
+FHiliteOwner 0
+FHiliteUniqueX 1
+FTrackHiliteX 1
+FTrackButtonX 1
+FGetHiliteOffsets 0
+FSetHiliteX 3
+FSetHiliteNoUpdateX 3
+FDropHilites 0
+FHiliteViewChildren 1
+FInvertRect 4
+;
+; Creating View Dependencies
+FTieViews 3
+;
+; Synchronizing Views
+FRedoChildrenX 0
+FSyncChildrenX 0
+;
+; Laying Out Multiple Child Views
+FLayoutTableX 3
+FLayoutVerticallyX 2
+FFormatVertical 2
+;
+; Miscellaneous View Operations
+FGetFlags 1
+FGetTextFlags 1
+;
+;FPackRGB 3
+;FGetRed 1
+;FGetGreen 1
+;FGetBlue 1
+;FGetTone 1
+;FIsEqualTone 2
+;
+FGetPopup 0
+FSetPopup 0
+FClearPopup 0
+FDoPopup 4
+FDismissPopup 0
+;
+FSetupIdleX 1
+;
+; Text and Ink Input and Display
+;FIsInkChar 1
+;FTextBounds 3
+;
+; Determining View Ink Types
+;FAddInk 2
+;FViewAllowsInk 1
+;FViewAllowsInkWords 1
+;
+; Font Attributes
+;FFontAscent 1
+;FFontDescent 1
+;FFontHeight 1
+;FFontLeading 1
+;FGetDefaultFont 1
+;FGetFontFace 1
+;FGetFontFamilyNum 1
+;FGetFontFamilySym 1
+;FGetFontSize 1
+;FMakeCompactFont 3
+;FSetFontFace 2
+;FSetFontFamily 2
+;FSetFontParms 2
+;FSetFontSize 2
+;
+; Paragraph Views
+FExtractTextRange 2
+FExtractRangeAsRichString 2
+FGetStyleAtOffset 1
+FGetStylesOfRange 3
+FChangeStylesOfRange 3
+FVoteOnWordUnit 1
+FPointToCharOffset 2
+FPointToWord 2
+;
+; Rich Strings
+;FDecodeRichString 2
+FIsRichString 1
+;FMakeRichString 2
+;FStripInk 2
+;
+; Accessing Ink in Views
+;FGetInkAt 2
+;FNextInkIndex 2
+;FParaContainsInk 1
+;FPolyContainsInk 1
+FHandleInsertItems 1
+FHandleInkWord 1
+FHandleRawInk 1
+;
+; Keyboard
+FKeyboardConnected 0
+FCommandKeyboardConnected 0
+FRegisterOpenKeyboard 1
+FUnregisterOpenKeyboard 0
+;
+FAddKeyCommand 1
+FAddKeyCommands 1
+FBlockKeyCommand 1
+;
+FGetCaretBox 0
+FKeyIn 2
+FPostKeyString 2
+FGetKeyView 0
+FSetKeyView 2
+FNextKeyView 3
+FRestoreKeyView 1
+;
+FPickViewKeyDown 2
+FIsKeyDown 2
+FTranslateKey 3
+FIsCommandKeystroke 2
+FFindKeyCommand 3
+FSendKeyMessage 2
+FMatchKeyMessage 2
+FGatherKeyCommands 1
+FCategorizeKeyCommands 1
+FHandleKeyEvents 1
+FInRepeatedKeyCommand 0
+FClearHardKeymap 0
+FGetTrueModifiers 0
+;
+; Insertion Caret
+FGetRemoteWriting 0
+FSetRemoteWriting 1
+FGetCaretInfo 0
+FSetCaretInfo 2
+FPositionCaret 3
+FCaretRelativeToVisibleRect 1
+FShowCaret 0
+FHideCaret 0
+FInsertItemsAtCaret 1
+FViewContainsCaretView 1
+FGetInkWordInfo 1
+;
+; Dictionary
+;FAddDictionary 2
+;FGetDictionary 1
+;FGetDictionaryData 1
+;FSetDictionaryData 2
+;FConvertDictionaryData 1
+FGetRandomWord 2
+;FGetRandomDictionaryWord 2
+;FGetDictItem 1
+;FDumpDict 0
+;
+FAirusResult 0
+FAirusNew 2
+FAirusDispose 0
+FAirusRegisterDictionary 0
+FAirusUnregisterDictionary 0
+FAirusDictionaryType 0
+FAirusAddWord 2
+FAirusDeleteWord 1
+FAirusDeletePrefix 1
+FAirusLookupWord 2
+;
+FAirusIteratorMake 0
+FAirusIteratorClone 0
+FAirusIteratorDispose 0
+FAirusIteratorReset 3
+FAirusIteratorThisWord 1
+FAirusIteratorNextWord 0
+FAirusIteratorPreviousWord 0
+;
+; User Dictionary
+;
+; Recognition
+FPrepRecConfig 1
+FBuildRecConfig 1
+FGetScoreArray 1
+FGetWordArray 1
+FStrokeBounds 1
+FStrokeDone 1
+FPurgeAreaCache 0
+;
+FCountGesturePoints 1
+FGesturePoint 2
+FGestureType 1
+;
+;FConvertForMP 2
+;FConvertFromMP 2
+;FGetLetterWeights 0
+;FSetLetterWeights 1
+;FResetLetterDefaults 0
+;
+;FRosettaExtension 2
+;FUseWRec 1
+;FWRecIsBeingUsed 0
+;FReadCursiveOptions 0
+;FReadDomainOptions 0
+;FGetTrainingData 1
+;FUseTrainingDataForRecognition 1
+;FDisposeTrainingData 1
+;FGetLearningData 0
+;FSetLearningData 1
+;FDoCursiveTraining 2
+;FRecSettingsChanged 0
+;FTriggerWordRecognition 0
+FModalRecognitionOn 1
+FModalRecognitionOff 0
+;FFinishRecognizing 0
+;
+FPenPos 0
+;FCorrectWord 2
+;
+; Deferred Recognition
+;FRecognize 3
+;FRecognizeInkWord 1
+;FRecognizePara 5
+;FRecognizePoly 3
+;
+; CorrectInfo
+;FGetCorrectionWordInfo 1
+;
+; Tablet
+FIsTabletCalibrationNeeded 0
+FCalibrateTablet 0
+FGetCalibration 0
+FSetCalibration 1
+FTabletBufferEmpty 0
+FInsertTabletSample 4
+FStartBypassTablet 0
+FStopBypassTablet 0
+FHobbleTablet 0
+;
+; Inker
+FInkOff 1
+FInkOffUnHobbled 1
+FInkOn 1
+FSetInkerPenSize 1
+;
+; Strokes
+FGetPolygons 1
+FDrawPolygons 1
+;FBlockStrokes 0
+;FUnblockStrokes 0
+;FCompressStrokes 1
+;FCompressStrokesToInk 1
+;FCountPoints 1
+;FCountStrokes 1
+;FCountUnitStrokes 1
+;FExpandInk 2
+;FExpandUnit 1
+;FFlushStrokes 0
+FGetPoint 2
+FGetPointsArray 1
+FGetPointsArrayXY 1
+;FGetStroke 2
+;FGetStrokeBounds 1
+;FGetStrokePoint 4
+;FGetStrokePointsArray 2
+;FInkConvert 2
+;FMakeStrokeBundle 2
+;FMergeInk 2
+;FMergeStrokes 2
+;FPointsArrayToStroke 2
+;FSplitInkAt 3
+;FStrokeBundleToInkWord 1
+;FStrokesAfterUnit 2
+;FAnimateSimpleStroke 3
+;
+; Package Stores
+FGetPackageStore 1
+FGetPackageStores 0
+;
+; Packages
+FInstallPackage 1
+FDeinstallPackage 1
+FGetPackages 0
+FGetPkgRefInfo 1
+FIsPackage 1
+FIsValid 1
+FObjectPkgRef 1
+;
+; PC cards
+FGetCardInfo 0
+;FGetCardTypes 0
+;FGetCardSlotStores 1
+;FUnmountCard 2
+;
+; Stores
+FGetStores 0
+StoreAbort 0
+StoreLock 0
+StoreUnlock 0
+StoreCardSlot 0
+StoreCardType 0
+StoreCheckWriteProtect 0
+StoreIsReadOnly 0
+StoreIsValid 0
+StoreHasPassword 0
+StoreSetPassword 1
+StoreGetKind 0
+StoreGetSignature 0
+StoreSetSignature 1
+StoreGetName 0
+StoreSetName 1
+StoreGetInfo 1
+StoreSetInfo 2
+StoreGetAllInfo 0
+StoreSetAllInfo 1
+StoreGetObjectSize 1
+StoreSetObjectSize 2
+StoreTotalSize 0
+StoreUsedSize 0
+StoreErase 0
+StoreCreateSoup 2
+StoreCheckUnion 0
+StoreGetSoupNames 0
+StoreHasSoup 1
+StoreGetSoup 1
+StoreNewObject 0
+StoreNewVBO 1
+StoreNewCompressedVBO 3
+StoreReadObject 2
+StoreWriteObject 3
+StoreWriteWholeObject 3
+StoreDeleteObject 1
+StoreSuckPackageFromBinary 2
+StoreSuckPackageFromEndPoint 2
+StoreRestorePackage 0
+StoreRestoreSegmentedPackage 1
+;
+; Soups
+FIsSoupEntry 1
+CommonSoupQuery 1
+SoupCollect 1
+SoupIsValid 0
+PlainSoupGetStore 0
+CommonSoupGetName 0
+PlainSoupSetName 1
+PlainSoupGetSize 0
+PlainSoupGetSignature 0
+PlainSoupSetSignature 1
+SoupGetFlags 0
+SoupSetFlags 1
+PlainSoupHasTags 0
+PlainSoupIndexSizes 0
+SoupGetIndexesModTime 0
+SoupGetInfoModTime 0
+PlainSoupGetNextUId 0
+PlainSoupMakeKey 2
+PlainSoupAdd 1
+SoupAddFlushed 1
+PlainSoupAddWithUniqueID 1
+PlainSoupCopyEntriesWithCallBack 3
+PlainSoupCopyEntries 1
+PlainSoupRemoveAllEntries 0
+PlainSoupRemoveFromStore 0
+PlainSoupSetInfo 2
+PlainSoupGetInfo 1
+PlainSoupSetAllInfo 1
+PlainSoupGetAllInfo 0
+PlainSoupGetTags 0
+PlainSoupAddTags 1
+PlainSoupModifyTag 2
+PlainSoupRemoveTags 1
+PlainSoupGetIndexes 0
+PlainSoupAddIndex 1
+PlainSoupRemoveIndex 1
+;PlainSoupFlush 0		deprecated in 2.0
+FGetUnionSoup 1
+FGetUnionSoupAlways 1
+UnionSoupGetSize 0
+UnionSoupAddIndex 1
+UnionSoupRemoveIndex 1
+UnionSoupAddTags 1
+UnionSoupGetTags 0
+UnionSoupHasTags 0
+UnionSoupModifyTag 2
+UnionSoupRemoveTags 1
+;
+; Cursors
+CursorCountEntries 0
+CursorClone 0
+CursorReset 0
+CursorResetToEnd 0
+CursorWhichEnd 0
+CursorEntry 0
+CursorEntryKey 0
+CursorMove 1
+CursorNext 0
+CursorPrev 0
+CursorGoto 1
+CursorGotoKey 1
+CursorSoup 0
+CursorIndexPath 0
+CursorStatus 0
+;
+; Entries
+FEntryIsResident 1
+FEntryValid 1
+FEntrySoup 1
+FEntryStore 1
+FEntrySize 1
+FEntrySizeWithoutVBOs 1
+FEntryTextSize 1
+FEntryUniqueId 1
+FEntryModTime 1
+FEntryChange 1
+FEntryFlush 1
+FEntryChangeVerbatim 1
+FEntryChangeWithModTime 1
+FEntryUndoChanges 1
+FEntryRemoveFromSoup 1
+FEntryReplace 2
+FEntryReplaceWithModTime 2
+FEntryCopy 2
+FEntryMove 2
+;
+; Mock Entries
+FNewProxyEntry 2
+FIsProxyEntry 1
+FEntrySetHandler 2
+FEntryHandler 1
+FEntrySetCachedObject 2
+FEntryCachedObject 1
+;
+; Entry Aliases
+FMakeEntryAlias 1
+FIsEntryAlias 1
+FResolveEntryAlias 1
+FIsSameEntry 2
+;
+; VBOs
+;FVBOUndoChanges 1
+;FClearVBOCache 1
+FIsVBO 1
+;FGetVBOStore 1
+;FGetVBOCompander 1
+;FGetVBOCompanderData 1
+;FGetVBOStoredSize 1
+;
+; Drawing and Graphics
+FMakeBitmap 3
+FDrawIntoBitmap 3
+FViewIntoBitmap 3
+;FMungeBitmap 3
+;FGetBitmapInfo 1
+;FGetBitmapPixel 3
+;
+; Hit Testing
+;FHitShape 3
+;FPtInPicture 3
+;FStrokeInPicture 2
+;
+; Shape Creation
+;FMakeInk 5
+FMakeLine 4
+FMakeRect 4
+;FMakeRoundRect 5
+;FMakeOval 4
+;FMakeWedge 6
+;FMakePolygon 1
+FMakeShape 1
+;FMakeRegion 1
+;FMakePict 2
+FMakeText 5
+FMakeTextLines 4
+FMakeTextBox 5
+;FTextBox 3
+;
+; Shape Operations
+;FFindShape 4
+;FGetShapeInfo 1
+FDrawShape 2
+;FDrawStringShapes 2
+;FMungeShape 3
+FOffsetShape 3
+;FScaleShape 3
+FShapeBounds 1
+FInsetRect 3
+;FIsPtInRect 3
+FOffsetRect 3
+;FRectsOverlap 2
+;FSectRect 2
+;FUnionPoint 3
+;FUnionRect 2
+;
+;FPictToShape 2
+FPictureBounds 1
+;
+; Drawing Utilities
+FCopyBits 4
+FDrawXBitmap 4
+;FIsPrimShape 1
+FLockScreen 1
+;FPointsToArray 1
+;FArrayToPoints 1
+;
+; Sound
+FVolumeToDecibels 1
+FDecibelsToVolume 1
+FGetVolume 0
+FSetVolume 1
+FGetSystemVolume 0
+FSetSystemVolume 1
+FConvertToSoundFrame 1
+FSetInputGain 1
+FSetOutputDevice 1
+FPlaySoundSync 1
+FPlaySound 1
+FPlaySoundIrregardless 1
+FPlaySoundEffect 3
+FClicker 0
+FSoundCheck 0
+FSoundPlayEnabled 1
+;
+; System Services
+FAddUndoCall 2
+FAddUndoSend 3
+FAddUndoAction 2
+FClearUndoStacks 0
+FGetUndoState 0
+;
+;FSetSysAlarm 3
+;
+; Forking (Progress Dialog)
+FForkScript 2
+FYieldToFork 0
+;
+; Power Registry
+FBatteryCount 0
+FBatteryStatus 1
+FBatteryRawStatus 1
+FBatteryLevel 1
+FSetBatteryType 2
+FCheckCardBattery 0
+FEnablePowerStats 1
+FGetPowerStats 0
+FResetPowerStats 0
+;
+;FClassInfoByName 3
+;FClassInfoRegistrySeed 0
+;FClassInfoRegistryNext 2
+;FNewByName 3
+;
+;FGetExportTableClients 1
+;FCurrentExports 0
+;FCurrentImports 0
+;FFlushImports 0
+;FFulfillImportTable 1
+;FPendingImports 0
+;
+; Intelligent Assistant
+FRegTaskTemplate 1
+FUnRegTaskTemplate 1
+FParseUtter 1
+FOrigPhrase 0
+FIAatWork 1
+FIsA 2
+FCleanString 1
+FSplitString 1
+FGlueStrings 1
+FStringAssoc 2
+;
+;DSAddLexiconFrame 1
+;DSConstructSubjectLine 1
+;DSFilterStrings 2
+;DSFilterStringsAux 2
+;DSFindPossibleName 2
+;DSFindPossiblePhone 1
+;DSFindPossibleLocation 2
+;FFavorAction 1
+;FFavorObject 1
+FGenFullCommands 0
+;FGeneratePhrases 1
+;FGenerateSubstrings 1
+DSGetMatchedEntries 2
+;FUnmatchedWords 0
+FPhraseFilter 1
+FGuessAddressee 1
+DSScanForWackyName 2
+;FLexDateLookup 1
+;FLexTimeLookup 1
+;FLexPhoneLookup 1
+;DSPrevSubStr 2
+;DSTagString 3
+;DSResolveString 2
+;
+; Built-in Applications
+;FCircleDistance 5
+;
+;FDESCreatePasswordKey 1
+;
+;FSpellDocBegin 0
+;FSpellDocEnd 1
+;FSpellSkip 2
+;FSpellCheck 2
+;FSpellCorrect 2
+;
+;FGetAllMeetings 4
+;FGetAllMeetingsUnique 4
+;FGetMeetingIcon 1
+;FGetMeetingTypeInfo 1
+;FGetNextMeetingTime 2
+;FNextMeeting 2
+;FPrevMeeting 2
+;FLayoutMeeting 4
+;FDrawMeetingGrid 1
+;FWeekNumber 2
+;
+; Localization
+FGetLocale 0
+FSetLocale 1
+FTime 0
+FTimeInSeconds 0
+FSetTime 1
+FSetTimeInSeconds 1
+FIncrementMonth 2
+FDateNTime 1
+FHourMinute 1
+FLongDateStr 2
+FShortDate 1
+FShortDateStr 2
+FStringToDate 1
+FStringToDateFrame 1
+FStringToTime 1
+FTimeStr 2
+FTimeFrameStr 2
+FDate 1
+FDateFromSeconds 1
+FTotalMinutes 1
+FIsValidDate 1
+;
+;FPositionToTime 2
+;FTimeToPosition 2
+;
+; Endpoints
+;FTranslate 4
+;
+; AppleTalk
+;FOpenAppleTalk 0
+;FCloseAppleTalk 0
+;FAppleTalkOpenCount 0
+;FHaveZones 0
+;FGetMyZone 0
+;FGetZoneList 0
+;FGetZoneFromName 1
+;FGetNames 1
+;FNBPStart 1
+;FNBPGetCount 1
+;FNBPGetNames 1
+;FNBPStop 1
+;FNBPStartLookup 1
+;FNBPLookupCount 0
+;FNBPGetLookupNames 0
+;FNBPStopLookup 0
+;
+; Communications
+;FStartIRSniffing 0
+;FStopIRSniffing 0
+;FOpenRemoteControl 0
+;FSendRemoteControlCode 3
+;FCloseRemoteControl 1
+;
+; Desktop Connection
+;FGetOnlineEndpoint 0
+;FLoadOnlinePackage 0
+;FSendOnline 1
+;FSendAbort 0
+;FCallOnlineService 1
+;FCancelOnlineService 0
+;FSetOnlineDisconnect 1
+;FDisconnectOnlineService 0
+;FConnBuildStoreFrame 2
+;FConnEntriesEqual 1
+;FConnectPassthruKeyboard 1
+;
+;FOtherViewInUse 1
+;FViewWorksWithCombCorrector 1
+;
+;
+; Utilities - Object System
+FClassOf 1
+FClone 1
+FDeepClone 1
+FTotalClone 1
+FEnsureInternal 1
+FGetFunctionArgCount 1
+FGetSlot 2
+FGetVariable 2
+FHasPath 2
+FHasSlot 2
+FHasVar 1
+FHasVariable 2
+FIntern 1
+FIsArray 1
+FIsBinary 1
+FIsCharacter 1
+FIsDirty 1
+FIsFrame 1
+FIsFunction 1
+FIsImmediate 1
+FIsInstance 2
+FIsInteger 1
+FIsPathExpr 1
+FIsMagicPtr 1
+FIsNativeFunction 1
+FIsNumber 1
+FIsReadOnly 1
+FIsReal 1
+FIsString 1
+FIsSubclass 2
+FIsSymbol 1
+FIsValidString 1
+FLength 1
+FMakeBinary 2
+FMap 2
+FPrimClassOf 1
+Fref 1
+FrefOf 1
+FRemoveSlot 2
+FReplaceObject 2
+FSetClass 2
+FSetVariable 3
+FSymbolCompareLex 2
+FSymbolName 1
+;
+; Utilities - Strings
+FBeginsWith 2
+FCapitalize 1
+FCapitalizeWords 1
+FCharPos 3
+FDowncase 1
+FEndsWith 2
+FEvalStringer 2
+FFindStringInArray 2
+FFindStringInFrame 3
+FFormattedNumberStr 2
+FIsAlphaNumeric 1
+FIsWhiteSpace 1
+;FCoordinateToLatitude 2
+;FCoordinateToLongitude 2
+;FLatitudeToCoordinate 2
+;FLongitudeToCoordinate 2
+FGetRichString 0
+FNumberStr 1
+FParamStr 2
+;FSmartConcat 3	deprecated in 2.0
+;FSmartStart 1		deprecated in 2.0
+;FSmartStop 2		deprecated in 2.0
+FSPrintObject 1
+;FStrCompare 2
+FStrConcat 2
+FStrEqual 2
+;FStrExactCompare 2
+FStrFilled 1
+;FStrFontWidth 2
+FStringer 1
+;FStringFilter 3
+;FStringToNumber 1
+;FStripDiacriticals 1
+FStrLen 1
+FStrMunger 6
+FStrPos 3
+FStrReplace 4
+;FStrTruncate 2	deprecated in 2.0
+;FStrWidth 1		deprecated in 2.0
+;FStyledStrTruncate 3
+;FSubstituteChars 3
+FSubStr 3
+FTrimString 1
+FUpcase 1
+;
+;FScanWordStart 3
+;FScanWordEnd 3
+;FScanPrevWordEnd 3
+;FScanNextWord 3
+;
+FCHR 1
+FORD 1
+;FLower 1
+;
+; Utilities - Bitwise
+FBitAnd 2
+FBitOr 2
+FBitXor 2
+FBitNot 1
+;
+; Utilities - Array
+FAddArraySlot 2
+FArray 2
+FArrayInsert 3
+FArrayMunger 6
+;FArrayPos 4	deprecated in 2.0
+FArrayRemoveCount 3
+FInsertionSort 3
+FLFetch 5
+FLSearch 5
+FNewWeakArray 1
+FSetAdd 3
+FSetRemove 2
+FSetContains 2
+FSetDifference 2
+FSetLength 2
+FSetOverlaps 2
+FSetUnion 3
+FSort 3
+FStableSort 3
+;
+; Utilities - Sorted Array
+FBDelete 5
+FBDifference 4
+FBFetch 4
+FBFetchRight 4
+FBFind 4
+FBFindRight 4
+FBInsert 5
+FBInsertRight 5
+FBIntersect 5
+FBMerge 5
+FBSearchLeft 4
+FBSearchRight 4
+;
+; Utilities - Integer Math
+;Fabs 1
+;Fceiling 1
+;Ffloor 1
+FMax 2
+FMin 2
+FLShift 2
+FRShift 2
+;FReal 1
+;FRandom 2
+;FSetRandomSeed 1
+;FSetRandomState 1
+;FGetRandomState 0
+;
+; Utilities - Floating Point Math
+;Facos 1
+;Facosh 1
+;Fasin 1
+;Fasinh 1
+;Fatan 1
+;Fatan2 2
+;Fatanh 1
+;Fcopysign 2
+;Fcos 1
+;Fcosh 1
+;Ferf 1
+;Ferfc 1
+;Fexp 1
+;Fexpm1 1
+;Ffabs 1
+;Ffdim 2
+;Ffmax 2
+;Ffmin 2
+;Ffmod 2
+;Fgamma 1
+;Fhypot 2
+;Fisfinite 1
+FIsFiniteNumber 1
+;Fisnan 1
+;Fisnormal 1
+;FLessEqualOrGreater 2
+;FLessOrGreater 2
+;Fldexp 2
+;Flgamma 1
+;Flog 1	undocumented
+;Flogb 1
+;Flog1p 1
+;Flog10 1
+;Fnearbyint 1
+;Fnextafterd 2
+;Fpow 2
+;Frandomx 1
+;Fremainder 2
+;Fremquo 2
+;Frint 1
+;Frinttol 1
+;Fround 1
+;Fscalb 2
+;Fsignbit 1
+;Fsignum 1
+;Fsin 1
+;Fsinh 1
+;Fsqrt 1
+;Ftan 1
+;Ftanh 1
+;Ftrunc 1
+;FUnordered 2
+;FUnorderedGreaterOrEqual 2
+;FUnorderedOrEqual 2
+;FUnorderedOrGreater 2
+;FUnorderedOrLess 2
+;
+; Utilities - Floating Point Environment
+;Ffeclearexcept 1
+;Ffegetenv 0
+;Ffegetexcept 1
+;Ffeholdexcept 1
+;Fferaiseexcept 1
+;Ffesetenv 1
+;Ffesetexcept 2
+;Ffetestexcept 1
+;Ffeupdateenv 1
+;
+;Ffegetround 0
+;Ffesetround 1
+;
+; Utilities - Financial
+;Fannuity 2
+;Fcompound 2
+;
+; Utilities - Exceptions
+FThrow 2
+FRethrow 0
+FCurrentException 0
+FIsSubexception 2
+;
+; Utilities - Message Sending
+FApply 2
+FPerform 3
+FPerformIfDefined 3
+FProtoPerform 3
+FProtoPerformIfDefined 3
+;
+; Utilities - Deferred Message Sending
+;FAddDeferredAction 2	deprecated in 2.0
+FAddDeferredCall 2
+FAddDeferredSend 3
+;FAddDelayedAction 3		deprecated in 2.0
+FAddDelayedCall 3
+FAddDelayedSend 4
+FHandleUnit 2
+FEventPause 1
+;
+; Utilities - Data Extraction
+FExtractByte 2
+FExtractBytes 4
+FExtractChar 2
+FExtractData 3
+FExtractLong 2
+FExtractXLong 2
+FExtractWord 2
+FExtractCString 2
+FExtractPString 2
+FExtractUniChar 2
+;
+; Utilities - Data Stuffing
+FStuffByte 3
+FStuffChar 3
+FStuffLong 3
+FStuffWord 3
+FStuffCString 3
+FStuffPString 3
+FStuffUniChar 3
+;
+; Utilities - Getting and Setting Globals
+FDefGlobalFn 2
+;FGetGlobals 0 deprecated in 2.0
+;FSetGlobal 2  deprecated in 2.0
+;
+; Utilities - Debugging
+FPrint 1
+FWrite 1
+FBreakLoop 0
+FExitBreakLoop 0
+FDV 1
+FGC 0
+FStackTrace 0
+FStats 0
+;FGetHeapStats 1
+FStrHexDump 2
+FGetFrameStuff 2
+FUriah 0
+FUriahBinaryObjects 1
+FViewAutopsy 1
+;
+FGetUnitStartTime 1
+FGetUnitEndTime 1
+FGetUnitDownTime 1
+FGetUnitUpTime 1
+;
+FJournalStartRecord 2
+FJournalStopRecord 0
+FJournalReplayStrokes 4
+FJournalReplayAStroke 6
+FJournalReplayALine 6
+FJournalReplayBusy 0
+;
+FSetDebugMode 1
+FDebug 1
+FDebugMemoryStats 0
+FDebugRunUntilIdle 0
+;FPreInitSerialDebugging 3
+;FInitSerialDebugging 2
+;
+;FActivateTestAgent 2
+;FDeactivateTestAgent 0
+;
+;FTestMStartTestCase 1
+;FTestMStartTestFrame 2
+;FTestMSetParameterString 3
+;FTestMGetReportMsg 0
+;FTestMDropConnection 0
+;FTestReadDataFile 3
+;FTestReadTextFile 3
+;FTestReportError 1
+;FTestReportMessage 1
+;FTestFlushReportQueue 0
+;FTestGetParameterArray 0
+;FTestGetParameterString 0
+;FTestExit 0
+;FTestWillCallExit 0
+;
+FntpTetheredListener 3
+FntpDownloadPackage 2
+FNTKListener 5
+FNTKDownload 4
+FNTKSend 1
+FNTKAlive 0
+;
+;FStdioOn 0
+;FStdioOff 0
+;
+; Utilities - Miscellaneous
+;FBackLight 1
+;FBackLightStatus 0
+FBinEqual 2
+FBinaryMunger 6
+FBusyBoxControl 1
+FCompile 1
+FDisasm 1
+FGestalt 1
+FRegisterGestalt 4
+FReplaceGestalt 4
+FGetSerialNumber 0
+;
+;FGenPhoneTypes 1
+;FPhoneIndexToValue 2
+;FPhoneStringToValue 2
+;FPhoneSymToIndex 2
+;FPhoneSymToString 1
+;
+;FPowerOff 0
+;
+;FBookAvailable 2
+;FBookRemoved 1
+;
+FSleep 1
+FTableLookup 2
+;
+;
+; Sorting
+FGetSortId 1
+FSetSortId 1
+;
+; Undocumented, uncategorized
+;
+FLoadFontCache 0
+;FMatchedChar 2
+;FPathToRoot 1
+;FUniqueAppend 2
+;FDisplay 1
+;FExtractRichStringFromParaSlots 4
+;FSetRamParaData 2
+;FComputeParagraphHeight 3
+;FAddHist 1
+;FHist 1
+;FShellSort 3
+;FQuickLookDone 1
+;FGetHiliteIndex 0
+;FSetHiliteIndex 1
+;FGetHilitedTextItems 0
+;FGetLetterHilite 0
+;FSetLetterHilite 1
+;FReFlow 4
+;FReflowPreflight 1
+;FStringAnnotate 2
+;FMashLists 2
+;FStringShorten 1
+;FMapSymToFrame 1
+;FStringToFrame 1
+;FQuickSort 3
+;FLookupCompletions 3
+;FRestorePatchPackage 1
+;FGetChar 2
+;FAddAutoAdd 1
+;FRemoveAutoAdd 1
+;FCompositeClass 1
+;FBackupPatchPackage 0
+;FMakeLexEntry 1
+;FBubbleArraySlot 3
+;FAppendList 2
+;FSmartCFQuery 1
+;FLookupWord 1
+;FDrawDateLabels 2
+;FDrawLetterScript 0
+;FGetInsertionStyle 0
+;
+FSetClipboard 1
+FGetClipboard 0
+FGetClipboardIcon 0
+FClipboardCommand 1
+;
+;FPostAndDo 1
+;FPostCommand 2
+;FPostCommandParam 3
+;FGetSortID 1
+;FIsProtocolPartInUse 1
+;FCalcInkBounds 1
+;FMoveCorrectionInfo 3
+;FRecognizeTextInStyles 2
+;FStyleArrayContainsInk 1
+;FGetRelevantTemplates 1
+;FGetDynamicValue 3
+;FCorrectSelect 2
+;FConstructSubjectLine 1
+;FValidateWord 2
+;FStripRecognitionWordDiacritsOK 1
+;FFastStrLookup 1
+;FGetRangeText 3
+;FNumInkWordsInRange 3
+;FRepeatInfoToText 3
+;FWordUnitToWordInfo 1
+;FStringFormat 1
+;FAddTryString 1
+;FClearTryString 0
+;FInTryString 1
+;FTryStringLength 0
+;FStripRecognitionWord 1
+;FInsertStyledText 5
+;FgetIndexChar 1
+;FgetLetterIndex 1
+;FGetSelectionStack 0
+;FDrawOriginal 2
+;FSetChar 3
+;FMapCursor 2
+;FGetRamParaData 1
+;FSubsume 2
+;FCalcBundleBounds 1
+;FIntersect 2
+;FGetEditArray 1
+;FMapRect 3
+;FClickLetterScript 1
+;FCommonAncestors 2
+;FMeasuredNumberStr 3
+;FAppend 2
+;FMapPtX 3
+;FMapPtY 3
+;FCountLetters 0
+;FReBoot 0
+;FBootSucceeded 1
+;FRunInitScripts 0
+;FLoad 1
+;
+;
+; Dickens
+;FRefreshTopics
+;FTopicByName
+;FScrollPage(1)
+;FPageCThumbnail(1)
+;FBookTitle(0)
+;FPrepBookX(1)
+;FPageContents(1)
+;FUpdateBookmarks(1)
+;FInkMarks(1)
+;FAddBookmark(1)
+;FPreviousPage(0)
+;FBookmarks(0)
+;FBookClosed(0)
+;FAddInkMarks(2)

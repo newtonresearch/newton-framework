@@ -1,0 +1,164 @@
+dbgPrintICode := true;
+dbgPrintCCode := true;
+dbgVarNames := true;
+calce := func native (int inDigits)	// How many digits of e to calculate
+begin
+local int kSize := inDigits + 10;	// The original has "+ 9" and then accesses a[size], which is OK in JS, but not in NS.
+
+local a := Array(kSize, nil);
+a[0] := 0;
+a[1] := 2;
+for i := 2 to kSize - 1 do
+	a[i] := 1;
+
+local x := 0;
+for bigN := kSize - 1 to 10 by -1 do
+	begin
+	// Find the next digit
+	for smallN := bigN to 1 by -1 do
+		begin
+		a[smallN] := x mod smallN;
+		x := 10 * a[smallN - 1] + (x div smallN);
+		end;
+	Write(x);
+	end;
+Write($\n);
+end;
+calce;
+
+
+<symbol:'UndefineGlobalConstant> ( ' <symbol:'kDigits> ) ;
+<symbol:'UndefineGlobalConstant> ( ' <symbol:'kSize> ) ;
+begin constant <symbol:'kDigits> := <integer:30> ;
+constant <symbol:'kSize> := <integer:40> ;
+local <symbol:'a> := <symbol:'Array> ( <symbol:'kSize> , <const:nil> ) ;
+<symbol:'a> [ <integer:0> ] := <integer:0> ;
+<symbol:'a> [ <integer:1> ] := <integer:2> ;
+for <symbol:'i> := <integer:2> to <symbol:'kSize> - <integer:1> do <symbol:'a> [ <symbol:'i> ] := <integer:1> ;
+local <symbol:'x> := <integer:0> ;
+for <symbol:'bigN> := <symbol:'kSize> - <integer:1> to <integer:10> by - <integer:1> do begin for <symbol:'smallN> := <symbol:'bigN> to <integer:1> by - <integer:1> do begin <symbol:'a> [ <symbol:'smallN> ] := <symbol:'x> mod <symbol:'smallN> ;
+<symbol:'x> := <integer:10> * <symbol:'a> [ <symbol:'smallN> - <integer:1> ] + ( <symbol:'x> div <symbol:'smallN> ) ;
+end ;
+<symbol:'Write> ( <symbol:'x> ) ;
+end ;
+<symbol:'Write> ( <const:$\0D> ) ;
+end ;
+
+<constant kDigits := <constant 30>, >
+<constant kSize := <constant 40>, >
+<local a ::= <call <symbol Array>  with <symbol kSize> , <constant NIL>, >
+, >
+< <array accessor <symbol a> [<constant 0>]>  := <constant 0>>
+< <array accessor <symbol a> [<constant 1>]>  := <constant 2>>
+<for i := <constant 2> to < <symbol kSize> - <constant 1>>  do < <array accessor <symbol a> [<symbol i> ]>  := <constant 1>>
+>
+<local x ::= <constant 0>, >
+<for bigN := < <symbol kSize> - <constant 1>>  to <constant 10> by < <constant 1>>  do <for smallN := <symbol bigN>  to <constant 1> by < <constant 1>>  do < <array accessor <symbol a> [<symbol smallN> ]>  := < <symbol x> mod <symbol smallN> > >
+< <symbol x>  := < < <constant 10>* <array accessor <symbol a> [< <symbol smallN> - <constant 1>> ]> > + < <symbol x> div <symbol smallN> > > >
+>
+<call <symbol Write>  with <symbol x> , >
+>
+<call <symbol Write>  with <constant 
+>, >
+
+
+<function, 0 args, #0314231D>
+   0: push-constant nil
+   1: push-constant nil
+   2: push-constant 40
+   5: push-constant nil
+   6: push 'Array
+   7: call 2
+   8: set-var 3 [a]
+   9: push-constant nil
+  10: get-var 3 [a]
+  11: push-constant 0
+  12: push-constant 0
+  13: freq-func 3 [setAref/3]
+  14: get-var 3 [a]
+  15: push-constant 1
+  16: push-constant 2
+  19: freq-func 3 [setAref/3]
+  20: push-constant 2
+  23: set-var 4 [i]
+  24: push-constant 40
+  27: push-constant 1
+  28: freq-func 1 [-/2]
+  29: set-var 5 [i|limit]
+  30: push-constant 1
+  31: set-var 6 [i|incr]
+  32: get-var 6 [i|incr]
+  33: get-var 4 [i]
+  34: branch 44
+  37: get-var 3 [a]
+  38: get-var 4 [i]
+  39: push-constant 1
+  40: freq-func 3 [setAref/3]
+  41: pop
+  42: get-var 6 [i|incr]
+  43: incr-var 4
+  44: get-var 5 [i|limit]
+  45: branch-if-loop-not-done 37
+  48: push-constant nil
+  49: push-constant 0
+  50: set-var 7 [x]
+  53: push-constant nil
+  54: push-constant 40
+  57: push-constant 1
+  58: freq-func 1 [-/2]
+  59: set-var 8 [bigN]
+  62: push-constant 10
+  65: set-var 9 [bigN|limit]
+  68: push -1
+  69: set-var 10 [bigN|incr]
+  72: get-var 10 [bigN|incr]
+  75: get-var 8 [bigN]
+  78: branch 168
+  81: get-var 8 [bigN]
+  84: set-var 11 [smallN]
+  87: push-constant 1
+  88: set-var 12 [smallN|limit]
+  91: push -1
+  92: set-var 13 [smallN|incr]
+  95: get-var 13 [smallN|incr]
+  98: get-var 11 [smallN]
+ 101: branch 149
+ 104: get-var 3 [a]
+ 105: get-var 11 [smallN]
+ 108: get-var 7 [x]
+ 111: get-var 11 [smallN]
+ 114: push 'mod
+ 115: call 2
+ 116: freq-func 3 [setAref/3]
+ 117: push-constant 10
+ 120: get-var 3 [a]
+ 121: get-var 11 [smallN]
+ 124: push-constant 1
+ 125: freq-func 1 [-/2]
+ 126: freq-func 2 [aref/2]
+ 127: freq-func 7 [*/2]
+ 130: get-var 7 [x]
+ 133: get-var 11 [smallN]
+ 136: freq-func 9 [div/2]
+ 139: freq-func 0 [+/2]
+ 140: set-var 7 [x]
+ 143: get-var 13 [smallN|incr]
+ 146: incr-var 11
+ 149: get-var 12 [smallN|limit]
+ 152: branch-if-loop-not-done 104
+ 155: push-constant nil
+ 156: get-var 7 [x]
+ 159: push 'Write
+ 160: call 1
+ 161: pop
+ 162: get-var 10 [bigN|incr]
+ 165: incr-var 8
+ 168: get-var 9 [bigN|limit]
+ 171: branch-if-loop-not-done 81
+ 174: push-constant nil
+ 175: push-constant $\0D
+ 178: push 'Write
+ 179: call 1
+ 180: return
+2718281828459045235360287471352
+nil

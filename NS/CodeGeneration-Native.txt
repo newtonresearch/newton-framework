@@ -1,0 +1,345 @@
+
+calce := func native (int inDigits)	// How many digits of e to calculate
+begin
+local int kSize := inDigits + 10;	// The original has "+ 9" and then accesses a[size], which is OK in JS, but not in NS.
+
+local a := Array(kSize, nil);
+a[0] := 0;
+a[1] := 2;
+for i := 2 to kSize - 1 do
+	a[i] := 1;
+
+local x := 0;
+for bigN := kSize - 1 to 10 by -1 do
+	begin
+	// Find the next digit
+	for smallN := bigN to 1 by -1 do
+		begin
+		a[smallN] := x mod smallN;
+		x := 10 * a[smallN - 1] + (x div smallN);
+		end;
+	Write(x);
+	end;
+Write($\n);
+end;
+calce;
+
+// dbgPrintICode := true;
+// generates the following intermediate code
+
+    0: kSize := inDigits + 10
+    1: _ref1 := GetLiteral 0 [Array]
+    2: _ref1 := _FindGlobalFn(_ref1)
+    3: _ref2 := IntToRef kSize
+    4: _ref3 := NIL
+    5: _int0 := _NativeEntry(_ref1, 2, _ref4)
+    6: if _int0 == 0 goto 10
+    7: _SetCallEnv(_int1)
+    8: a := (*_int0)(_ref5, _ref2, _ref3, _ref4)
+    9: goto 13
+1  10: _PushValue(_int1, _ref2)
+   11: _PushValue(_int1, _ref3)
+   12: a := _Call(_int1, _ref1, 2)
+1  13: _ref1 := [ref] 0
+   14: _ref3 := [ref] 0
+   15: _SetAref(a, _ref3, _ref1)
+   16: _ref1 := [ref] 2
+   17: _ref3 := [ref] 1
+   18: _SetAref(a, _ref3, _ref1)
+   19: _X_limit165029065 := kSize - 1
+   20: i := 2
+2  21: if i > _X_limit165029065 goto 29
+   22: NoOp
+   23: NoOp
+   24: _ref1 := [ref] 1
+   25: _ref3 := IntToRef i
+   26: _SetAref(a, _ref3, _ref1)
+   27: i := i + 1
+   28: goto 21
+1  29: x := [ref] 0
+   30: bigN := kSize - 1
+2  31: if bigN < 10 goto 65
+   32: NoOp
+   33: NoOp
+   34: smallN := bigN
+2  35: if smallN < 1 goto 54
+   36: NoOp
+   37: NoOp
+   38: _int0 := RefToInt x
+   39: _int2 := _int0 % smallN
+   40: _ref1 := IntToRef _int2
+   41: _ref3 := IntToRef smallN
+   42: _SetAref(a, _ref3, _ref1)
+   43: _ref3 := [ref] 10
+   44: _int0 := smallN - 1
+   45: _ref4 := IntToRef _int0
+   46: _ref2 := _Aref(a, _ref4)
+   47: _ref1 := _Multiply(_ref3, _ref2)
+   48: _int0 := RefToInt x
+   49: _int2 := _int0 / smallN
+   50: _ref2 := IntToRef _int2
+   51: x := _Add(_ref1, _ref2)
+   52: smallN := smallN + -1
+   53: goto 35
+1  54: _ref2 := GetLiteral 2 [Write]
+   55: _ref2 := _FindGlobalFn(_ref2)
+   56: _int0 := _NativeEntry(_ref2, 1, _ref1)
+   57: if _int0 == 0 goto 61
+   58: _SetCallEnv(_int1)
+   59: (*_int0)(_ref5, x, _ref1)
+   60: goto 63
+1  61: _PushValue(_int1, x)
+   62: _Call(_int1, _ref2, 1)
+1  63: bigN := bigN + -1
+   64: goto 31
+1  65: _ref2 := GetLiteral 2 [Write]
+   66: _ref2 := _FindGlobalFn(_ref2)
+   67: _ref1 := $\0D
+   68: _int0 := _NativeEntry(_ref2, 1, _ref3)
+   69: if _int0 == 0 goto 73
+   70: _SetCallEnv(_int1)
+   71: _ref0 := (*_int0)(_ref5, _ref1, _ref3)
+   72: goto 75
+1  73: _PushValue(_int1, _ref1)
+   74: _ref0 := _Call(_int1, _ref2, 1)
+1  75: NoOp
+
+// dbgPrintCCode := true;
+// generates the following C code
+// first, a header declaring the interface to Newton’s C world
+
+typedef long Ref;		typedef struct { Ref ref; } RefHandle;		typedef Ref (*CFuncPtr)(RefHandle**, ...);				extern void* GetGInterpreter(void);		extern RefHandle* AllocateRefHandle(Ref);		extern void DisposeRefHandle(RefHandle*);		extern Ref* Slots(Ref);		extern void _RINTError(Ref);
+extern int _IntOrNIL(Ref);		extern Ref _GetReceiver(long intrp);		extern Ref _GetImplementor(long intrp);		extern int _IsSend(long intrp);				typedef int jmp_buf[22];		extern int setjmp(jmp_buf);		extern void longjmp(jmp_buf, int);		extern int Subexception(char*, char*);		typedef struct CatchHeader CatchHeader;
+struct CatchHeader { int catchType; struct CatchHeader* next; };		typedef struct ExceptionHandler ExceptionHandler;		typedef void (*ExceptionDestructor)(long);		typedef struct Exception Exception;		struct Exception { char* name; long data; ExceptionDestructor destructor; };		struct ExceptionHandler { CatchHeader header; jmp_buf state; Exception exception; };		extern void AddExceptionHandler(CatchHeader *i);
+extern void ExitHandler(ExceptionHandler *i);		extern void NextHandler(ExceptionHandler *i);		extern long _GetStackStateBlock(void);		extern void	 _ResetStackStateBlock(long state);		extern void	 _DisposeStackStateBlock(long state);
+typedef struct ExStuff ExStuff;		struct ExStuff { long stackState; ExceptionHandler handler; };		extern void _IncStack(void);		extern void _DecStack(void);		extern void _ClearRefs(void);		extern int EQRef(Ref, Ref);
+extern Ref _Add(RefHandle**, RefHandle**);
+extern Ref _Subtract(RefHandle**, RefHandle**);
+extern Ref _Multiply(RefHandle**, RefHandle**);
+extern Ref _Divide(RefHandle**, RefHandle**);
+extern Ref GetFramePath(RefHandle**, RefHandle**);
+extern Ref _Aref(RefHandle**, RefHandle**);
+extern long _DIV(long, long);
+extern long _MOD(long, long);
+extern long _LSHIFT(long, long);
+extern long _RSHIFT(long, long);
+extern Ref _Negate(RefHandle**);
+extern long _TstGE(RefHandle**, RefHandle**);
+extern long _TstGT(RefHandle**, RefHandle**);
+extern long _TstLE(RefHandle**, RefHandle**);
+extern long _TstLT(RefHandle**, RefHandle**);
+extern Ref _Call(long, RefHandle**, long);
+extern Ref _FindGlobalFn(RefHandle**);
+extern Ref _ConvertException(long);
+extern Ref _GetVar(RefHandle**, RefHandle**);
+extern Ref _HasPath(RefHandle**, RefHandle**);
+extern Ref _HasVariable(RefHandle**, RefHandle**);
+extern long _IteratorDone(RefHandle**);
+extern void _IteratorNext(RefHandle**);
+extern Ref _NewIterator(RefHandle**, long);
+extern Ref _SetupSend(RefHandle**, RefHandle**, long, RefHandle**);
+extern Ref _Send(long, RefHandle**, RefHandle**, RefHandle**, long);
+extern Ref _SetAref(RefHandle**, RefHandle**, RefHandle**);
+extern Ref _SetVar(RefHandle**, RefHandle**, RefHandle**);
+extern Ref GetArraySlotRef(Ref, long);
+extern void _PopValue(long);
+extern Ref AllocateArray(RefHandle**, long);
+extern void SetArraySlotRef(Ref, long, Ref);
+extern Ref AllocateFrameWithMap(RefHandle**);
+extern void SetFramePath(RefHandle**, RefHandle**, RefHandle**);
+extern Ref _SetLexScope(RefHandle**, RefHandle**, RefHandle**, RefHandle**);
+extern void _PushValue(long, RefHandle**);
+extern long _TstEQ(RefHandle**, RefHandle**);
+extern long _TstNE(RefHandle**, RefHandle**);
+extern Ref GetFrameSlotRef(Ref, Ref);
+extern long _NativeEntry(RefHandle**, long, RefHandle**);
+extern void _SetCallEnv(long);
+extern void _SetSendEnv(long, RefHandle**, RefHandle**);
+extern Ref _SetupResend(RefHandle**, long, RefHandle**);
+extern void _ProfileHook(long, RefHandle**, long);
+extern long _IsProfilingEnabled(void);
+extern void _CheckForLoopIncrement(long);
+extern void SetFrameSlot(RefHandle**, RefHandle**, RefHandle**);
+extern void _RestoreSendEnv(long, RefHandle**, RefHandle**);
+extern long __int(long);
+extern long BAnd(long, long);
+extern long BOr(long, long);
+extern long BXOr(long, long);
+extern long BNot(long);
+extern void AddArraySlot(RefHandle**, RefHandle**);
+extern void ArrayMunger(RefHandle**, long, Ref, RefHandle**, long, Ref);
+extern Ref ArrayPosition(RefHandle**, RefHandle**, long, RefHandle**);
+extern void BinaryMunger(RefHandle**, long, Ref, RefHandle**, long, Ref);
+extern Ref ClassOf(RefHandle**);
+extern Ref Clone(RefHandle**);
+extern void Debugger(void);
+extern Ref DeepClone(RefHandle**);
+extern Ref EnsureInternal(RefHandle**);
+extern Ref ExtractChar(RefHandle**, long);
+extern Ref ExtractUniChar(RefHandle**, long);
+extern Ref ExtractByte(RefHandle**, long);
+extern Ref ExtractWord(RefHandle**, long);
+extern Ref ExtractLong(RefHandle**, long);
+extern Ref ExtractXLong(RefHandle**, long);
+extern Ref ExtractCString(RefHandle**, long);
+extern Ref ExtractPString(RefHandle**, long);
+extern Ref ExtractBytes(RefHandle**, long, Ref, RefHandle**);
+extern long IsInstance(RefHandle**, RefHandle**);
+extern long IsString(RefHandle**);
+extern long IsSubclass(Ref, Ref);
+extern long IsSymbol(Ref);
+extern long Length(Ref);
+extern Ref ReplaceObject(Ref, Ref);
+extern Ref SetClass(RefHandle**, RefHandle**);
+extern void SetLength(RefHandle**, long);
+extern void SortArray(RefHandle**, RefHandle**, RefHandle**);
+extern void StuffChar(RefHandle**, long, RefHandle**);
+extern void StuffUniChar(RefHandle**, long, RefHandle**);
+extern void StuffByte(RefHandle**, long, RefHandle**);
+extern void StuffWord(RefHandle**, long, RefHandle**);
+extern void StuffLong(RefHandle**, long, RefHandle**);
+extern void StuffXLong(RefHandle**, long, RefHandle**);
+extern void StuffCString(RefHandle**, long, RefHandle**);
+extern void StuffPString(RefHandle**, long, RefHandle**);
+extern long StrBeginsWith(RefHandle**, RefHandle**);
+extern void StrCapitalize(RefHandle**);
+extern void StrCapitalizeWords(RefHandle**);
+extern Ref _Downcase(RefHandle**);
+extern long StrEndsWith(RefHandle**, RefHandle**);
+extern void StrMunger(RefHandle**, long, Ref, RefHandle**, long, Ref);
+extern Ref StrPosition(RefHandle**, RefHandle**, long);
+extern long StrReplace(RefHandle**, RefHandle**, RefHandle**, Ref);
+extern Ref _Upcase(RefHandle**);
+extern Ref Substring(RefHandle**, long, Ref);
+extern Ref TotalClone(RefHandle**);
+extern void TrimString(RefHandle**);
+#define __int(x) x
+		extern void _ForLoopIncrError(void);
+		#define _CheckForLoopIncrement(x)	if ((x) == 0) _ForLoopIncrError()
+
+// second, the C function
+
+extern Ref func(RefHandle** _ignore_, RefHandle** _arg0, RefHandle** _closurearg)
+{
+long _int2 = 0;
+long _X_limit165029065 = 0;
+RefHandle* _ref5 = AllocateRefHandle(2);
+long _int1 = 0;
+RefHandle* _ref4 = AllocateRefHandle(2);
+long _int0 = 0;
+RefHandle* _ref3 = AllocateRefHandle(2);
+RefHandle* _ref2 = AllocateRefHandle(2);
+RefHandle* _ref1 = AllocateRefHandle(2);
+long smallN = 0;
+long bigN = 0;
+RefHandle* x = AllocateRefHandle(2);
+long i = 0;
+RefHandle* a = AllocateRefHandle(2);
+long kSize = 0;
+RefHandle* _ref0 = AllocateRefHandle(2);
+long inDigits;
+Ref* _lits = Slots(GetArraySlotRef((*_closurearg)->ref, 3));
+_int1 = (long) GetGInterpreter();
+if (_IsSend(_int1)) {
+	_ref5->ref = Clone(_closurearg);
+	SetArraySlotRef(_ref5->ref, 1, _GetReceiver(_int1));
+	SetArraySlotRef(_ref5->ref, 2, _GetImplementor(_int1));
+}
+else {
+	_ref5->ref = Clone(_closurearg);
+}
+{ long _t = (*_arg0)->ref; if ((_t & 3) != 0) _RINTError(_t); else inDigits = _t >> 2; }
+kSize = inDigits + 10;
+_ref1->ref = _lits[0];
+_ref1->ref = _FindGlobalFn(&_ref1);
+_ref2->ref = kSize << 2;
+_ref3->ref = 2;
+_int0 = _NativeEntry(&_ref1, 2, &_ref4);
+if (_int0 == 0) goto L10;
+_SetCallEnv(_int1);
+a->ref = (*(CFuncPtr)_int0)(&_ref5, &_ref2, &_ref3, &_ref4);
+goto L13;
+L10:
+_PushValue(_int1, &_ref2);
+_PushValue(_int1, &_ref3);
+a->ref = _Call(_int1, &_ref1, 2);
+L13:
+_ref1->ref = 0;
+_ref3->ref = 0;
+_SetAref(&a, &_ref3, &_ref1);
+_ref1->ref = 8;
+_ref3->ref = 4;
+_SetAref(&a, &_ref3, &_ref1);
+_X_limit165029065 = kSize - 1;
+i = 2;
+L21:
+if (i > _X_limit165029065) goto L29;
+_ref1->ref = 4;
+_ref3->ref = i << 2;
+_SetAref(&a, &_ref3, &_ref1);
+i = i + 1;
+goto L21;
+L29:
+x->ref = 0;
+bigN = kSize - 1;
+L31:
+if (bigN < 10) goto L65;
+smallN = bigN;
+L35:
+if (smallN < 1) goto L54;
+{ long _t = x->ref; if ((_t & 3) != 0) _RINTError(_t); _int0 = _t >> 2; }
+_int2 = _int0 % smallN;
+_ref1->ref = _int2 << 2;
+_ref3->ref = smallN << 2;
+_SetAref(&a, &_ref3, &_ref1);
+_ref3->ref = 40;
+_int0 = smallN - 1;
+_ref4->ref = _int0 << 2;
+_ref2->ref = _Aref(&a, &_ref4);
+_ref1->ref = _Multiply(&_ref3, &_ref2);
+{ long _t = x->ref; if ((_t & 3) != 0) _RINTError(_t); _int0 = _t >> 2; }
+_int2 = _int0 / smallN;
+_ref2->ref = _int2 << 2;
+x->ref = _Add(&_ref1, &_ref2);
+smallN = smallN + -1;
+goto L35;
+L54:
+_ref2->ref = _lits[2];
+_ref2->ref = _FindGlobalFn(&_ref2);
+_int0 = _NativeEntry(&_ref2, 1, &_ref1);
+if (_int0 == 0) goto L61;
+_SetCallEnv(_int1);
+(*(CFuncPtr)_int0)(&_ref5, &x, &_ref1);
+goto L63;
+L61:
+_PushValue(_int1, &x);
+_Call(_int1, &_ref2, 1);
+L63:
+bigN = bigN + -1;
+goto L31;
+L65:
+_ref2->ref = _lits[2];
+_ref2->ref = _FindGlobalFn(&_ref2);
+_ref1->ref = 214;
+_int0 = _NativeEntry(&_ref2, 1, &_ref3);
+if (_int0 == 0) goto L73;
+_SetCallEnv(_int1);
+_ref0->ref = (*(CFuncPtr)_int0)(&_ref5, &_ref1, &_ref3);
+goto L75;
+L73:
+_PushValue(_int1, &_ref1);
+_ref0->ref = _Call(_int1, &_ref2, 1);
+L75:
+;
+{ Ref _resultref = _ref0->ref;
+DisposeRefHandle(_ref5);
+DisposeRefHandle(_ref4);
+DisposeRefHandle(_ref3);
+DisposeRefHandle(_ref2);
+DisposeRefHandle(_ref1);
+DisposeRefHandle(x);
+DisposeRefHandle(a);
+DisposeRefHandle(_ref0);
+return _resultref; }
+}
+

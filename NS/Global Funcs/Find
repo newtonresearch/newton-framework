@@ -1,0 +1,1 @@
+{// Find	RegFindApps: func(appSym)		begin		SetAdd(findApps, EnsureInternal(appSym), true);		nil		end,	UnRegFindApps: func(appSym)		begin		SetRemove(findApps, appSym);		nil		end,}

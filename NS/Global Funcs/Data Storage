@@ -1,0 +1,655 @@
+{
+// Stores
+
+	RegStoreChange: func(callbackId, callbackFn)
+		begin
+		storeChangeRegistry.(EnsureInternal(callbackId)) := callbackFn;
+		nil
+		end,
+
+	UnRegStoreChange: func(callbackId)
+		begin
+		RemoveSlot(storeChangeRegistry, callbackId);
+		nil
+		end,
+
+	GetStores: plainC.FGetStores,
+
+	GetDefaultStore: func()
+		begin
+		local defaultSignature := GetUserConfig('defaultStoreSig);
+		local allStores := GetStores();
+		foreach store in allStores do
+			if store:GetSignature() = defaultSignature then
+				return store;
+		allStores[0]
+		end,
+
+	SetDefaultStore: func(newDefStore)
+		begin
+		local oldDefStore := GetDefaultStore();
+		SetUserConfig('defaultStoreSig, newDefStore:GetSignature());
+		if newDefStore = GetStores()[0]
+		and not oldDefStore:IsReadOnly() then
+			oldDefStore:SetInfo('defaultStore, nil);
+		if not newDefStore:IsReadOnly() then
+			newDefStore:SetInfo('defaultStore, true);
+		newDefStore
+		end,
+
+	GetValidStores: func()
+		begin
+		local validStores := [];
+		foreach store in GetStores() do
+			if store:IsValid() then
+				AddArraySlot(validStores, store);
+		validStores
+		end,
+
+	OpenedEntryForm: func(arg1, arg2)
+		begin
+		if GetGlobals().entryForms = nil then	// GetGlobals is DEPRECATED
+			begin
+			GetGlobals().entryForms := [arg1];
+			RegStoreChange('_routing, func(arg1, arg2, arg3)
+				begin
+				local local1, local2;
+				if arg2 <> 'storeLeaves then
+					return;
+				if entryForms then
+					begin
+					foreach local2 in entryForms do
+						begin
+						local1 := GetView(local2);
+						if local1 then
+							local1:Close();
+						end;
+					entryForms := nil;
+					UnRegStoreChange('_routing)
+					end
+				end)
+			end
+		else
+			begin
+			if Length(entryForms) > 5 then
+				ArrayRemoveCount(entryForms, 0, 1);
+			AddArraySlot(entryForms, arg1)
+			end
+		end,
+
+	ClosedEntryForm: func(arg1)
+	begin
+		if GetGlobals().entryForms then	// GetGlobals is DEPRECATED
+		begin
+			SetRemove(entryForms, arg1);
+			if Length(entryForms) = 0 then
+			begin
+				entryForms := nil;
+				UnRegStoreChange('_routing)
+			end
+		end
+	end,
+
+
+//	Creating Soups
+
+	RegUnionSoup: func(appSym, soupDef)
+		begin
+		local usoup := BFetch(unionSoupRegistry, soupDef.name, '|str<|, 'soupDef.name);
+		appSym := EnsureInternal(appSym);
+		if usoup then
+			begin
+			if not IsReadOnly(usoup) then
+				BInsert(usoup.apps, appSym, '|sym<|, nil, true)
+			end
+		else
+			begin
+			local newusoup := { soupDef: EnsureInternal(soupDef), apps: [appSym] };
+			BInsert(unionSoupRegistry, newusoup, '|str<|, 'soupDef.name, appSym <> '_RegisterCardSoup)
+			end;
+		GetUnionSoupAlways(soupDef.name)
+		end,
+
+	UnRegUnionSoup: func(name, appSym)
+		begin
+		local usoup := BFetch(unionSoupRegistry, name, '|str<|, 'soupDef.name);
+		if usoup and not IsReadOnly(usoup) then
+			begin
+			BDelete(usoup.apps, appSym, '|sym<|, nil, nil);
+			if Length(usoup.apps) = 0 then
+				BDelete(unionSoupRegistry, name, '|str<|, 'soupDef.name, appSym = '_RegisterCardSoup and 1);
+			end;
+		nil
+		end,
+
+	CreateUSoupMember: func(soupName, store)
+		begin
+		local def := GetSoupDef(soupName);
+		if def then
+			CreateSoupFromSoupDef(def, store, '_newt);
+		else
+			Throw('|evt.ex.nosoupdef;type.ref|, {errorCode: 0, value: soupName})
+		end,
+
+	CreateSoupFromSoupDef: func(soupDef, store, changeSym)
+		begin
+		local soup := store:CreateSoup(soupDef.name, soupDef.indexes);
+		soup:SetInfo('soupDef, soupDef);
+		local soupInit := soupDef.initHook;
+		if soupInit then
+			begin
+			if IsFunction(soupInit) then
+				call soupInit with (soup, soupDef)
+			else
+				begin
+				local context := GetRoot().(soupDef.ownerApp);
+				if context then
+					Perform(context, soupInit, [soup, soupDef])
+				end
+			end;
+		if changeSym then
+			XmitSoupChange(soupDef.name, changeSym, 'soupCreated, soup);
+		soup
+		end,
+
+	SupplantSoupDef: func(soup, soupDef) soup:SetInfo('soupDef, soupDef),
+
+	GetSoupDef: func(name)
+		begin
+		local usoup := BFetch(unionSoupRegistry, name, '|str<|, 'soupDef.name);
+		if usoup then
+			return usoup.soupDef;
+		foreach store in GetStores() do
+			if store:HasSoup(name) then
+				begin
+				local soupDef := store:GetSoup(name):GetInfo('soupDef);
+				if soupDef then
+					return soupDef;
+				end;
+		nil
+		end,
+
+	GetSoupIndexesFromSoupDef: func(name)
+		begin
+		local def := GetSoupDef(name);
+		if def then def.indexes;
+		end,
+
+
+//	Change Notification
+
+	RegSoupChange: func(soupName, callbackId, callbackFn)
+		begin
+		local callbacks := GetSoupChangeCallBacks(soupName, true);
+		callbacks.(EnsureInternal(callbackId)) := callbackFn;
+		nil
+		end,
+
+	UnRegSoupChange: func(soupName, callbackId)
+		begin
+		local watcher := GetSoupChangeWatcher(soupName, nil);
+		if watcher then
+			begin
+			local callbacks := watcher.callBacks;
+			if callbacks.(callbackId) then
+				begin
+				RemoveSlot(callbacks, callbackId);
+				if Length(callbacks) = 0 then
+					BDelete(soupChangeRegistry, soupName, '|str<|, 'soupName, nil)
+				end
+			end;
+		nil
+		end,
+
+	BroadcastSoupChange: func(soupName)
+		begin
+		XmitSoupChangeNow(soupName, '_newt, 'whatThe, nil)
+		end,
+
+	XmitSoupChange: func(soupName, appSym, changeType, changeData)
+		begin
+		AddDeferredCall(functions.XmitSoupChangeNow, [soupName, appSym, changeType, changeData])
+		end,
+
+	XmitSoupChangeNow: func(soupName, appSym, changeType, changeData)
+		begin
+		local root := GetRoot();
+		try
+			for i := 0 to Length(soupNotify) - 2 by 2 do
+				begin
+				local mapping := soupNotify[i];
+				if mapping = 'all or StrEqual(mapping, soupName) then
+					begin
+					local app := root.(soupNotify[i + 1]);
+					if app then
+						app:?SoupChanged(soupName)
+					end
+				end
+		onexception |evt.ex| do
+			begin
+			end;
+		foreach callback in GetSoupChangeCallBacks(soupName, nil) do
+			try
+				call callback with (soupName, appSym, changeType, changeData)
+			onexception |evt.ex| do
+				begin
+				end
+		end,
+
+	UnsafeXmitSoupChangeNow: func(soupName, appSym, changeType, changeData)
+		begin
+		foreach callback in GetSoupChangeCallBacks(soupName, nil) do
+			call callback with (soupName, appSym, changeType, changeData)
+		end,
+
+	GetSoupChangeCallBacks: func(soupName, arg2)
+		begin
+		local watcher := GetSoupChangeWatcher(soupName, arg2);
+		if watcher then
+			watcher.callBacks
+		else
+			{ }
+		end,
+
+	GetSoupChangeWatcher: func(soupName, doUpdate)
+		begin
+		local index := BFind(soupChangeRegistry, soupName, '|str<|, 'soupName);
+		local soupChangeWatcher := if index then soupChangeRegistry[index];
+		if doUpdate then
+			begin
+			if soupChangeWatcher then
+				begin
+				if IsReadOnly(soupChangeWatcher) then
+					begin
+					soupChangeWatcher := Clone(soupChangeWatcher);
+					soupChangeWatcher.callBacks := Clone(soupChangeWatcher.callBacks);
+					soupChangeRegistry[index] := soupChangeWatcher;
+					end
+				end
+			else
+				begin
+				soupChangeWatcher := { soupName: TotalClone(soupName), callBacks: {} };
+				BInsert(soupChangeRegistry, soupChangeWatcher, '|str<|, 'soupName, true);
+				end
+			end;
+		soupChangeWatcher
+		end,
+
+
+//	Additional Functions
+
+	GetUnionSoup: plainC.FGetUnionSoup/*name*/,
+	GetUnionSoupAlways: plainC.FGetUnionSoupAlways/*name*/,
+	IsSoupEntry: plainC.FIsSoupEntry,
+
+
+// Entries
+
+	EntryChangeXmit: func(entry, changeSym)
+		begin
+		local newEntry := EntryChange(entry);
+		if changeSym then
+			XmitSoupChange(EntrySoup(entry):GetName(), changeSym, 'entryChanged, entry);
+		newEntry
+		end,
+	EntryChange: plainC.FEntryChange/*entry*/,
+	EntryChangeVerbatimXmit: func(entry, changeSym)
+		begin
+		local newEntry := EntryChangeVerbatim(entry);
+		if changeSym then
+			XmitSoupChange(EntrySoup(entry):GetName(), changeSym, 'entryChanged, entry);
+		newEntry
+		end,
+	EntryChangeVerbatim: plainC.FEntryChangeVerbatim/*entry*/,
+	EntryUndoChanges: plainC.FEntryUndoChanges/*entry*/,
+
+	EntryFlushXmit: func(entry, changeSym)
+		begin
+		local newEntry := EntryFlush(entry);
+		if changeSym then
+			XmitSoupChange(EntrySoup(entry):GetName(), changeSym, 'entryChanged, entry);
+		newEntry
+		end,
+	EntryFlush: plainC.FEntryFlush/*entry*/,
+
+	EntryIsResident: plainC.FEntryIsResident/*entry*/,
+
+	EntryCopyXmit: func(entry, toSoup, changeSym)
+		begin
+		local newEntry := EntryCopy(entry, toSoup);
+		if changeSym then
+			XmitSoupChange(toSoup:GetName(), changeSym, 'entryAdded, newEntry);
+		newEntry
+		end,
+	EntryCopy: plainC.FEntryCopy/*entry, toSoup*/,
+
+	EntryMoveXmit: func(entry, toSoup, changeSym)
+		begin
+		local fromSoup := EntrySoup(entry);
+		local fromSoupName := fromSoup:GetName();
+		local newEntry := EntryMove(entry, toSoup);
+		if changeSym then
+			begin
+			XmitSoupChange(fromSoupName, changeSym, 'entryMoved, {oldSoup: fromSoup, entry: entry});
+			local toSoupName := toSoup:GetName();
+			if not StrEqual(fromSoupName, toSoupName) then
+				XmitSoupChange(toSoupName, changeSym, 'entryAdded, entry)
+			end;
+		newEntry
+		end,
+	EntryMove: plainC.FEntryMove/*entry, soup*/,
+
+	EntryReplaceXmit: func(oldEntry, entry, changeSym)
+		begin
+		local soupName := EntrySoup(oldEntry):GetName();
+		local newEntry := EntryReplace(oldEntry, entry);
+		if changeSym then
+			XmitSoupChange(soupName, changeSym, 'entryReplaced, {oldEntry: oldEntry, entry: entry});
+		newEntry
+		end,
+	EntryReplace: plainC.FEntryReplace/*entry, newEntry*/,
+
+	EntryRemoveFromSoupXmit: func(entry, changeSym)
+		begin
+		local soup := EntrySoup(entry);
+		local soupName := soup:GetName();
+		local newEntry := EntryRemoveFromSoup(entry);
+		if changeSym then
+			XmitSoupChange(soupName, changeSym, 'entryRemoved, {oldSoup: soup, entry: entry});
+		newEntry
+		end,
+	EntryRemoveFromSoup: plainC.FEntryRemoveFromSoup/*entry*/,
+
+	EntrySize: plainC.FEntrySize/*entry*/,
+	EntrySizeWithoutVBOs: plainC.FEntrySizeWithoutVBOs/*entry*/,
+	EntryTextSize: plainC.FEntryTextSize/*entry*/,
+	EntrySoup: plainC.FEntrySoup/*entry*/,
+	EntryStore: plainC.FEntryStore/*entry*/,
+
+	FrameDirty: plainC.FFrameDirty /* funcPtr: 7035601, numArgs: 1 */,
+
+	EntryModTime: plainC.FEntryModTime/*entry*/,
+
+	EntryChangeWithModTimeXmit: func(entry, changeSym)
+		begin
+		local newEntry := EntryChangeWithModTime(entry);
+		if changeSym then
+			XmitSoupChange(EntrySoup(entry):GetName(), changeSym, 'entryChanged, entry);
+		newEntry
+		end,
+	EntryChangeWithModTime: plainC.FEntryChangeWithModTime/*entry*/,
+
+	EntryReplaceWithModTimeXmit: func(original, replacement, changeSym)
+		begin
+		local newEntry := EntryReplaceWithModTime(original, replacement);
+		if changeSym then
+			XmitSoupChange(EntrySoup(entry):GetName(), changeSym, 'entryReplaced, {oldEntry: original, entry: replacement});
+		newEntry
+		end,
+	EntryReplaceWithModTime: plainC.FEntryReplaceWithModTime/*entry, newEntry*/,
+
+	EntryUniqueID: plainC.FEntryUniqueID/*entry*/,
+	EntryValid: plainC.FEntryValid/*entry*/,
+
+	RemoveAllButIndexes: func(entry)
+		begin
+		local soup := EntrySoup(entry);
+		local slots := {};
+		foreach index in soup:GetIndexes() do
+			if index.structure = 'slot then
+				slots.(index.path) := true
+			else
+				foreach pathSym in index.path do
+					slots.(pathSym) := true;
+		foreach slotSym, value in entry do
+			if not slots.(slotSym) then
+				RemoveSlot(entry, slotSym)
+		end,
+
+
+//	Entry Aliases
+
+	MakeEntryAlias: plainC.FMakeEntryAlias/*entry*/,
+	ResolveEntryAlias: plainC.FResolveEntryAlias/*entry*/,
+	IsEntryAlias: plainC.FIsEntryAlias/*entry*/,
+	IsSameEntry: plainC.FIsSameEntry/*entry1, entry2*/,
+
+
+//	VBOs
+
+	VBOUndoChanges: plainC.FVBOUndoChanges/* funcPtr: 6886574, numArgs: 1 */,
+	ClearVBOCache: plainC.FClearVBOCache /* funcPtr: 6886575, numArgs: 1 */,
+	IsVBO: plainC.FIsVBO,
+	GetVBOStore: plainC.FGetVBOStore /* funcPtr: 6886587, numArgs: 1 */,
+	GetVBOCompander: plainC.FGetVBOCompander /* funcPtr: 6886588, numArgs: 1 */,
+	GetVBOCompanderData: plainC.FGetVBOCompanderData /* funcPtr: 6898179, numArgs: 1 */,
+	GetVBOStoredSize: plainC.FGetVBOStoredSize /* funcPtr: 263054, numArgs: 1 */,
+
+
+//	Mock Entries
+
+	NewMockEntry: plainC.FNewProxyEntry/*entry, handler*/,
+	IsMockEntry: plainC.FIsProxyEntry/*entry*/,
+	EntrySetHandler: plainC.FEntrySetHandler/*entry, handler*/,
+	EntryHandler: plainC.FEntryHandler/*entry*/,
+	EntrySetCachedObject: plainC.FEntrySetCachedObject/*entry, object*/,
+	EntryCachedObject: plainC.FEntryCachedObject/*entry*/,
+
+
+//••
+
+
+	XmitStoreSoupsEntering: func(arg1)
+		begin
+		local local1 := arg1:SoupsInUse();
+		foreach local2 in local1 do
+			if local2 then
+				XmitSoupChangeNow(local2:GetName(), '_newt, 'SoupEnters, local2)
+		end,
+
+	XmitStoreSoupsLeaving: func(arg1)
+		begin
+		local local1 := arg1:SoupsInUse();
+		foreach local2 in local1 do
+			if local2 then
+				XmitSoupChange(local2:GetName(), '_newt, 'SoupLeaves, local2)
+		end,
+
+	SetStoreSlip: func(arg1, arg2)
+		begin
+		local local1;
+		if IsReadOnly(arg1) then
+			local1 := GetVBOStore(ObjectPkgRef(arg1));
+		else if IsFrame(arg1) then
+			local1 := arg1;
+		if local1 then
+			begin
+			local local2 := LSearch(storeSlipRegistry.storeSlips, local1, 0, '|=|, '_openedForStore);
+			if local2 then
+				begin
+				storeSlipRegistry.storeSlips[local2]:Close();
+				RemoveSlot(storeSlipRegistry.storeSlips, local2)
+				end;
+			local local3 := BuildContext(arg2);
+			local3._openedForStore := local1;
+			AddArraySlot(storeSlipRegistry.storeSlips, local3);
+			local3
+			end
+		end,
+
+	UnSetStoreSlip: func(arg1)
+		begin
+		local local1 := LSearch(storeSlipRegistry.storeSlips, arg1, 0, '|=|, nil);
+		if local1 then
+			begin
+			storeSlipRegistry.storeSlips[local1]:Close();
+			RemoveSlot(storeSlipRegistry.storeSlips, local1)
+			end;
+		nil
+		end,
+
+	OpenStoreSlip: func(arg1)
+		begin
+		if arg1 then
+			begin
+			local storeSlip := LFetch(storeSlipRegistry.storeSlips, arg1, 0, '|=|, '_openedForStore);
+			local cardType := arg1:cardType();
+			local local3 := cardType <> '|rom | and @271.(cardType);
+			if storeSlip then
+				begin
+				if storeSlip.viewCObject then
+					storeSlip:MoveBehind(nil)
+				else
+					storeSlip:Open()
+				end
+			else if local3 then
+				begin
+				storeSlip := BuildContext(@579);
+				storeSlip:setDestStore(arg1);
+				storeSlip:Open()
+				end
+			else
+				begin
+				storeSlip := GetRoot().(cardType);
+				if storeSlip then
+					begin
+					if storeSlip.viewCObject then
+						storeSlip:MoveBehind(nil)
+					else
+						storeSlip:Open()
+					end
+				else if Length(storeSlipRegistry.miscSlips) > 0 then
+					foreach slip in storeSlipRegistry.miscSlips do
+						slip:Open()
+				else
+					GetRoot():Notify(kNotifyAlert, @556, ParamStr("No slip is available for the card \u201C\u^0\u201D\u.", [(arg1:GetName())]))
+			end
+		end
+	end,
+
+	CloseStoreSlip: func(arg1)
+		begin
+		local storeSlip := LFetch(storeSlipRegistry.storeSlips, arg1, 0, '|=|, '_openedForStore);
+		if storeSlip then
+			storeSlip:Close();
+		foreach slip in storeSlipRegistry.miscSlips do
+			if slip.viewCObject then
+				slip:Close()
+		end,
+
+	OverrideCardSlipHack: func(slip)
+		begin
+		local miscSlips := storeSlipRegistry.miscSlips;
+		local index := LSearch(miscSlips, slip, 0, '|=|, nil);
+		if index then
+			begin
+			slip := miscSlips[index];
+			ArrayRemoveCount(miscSlips, index, 1);
+			if slip.viewCObject then
+				slip:Close();
+			nil
+			end
+		else
+			begin
+			AddArraySlot(miscSlips, slip);
+			slip
+			end
+		end,
+
+
+// Cards
+
+	OpenForCardIcon: func()
+		begin
+		local cardStores := [];
+		local romCards := [];
+		local numOfCommCards := 0;
+		local numOfMemoryCards := 0;
+		local numOfUnrecognizedCards := 0;
+		local local6;
+		local root := GetRoot();
+		foreach local8, local9 in GetCardTypes() do
+			if local9 then
+				begin
+				ArrayMunger(cardStores, Length(cardStores), nil, GetCardSlotStores(local8), 0, nil);
+				local local11 := if IsArray(local9) then local9 else [local9];
+				foreach cardType in local11 do
+					if cardType = 'comm then
+						begin
+						local6 := local8;
+						numOfCommCards := numOfCommCards + 1
+						end
+					else if @271.(cardType) then
+						numOfMemoryCards := numOfMemoryCards + 1
+					else if root.(cardType) then
+						AddArraySlot(romCards, cardType)
+					else
+						numOfUnrecognizedCards := numOfUnrecognizedCards + 1
+				end;
+		local numOfRecognisedCards := numOfCommCards + numOfMemoryCards + Length(romCards);
+		if numOfRecognisedCards + numOfUnrecognizedCards = 0 then
+			root:Notify(kNotifyAlert, @556, "No card is inserted.");
+		else
+			begin
+			foreach store in cardStores do
+				OpenStoreSlip(store);
+			foreach appSym in romCards do
+				root.(appSym):Open();
+			if numOfCommCards > 0 and numOfCommCards = numOfRecognisedCards then
+				CardAlert('CommCardInserted, local6, nil);
+			if numOfUnrecognizedCards > 0 then
+				root:Notify(kNotifyAlert, -10501, nil)
+			end
+		end,
+
+	GetCardInfo: plainC.FGetCardInfo,
+	GetCardTypes: plainC.FGetCardTypes /* funcPtr: 7027163, numArgs: 0 */,
+	GetCardSlotStores: plainC.FGetCardSlotStores /* funcPtr: 6896074, numArgs: 1 */,
+	UnmountCard: plainC.FUnmountCard /* funcPtr: 7013419, numArgs: 2 */,
+
+	CardAlert: func(arg1, arg2, arg3)
+		begin
+		local cardView := @9:BuildCardAlert(arg1, arg2, arg3);
+		cardView:Open();
+		nil
+		end,
+
+	ModalCardAlert: func(arg1, arg2, arg3)
+		begin
+		local cardView := @9:BuildCardAlert(arg1, arg2, arg3);
+		cardView:ModalDialog();
+		cardView.confirmedValue
+		end,
+
+	AbortCardAlerts: func(arg1, arg2)
+		begin
+		local numOfCards := 0;
+		foreach cardView in openCardViews do
+			if cardView.cardSlot = arg1 then
+				begin
+				cardView.confirmedValue := arg2;
+				cardView:Close();
+				numOfCards := numOfCards + 1
+				end;
+		if numOfCards > 0 then
+			numOfCards
+		end,
+
+	RegWeirdCardEvent: func(arg1, arg2)
+		begin
+		weirdCardEventRegistry.(EnsureInternal(arg1)) := arg2;
+		nil
+		end,
+
+	UnRegWeirdCardEvent: func(arg1)
+		begin
+		RemoveSlot(weirdCardEventRegistry, arg1);
+		nil
+		end,
+
+	HandleCardEvent: func(arg1, arg2)
+		begin
+		Perform(@541, arg1, arg2)
+		end,
+
+}
