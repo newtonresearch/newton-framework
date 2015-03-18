@@ -1,0 +1,1 @@
+foreach f in |streamFile_ntkC.newtonstream|.entryPoints do	plainC.(f.name) := { class: plainCClass, funcPtr: f.offset, numArgs: f.numArgs };
