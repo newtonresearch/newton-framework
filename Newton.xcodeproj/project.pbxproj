@@ -389,7 +389,7 @@
 		F4D2F9C4128D5D99009D5BA5 /* CardServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D2F9C3128D5D99009D5BA5 /* CardServer.cc */; };
 		F4D2F9C5128D5E22009D5BA5 /* PartHandler.cc in Sources */ = {isa = PBXBuildFile; fileRef = F45C69911143B6640025CE32 /* PartHandler.cc */; };
 		F4D2FAAE128FFD50009D5BA5 /* Alerts.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4571AF911B410AB00B144C7 /* Alerts.cc */; };
-		F4D3BBE90E0B92A500A89465 /* NTKConstData.pkg in Resources */ = {isa = PBXBuildFile; fileRef = F4D3BBE80E0B92A500A89465 /* NTKConstData.pkg */; };
+		F4D3BBE90E0B92A500A89465 /* NTKConstData.newtonpkg in Resources */ = {isa = PBXBuildFile; fileRef = F4D3BBE80E0B92A500A89465 /* NTKConstData.newtonpkg */; };
 		F4D44ED30BE8DF04004937CC /* RefIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = F45D401F0BA42CB6005EC25C /* RefIO.cc */; };
 		F4D61139190A9C160041C087 /* SerialNumber.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D61137190A9C160041C087 /* SerialNumber.cc */; };
 		F4D6113A190A9C160041C087 /* SerialNumber.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D61137190A9C160041C087 /* SerialNumber.cc */; };
@@ -462,7 +462,7 @@
 		F4D8F7440C1D8D82009E4CA3 /* StoreCompanderWrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D8F73B0C1D7717009E4CA3 /* StoreCompanderWrapper.cc */; };
 		F4DA4B900C848CA400FF7B9C /* appicon.icns in Resources */ = {isa = PBXBuildFile; fileRef = F4DA4B8E0C848C0300FF7B9C /* appicon.icns */; };
 		F4DB123A12686220003F8A10 /* DictData in Resources */ = {isa = PBXBuildFile; fileRef = F491EA49119C833300F781BF /* DictData */; };
-		F4DB124212686254003F8A10 /* NSConstData.pkg in Resources */ = {isa = PBXBuildFile; fileRef = F4D3B0330E08033700A89465 /* NSConstData.pkg */; };
+		F4DB124212686254003F8A10 /* NSConstData.newtonpkg in Resources */ = {isa = PBXBuildFile; fileRef = F4D3B0330E08033700A89465 /* NSConstData.newtonpkg */; };
 		F4DB143F126B02A7003F8A10 /* SoundServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4F9297C0C82D1D20077CA66 /* SoundServer.cc */; };
 		F4DB171E126D8EB1003F8A10 /* SoundDriver.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4DB171D126D8BFA003F8A10 /* SoundDriver.cc */; };
 		F4DB1882126E306E003F8A10 /* ViewStubs.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4DB1836126E19AD003F8A10 /* ViewStubs.cc */; };
@@ -488,7 +488,7 @@
 		F4E6113C1056A190007E700A /* NodeCache.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4E6113A1056A190007E700A /* NodeCache.cc */; };
 		F4E6113F1056A1D8007E700A /* Tags.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4E6113E1056A1D8007E700A /* Tags.cc */; };
 		F4E9461F0CB8EB8400A77FD6 /* StoreStreamObjects.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4FA711809A3321000B62DDB /* StoreStreamObjects.cc */; };
-		F4EA5C2D0F4EB2F7000CB26B /* NSConstData.pkg in Resources */ = {isa = PBXBuildFile; fileRef = F4D3B0330E08033700A89465 /* NSConstData.pkg */; };
+		F4EA5C2D0F4EB2F7000CB26B /* NSConstData.newtonpkg in Resources */ = {isa = PBXBuildFile; fileRef = F4D3B0330E08033700A89465 /* NSConstData.newtonpkg */; };
 		F4ECC2EB0DE492E70023D27A /* NewtonQD.h in Headers */ = {isa = PBXBuildFile; fileRef = F4B80F2D06F3022C0042F1D4 /* NewtonQD.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F4ECC2EC0DE492E70023D27A /* Newton.h in Headers */ = {isa = PBXBuildFile; fileRef = 66393E2404C7F0F400A80002 /* Newton.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F4ECC2ED0DE492E70023D27A /* NewtonDebug.h in Headers */ = {isa = PBXBuildFile; fileRef = 66393E2804C7F0F400A80002 /* NewtonDebug.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -724,7 +724,7 @@
 		66393E6C04C7F0F500A80002 /* Screen.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = Screen.cc; sourceTree = "<group>"; };
 		66393E6E04C7F0F500A80002 /* Cursors.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = Cursors.cc; sourceTree = "<group>"; };
 		66393E6F04C7F0F500A80002 /* Cursors.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = Cursors.h; sourceTree = "<group>"; };
-		66393E7004C7F0F500A80002 /* PlainSoup.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = PlainSoup.cc; sourceTree = "<group>"; };
+		66393E7004C7F0F500A80002 /* PlainSoup.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlainSoup.cc; sourceTree = "<group>"; };
 		66393E7104C7F0F500A80002 /* PlainSoup.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = PlainSoup.h; sourceTree = "<group>"; };
 		66393E7204C7F0F500A80002 /* Soups.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = Soups.cc; sourceTree = "<group>"; };
 		66393E7304C7F0F500A80002 /* Soups.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = Soups.h; sourceTree = "<group>"; };
@@ -893,14 +893,12 @@
 		F4312AA309B3208E00742BE0 /* Global Funcs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Global Funcs"; path = "NS/Global Funcs"; sourceTree = "<group>"; };
 		F4312AE209B3647900742BE0 /* PSSManager.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PSSManager.cc; sourceTree = "<group>"; };
 		F4312AF309B451A700742BE0 /* MuxStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MuxStore.cc; sourceTree = "<group>"; };
-		F4312B0A09B5B64200742BE0 /* Store Frame */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = "Store Frame"; path = "NS/Store Frame"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.newtonscript; };
 		F4312B2C09B843F300742BE0 /* FaultBlocks.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FaultBlocks.cc; sourceTree = "<group>"; };
 		F4312B2D09B843F300742BE0 /* FaultBlocks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FaultBlocks.h; sourceTree = "<group>"; };
 		F434AB110C96FB79005AB44D /* RefResource.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; lineEnding = 0; path = RefResource.s; sourceTree = "<group>"; };
 		F434AC4A0C97D30C005AB44D /* StringDefs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StringDefs.h; sourceTree = "<group>"; };
 		F434AC4B0C97D5D2005AB44D /* FrameDefs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = FrameDefs.h; sourceTree = "<group>"; };
 		F434AC910C9828EE005AB44D /* ROMResources.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ROMResources.h; sourceTree = "<group>"; };
-		F440370A117CCEC5001392CD /* assistFrames */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = assistFrames; path = NS/assistFrames; sourceTree = "<group>"; };
 		F44301980817A10B0089C70B /* SWInterrupt.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SWInterrupt.cc; sourceTree = "<group>"; };
 		F448D9591A0D38EE00BC1C13 /* Ref32.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Ref32.h; sourceTree = "<group>"; };
 		F4491D9F082A0CBD00436969 /* SWI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SWI.h; sourceTree = "<group>"; };
@@ -1015,7 +1013,7 @@
 		F4A5C22505D00EBE00AAC1B9 /* Preference.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Preference.cc; sourceTree = "<group>"; };
 		F4A5F24217D8D1AF0004B6DB /* DataStuffing.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataStuffing.cc; sourceTree = "<group>"; };
 		F4A5F24717D8D2050004B6DB /* DataStuffing.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DataStuffing.h; sourceTree = "<group>"; };
-		F4A61E0006C16C6F007ADB0E /* Definitions */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = Definitions; path = NS/Definitions; sourceTree = "<group>"; };
+		F4A61E0006C16C6F007ADB0E /* Definitions.ns */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = Definitions.ns; path = NS/Definitions.ns; sourceTree = "<group>"; };
 		F4A61E1F06C16E29007ADB0E /* ModalViews.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; name = ModalViews.cc; path = Views/ModalViews.cc; sourceTree = "<group>"; };
 		F4A79B7E05AC1694002D6675 /* MMU.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = MMU.c; sourceTree = "<group>"; };
 		F4A79C5305AC2959002D6675 /* PhysicalMemory.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = PhysicalMemory.cc; sourceTree = "<group>"; };
@@ -1070,7 +1068,6 @@
 		F4B8C1B011F31BBA00766772 /* StoreRootObjects.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StoreRootObjects.h; sourceTree = "<group>"; };
 		F4B8C1B311F31C4700766772 /* PSSTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PSSTypes.h; sourceTree = "<group>"; };
 		F4B8C23311F47CEF00766772 /* Flash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Flash.h; sourceTree = "<group>"; };
-		F4B8FF1C18D0CE920089492E /* sample.newtonscript */ = {isa = PBXFileReference; lastKnownFileType = text; name = sample.newtonscript; path = NS/sample.newtonscript; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.newtonscript; };
 		F4BA205918E03DCF00681C49 /* StoreMonitorImpl.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = StoreMonitorImpl.s; sourceTree = "<group>"; };
 		F4BA205A18E03DCF00681C49 /* StoreMonitorProto.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = StoreMonitorProto.s; sourceTree = "<group>"; };
 		F4BA206218E1FF8C00681C49 /* FlashImpl.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = FlashImpl.s; sourceTree = "<group>"; };
@@ -1118,9 +1115,9 @@
 		F4D2F9B5128D596F009D5BA5 /* TraceEvents.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TraceEvents.cc; sourceTree = "<group>"; };
 		F4D2F9C3128D5D99009D5BA5 /* CardServer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CardServer.cc; path = Cards/CardServer.cc; sourceTree = "<group>"; };
 		F4D2F9C7128D9F98009D5BA5 /* Alerts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Alerts.h; path = Views/Alerts.h; sourceTree = "<group>"; };
-		F4D3B0330E08033700A89465 /* NSConstData.pkg */ = {isa = PBXFileReference; lastKnownFileType = file; name = NSConstData.pkg; path = NS/NSConstData.pkg; sourceTree = "<group>"; };
+		F4D3B0330E08033700A89465 /* NSConstData.newtonpkg */ = {isa = PBXFileReference; lastKnownFileType = file; name = NSConstData.newtonpkg; path = NS/NSConstData.newtonpkg; sourceTree = "<group>"; };
 		F4D3BBA30E0B0DF600A89465 /* Toolkit.exp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.exports; lineEnding = 0; path = Toolkit.exp; sourceTree = "<group>"; };
-		F4D3BBE80E0B92A500A89465 /* NTKConstData.pkg */ = {isa = PBXFileReference; lastKnownFileType = file; name = NTKConstData.pkg; path = NS/NTKConstData.pkg; sourceTree = "<group>"; };
+		F4D3BBE80E0B92A500A89465 /* NTKConstData.newtonpkg */ = {isa = PBXFileReference; lastKnownFileType = file; name = NTKConstData.newtonpkg; path = NS/NTKConstData.newtonpkg; sourceTree = "<group>"; };
 		F4D4509B0BECC6B6004937CC /* RAMInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAMInfo.h; sourceTree = "<group>"; };
 		F4D61137190A9C160041C087 /* SerialNumber.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SerialNumber.cc; path = ../SerialNumber.cc; sourceTree = "<group>"; };
 		F4D61138190A9C160041C087 /* SerialNumber.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SerialNumber.h; path = ../SerialNumber.h; sourceTree = "<group>"; };
@@ -1213,26 +1210,28 @@
 		F4F3742C090A65AA000F707C /* ROMSymbols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ROMSymbols.h; sourceTree = "<group>"; };
 		F4F3744B090ABC8B000F707C /* StreamObjects.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StreamObjects.cc; sourceTree = "<group>"; };
 		F4F37450090B760D000F707C /* StreamObjects.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StreamObjects.h; sourceTree = "<group>"; };
-		F4F7917805FDC05500C7AE09 /* Functions Frame */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = "Functions Frame"; path = "NS/Functions Frame"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.newtonscript; };
-		F4F7917905FDC05500C7AE09 /* MagicPointers Array */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = "MagicPointers Array"; path = "NS/MagicPointers Array"; sourceTree = "<group>"; };
-		F4F7917A05FDC05500C7AE09 /* MP0xx */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = MP0xx; path = NS/MP0xx; sourceTree = "<group>"; };
-		F4F7917B05FDC05500C7AE09 /* MP1xx */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = MP1xx; path = NS/MP1xx; sourceTree = "<group>"; };
-		F4F7917C05FDC05500C7AE09 /* MP2xx */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = MP2xx; path = NS/MP2xx; sourceTree = "<group>"; };
-		F4F7917D05FDC05500C7AE09 /* MP3xx */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = MP3xx; path = NS/MP3xx; sourceTree = "<group>"; };
-		F4F7917E05FDC05500C7AE09 /* MP4xx */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = MP4xx; path = NS/MP4xx; sourceTree = "<group>"; };
-		F4F7917F05FDC05500C7AE09 /* MP5xx */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = MP5xx; path = NS/MP5xx; sourceTree = "<group>"; };
-		F4F7918005FDC05500C7AE09 /* MP6xx */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = MP6xx; path = NS/MP6xx; sourceTree = "<group>"; };
-		F4F7918105FDC05500C7AE09 /* MP7xx */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = MP7xx; path = NS/MP7xx; sourceTree = "<group>"; };
-		F4F7918205FDC05500C7AE09 /* MP8xx */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = MP8xx; path = NS/MP8xx; sourceTree = "<group>"; };
-		F4F7918305FDC05500C7AE09 /* NSConst Definitions */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = "NSConst Definitions"; path = "NS/NSConst Definitions"; sourceTree = "<group>"; };
-		F4F7918405FDC05500C7AE09 /* RootView Frame */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = "RootView Frame"; path = "NS/RootView Frame"; sourceTree = "<group>"; };
-		F4F7918605FDC05500C7AE09 /* Vars Frame */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; lineEnding = 1; name = "Vars Frame"; path = "NS/Vars Frame"; sourceTree = "<group>"; };
 		F4F927910C7F2CC20077CA66 /* SoundErrors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundErrors.h; sourceTree = "<group>"; };
 		F4F927A70C7F491A0077CA66 /* SoundServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundServer.h; sourceTree = "<group>"; };
 		F4F9297C0C82D1D20077CA66 /* SoundServer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SoundServer.cc; sourceTree = "<group>"; };
 		F4FA710809A3308500B62DDB /* StoreStreamObjects.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StoreStreamObjects.h; sourceTree = "<group>"; };
 		F4FA711809A3321000B62DDB /* StoreStreamObjects.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StoreStreamObjects.cc; sourceTree = "<group>"; };
 		F4FA712709A3334700B62DDB /* StoreWrapper.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StoreWrapper.cc; sourceTree = "<group>"; };
+		F4FD7DDA1AB072C0006294D8 /* doc */ = {isa = PBXFileReference; lastKnownFileType = folder; path = doc; sourceTree = "<group>"; };
+		F4FD7DDB1AB1EEAE006294D8 /* assistFrames.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = assistFrames.ns; path = NS/assistFrames.ns; sourceTree = "<group>"; };
+		F4FD7DDC1AB1EEAE006294D8 /* FunctionsFrame.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = FunctionsFrame.ns; path = NS/FunctionsFrame.ns; sourceTree = "<group>"; };
+		F4FD7DDD1AB1EEAE006294D8 /* MagicPointersArray.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MagicPointersArray.ns; path = NS/MagicPointersArray.ns; sourceTree = "<group>"; };
+		F4FD7DDE1AB1EEAE006294D8 /* MP0xx.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MP0xx.ns; path = NS/MP0xx.ns; sourceTree = "<group>"; };
+		F4FD7DDF1AB1EEAE006294D8 /* MP1xx.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MP1xx.ns; path = NS/MP1xx.ns; sourceTree = "<group>"; };
+		F4FD7DE01AB1EEAE006294D8 /* MP2xx.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MP2xx.ns; path = NS/MP2xx.ns; sourceTree = "<group>"; };
+		F4FD7DE11AB1EEAE006294D8 /* MP3xx.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MP3xx.ns; path = NS/MP3xx.ns; sourceTree = "<group>"; };
+		F4FD7DE21AB1EEAE006294D8 /* MP4xx.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MP4xx.ns; path = NS/MP4xx.ns; sourceTree = "<group>"; };
+		F4FD7DE31AB1EEAE006294D8 /* MP5xx.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MP5xx.ns; path = NS/MP5xx.ns; sourceTree = "<group>"; };
+		F4FD7DE41AB1EEAE006294D8 /* MP6xx.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MP6xx.ns; path = NS/MP6xx.ns; sourceTree = "<group>"; };
+		F4FD7DE51AB1EEAE006294D8 /* MP7xx.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MP7xx.ns; path = NS/MP7xx.ns; sourceTree = "<group>"; };
+		F4FD7DE61AB1EEAE006294D8 /* MP8xx.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = MP8xx.ns; path = NS/MP8xx.ns; sourceTree = "<group>"; };
+		F4FD7DE71AB1EEAE006294D8 /* NSConstDefinitions.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = NSConstDefinitions.ns; path = NS/NSConstDefinitions.ns; sourceTree = "<group>"; };
+		F4FD7DE81AB1EEAE006294D8 /* StoreFrame.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = StoreFrame.ns; path = NS/StoreFrame.ns; sourceTree = "<group>"; };
+		F4FD7DE91AB1EEAE006294D8 /* VarsFrame.ns */ = {isa = PBXFileReference; lastKnownFileType = text; name = VarsFrame.ns; path = NS/VarsFrame.ns; sourceTree = "<group>"; };
 		F4FFC2A006B033DD00FDD935 /* TextView.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = TextView.cc; path = Views/TextView.cc; sourceTree = "<group>"; };
 		F4FFC2A106B033DD00FDD935 /* TextView.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = TextView.h; path = Views/TextView.h; sourceTree = "<group>"; };
 		F4FFC2F206B0388D00FDD935 /* ParagraphView.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; name = ParagraphView.cc; path = Views/ParagraphView.cc; sourceTree = "<group>"; };
@@ -1362,6 +1361,7 @@
 			children = (
 				F4241FB017400A9700F4D699 /* MessagePad.entitlements */,
 				F42E518F1227B3D500D49B5D /* Info-Newton.plist */,
+				F4FD7DDA1AB072C0006294D8 /* doc */,
 				F4E64EA105552C17006B0634 /* ConfigGlobal.h */,
 				66393E2404C7F0F400A80002 /* Newton.h */,
 				66393E2804C7F0F400A80002 /* NewtonDebug.h */,
@@ -2120,29 +2120,27 @@
 		F4F7917205FDC00A00C7AE09 /* NewtonScript */ = {
 			isa = PBXGroup;
 			children = (
-				F4B8FF1C18D0CE920089492E /* sample.newtonscript */,
 				F4725F9A068ADE930089879C /* Newton.exp */,
 				F4D3BBA30E0B0DF600A89465 /* Toolkit.exp */,
-				F4A61E0006C16C6F007ADB0E /* Definitions */,
+				F4A61E0006C16C6F007ADB0E /* Definitions.ns */,
 				F4312AA309B3208E00742BE0 /* Global Funcs */,
-				F4F7917A05FDC05500C7AE09 /* MP0xx */,
-				F4F7917B05FDC05500C7AE09 /* MP1xx */,
-				F4F7917C05FDC05500C7AE09 /* MP2xx */,
-				F4F7917D05FDC05500C7AE09 /* MP3xx */,
-				F4F7917E05FDC05500C7AE09 /* MP4xx */,
-				F4F7917F05FDC05500C7AE09 /* MP5xx */,
-				F4F7918005FDC05500C7AE09 /* MP6xx */,
-				F4F7918105FDC05500C7AE09 /* MP7xx */,
-				F4F7918205FDC05500C7AE09 /* MP8xx */,
-				F4F7917905FDC05500C7AE09 /* MagicPointers Array */,
-				F440370A117CCEC5001392CD /* assistFrames */,
-				F4F7918405FDC05500C7AE09 /* RootView Frame */,
-				F4F7918605FDC05500C7AE09 /* Vars Frame */,
-				F4F7917805FDC05500C7AE09 /* Functions Frame */,
-				F4312B0A09B5B64200742BE0 /* Store Frame */,
-				F4F7918305FDC05500C7AE09 /* NSConst Definitions */,
-				F4D3B0330E08033700A89465 /* NSConstData.pkg */,
-				F4D3BBE80E0B92A500A89465 /* NTKConstData.pkg */,
+				F4FD7DDE1AB1EEAE006294D8 /* MP0xx.ns */,
+				F4FD7DDF1AB1EEAE006294D8 /* MP1xx.ns */,
+				F4FD7DE01AB1EEAE006294D8 /* MP2xx.ns */,
+				F4FD7DE11AB1EEAE006294D8 /* MP3xx.ns */,
+				F4FD7DE21AB1EEAE006294D8 /* MP4xx.ns */,
+				F4FD7DE31AB1EEAE006294D8 /* MP5xx.ns */,
+				F4FD7DE41AB1EEAE006294D8 /* MP6xx.ns */,
+				F4FD7DE51AB1EEAE006294D8 /* MP7xx.ns */,
+				F4FD7DE61AB1EEAE006294D8 /* MP8xx.ns */,
+				F4FD7DDD1AB1EEAE006294D8 /* MagicPointersArray.ns */,
+				F4FD7DDB1AB1EEAE006294D8 /* assistFrames.ns */,
+				F4FD7DE81AB1EEAE006294D8 /* StoreFrame.ns */,
+				F4FD7DE91AB1EEAE006294D8 /* VarsFrame.ns */,
+				F4FD7DDC1AB1EEAE006294D8 /* FunctionsFrame.ns */,
+				F4FD7DE71AB1EEAE006294D8 /* NSConstDefinitions.ns */,
+				F4D3B0330E08033700A89465 /* NSConstData.newtonpkg */,
+				F4D3BBE80E0B92A500A89465 /* NTKConstData.newtonpkg */,
 				F491EA49119C833300F781BF /* DictData */,
 				F4AEFE0F184BBE790072ACAA /* NTK.rex */,
 			);
@@ -2354,7 +2352,7 @@
 				F4DB123A12686220003F8A10 /* DictData in Resources */,
 				F4C4C1E11A40BE15002B8821 /* busy.png in Resources */,
 				F4C4C1E31A40C133002B8821 /* caret.png in Resources */,
-				F4DB124212686254003F8A10 /* NSConstData.pkg in Resources */,
+				F4DB124212686254003F8A10 /* NSConstData.newtonpkg in Resources */,
 				F4DB1CC412730BA7003F8A10 /* MessagePadHelp in Resources */,
 				F4DB1CD712730E39003F8A10 /* MainMenu.xib in Resources */,
 			);
@@ -2364,7 +2362,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F4EA5C2D0F4EB2F7000CB26B /* NSConstData.pkg in Resources */,
+				F4EA5C2D0F4EB2F7000CB26B /* NSConstData.newtonpkg in Resources */,
 				F491EA4B119C833300F781BF /* DictData in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2373,7 +2371,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F4D3BBE90E0B92A500A89465 /* NTKConstData.pkg in Resources */,
+				F4D3BBE90E0B92A500A89465 /* NTKConstData.newtonpkg in Resources */,
 				F4AEFE10184BBE790072ACAA /* NTK.rex in Resources */,
 				F4A58FD118BB6A81008B0832 /* protoProtoEditor.mm in Resources */,
 				F491EA4A119C833300F781BF /* DictData in Resources */,
