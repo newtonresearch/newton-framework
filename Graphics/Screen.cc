@@ -45,6 +45,7 @@ extern "C" {
 Ref	FGetLCDContrast(RefArg inRcvr);
 Ref	FSetLCDContrast(RefArg inRcvr, RefArg inContrast);
 Ref	FGetOrientation(RefArg inRcvr);
+Ref	FSetOrientation(RefArg inRcvr, RefArg inOrientation);
 Ref	FLockScreen(RefArg inRcvr, RefArg inDoIt);
 }
 
@@ -274,6 +275,13 @@ SetAlertScreenInfo(AlertScreenInfo * info)
 	Args:		inOrientation	the orientation
 	Return:	--
 ------------------------------------------------------------------------------*/
+Ref
+FSetOrientation(RefArg inRcvr, RefArg inOrientation)
+{
+	SetOrientation(RINT(inOrientation));
+	return NILREF;
+}
+
 
 void
 SetOrientation(int inOrientation)
