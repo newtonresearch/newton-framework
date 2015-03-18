@@ -215,13 +215,13 @@ CEndpointClient::releaseComplete(CEndpointEvent * inEvent)
 bool
 UseModemNavigator(void)
 {
-	return NO;	// original says YES
+	return true;	// original says YES
 }
 
 bool
 ContainsModemService(COptionArray * inOptions)
 {
-	return NO;	// original is a BIT more complicated
+	return false;	// original is a BIT more complicated
 }
 
 
@@ -2086,7 +2086,6 @@ CNewScriptEndpointClient::checkEndArray(UChar * inBuf)
 
 
 #pragma mark -
-
 /*------------------------------------------------------------------------------
 	P l a i n   C   F u n c t i o n   I n t e r f a c e
 ------------------------------------------------------------------------------*/

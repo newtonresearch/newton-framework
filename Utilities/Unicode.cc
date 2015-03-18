@@ -102,7 +102,7 @@ InitUnicode(void)
 	if (NOTNIL(tables) && (count = Length(tables)) > 0)
 	{
 		for (ArrayIndex i = 0; i < count; ++i)
-			gSortTables.addSortTable((const CSortingTable *)BinaryData(GetArraySlot(tables, i)), NO);
+			gSortTables.addSortTable((const CSortingTable *)BinaryData(GetArraySlot(tables, i)), false);
 	}
 
 	Ref	mp6 = MAKEMAGICPTR(6);
@@ -118,8 +118,8 @@ InitUnicode(void)
 	gUnicode.upperNoMarkDeltas = BinaryData(GetFrameSlot(MAKEMAGICPTR(283), SYMA(upperNoMarkList)));
 	gUnicode.noMarkDeltas = BinaryData(GetFrameSlot(MAKEMAGICPTR(283), SYMA(noMarkList)));
 
-	gUnicodeInited = YES;
-	gHasUnicode = YES;
+	gUnicodeInited = true;
+	gHasUnicode = true;
 
 	return tables;
 }
@@ -541,7 +541,7 @@ CSortTables::addSortTable(const CSortingTable * inTable, bool inOwned)
 {
 	const CSortingTable *	sortTable = getSortTable(inTable->fId, NULL);
 	if (sortTable != NULL)
-		return NO;
+		return false;
 
 	TableEntry *	entry = fEntry;
 	for (ArrayIndex i = 0; i < kNumOfEncodings; ++i, ++entry)
@@ -551,12 +551,12 @@ CSortTables::addSortTable(const CSortingTable * inTable, bool inOwned)
 			entry->fSortingTable = inTable;
 			entry->fOwnedByUs = inOwned;
 			entry->fRefCount = 1;
-			return YES;
+			return true;
 		}
 	}
 
 	OutOfMemory();
-	return NO;
+	return false;
 }
 
 
@@ -670,15 +670,15 @@ CStringToSort::fetch(void)
 	{
 		f10 = r1;
 		f12 = 0;
-		return YES;
+		return true;
 	}
 
 	if (fLength == 0)
-		return NO;
+		return false;
 
 	f10 = *fString++;
 	fLength--;
-	return YES;
+	return true;
 }
 
 UniChar
@@ -925,12 +925,12 @@ FindWord(UniChar * inStr, ArrayIndex inLen, UniChar * inWord, bool inWordStart)
 	for (UniChar * s = inStr, * end = inStr + ((int)inLen - (int)wordLen); s < end; ++s)
 	{
 		if (IsDelimiter(*s))
-			inWordStart = YES;
+			inWordStart = true;
 		else if (inWordStart)
 		{
 			if (CompareTextNoCase(s, wordLen, inWord, wordLen) == 0)
 				return s;
-			inWordStart = NO;
+			inWordStart = false;
 		}
 	}
 	return NULL;

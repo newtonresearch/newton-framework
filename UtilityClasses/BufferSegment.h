@@ -29,7 +29,7 @@ public:
 	// in the original:
 	// these member functions are intentionally declared private
 	// to prevent external code from knowing the size of the object
-	// all very well and good, but CFramePartHandler::install allocates one of these on the stack (NR)
+	// NR: all very well and good, but CFramePartHandler::install allocates one of these on the stack
 
 				CBufferSegment();
 //				CBufferSegment(const CBufferSegment&);
