@@ -314,9 +314,9 @@ StorePermObject(RefArg inObj, CStoreWrapper * inStoreWrapper, PSSId & ioId, CDyn
 }
 
 
-void
+PSSId
 CopyPermObject(PSSId inId, CStoreWrapper * inFromStore, CStoreWrapper * inToStore)
-{}
+{return 0;}
 
 
 int

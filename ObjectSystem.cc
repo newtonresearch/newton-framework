@@ -28,9 +28,9 @@
 #define kNSDictData CFSTR("DictData")
 
 #if defined(forNTK)
-#define kNSDataPkg CFSTR("NTKConstData.pkg")
+#define kNSDataPkg CFSTR("NTKConstData.newtonpkg")
 #else
-#define kNSDataPkg CFSTR("NSConstData.pkg")
+#define kNSDataPkg CFSTR("NSConstData.newtonpkg")
 #endif
 
 
@@ -129,6 +129,7 @@ void		CRootView::update(Rect * inRect) { }
 extern "C" {
 Ref	FOpenX(RefArg inRcvr);
 Ref	FSetValue(RefArg inRcvr, RefArg inView, RefArg inTag, RefArg inValue);
+Ref	FRefreshViews(RefArg inRcvr);
 }
 
 Ref
@@ -137,7 +138,11 @@ FOpenX(RefArg inRcvr)
 
 Ref
 FSetValue(RefArg inRcvr, RefArg inView, RefArg inTag, RefArg inValue)
-{ return NILREF; }
+{ printf("SetValue(view, "); PrintObject(inTag, 0); printf(", "); PrintObject(inValue, 0); printf(")\n"); return NILREF; }
+
+Ref
+FRefreshViews(RefArg inRcvr)
+{ return TRUEREF; }
 
 #endif
 #endif	// forFramework
@@ -146,6 +151,7 @@ FSetValue(RefArg inRcvr, RefArg inView, RefArg inTag, RefArg inValue)
 /*------------------------------------------------------------------------------
 	O b j e c t   S y s t e m   I n i t i a l i z a t i o n
 ------------------------------------------------------------------------------*/
+extern "C" Ref	GetProtoVariable(RefArg context, RefArg name, bool * exists = NULL);
 
 void
 InitObjectSystem(void)
@@ -199,23 +205,37 @@ InitObjectSystem(void)
 		InitDictionaries();		//	should be gRecognitionManager.init(2);
 #endif
 		RunInitScripts();
+
+//		Override debug print defaults set in init script
+		SetFrameSlot(RA(gVarFrame), SYMA(printDepth), MAKEINT(7));
+
 #if defined(forDarkStar)
 		InitDarkStar(RA(gFunctionFrame), RA(NILREF));
 
 	// CNotebook::init()
+	// stub up the root view -- can’t gRootView->init(SYS_rootProto, NULL) w/o bringing in a world of stuff we don’t really want
 		gRootView = (CRootView *)calloc(0xA0, 1);
 		gRootView->fContext.h = AllocateRefHandle(AllocateFrame());
 		gRootView->fContext.h->stackPos = 0;
-	// stub up the root view -- can’t gRootView->init(SYS_rootProto, NULL) w/o bringing in a world of stuff we don’t really want
-		RefVar assistant(AllocateFrame());
-		SetFrameSlot(assistant, SYMA(matchString), RA(NILREF));
-		SetFrameSlot(assistant, SYMA(assistLine), AllocateFrame());
-		gRootView->fContext = AllocateFrame();
-		SetFrameSlot(gRootView->fContext, SYMA(assistant), assistant);
+
+		gRootView->fContext = Clone(gConstNSData->rootContext);	// must make it mutable
+		SetFrameSlot(gRootView->fContext, SYMA(_proto), RA(rootProto));
+		RefVar vwChildren(GetFrameSlot(RA(rootProto), SYMA(viewChildren)));
+		FOREACH(vwChildren, child)
+			RefVar contextTag(GetFrameSlot(child, SYMA(preallocatedContext)));
+			if (NOTNIL(contextTag))
+			{
+				RefVar mutableChild(Clone(child));
+				SetFrameSlot(gRootView->fContext, contextTag, mutableChild);
+				if (SymbolCompareLexRef(contextTag, RSYMassistant) == 0)
+				{
+					RefVar assistLine(AllocateFrame());
+					SetFrameSlot(assistLine, SYMA(entryLine), AllocateFrame());
+					SetFrameSlot(mutableChild, SYMA(assistLine), assistLine);
+				}
+			}
+		END_FOREACH;
 #endif
-//		Override defaults set in REPInit()
-		SetFrameSlot(RA(gVarFrame), SYMA(printLength), MAKEINT(15));	// nil => no limit; for fuller debug
-//		SetFrameSlot(RA(gVarFrame), SYMA(printDepth), RA(NILREF));	// nil => no limit; for fuller debug
 #else
 		ResetFromResetSwitch();
 #endif

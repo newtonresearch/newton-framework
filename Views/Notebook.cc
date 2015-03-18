@@ -91,7 +91,7 @@ CNotebook::init(void)
 	CApplication::init();
 
 	gRootView = new CRootView;
-	gRootView->init(RA(rootViewProto), NULL);
+	gRootView->init(RA(rootProto), NULL);
 
 	InitLibrarian();
 }
@@ -129,10 +129,6 @@ CNotebook::initToolbox(void)
 	InitFontLoader();
 	InitInternationalUtils();
 	gRecognitionManager.init(2);
-/*
-SetFrameSlot(RA(gVarFrame), SYMA(trace), SYMA(functions));	// switch on function tracing
-EnableFramesFunctionProfiling(YES);
-*/
 	RunInitScripts();
 	InitDarkStar(RA(gFunctionFrame), RA(NILREF));
 }

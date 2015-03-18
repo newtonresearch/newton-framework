@@ -66,7 +66,7 @@ GetWordsHints(RefArg inWords)
 
 	//sp-04
 	RefVar theWord;
-	bool isHintFound = NO;	// r9
+	bool isHintFound = false;	// r9
 	TextHint * hintPtr = (TextHint *)hints;	// r4
 //	sp08 = gHintsHandlers;
 	for (ArrayIndex idx = 0; idx < gMaxHintsHandlerId; idx++)	// r7
@@ -85,7 +85,7 @@ GetWordsHints(RefArg inWords)
 				for ( ; handler->findHintWord(wordStr, wordLen, strLen); wordStr += wordLen)
 				{
 					handler->setHints(hintPtr, wordStr, wordLen);
-					isHintFound = YES;
+					isHintFound = true;
 				}
 			}
 		}
@@ -175,7 +175,7 @@ CWordHintsHandler::findHintWord(UniChar *& inStr, ArrayIndex & outWordLen, Array
 			return 0;
 	}
 	if (ioStrLen == 0)
-		return NO;
+		return false;
 
 	// look for end of word
 	UniChar * s;
@@ -185,7 +185,7 @@ CWordHintsHandler::findHintWord(UniChar *& inStr, ArrayIndex & outWordLen, Array
 	// words shorter than three letters are no good for hints…
 	outWordLen = s - inStr;
 	if (outWordLen > 2)
-		return YES;
+		return true;
 
 	// …so try the next word
 	inStr += outWordLen;
@@ -405,11 +405,11 @@ NewtonErr
 CObjTextDecompressor::textDecompCallback(void * outBuffer, size_t * ioSize, bool * outEOF)
 {
 	if (fCompressedSize > *ioSize)
-		*outEOF = NO;
+		*outEOF = false;
 	else
 	{
 		*ioSize = fCompressedSize;
-		*outEOF = YES;
+		*outEOF = true;
 	}
 	memcpy(outBuffer, fCompressedText + fCompressedTextOffset, *ioSize);
 	fCompressedSize -= *ioSize;
@@ -455,7 +455,7 @@ bool
 WithPermObjectTextDo(CStoreWrapper * inStoreWrapper, PSSId inObjId, TextProcPtr inTextProc, void * inTextProcData, void ** ioRefCon)
 {
 	NewtonErr err;
-	bool result = NO;
+	bool result = false;
 	StoreObjectHeader textRoot;
 
 	if ((err = inStoreWrapper->store()->read(inObjId, 0, &textRoot, sizeof(textRoot))))

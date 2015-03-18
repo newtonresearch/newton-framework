@@ -46,7 +46,7 @@
 // dictionary data in ROM
 struct ROMDictData
 {
-	size_t size;
+	ULong size;
 	UByte data[];
 };
 
@@ -65,7 +65,7 @@ struct DictListEntry
 struct DictWalkBlock
 {
 	CDictionary *	x00;
-	long				x04;
+	int				x04;
 	DictWalker		x08;
 	void *			x0C;
 	UniChar			x10[32];
@@ -846,7 +846,7 @@ GetROMDictionaryData(ULong inDictNumber, size_t * outSize)
 ------------------------------------------------------------------------------*/
 
 void
-CommonWord(UniChar * outWord, size_t inMinLen, size_t inMaxLen)
+CommonWord(UniChar * outWord, ArrayIndex inMinLen, ArrayIndex inMaxLen)
 {
 //	DictListEntry * dictEntry = FindDictionaryEntry(6);
 //	GetRandomWord(dictEntry->dict, outWord, inMinLen, inMaxLen);
@@ -857,8 +857,8 @@ Ref
 FGetRandomWord(RefArg inRcvr, RefArg inMinLength, RefArg inMaxLength)
 {
 	UniChar word[20+1];
-	size_t minLen = RINT(inMinLength);
-	size_t maxLen = RINT(inMaxLength);
+	ArrayIndex minLen = RINT(inMinLength);
+	ArrayIndex maxLen = RINT(inMaxLength);
 	if (maxLen > 20)
 		maxLen = 20;
 	CommonWord(word, minLen, maxLen);
@@ -867,7 +867,7 @@ FGetRandomWord(RefArg inRcvr, RefArg inMinLength, RefArg inMaxLength)
 
 /*
 void
-CDictionary::getRandomWord(UniChar * outStr, size_t inMinLen, size_t inMaxLen)
+CDictionary::getRandomWord(UniChar * outStr, ArrayIndex inMinLen, ArrayIndex inMaxLen)
 {}
 */
 
@@ -1642,7 +1642,7 @@ CDictionary::deletePrefix(UniChar * inPrefix)
 }
 
 
-size_t
+ArrayIndex
 CDictionary::attributeLength(void)
 {
 	airusResult = noErr;

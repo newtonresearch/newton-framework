@@ -34,6 +34,7 @@ Ref	FQuery(RefArg inRcvr, RefArg inSoup, RefArg inQuerySpec);
 }
 
 
+#pragma mark Entry cache
 /*------------------------------------------------------------------------------
 	E n t r y   C a c h e
 ------------------------------------------------------------------------------*/
@@ -157,7 +158,6 @@ InvalidateCacheEntries(RefArg inCache)
 
 
 #pragma mark -
-
 /*----------------------------------------------------------------------
 	S o u p   F u n c t i o n s
 ----------------------------------------------------------------------*/
@@ -188,8 +188,7 @@ SoupCacheRemoveAllEntries(RefArg inSoup)
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(GetFrameSlot(inSoup, SYMA(storeObj)), SYMA(store));
 	RefVar cachedEntry;
 	RefVar realSoup;
-	int i;
-	for (i = Length(theCache) - 1; i >= 0; i--)
+	for (int i = Length(theCache) - 1; i >= 0; i--)
 	{
 		cachedEntry = GetArraySlot(theCache, i);
 		if (NOTNIL(cachedEntry))
@@ -206,8 +205,8 @@ SoupCacheRemoveAllEntries(RefArg inSoup)
 	}
 }
 
-#pragma mark -
 
+#pragma mark -
 /*----------------------------------------------------------------------
 	P l a i n   C   I n t e r f a c e
 ----------------------------------------------------------------------*/
@@ -342,7 +341,6 @@ CommonSoupAddEntry(RefArg inRcvr, RefArg inFrame, unsigned char inFlags)	// the 
 
 
 #pragma mark -
-
 /*----------------------------------------------------------------------
 	S o u p   F u n c t i o n s
 	These call back into the NewtonScript functions in the soup frame.
@@ -363,20 +361,7 @@ FQuery(RefArg inRcvr, RefArg inSoup, RefArg inQuerySpec)
 	return SoupQuery(inSoup, inQuerySpec);
 }
 
-
-Ref
-SoupGetName(RefArg inRcvr)
-{
-	return DoMessage(inRcvr, SYMA(GetName), RA(NILREF));
-}
-
-
-Ref
-SoupGetSignature(RefArg inRcvr)
-{
-	return DoMessage(inRcvr, SYMA(GetSignature), RA(NILREF));
-}
-
+#pragma mark Soup Info
 
 Ref
 SoupSetName(RefArg inRcvr, RefArg inName)
@@ -384,6 +369,13 @@ SoupSetName(RefArg inRcvr, RefArg inName)
 	RefVar args(MakeArray(1));
 	SetArraySlot(args, 0, inName);
 	return DoMessage(inRcvr, SYMA(SetName), args);
+}
+
+
+Ref
+SoupGetName(RefArg inRcvr)
+{
+	return DoMessage(inRcvr, SYMA(GetName), RA(NILREF));
 }
 
 
@@ -397,11 +389,9 @@ SoupSetSignature(RefArg inRcvr, int inSignature)
 
 
 Ref
-SoupGetInfo(RefArg inRcvr, RefArg inTag)
+SoupGetSignature(RefArg inRcvr)
 {
-	RefVar args(MakeArray(1));
-	SetArraySlot(args, 0, inTag);
-	return DoMessage(inRcvr, SYMA(GetInfo), args);
+	return DoMessage(inRcvr, SYMA(GetSignature), RA(NILREF));
 }
 
 
@@ -416,9 +406,11 @@ SoupSetInfo(RefArg inRcvr, RefArg inTag, RefArg info)
 
 
 Ref
-SoupGetAllInfo(RefArg inRcvr)
+SoupGetInfo(RefArg inRcvr, RefArg inTag)
 {
-	return DoMessage(inRcvr, SYMA(GetAllInfo), RA(NILREF));
+	RefVar args(MakeArray(1));
+	SetArraySlot(args, 0, inTag);
+	return DoMessage(inRcvr, SYMA(GetInfo), args);
 }
 
 
@@ -432,32 +424,9 @@ SoupSetAllInfo(RefArg inRcvr, RefArg info)
 
 
 Ref
-SoupCopyEntries(RefArg inRcvr, RefArg inSoup)
+SoupGetAllInfo(RefArg inRcvr)
 {
-	RefVar args(MakeArray(1));
-	SetArraySlot(args, 0, inSoup);
-	return DoMessage(inRcvr, SYMA(CopyEntries), args);
-}
-
-
-Ref
-SoupRemoveAllEntries(RefArg inRcvr)
-{
-	return DoMessage(inRcvr, SYMA(RemoveAllEntries), RA(NILREF));
-}
-
-
-Ref
-SoupRemoveFromStore(RefArg inRcvr)
-{
-	return DoMessage(inRcvr, SYMA(RemoveFromStore), RA(NILREF));
-}
-
-
-Ref
-SoupFlush(RefArg inRcvr)
-{
-	return DoMessage(inRcvr, SYMA(Flush), RA(NILREF));
+	return DoMessage(inRcvr, SYMA(GetAllInfo), RA(NILREF));
 }
 
 
@@ -467,6 +436,21 @@ SoupGetStore(RefArg inRcvr)
 	return DoMessage(inRcvr, SYMA(GetStore), RA(NILREF));
 }
 
+
+Ref
+SoupGetNextUId(RefArg inRcvr)
+{
+	return DoMessage(inRcvr, SYMA(GetNextUId), RA(NILREF));
+}
+
+
+Ref
+SoupRemoveFromStore(RefArg inRcvr)
+{
+	return DoMessage(inRcvr, SYMA(RemoveFromStore), RA(NILREF));
+}
+
+#pragma mark Update indexes
 
 Ref
 SoupAddIndex(RefArg inRcvr, RefArg index)
@@ -492,13 +476,7 @@ SoupGetIndexes(RefArg inRcvr)
 	return DoMessage(inRcvr, SYMA(GetIndexes), RA(NILREF));
 }
 
-
-Ref
-SoupGetNextUId(RefArg inRcvr)
-{
-	return DoMessage(inRcvr, SYMA(GetNextUId), RA(NILREF));
-}
-
+#pragma mark Add/Remove entries
 
 Ref
 SoupAdd(RefArg inRcvr, RefArg inFrame)
@@ -515,5 +493,29 @@ SoupAddWithUniqueID(RefArg inRcvr, RefArg inFrame)
 	RefVar args(MakeArray(1));
 	SetArraySlot(args, 0, inFrame);
 	return DoMessage(inRcvr, SYMA(addWithUniqueId), args);
+}
+
+
+Ref
+SoupCopyEntries(RefArg inRcvr, RefArg inSoup)
+{
+	RefVar args(MakeArray(1));
+	SetArraySlot(args, 0, inSoup);
+	return DoMessage(inRcvr, SYMA(CopyEntries), args);
+}
+
+
+Ref
+SoupRemoveAllEntries(RefArg inRcvr)
+{
+	return DoMessage(inRcvr, SYMA(RemoveAllEntries), RA(NILREF));
+}
+
+#pragma mark DEPRECATED
+
+Ref
+SoupFlush(RefArg inRcvr)
+{
+	return DoMessage(inRcvr, SYMA(Flush), RA(NILREF));
 }
 

@@ -2562,7 +2562,7 @@ CSoupIndex::search(int inArg1, SKey * inKey, SKey * inData, StopProcPtr inStopPr
 	{
 		IndexState state;
 		status = moveAndGetState(inArg1, 0, &kf, &state);	// sic -- looks like int/bool confusion
-		if (status == 0
+		while (status == 0
 		&& inStopProc(kf.key(), (SKey *)kfFirstDataAddr(&kf), ioRefCon) == 0)
 		{
 			status = fCache->flush(this) ? moveAndGetState(inArg1, 0, &kf, &state)
@@ -3016,7 +3016,7 @@ CUnionSoupIndex::search(bool inDoForward, SKey * inKey, SKey * inData, StopProcP
 	{
 		for (;;)
 		{
-			bool doMoveOn = YES;
+			bool doMoveOn = true;
 			status = (unionInfo->validity != kIsValid) ? soupIndex->moveAndGetState(inDoForward, inArg8, unionInfo->kf, &unionInfo->state)
 																	 : soupIndex->moveUsingState(inDoForward, inArg8, unionInfo->kf, &unionInfo->state);
 			if (status == 0)
@@ -3474,7 +3474,7 @@ CompareSoupIndexes(RefArg inSpec1, RefArg inSpec2)
 struct CopyIndexParms
 {
 	CSoupIndex *	soupIndex;
-	size_t			idMapLen;
+	ArrayIndex		idMapLen;
 	PSSIdMapping *	idMap;
 	bool				isTagsIndex;
 	RefStruct		cbCodeblock;
@@ -3495,7 +3495,7 @@ ComparePSSIdMapping(const void * inId1, const void * inId2)
 	return 0;
 }
 
-int	// NewtonErr?
+int
 CopyIndexStopFn(SKey * inFromKey, SKey * inToKey, void * inParms)
 {
 	CopyIndexParms * parms = (CopyIndexParms *)inParms;	// r6
@@ -3509,9 +3509,7 @@ CopyIndexStopFn(SKey * inFromKey, SKey * inToKey, void * inParms)
 	if (parms->cbInterval && --parms->cbCount == 0)
 	{
 		// do progress callback
-		CTime now = GetGlobalTime();
-		Timeout delta = now - parms->cbTime;
-		if (delta > parms->cbInterval)
+		if ((Timeout)(GetGlobalTime() - parms->cbTime) > parms->cbInterval)
 		{
 			DoBlock(parms->cbCodeblock, RA(NILREF));
 			parms->cbTime = GetGlobalTime();
@@ -3523,7 +3521,7 @@ CopyIndexStopFn(SKey * inFromKey, SKey * inToKey, void * inParms)
 
 
 void
-CopySoupIndexes(RefArg inFromSoup, RefArg inToSoup, PSSIdMapping * inIdMap, size_t inIdMapLen, RefArg inCallbackFn, Timeout inCallbackInterval)
+CopySoupIndexes(RefArg inFromSoup, RefArg inToSoup, PSSIdMapping * inIdMap, ArrayIndex inIdMapLen, RefArg inCallbackFn, Timeout inCallbackInterval)
 {
 	RefVar srcSpec(GetFrameSlot(inFromSoup, SYMA(_proto)));	//sp28
 	RefVar dstSpec(GetFrameSlot(inToSoup, SYMA(_proto)));		//sp24

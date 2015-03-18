@@ -447,7 +447,7 @@ Ref	IndexPathToIndexDesc(RefArg inSoup, RefArg inPath, int * outIndex);
 bool	UpdateIndexes(RefArg inSoup, RefArg inArg2, RefArg inArg3, PSSId inId, bool * outArg5);
 bool	CompareSoupIndexes(RefArg inArg1, RefArg inArg2);
 int	CopyIndexStopFn(SKey *, SKey *, void *);
-void	CopySoupIndexes(RefArg, RefArg, PSSIdMapping *, int, RefArg, int);
+void	CopySoupIndexes(RefArg, RefArg, PSSIdMapping *, ArrayIndex, RefArg, ULong);
 void	AbortSoupIndexes(RefArg inSoup);
 Ref	NewIndexDesc(RefArg, RefArg, RefArg);
 Ref	AddNewSoupIndexes(RefArg inSoup, RefArg inStore, RefArg indexes);

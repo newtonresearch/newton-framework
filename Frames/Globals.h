@@ -48,7 +48,7 @@ struct ConstNSData
 {
 	Ref	magicPointers;
 	Ref	sortTables;
-	Ref	rootView;
+	Ref	rootContext;
 	Ref	vars;
 	Ref	initGlobalsFunc;
 	Ref	initScriptsFunc;

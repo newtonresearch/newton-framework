@@ -123,7 +123,7 @@ CCursor::CCursor()
 	fHints = NULL;
 	fBeginKeyData = NULL;
 	fEndKeyData = NULL;
-	fIsIndexInvalid = NO;
+	fIsIndexInvalid = false;
 	fSoup = NILREF;
 	fCursor = NILREF;
 	fCurrentEntry = NILREF;
@@ -159,8 +159,8 @@ CCursor::init(RefArg inCursor, RefArg inSoup, RefArg inQuerySpec)
 {
 	fQuerySpecBits = 0;
 	fCurrentEntry = NILREF;
-	fIsCursorAtEnd = NO;
-	fIsEntryDeleted = NO;
+	fIsCursorAtEnd = false;
+	fIsEntryDeleted = false;
 	fSoup = inSoup;
 	fCursor = inCursor;
 	if (ISNIL(inQuerySpec))
@@ -283,7 +283,7 @@ CCursor::invalidate(void)
 		fSoupInfo = NULL;
 	}
 	fCurrentEntry = NILREF;
-	fIsCursorAtEnd = NO;
+	fIsCursorAtEnd = false;
 	fNumOfSoupsInUnion = 0;
 }
 
@@ -512,7 +512,7 @@ CCursor::keyBoundsValidTest(const SKey & inKey, bool inIsEndBound)
 		{
 			result = fUnionSoupIndex->index()->compareKeys(inKey, *(SKey*)fEndKeyData);	// CSoupIndex
 			if (result > 0)
-				return NO;
+				return false;
 			else if (result == 0)
 				return (fQuerySpecBits & kQueryEndExclKey) == 0;
 		}
@@ -523,13 +523,13 @@ CCursor::keyBoundsValidTest(const SKey & inKey, bool inIsEndBound)
 		{
 			result = fUnionSoupIndex->index()->compareKeys(inKey, *(SKey*)fBeginKeyData);
 			if (result < 0)
-				return NO;
+				return false;
 			else if (result == 0)
 				return (fQuerySpecBits & kQueryBeginExclKey) == 0;
 		}
 	}
 
-	return YES;
+	return true;
 }
 
 
@@ -537,8 +537,8 @@ CCursor::keyBoundsValidTest(const SKey & inKey, bool inIsEndBound)
 	Perform words-valid-test; determine whether all of the words in a given array
 	exist within a string.
 	Args:		inStr			the string to test
-				inArg2		length?
-				inArg3		crazy way to pass a RefArg -- array of words
+				inLen			length of that string
+				inParms		array of words we must find in that string
 	Return:	YES => all words have been found in the string
 ------------------------------------------------------------------------------*/
 
@@ -549,7 +549,7 @@ struct SWordsTestParms
 	RefVar	fWords;
 	bool		fIsWholeWords;
 };
-inline SWordsTestParms::SWordsTestParms() : fIsWholeWords(NO) { }
+inline SWordsTestParms::SWordsTestParms() : fIsWholeWords(false) { }
 
 
 bool
@@ -557,31 +557,27 @@ WordsValidTestTextProc(UniChar * inStr, ArrayIndex inLen, void * inParms)
 {
 	RefVar testWord;
 	int i = Length(((SWordsTestParms*)inParms)->fWords) - 1;
-	XTRY
+	for ( ; i >= 0; i--)
 	{
-		for ( ; i >= 0; i--)
+		testWord = GetArraySlot(((SWordsTestParms*)inParms)->fWords, i);
+		UniChar * wordStr = GetUString(testWord);
+		UniChar * theStr = FindWord(inStr, inLen, wordStr, true);
+		if (theStr == NULL)
+			break;	// we didn’t find the word
+		if (((SWordsTestParms*)inParms)->fIsWholeWords)
 		{
-			testWord = GetArraySlot(((SWordsTestParms*)inParms)->fWords, i);
-			UniChar * testStr = GetUString(testWord);
-			UniChar * theStr = FindWord(inStr, inLen, testStr, YES);
-			XFAIL(theStr == NULL)
-			if (((SWordsTestParms*)inParms)->fIsWholeWords)
+			// we want to find whole words, so next character must be a delimiter
+			while (theStr != NULL)
 			{
-				size_t testStrLen = Ustrlen(testStr);
-findWholeWords:
-				theStr += testStrLen;
-				if (!IsDelimiter(*theStr))
-				{
-					inLen -= testStrLen;
-					theStr = FindWord(theStr, inLen, testStr, NO);
-					XFAIL(theStr == NULL)
-				}
-				goto findWholeWords;
+				theStr += Ustrlen(wordStr);
+				if (IsDelimiter(*theStr))
+					break;	// yup, found a whole word
+				// there’s more to this word -- look again starting from this point
+				theStr = FindWord(theStr, inLen - (theStr - inStr), wordStr, false);
 			}
 		}
 	}
-	XENDTRY;
-	return i < 0;
+	return i < 0;	// ie we found them all
 }
 
 
@@ -590,7 +586,7 @@ CCursor::wordsValidTest(PSSId inId)
 {
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(fSoupInfo[fUnionSoupIndex->i()].fSoup, SYMA(TStore));
 	if (fHints && TestObjHints(fHints, Length(fQryWords), storeWrapper, inId) == 0)
-		return NO;
+		return false;
 
 	SWordsTestParms parms;
 	parms.fWords = fQryWords;
@@ -616,28 +612,28 @@ CCursor::textValidTest(PSSId inId)
 bool
 CCursor::validTest(const SKey & inKey, PSSId inId, bool inForward, bool * outIsEntrySet, bool * outIsDone)
 {
-	*outIsEntrySet = NO;
-	*outIsDone = NO;
+	*outIsEntrySet = false;
+	*outIsDone = false;
 	if ((fQuerySpecBits & kQueryByAnything) != 0)
 	{
 		if ((fQuerySpecBits & kQueryByKey) != 0
 		&&   !keyBoundsValidTest(inKey, inForward))
 		{
-			*outIsDone = YES;
-			return NO;
+			*outIsDone = true;
+			return false;
 		}
 
 		if (fTagsIndexes != NULL
 		&&  !TagsValidTest(*fTagsIndexes[fUnionSoupIndex->i()], fSoupInfo[fUnionSoupIndex->i()].fTags, inId))
-			return NO;
+			return false;
 
 		if ((fQuerySpecBits & kQueryWords) != 0
 		&&  !wordsValidTest(inId))
-			return NO;
+			return false;
 
 		if ((fQuerySpecBits & kQueryText) != 0
 		&&  !textValidTest(inId))
-			return NO;
+			return false;
 
 		if ((fQuerySpecBits & kQueryByTest) != 0)
 		{
@@ -645,30 +641,30 @@ CCursor::validTest(const SKey & inKey, PSSId inId, bool inForward, bool * outIsE
 			{
 				SetArraySlot(fTestFnArgs, 0, SKeyToKey(inKey, fIndexType, NULL));
 				if (ISNIL(DoBlock(fIndexValidTestFn, fTestFnArgs)))
-					return NO;
+					return false;
 			}
 			else
 			{
 				makeEntryFaultBlock(inId);
-				*outIsEntrySet = YES;
+				*outIsEntrySet = true;
 				SetArraySlot(fTestFnArgs, 0, fCurrentEntry);
 				if ((fQuerySpecBits & kQueryEndTest) != 0)
 				{
 					if (NOTNIL(DoBlock(fEndTestFn, fTestFnArgs)))
 					{
-						*outIsDone = YES;
-						return NO;
+						*outIsDone = true;
+						return false;
 					}
 				}
 				if ((fQuerySpecBits & kQueryValidTest) != 0)
 				{
 					if (NOTNIL(DoBlock(fValidTestFn, fTestFnArgs)))
-						return NO;
+						return false;
 				}
 			}
 		}
 	}
-	return YES;
+	return true;
 }
 
 
@@ -719,7 +715,7 @@ CountEntriesStopFn(SKey * inKey, SKey * inData, void * ioParms)
 {
 	SCountParms * parms = (SCountParms *)ioParms;
 	bool isEntrySet, isDone;
-	if (parms->cursor->validTest(*inKey, (PSSId)(int)*inData, YES, &isEntrySet, &isDone))
+	if (parms->cursor->validTest(*inKey, (PSSId)(int)*inData, true, &isEntrySet, &isDone))
 		parms->count++;
 	return isDone;
 }
@@ -742,7 +738,7 @@ CCursor::countEntries(void)
 				SCountParms parms;
 				parms.cursor = this;
 				parms.count = 1;
-				fUnionSoupIndex->search(YES, &fIndexKey, (SKey*)&fEntryId, CountEntriesStopFn, &parms, NULL, NULL, 0);
+				fUnionSoupIndex->search(true, &fIndexKey, (SKey*)&fEntryId, CountEntriesStopFn, &parms, NULL, NULL, 0);
 				numOfEntries = parms.count;
 				if (gPermObjectTextCache)
 				{
@@ -786,13 +782,13 @@ CCursor::rebuildInfo(bool inArg1, long inArg2)
 	else
 		r6 = 0;
 
-	bool r8 = NO;
+	bool r8 = false;
 	if (inArg2 >= 0)
 	{
 		if (ISNIL(fCurrentEntry))
 			r6 = 0;
 		else if (r6 == inArg2)
-			r8 = YES;
+			r8 = true;
 		else if (r6 > inArg2)
 			r6--;
 	}
@@ -808,7 +804,7 @@ CCursor::rebuildInfo(bool inArg1, long inArg2)
 	if (r8)
 	{
 		if (fUnionSoupIndex->currentSoupGone(&fIndexKey, &fIndexKey, (SKey*)&fEntryId))
-			park(NO);
+			park(false);
 		else
 			move(0);
 	}
@@ -826,7 +822,7 @@ CCursor::soupRemoved(RefArg inSoup)
 		if (fNumOfSoupsInUnion == 1)
 			invalidate();
 		else
-			rebuildInfo(NO, index);
+			rebuildInfo(false, index);
 	}
 	unregisterFromSoup(inSoup);
 }
@@ -843,7 +839,7 @@ CCursor::soupAdded(RefArg inSoup)
 			invalidate();
 		else
 		{
-			rebuildInfo(NO, -1);
+			rebuildInfo(false, -1);
 			registerInSoup(inSoup);
 		}
 	}
@@ -862,7 +858,7 @@ CCursor::setSoup(RefArg inSoup)
 {
 	unregisterFromSoup(fSoup);
 	fSoup = inSoup;
-	rebuildInfo(NO, -1);
+	rebuildInfo(false, -1);
 	DeleteEntryFromCache(GetFrameSlot(inSoup, SYMA(cursors)), fCursor);
 	registerInSoup(inSoup);
 	reset();
@@ -876,7 +872,7 @@ CCursor::indexRemoved(RefArg inArg1, RefArg inQuerySpec)
 	||  IndexPathsEqual(fIndexPath, GetFrameSlot(inQuerySpec, SYMA(path))))
 	{
 		invalidate();
-		fIsIndexInvalid = YES;
+		fIsIndexInvalid = true;
 	}
 }
 
@@ -885,7 +881,7 @@ void
 CCursor::indexObjectsChanged(void)
 {
 	if (fSoupInfo)
-		rebuildInfo(YES, -1);
+		rebuildInfo(true, -1);
 }
 
 
@@ -905,17 +901,17 @@ CCursor::soupTagsChanged(RefArg inSoup)
 bool
 CCursor::pinCurrentKey(void)
 {
-	if (keyBoundsValidTest(fIndexKey, NO) == 0)
+	if (keyBoundsValidTest(fIndexKey, false) == 0)
 	{
 		reset();
-		return YES;
+		return true;
 	}
-	if (keyBoundsValidTest(fIndexKey, YES) == 0)
+	if (keyBoundsValidTest(fIndexKey, true) == 0)
 	{
 		resetToEnd();
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -925,7 +921,7 @@ CCursor::reset(void)
 	if (NOTNIL(fStartKey))
 		return gotoKey(fStartKey);
 
-	park(NO);
+	park(false);
 	return move(1);
 }
 
@@ -933,7 +929,7 @@ CCursor::reset(void)
 Ref
 CCursor::resetToEnd(void)
 {
-	park(YES);
+	park(true);
 	return move(-1);
 }
 
@@ -968,7 +964,7 @@ CCursor::move(int inOffset)
 		bool wasNoEntry = ISNIL(fCurrentEntry);	// r1
 		bool wasDeleted = fIsEntryDeleted;			// r0
 		if (inOffset != 0)
-			fIsEntryDeleted = NO;
+			fIsEntryDeleted = false;
 		if (wasNoEntry)
 			entryStatus = exitParking(isForward);
 		else
@@ -988,7 +984,7 @@ CCursor::move(int inOffset)
 
 		if (entryStatus == 0)
 		{
-			bool entryIsFound = NO;
+			bool entryIsFound = false;
 			SCursorParms parms;
 			parms.decr = isForward ? -1 : 1;
 			if (inOffset == 0)
@@ -997,7 +993,7 @@ CCursor::move(int inOffset)
 			bool isQueryDone;
 			if (validTest(fIndexKey, fEntryId, isForward, &parms.isEntrySet, &isQueryDone)
 			&&  (inOffset += parms.decr) == 0)
-				entryIsFound = YES;
+				entryIsFound = true;
 			else if (!isQueryDone)
 			{
 				parms.cursor = this;
@@ -1035,12 +1031,12 @@ CCursor::gotoKey(RefArg inKey)
 {
 	if (fSoupInfo)
 	{
-		fIsEntryDeleted = NO;
+		fIsEntryDeleted = false;
 		KeyToSKey(inKey, fIndexType, &fIndexKey, NULL, NULL);
 		int result = fUnionSoupIndex->find(&fIndexKey, &fIndexKey, (SKey*)&fEntryId, fIsSecSortOrder);
 		if (result != 0 && result != 2)
 		{
-			park(YES);
+			park(true);
 			return NILREF;
 		}
 		if (!pinCurrentKey())
@@ -1066,9 +1062,9 @@ CCursor::gotoEntry(RefArg inEntry)
 	if (ISNIL(theKey))
 		return NILREF;
 
-	fIsEntryDeleted = NO;
+	fIsEntryDeleted = false;
 
-	bool r8 = NO;
+	bool r8 = false;
 	ArrayIndex soupIndex;	// r6
 	if ((soupIndex = getSoupInfoIndex(EntrySoup(inEntry))) != kIndexNotFound)
 	{
@@ -1083,7 +1079,7 @@ CCursor::gotoEntry(RefArg inEntry)
 			if (pinCurrentKey())
 				return NILREF;
 			move(0);
-			r8 = YES;
+			r8 = true;
 		}
 	}
 	if (!r8)
@@ -1137,7 +1133,7 @@ CCursor::entryRemoved(RefArg inEntry)
 {
 	if (EQRef(fCurrentEntry, inEntry))
 	{
-		fIsEntryDeleted = NO;
+		fIsEntryDeleted = false;
 		move(1);
 		fIsEntryDeleted = NOTNIL(fCurrentEntry);
 	}

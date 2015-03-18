@@ -65,14 +65,14 @@ public:
 	NewtonErr	deletePrefix(UniChar * inPrefix);
 
 	bool			hasActualOrImpliedAttr(void);
-	size_t		attributeLength(void);
+	ArrayIndex	attributeLength(void);
 	NewtonErr	changeAttribute(UniChar * inWord, ULong inAttribute);
 
 	NewtonErr	walk(UniChar * inWord, DictWalker inWalker, void * inData);
 
 // for Dates
-	NewtonErr	findLongestWord(UChar * outWord, const UniChar * inStr, size_t inStrLen, size_t * outWordLen);
-	NewtonErr	parseString(void * inContext, const UniChar * inStr, size_t * outParsedStrLen, size_t inStrLen);
+	NewtonErr	findLongestWord(UChar * outWord, const UniChar * inStr, ArrayIndex inStrLen, ArrayIndex * outWordLen);
+	NewtonErr	parseString(void * inContext, const UniChar * inStr, ArrayIndex * outParsedStrLen, ArrayIndex inStrLen);
 
 private:
 	void			init(void * inData, size_t inSize);
@@ -107,23 +107,23 @@ private:
 	int		AL_nextSet(void);
 
 
-	long			x00;
+	int			x00;
 	int			fId;				// +04	dictionary id
 	Trie *		fTrie;			// +0C	pointer to dict data
 	UChar *		fTrieEnd;		// +10	pointer past end of dict data
-	size_t		fTrieSize;		// +14	size of dict data
-	size_t		fCharSize;		//			size of chars in the dictionary; 1|2 bytes
-	size_t		fChunkSize;		// +18	expansion chunk size
+	ArrayIndex	fTrieSize;		// +14	size of dict data
+	ArrayIndex	fCharSize;		//			size of chars in the dictionary; 1|2 bytes
+	ArrayIndex	fChunkSize;		// +18	expansion chunk size
 	UniChar *	fStr;				// +1C	was void * since char strings were also handled
 	ULong			fStrIndex;		// +20	index into fStr string
 	ULong			fStrLen;			//			length of fStr string
 	ULong			fAttr;			// +24
 	ULong			fTrieOffset;	// +28	offset into trie
-	long			x2C;				// error code
-	long			x30;
-	size_t		fAttrLen;		// attribute size
-	long			x38;
-	long			x3C;
+	int			x2C;				// error code
+	int			x30;
+	ArrayIndex	fAttrLen;		// attribute size
+	int			x38;
+	int			x3C;
 	CDictionary *	fHead;		// +40
 	CDictionary *	fNext;		// +44
 	char *		fNodeName;		// +48
@@ -189,7 +189,7 @@ extern void				VerifyStart(CDictionary * inDict);
 extern void				VerifyWord(CDictionary * inDict, UChar * inArg2, UChar ** outArg3, ULong ** outArg4, ULong ** outArg5, bool inArg6, UChar ** inArg7);
 extern void				VerifyString(CDictionary * inDict, UniChar * inStr, UniChar ** outArg3, ULong ** outArg4,  char ** outArg5);
 
-extern NewtonErr		ParseString(CDictionary * inDict, void * inContext, const UniChar * inStr, size_t * outParsedStrLen, size_t inStrLen);
+extern NewtonErr		ParseString(CDictionary * inDict, void * inContext, const UniChar * inStr, ArrayIndex * outParsedStrLen, ArrayIndex inStrLen);
 
 extern void				BuildChains(CDictChain ** outChains, RefArg inContext);
 

@@ -91,7 +91,7 @@ public:
 				CNumberParser();
 
 	void		reset(void);
-	double	stringToNumber(const UniChar * inStr, size_t * outParsedStrLen, size_t inStrLen);
+	double	stringToNumber(const UniChar * inStr, ArrayIndex * outParsedStrLen, ArrayIndex inStrLen);
 	void		setInteger(const char * inStr);
 	void		setDecimal(const char * inStr);
 	void		setPrefix(const char * inStr);
@@ -148,7 +148,7 @@ CNumberParser::reset(void)
 
 
 double
-CNumberParser::stringToNumber(const UniChar * inStr, size_t * outParsedStrLen, size_t inStrLen)
+CNumberParser::stringToNumber(const UniChar * inStr, ArrayIndex * outParsedStrLen, ArrayIndex inStrLen)
 {
 	NewtonErr err;
 	double theNumber = 0.0;
@@ -412,7 +412,7 @@ typedef NBreakTable *			NBreakTablePtr;
 
 
 void
-FindWordBreaks(const UniChar * inStr, size_t inStrLen, ULong inOffset, bool inLeadingEdge, RefArg inBreakTable, ULong * outStartOffset, ULong * outEndOffset)
+FindWordBreaks(const UniChar * inStr, ArrayIndex inStrLen, ULong inOffset, bool inLeadingEdge, RefArg inBreakTable, ULong * outStartOffset, ULong * outEndOffset)
 {
 	if (inStr != NULL && inStrLen > 0)
 	{
@@ -537,7 +537,7 @@ FindWordBreaks(const UniChar * inStr, size_t inStrLen, ULong inOffset, bool inLe
 
 
 NewtonErr
-CDictionary::findLongestWord(UChar * outWord, const UniChar * inStr, size_t inStrLen, size_t * outWordLen)
+CDictionary::findLongestWord(UChar * outWord, const UniChar * inStr, ArrayIndex inStrLen, ArrayIndex * outWordLen)
 {
 	NewtonErr err = -1;
 	UChar * sp18;
@@ -546,7 +546,7 @@ CDictionary::findLongestWord(UChar * outWord, const UniChar * inStr, size_t inSt
 	UChar * sp0C = NULL;
 	RefVar lineBreaks(GetLocaleSlot(SYMA(lineBreakTable)));	// sp08
 	ULong lineStart, lineEnd;	// sp04, sp00
-	size_t wordLen = inStrLen;	// r4
+	ArrayIndex wordLen = inStrLen;	// r4
 	do
 	{
 		// find extent of line
@@ -571,7 +571,7 @@ CDictionary::findLongestWord(UChar * outWord, const UniChar * inStr, size_t inSt
 
 
 NewtonErr
-CDictionary::parseString(void * inContext, const UniChar * inStr, size_t * outParsedStrLen, size_t inStrLen)
+CDictionary::parseString(void * inContext, const UniChar * inStr, ArrayIndex * outParsedStrLen, ArrayIndex inStrLen)
 {
 //	r4 = inDict
 //	r5 = inContext -- will be CDate* or CNumberParser*
@@ -581,12 +581,12 @@ CDictionary::parseString(void * inContext, const UniChar * inStr, size_t * outPa
 //	r8 = inStrLen
 
 	NewtonErr err = noErr;
-	size_t parsedLen;
+	ArrayIndex parsedLen;
 
 	XTRY
 	{
 		// convert/copy Unicode into C string buffer
-		size_t strLen = Ustrlen(inStr);
+		ArrayIndex strLen = Ustrlen(inStr);
 		if (strLen > inStrLen)
 			strLen = inStrLen;
 		UChar * s = (UChar *)NewPtr(strLen + 1);
@@ -594,7 +594,7 @@ CDictionary::parseString(void * inContext, const UniChar * inStr, size_t * outPa
 		ConvertFromUnicode(inStr, s, strLen, kMacRomanEncoding);
 
 
-		size_t wordLen;
+		ArrayIndex wordLen;
 		err = findLongestWord(s, inStr, strLen, &wordLen);
 		if (wordLen > 0)
 		{
@@ -799,7 +799,7 @@ CDate::isValidDate(void) const
 
 
 int
-CDate::stringToDate(const UniChar * inStr, size_t * outParsedStrLen, size_t inStrLen)
+CDate::stringToDate(const UniChar * inStr, ArrayIndex * outParsedStrLen, ArrayIndex inStrLen)
 {
 	// set up defaults for those elements we can’t parse
 	setCurrentTime();
@@ -837,7 +837,7 @@ CDate::stringToDate(const UniChar * inStr, size_t * outParsedStrLen, size_t inSt
 
 
 int
-CDate::stringToTime(const UniChar * inStr, size_t * outParsedStrLen, size_t inStrLen)
+CDate::stringToTime(const UniChar * inStr, ArrayIndex * outParsedStrLen, ArrayIndex inStrLen)
 {
 	int status = 0;
 	setCurrentTime();
@@ -863,11 +863,11 @@ CDate::stringToTime(const UniChar * inStr, size_t * outParsedStrLen, size_t inSt
 
 
 int
-CDate::stringToDateFields(const UniChar * inStr, size_t * outParsedStrLen, size_t inStrLen)
+CDate::stringToDateFields(const UniChar * inStr, ArrayIndex * outParsedStrLen, ArrayIndex inStrLen)
 {
 	int status = 0;
-	size_t timeStrParsedLen;
-	size_t dateStrParsedLen;
+	ArrayIndex timeStrParsedLen;
+	ArrayIndex dateStrParsedLen;
 	ULong thisYear = 1904 + ((RealClock() / (24*60)) * 4) / 1461;
 
 	fSecond = 0xFFFFFFFF;
@@ -918,7 +918,7 @@ CDate::stringToDateFields(const UniChar * inStr, size_t * outParsedStrLen, size_
 
 
 int
-CDate::stringToDateFrame(const UniChar * inStr, size_t * outParsedStrLen, size_t inStrLen)
+CDate::stringToDateFrame(const UniChar * inStr, ArrayIndex * outParsedStrLen, ArrayIndex inStrLen)
 {
 	RefVar theDate(Clone(RA(canonicalDate)));
 
@@ -953,7 +953,7 @@ CDate::cleanUpFields(void)
 
 
 void
-CDate::dateElementString(ULong inType, ULong inFormat, UniChar * outStr, size_t inStrSize, bool inLongFormat)
+CDate::dateElementString(ULong inType, ULong inFormat, UniChar * outStr, ArrayIndex inStrSize, bool inLongFormat)
 {
 	UStr31 str;
 	RefVar strings;
@@ -1072,7 +1072,7 @@ CDate::dateElementString(ULong inType, ULong inFormat, UniChar * outStr, size_t 
 
 
 void
-CDate::longDateString(ULong inStrSpec, UniChar * outStr, size_t inStrSize)
+CDate::longDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 {
 	bool hasDay;
 	bool hasDayOfWeek;
@@ -1153,7 +1153,7 @@ CDate::longDateString(ULong inStrSpec, UniChar * outStr, size_t inStrSize)
 
 
 void
-CDate::shortDateString(ULong inStrSpec, UniChar * outStr, size_t inStrSize)
+CDate::shortDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 {
 	bool hasDay;
 	bool hasMonth;
@@ -1223,7 +1223,7 @@ CDate::shortDateString(ULong inStrSpec, UniChar * outStr, size_t inStrSize)
 
 
 void
-CDate::timeString(ULong inStrSpec, UniChar * outStr, size_t inStrSize)
+CDate::timeString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 {
 	bool hasHours;
 	bool hasMinutes;
@@ -1627,7 +1627,7 @@ DaylightSavingsOffset(void)
 
 
 void
-LongDateString(ULong inMinsSince1904, ULong inStrSpec, UniChar * outStr, size_t inStrSize, RefArg inResource)
+LongDateString(ULong inMinsSince1904, ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize, RefArg inResource)
 {
 	CDate theDate;
 	*outStr = 0;
@@ -1638,7 +1638,7 @@ LongDateString(ULong inMinsSince1904, ULong inStrSpec, UniChar * outStr, size_t 
 
 
 void
-ShortDateString(ULong inMinsSince1904, ULong inStrSpec, UniChar * outStr, size_t inStrSize, RefArg inResource)
+ShortDateString(ULong inMinsSince1904, ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize, RefArg inResource)
 {
 	CDate theDate;
 	*outStr = 0;
@@ -1649,7 +1649,7 @@ ShortDateString(ULong inMinsSince1904, ULong inStrSpec, UniChar * outStr, size_t
 
 
 void
-TimeString(ULong inMinsSince1904, ULong inStrSpec, UniChar * outStr, size_t inStrSize, RefArg inResource)
+TimeString(ULong inMinsSince1904, ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize, RefArg inResource)
 {
 	CDate theDate;
 	*outStr = 0;
@@ -1660,7 +1660,7 @@ TimeString(ULong inMinsSince1904, ULong inStrSpec, UniChar * outStr, size_t inSt
 
 
 void
-TimeFrameString(RefArg inDateFrame, ULong inStrSpec, UniChar * outStr, size_t inStrSize, RefArg inResource)
+TimeFrameString(RefArg inDateFrame, ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize, RefArg inResource)
 {
 	CDate theDate;
 	*outStr = 0;
@@ -1722,7 +1722,7 @@ FIsValidDate(RefArg inRcvr, RefArg inDate)
 	if (IsString(inDate))
 	{
 		CDataPtr str(inDate);
-		size_t strParsedLen;
+		ArrayIndex strParsedLen;
 		theDate.stringToDateFrame((const UniChar *)(char *)str, &strParsedLen, 0xFFFFFFFF);
 	}
 	else if (IsFrame(inDate))
@@ -1825,12 +1825,12 @@ Ref
 FStringToDate(RefArg inRcvr, RefArg inStr)
 {
 	RefVar theTime;
-	size_t strLen = (Length(inStr) - sizeof(UniChar)) / sizeof(UniChar);
+	ArrayIndex strLen = (Length(inStr) - sizeof(UniChar)) / sizeof(UniChar);
 	if (strLen > 0)
 	{
 		CDate theDate;
 		CDataPtr str(inStr);
-		size_t strParsedLen;
+		ArrayIndex strParsedLen;
 		int status = theDate.stringToDate((const UniChar *)(char *)str, &strParsedLen, strLen);
 		if (status == 0 || status == 2)
 			theTime = MAKEINT(theDate.totalMinutes());
@@ -1843,12 +1843,12 @@ Ref
 FStringToDateFrame(RefArg inRcvr, RefArg inStr)
 {
 	RefVar theTime;
-	size_t strLen = (Length(inStr) - sizeof(UniChar)) / sizeof(UniChar);
+	ArrayIndex strLen = (Length(inStr) - sizeof(UniChar)) / sizeof(UniChar);
 	if (strLen > 0)
 	{
 		CDate theDate;
 		CDataPtr str(inStr);
-		size_t strParsedLen;
+		ArrayIndex strParsedLen;
 		theTime = theDate.stringToDateFrame((const UniChar *)(char *)str, &strParsedLen, strLen);
 	}
 	return theTime;
@@ -1859,12 +1859,12 @@ Ref
 FStringToTime(RefArg inRcvr, RefArg inStr)
 {
 	RefVar theTime;
-	size_t strLen = (Length(inStr) - sizeof(UniChar)) / sizeof(UniChar);
+	ArrayIndex strLen = (Length(inStr) - sizeof(UniChar)) / sizeof(UniChar);
 	if (strLen > 0)
 	{
 		CDate theDate;
 		CDataPtr str(inStr);
-		size_t strParsedLen;
+		ArrayIndex strParsedLen;
 		int status = theDate.stringToTime((const UniChar *)(char *)str, &strParsedLen, strLen);
 		if (status == 0 || status == 2)
 			theTime = MAKEINT(theDate.totalMinutes());

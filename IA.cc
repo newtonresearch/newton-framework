@@ -106,13 +106,13 @@ void	PhraseHitExt(void);
 void	PhraseHit(int in1, int in2);
 
 bool	interval_intersection_p(int in1, int in2, int in3, int in4);
-Ref	GeneratePhrases(RefArg inRcvr, RefArg inStr);
+Ref	GeneratePhrases(RefArg inStr);
 void	PrintGeneratorState(void);
 
 Ref	IAInputErrors(RefArg inRcvr, RefArg inAssistant);
 Ref	FillPreconditions(RefArg ioTaskTemplate);
-Ref	CheezySubsumption(RefArg inRcvr, RefArg inArray1, RefArg inArray2);
-Ref	CheezyIntersect(RefArg inRcvr, RefArg inArray1, RefArg inArray2);
+Ref	CheezySubsumption(RefArg inArray1, RefArg inArray2);
+Ref	CheezyIntersect(RefArg inArray1, RefArg inArray2);
 Ref	GetClasses(RefArg inPhrases);
 Ref	CompositeClass(RefArg inRcvr, RefArg inPhrase);
 
@@ -198,6 +198,7 @@ InitDSDictionary(RefArg inRcvr, RefArg inOptions)
 	gDynaTrie = TrieInit();
 	gTrie = GetROMDictionary(2);
 /*
+	assistFrames is in ROM -- why add GC roots?
 	gDateFrame = GetFrameSlot(RA(assistFrames), SYMA(date));
 	AddGCRoot(&gDateFrame);
 
@@ -237,6 +238,7 @@ InitDSHeuristics(RefArg inRcvr, RefArg inOptions)
 	gWhereHistory = AllocateArray(SYMA(history), 3);
 	AddGCRoot(&gWhereHistory);
 /*
+	assistFrames is in ROM -- why add GC roots?
 	gWhoObj = GetFrameSlot(RA(assistFrames), SYMA(who_obj));
 	AddGCRoot(&gWhoObj);
 
@@ -257,6 +259,7 @@ Ref
 InitDSTaskTemplates(RefArg inRcvr, RefArg inOptions)
 {
 	gActionClass = GetFrameSlot(RA(assistFrames), SYMA(action));
+//	assistFrames is in ROM -- why add GC roots?
 //	AddGCRoot(&gActionClass);
 
 	gObjectClass = GetFrameSlot(RA(assistFrames), SYMA(user_obj));
@@ -283,7 +286,7 @@ InitDSPhraseSupport(RefArg inRcvr, RefArg inOptions)
 
 // for debug
 Ref
-GeneratePhrases(RefArg inRcvr, RefArg inStr)
+GeneratePhrases(RefArg inStr)	// RefArg inRcvr stripped
 {
 	RefVar aPhrase;
 	IPhraseGenerator(inStr);
@@ -292,7 +295,7 @@ GeneratePhrases(RefArg inRcvr, RefArg inStr)
 	PrintGeneratorState();
 	while (NOTNIL(aPhrase = NextPhrase()))
 	{
-//		printf("\n%U", GetUString(aPhrase));
+//		printf("\n%U", GetUString(aPhrase));	// this is what we want to happen
 		char buf[256];
 		ConvertFromUnicode(GetUString(aPhrase), buf);
 		printf("\n%s", buf);
@@ -310,7 +313,7 @@ PrintGeneratorState(void)
 	for (i = count; i > 0; i--)
 		for (j = 1; j <= count - (i-1); j++)
 		{
-//			printf("\n[%d,%d] : %U = %d", j, i, GetUString(PartialGlueString(gPhrasalGlobals->words, j, i)), GetPhraseElem(i, j));
+//			printf("\n[%d,%d] : %U = %d", j, i, GetUString(PartialGlueString(gPhrasalGlobals->words, j, i)), GetPhraseElem(i, j));	// this is what we want to happen
 			char buf[256];
 			ConvertFromUnicode(GetUString((PartialGlueString(gPhrasalGlobals->words, j, i))), buf);
 			printf("\n[%d,%d] : %s = %d", j, i, buf, GetPhraseElem(i, j));
@@ -574,7 +577,7 @@ MatchString(CDictionary * inTrie, UniChar * inStr, RefArg ioState)
 	RefVar dynaTag(DynaTrieLookup(inStr));	// sp14
 
 	// look it up in the specified trie
-	ULong * index;	// sp1C
+	ArrayIndex * index;	// sp1C
 	inTrie->verifyString(inStr, NULL, &index, NULL);
 
 	// return whatever tags we recognised
@@ -856,8 +859,7 @@ DSTagString(RefArg inRcvr, RefArg inNames, RefArg inStr, RefArg ioState)
 							{
 								// slot is an array of names frames
 								RefVar aName;
-								int j, limit = Length(slot);
-								for (j = 0; j < limit; j++)
+								for (ArrayIndex j = 0, limit = Length(slot); j < limit; j++)
 								{
 									aName = GetArraySlot(slot, j);
 									personTag = TagStringHelper(aName, strWords);
@@ -963,28 +965,33 @@ StringToFrameMapper(RefArg inStr)
 {
 	RefVar names(MakeArray(0));
 	RefVar words(FSplitString(RA(NILREF), inStr));
-	ArrayIndex count = Length(words);
-	if (count <= 4)	// any more and it’s unlikely to be a name
+	ArrayIndex numOfWords = Length(words);
+
+	// any more than 4 words and it’s unlikely to be a name
+	if (numOfWords > 4)
+		return NILREF;
+
+	// any one-letter words, it’s unlikely to be a name
+	for (ArrayIndex i = 0; i < numOfWords; ++i)
 	{
-		// if we have any one-letter words, it’s unlikely to be a name
-		for (ArrayIndex i = 0; i < count; ++i)
-		{
-			if (RINT(FStrLen(RA(NILREF), GetArraySlot(words, i))) == 1)
-				return NILREF;
-		}
-		// set up Names soup query -- looking for entries that match inStr as a name
-		RefVar theQuery = Clone(GetFrameSlot(RA(assistFrames), SYMA(DSQuery)));
-		SetFrameSlot(theQuery, SYMA(words), words);
-//		RefVar theCursor = SoupQuery(GetCardFileSoup(), theQuery);
-		RefVar theEntry;
-		// collect up to 15 names soup entries
-//		for (count = 0; NOTNIL(theEntry = CursorEntry(theCursor)) && count++ < 15; CursorNext(theCursor)); 
-		{
-//			Append(names, theEntry);
-		}
-		if (Length(names) > 0)
-			return names;
+		if (RINT(FStrLen(RA(NILREF), GetArraySlot(words, i))) == 1)
+			return NILREF;
 	}
+
+	// set up Names soup query -- looking for entries that match inStr as a name
+	RefVar theQuery = Clone(GetFrameSlot(RA(assistFrames), SYMA(DSQuery)));
+	SetFrameSlot(theQuery, SYMA(words), words);
+	RefVar theCursor = SoupQuery(GetCardFileSoup(), theQuery);
+	RefVar theEntry;
+	// collect up to 15 names soup entries
+	for (ArrayIndex i = 0; NOTNIL(theEntry = CursorEntry(theCursor)) && i < 15; CursorNext(theCursor), ++i)
+	{
+		Append(names, theEntry);
+	}
+	if (Length(names) > 0)
+		return names;
+
+	// didn’t find anything
 	return NILREF;
 }
 
@@ -1041,7 +1048,7 @@ TrieAdd(UniChar * inStr, CDictionary * inDict, RefArg inTemplate)
 Ref
 DynaTrieLookup(UniChar * inStr)
 {
-	ULong * index;
+	ArrayIndex * index;
 	gDynaTrie->verifyString(inStr, NULL, &index, NULL);
 	if (airusResult == 2 || airusResult == 3)
 		return GetArraySlot(GetArraySlot(gDynaDictionaryFrame, *index), 1);
@@ -1685,8 +1692,8 @@ RemovePhrasalLexEntry(RefArg inTemplate)
 	return NILREF;
 }
 
-#pragma mark -
 
+#pragma mark -
 /*------------------------------------------------------------------------------
 	I n t e l l i g e n t   A s s i s t a n t
 ------------------------------------------------------------------------------*/
@@ -1764,7 +1771,7 @@ FPhraseFilter(RefArg inRcvr, RefArg inStrs)
 		RefVar	badWords = MAKEMAGICPTR(270);
 		RefVar	filteredStrs(MakeArray(0));
 		RefVar	str;
-		size_t	strLen;
+		ArrayIndex	strLen;
 		for (ArrayIndex i = 0, count= Length(inStrs); i < count; ++i)
 		{
 			str = GetArraySlot(inStrs, i);
@@ -1792,10 +1799,9 @@ FPhraseFilter(RefArg inRcvr, RefArg inStrs)
 Ref
 FParseUtter(RefArg inRcvr, RefArg inString)
 {
-#if defined(correct)
 	// open the assistant slip and show the phrase in its entry line
-	gRootView->setParsingUtterance(YES);
-	RefVar assistant(GetFrameSlot(gRootView->fContext, SYMA(assistant)));
+	gRootView->setParsingUtterance(true);
+	RefVar assistant(GetFrameSlot(gRootView->fContext, SYMA(assistant)));	//sp18
 	FOpenX(assistant);
 
 	RefVar entryLine(GetFrameSlot(assistant, SYMA(assistLine)));
@@ -1811,129 +1817,133 @@ FParseUtter(RefArg inRcvr, RefArg inString)
 	}
 
 	// keep user informed of progress
-//	DoMessage(assistant, SYMA(Thinking), RA(NILREF));
-#else
-	RefVar assistant(GetFrameSlot(gRootView->fContext, SYMA(assistant)));
-#endif
-	if (IsString(inString) && RSTRLEN(inString) > 0)
+	DoMessage(assistant, SYMA(Thinking), RA(NILREF));
+
+	// ignore empty string
+	if (IsString(inString) && RSTRLEN(inString) == 0)
 	{
-		RefVar interpretation;	// sp18
-		RefVar taskFrame;			// sp08
-		RefVar sp04;
-		int theScore = 0;			// r7
+		DoMessage(assistant, SYMA(Duh), MakeArray(1));
+		return NILREF;
+	}
 
-		// cache the request string in the assistant
-		SetFrameSlot(assistant, SYMA(matchString), inString);
-//sp-04
-		if (NOTNIL(IAInputErrors(RA(NILREF), assistant)))
-			interpretation = FIAatWork(inRcvr, AllocateFrame());	// should be NSCall(RA(StartIAProgress));		// -> @296 -> FIAatWork
-		if (NOTNIL(interpretation))
+	// cache the request string in the assistant
+	SetFrameSlot(assistant, SYMA(matchString), inString);
+
+	RefVar interpretation;	// sp1C
+	RefVar taskFrame;			// sp0C
+	RefVar sp08;
+	int theScore = 0;			// r7
+
+//sp-04 [-4]
+	if (NOTNIL(IAInputErrors(RA(NILREF), assistant)))
+#if defined(forFramework)
+		interpretation = FIAatWork(inRcvr, AllocateFrame());	// since DoProgress requires the view system
+#else
+		interpretation = NSCall(RA(StartIAProgress));	// -> @296 -> DoProgress -> FIAatWork
+#endif
+
+	if (NOTNIL(interpretation))
+	{
+		if (Length(interpretation) == 0)
 		{
-			if (Length(interpretation) == 0)
-			{
-//				NSCall(RA(IACancelAlert));		// user cancelled -- or actually, any old exception occurred
-				return NILREF;
-			}
+#if !defined(forFramework)
+			NSCall(RA(IACancelAlert));		// user cancelled -- or actually, any old exception occurred
+#endif
+			return NILREF;
+		}
+		// interpretation is an array: [taggedPhrases, rawPhrases, taggedClasses, matchedEntries]
+//sp-08 [-0C]
+		// create array of all task frames -- start with the built-in ones
+		RefVar taskList(Clone(GetFrameSlot(RA(assistFrames), SYMA(task_list))));
+//sp-0C [-18]
+		// add any user-registered ones
+		RefVar dynaTemplates(GetFrameSlot(RA(gVarFrame), SYMA(dynaTemplates)));
+		if (IsArray(dynaTemplates))
+			taskList = UniqueAppendListGen(dynaTemplates, taskList);
 
-			// interpretation is an array: [taggedPhrases, rawPhrases, taggedClasses, matchedEntries]
-//sp-08
-			RefVar taskList(Clone(GetFrameSlot(RA(assistFrames), SYMA(task_list))));	// sp00r
-//sp-0C
-			RefVar dynaTemplates(GetFrameSlot(RA(gVarFrame), SYMA(dynaTemplates)));	// sp04r
-			if (IsArray(dynaTemplates))
-				taskList = UniqueAppendListGen(dynaTemplates, taskList);
-
-			// find the task frame
-			RefVar sp0C, sp10;
-			RefVar sp00(GetArraySlot(interpretation, 2));	// taggedClasses
-			ArrayIndex i, j, count = Length(sp00);	// r6, r5, r4
-//sp-30 [-4C]
-			CObjectIterator iter(sp00);
-			for (i = 0; ISNIL(taskFrame) && !iter.done(); iter.next(), i++)
+		// find the task frame
+		RefVar sp10, sp14;
+		RefVar sp04(GetArraySlot(interpretation, 2));	// taggedClasses
+		ArrayIndex count = Length(sp04);
+//sp-30 [-48]
+		CObjectIterator iter(sp04);
+		for (ArrayIndex i = 0; ISNIL(taskFrame) && !iter.done(); iter.next(), ++i)
+		{
+			sp10 = iter.value();
+			if (NOTNIL(IsAction(sp10)))
 			{
-				sp0C = iter.value();
-				if (NOTNIL(IsAction(sp0C)))
+				for (ArrayIndex j = i; j < count; ++j)
 				{
-					for (j = i; j < count; j++)
-					{
-						sp10 = GetArraySlot(sp00, j);
-						if (IsSymbol(sp10))
-							sp10 = MapSymToFrame(sp10);
-						if (NOTNIL(GetFrameSlot(sp10, SYMA(meta_level))))
-							sp0C = sp10;
-					}
-//sp-30 [-7C]
-					CObjectIterator iter2(taskList);
-					for ( ; !iter2.done(); iter2.next())
-					{
-						if (NOTNIL(IsPrimaryAct(sp0C, iter2.value())))
-						{
-//sp-04 [-80]
-							taskFrame = iter2.value();
-							sp04 = GetFrameSlot(taskFrame, SYMA(signature));
-							sp04 = CheezySubsumption(RA(NILREF), sp00, sp04);
-//sp+04 [-7C]
-						}
-					}
+					sp14 = GetArraySlot(sp04, j);
+					if (IsSymbol(sp14))
+						sp14 = MapSymToFrame(sp14);
+					if (NOTNIL(GetFrameSlot(sp14, SYMA(meta_level))))
+						sp10 = sp14;
 				}
-//764C
-//sp+30 [-4C]
-			}
-
-			if (ISNIL(taskFrame))
-			{
-				int score, highestScoreSoFar = -10000;
-//sp-30 [-7C]
+//sp-30 [-78]
 				CObjectIterator iter2(taskList);
 				for ( ; !iter2.done(); iter2.next())
 				{
-//sp-04 [-80]
-					sp10 = GetFrameSlot(iter2.value(), SYMA(signature));
-					size_t r10 = Length(sp10);
-					sp10 = CheezySubsumption(RA(NILREF), sp00, sp10);
-					size_t r0 = NOTNIL(sp10) ? Length(sp10) : 0;
-					if (r10 > 0 && r0 > 0)
+					if (NOTNIL(IsPrimaryAct(sp10, iter.value())))
 					{
-						score = (r0*2 - count)*1000 / r10;
-						if (score > highestScoreSoFar)
-						{
-							taskFrame = iter2.value();
-							sp04 = sp10;
-							highestScoreSoFar = score;
-						}
+						taskFrame = iter2.value();
+						sp08 = GetFrameSlot(taskFrame, SYMA(signature));
+						sp08 = CheezySubsumption(sp04, sp08);
 					}
-//sp+04 [-7C]
 				}
-				theScore = highestScoreSoFar;
+//sp+30 [-48]
 			}
-//77AC
 		}
-//sp+30 [-4C]
-//sp+3C [-10]
-//sp+08 [-08]
 
-	//77CC
-		if (NOTNIL(taskFrame))	// sp08
+		if (ISNIL(taskFrame))
 		{
-			taskFrame = Clone(taskFrame);
-			SetFrameSlot(taskFrame, SYMA(parse), sp04);
-			SetFrameSlot(taskFrame, SYMA(input), GetArraySlot(interpretation, 2));
-			SetFrameSlot(taskFrame, SYMA(raw), GetArraySlot(interpretation, 0));
-			SetFrameSlot(taskFrame, SYMA(score), MAKEINT(theScore));
-			SetFrameSlot(taskFrame, SYMA(phrases), GetArraySlot(interpretation, 1));
-			SetFrameSlot(taskFrame, SYMA(noiseWords), UnmatchedWords(RA(NILREF)));
-			SetFrameSlot(taskFrame, SYMA(origPhrase), FOrigPhrase(RA(NILREF)));
-			SetFrameSlot(taskFrame, SYMA(entries), GetArraySlot(interpretation, 3));
-			FillPreconditions(taskFrame);
-			DoMessage(taskFrame, SYMA(PostParse), RA(NILREF));
-			return taskFrame;
+			// no exact match -- find the closest
+			int score, highestScoreSoFar = -10000;
+//sp-30 [-78]
+			CObjectIterator iter2(taskList);
+			for ( ; !iter2.done(); iter2.next())
+			{
+				sp14 = GetFrameSlot(iter2.value(), SYMA(signature));
+				ArrayIndex r10 = Length(sp14);
+				sp14 = CheezySubsumption(sp04, sp14);
+				ArrayIndex r0 = NOTNIL(sp14) ? Length(sp14) : 0;
+				if (r10 > 0 && r0 > 0)
+				{
+					score = (r0*2 - count)*1000 / r10;
+					if (score > highestScoreSoFar)
+					{
+						taskFrame = iter2.value();
+						sp08 = sp14;
+						highestScoreSoFar = score;
+					}
+				}
+			}
+			theScore = highestScoreSoFar;
 		}
 	}
-#if defined(correct)
-	// if we get here, string was not valid
-	RefVar args(MakeArray(1));
-	DoMessage(assistant, SYMA(Duh), args);
-#endif
+//sp+30 [-48]
+//sp+3C [-0C]
+//sp+08 [-04]
+
+	if (NOTNIL(taskFrame))
+	{
+		taskFrame = Clone(taskFrame);
+		SetFrameSlot(taskFrame, SYMA(parse), sp08);
+		SetFrameSlot(taskFrame, SYMA(input), GetArraySlot(interpretation, 2));
+		SetFrameSlot(taskFrame, SYMA(raw), GetArraySlot(interpretation, 0));
+		SetFrameSlot(taskFrame, SYMA(score), MAKEINT(theScore));
+		SetFrameSlot(taskFrame, SYMA(phrases), GetArraySlot(interpretation, 1));
+		SetFrameSlot(taskFrame, SYMA(noiseWords), UnmatchedWords(RA(NILREF)));
+		SetFrameSlot(taskFrame, SYMA(origPhrase), FOrigPhrase(RA(NILREF)));
+		SetFrameSlot(taskFrame, SYMA(entries), GetArraySlot(interpretation, 3));
+		FillPreconditions(taskFrame);
+// can’t PostParse yet b/c this needs apps and the view system
+//		DoMessage(taskFrame, SYMA(PostParse), RA(NILREF));
+		return taskFrame;
+	}
+
+	// it didn’t work out
+	DoMessage(assistant, SYMA(Duh), MakeArray(1));
 	return NILREF;
 }
 
@@ -1967,10 +1977,10 @@ IAInputErrors(RefArg inRcvr, RefArg inAssistant)
 	UniChar spaceChar = U_CONST_CHAR(0x20);
 	CDataPtr strData(str);
 	UniChar * s = (UniChar *)(char *)strData;
-	bool isWS = YES;
+	bool isWS = true;
 	for (ArrayIndex i = 0; i < strLen; ++i)
 		if (s[i] != spaceChar)
-			{ isWS = NO; break; }
+			{ isWS = false; break; }
 	if (isWS)
 		return NILREF;
 
@@ -1989,6 +1999,7 @@ IAInputErrors(RefArg inRcvr, RefArg inAssistant)
 	Return:	NILREF => phrase could not be interpreted
 				array[0] => error/cancellation during interpretation
 				array[4] => interpretation result
+								[taggedPhrases, rawPhrases, taggedClasses, matchedEntries]
 ------------------------------------------------------------------------------*/
 
 Ref
@@ -2010,10 +2021,10 @@ FIAatWork(RefArg inRcvr, RefArg inProgressSlip)
 		RefVar aPhrase;
 		for (aPhrase = NextPhrase(); NOTNIL(aPhrase); aPhrase = NextPhrase())
 		{
-//			NSCall(RA(TickleIAProgress), inProgressSlip);
-
+#if !defined(forFramework)
+			NSCall(RA(TickleIAProgress), inProgressSlip);
+#endif
 			RefVar cleanStr(RemoveTrailingPunct(aPhrase));
-PrintObject(cleanStr, 0); printf("\n");		// for debug
 			if (NOTNIL(cleanStr) && RSTRLEN(cleanStr) > 0)
 			{
 				RefVar taggedPhrase(MatchString(gTrie, GetUString(cleanStr), state));
@@ -2028,7 +2039,9 @@ PrintObject(cleanStr, 0); printf("\n");		// for debug
 			}
 		}
 
-PrintGeneratorState();	// for debug
+#if defined(forDebug)
+		PrintGeneratorState();
+#endif
 		if (Length(taggedPhrases) > 0)
 		{
 			RefVar matchedEntries(Clone(GetFrameSlot(RA(assistFrames), SYMA(matched))));
@@ -2097,7 +2110,7 @@ FillPreconditions(RefArg ioTaskTemplate)	// RefArg inRcvr stripped
 
 
 Ref
-CheezySubsumption(RefArg inRcvr, RefArg inArray1, RefArg inArray2)
+CheezySubsumption(RefArg inArray1, RefArg inArray2)	// RefArg inRcvr stripped
 {
 	if (NOTNIL(inArray1) && NOTNIL(inArray2))
 	{
@@ -2133,7 +2146,7 @@ CheezySubsumption(RefArg inRcvr, RefArg inArray1, RefArg inArray2)
 
 
 Ref
-CheezyIntersect(RefArg inRcvr, RefArg inArray1, RefArg inArray2)
+CheezyIntersect(RefArg inArray1, RefArg inArray2)	// RefArg inRcvr stripped
 {
 	if (NOTNIL(inArray1) && NOTNIL(inArray2))
 	{
@@ -2236,7 +2249,7 @@ PathToRoot(RefArg inRcvr, RefArg inFrame)
 Ref
 CommonAncestors(RefArg inRcvr, RefArg inFrame1, RefArg inFrame2)
 {
-	RefVar ancestors(CheezyIntersect(RA(NILREF), PathToRoot(RA(NILREF), inFrame1), PathToRoot(RA(NILREF), inFrame2)));
+	RefVar ancestors(CheezyIntersect(PathToRoot(RA(NILREF), inFrame1), PathToRoot(RA(NILREF), inFrame2)));
 	if (NOTNIL(ancestors) && Length(ancestors) > 0)
 		return ancestors;
 	return NILREF;

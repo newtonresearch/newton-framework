@@ -83,7 +83,7 @@ class CDate
 public:
 				CDate();
 				CDate(ULong inMinsSince1904);
-				CDate(const UniChar * inStr, size_t * outStrParsedLen, size_t inStrLen);
+				CDate(const UniChar * inStr, ArrayIndex * outStrParsedLen, ArrayIndex inStrLen);
 
 	void		initWithMinutes(ULong inMinsSince1904);
 	void		initWithSeconds(ULong inSecsSince1993);
@@ -91,17 +91,17 @@ public:
 	void		setCurrentTime(void);
 	bool		isValidDate(void) const;
 
-	int		stringToDate(const UniChar * inStr, size_t * outStrParsedLen, size_t inStrLen);
-	int		stringToTime(const UniChar * inStr, size_t * outStrParsedLen, size_t inStrLen);
-	int		stringToDateFields(const UniChar * inStr, size_t * outStrParsedLen, size_t inStrLen);
-	int		stringToDateFrame(const UniChar * inStr, size_t * outStrParsedLen, size_t inStrLen);
+	int		stringToDate(const UniChar * inStr, ArrayIndex * outStrParsedLen, ArrayIndex inStrLen);
+	int		stringToTime(const UniChar * inStr, ArrayIndex * outStrParsedLen, ArrayIndex inStrLen);
+	int		stringToDateFields(const UniChar * inStr, ArrayIndex * outStrParsedLen, ArrayIndex inStrLen);
+	int		stringToDateFrame(const UniChar * inStr, ArrayIndex * outStrParsedLen, ArrayIndex inStrLen);
 
 	void		cleanUpFields(void);
 
-	void		dateElementString(ULong inType, ULong inFormat, UniChar * outStr, size_t inStrSize, bool inLongFormat);
-	void		longDateString(ULong inStrSpec, UniChar * outStr, size_t inStrSize);
-	void		shortDateString(ULong inStrSpec, UniChar * outStr, size_t inStrSize);
-	void		timeString(ULong inStrSpec, UniChar * outStr, size_t inStrSize);
+	void		dateElementString(ULong inType, ULong inFormat, UniChar * outStr, ArrayIndex inStrSize, bool inLongFormat);
+	void		longDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize);
+	void		shortDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize);
+	void		timeString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize);
 
 	void		incrementMonth(int inOffset);
 
