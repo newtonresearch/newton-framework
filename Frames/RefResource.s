@@ -48,7 +48,7 @@
 #endif
 
 #define SymbolObj(_len) \
-		.long		kHeaderSize + _len + kFlagsBinary ;\
+		.long		kHeaderSize + 4 + _len + kFlagsBinary ;\
 		Ref		0, 0x55552
 #define StringObj(_len) \
 		.long		kHeaderSize + (_len<<1) + kFlagsBinary ;\
