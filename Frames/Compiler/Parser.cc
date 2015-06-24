@@ -1116,7 +1116,7 @@ CCompiler::parseType(void)
 	int typeSpec = 0;		// should enum this somewhere
 	if (theToken.id == TOKENsymbol)
 	{
-		char * typeSym = SymbolName(theToken.value.ref);
+		const char * typeSym = SymbolName(theToken.value.ref);
 		if (strcmp(typeSym, "int") == 0)				// int is not a reserved word
 		{
 			consumeToken();	//	int
