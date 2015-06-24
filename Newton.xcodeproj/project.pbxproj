@@ -153,13 +153,11 @@
 		F48BD4C31A0B987200098DEE /* FlashDriver.cc in Sources */ = {isa = PBXBuildFile; fileRef = F48BD4BF1A0B987200098DEE /* FlashDriver.cc */; };
 		F48BD4C41A0B987200098DEE /* FlashDriver.h in Headers */ = {isa = PBXBuildFile; fileRef = F48BD4C01A0B987200098DEE /* FlashDriver.h */; };
 		F48BD4C51A0B987200098DEE /* FlashDriver.h in Headers */ = {isa = PBXBuildFile; fileRef = F48BD4C01A0B987200098DEE /* FlashDriver.h */; };
-		F48BD4C61A0B987200098DEE /* FlashDriver.h in Headers */ = {isa = PBXBuildFile; fileRef = F48BD4C01A0B987200098DEE /* FlashDriver.h */; };
 		F48BD4C91A0B995000098DEE /* FlashRange.cc in Sources */ = {isa = PBXBuildFile; fileRef = F48BD4C71A0B995000098DEE /* FlashRange.cc */; };
 		F48BD4CA1A0B995000098DEE /* FlashRange.cc in Sources */ = {isa = PBXBuildFile; fileRef = F48BD4C71A0B995000098DEE /* FlashRange.cc */; };
 		F48BD4CB1A0B995000098DEE /* FlashRange.cc in Sources */ = {isa = PBXBuildFile; fileRef = F48BD4C71A0B995000098DEE /* FlashRange.cc */; };
 		F48BD4CC1A0B995000098DEE /* FlashRange.h in Headers */ = {isa = PBXBuildFile; fileRef = F48BD4C81A0B995000098DEE /* FlashRange.h */; };
 		F48BD4CD1A0B995000098DEE /* FlashRange.h in Headers */ = {isa = PBXBuildFile; fileRef = F48BD4C81A0B995000098DEE /* FlashRange.h */; };
-		F48BD4CE1A0B995000098DEE /* FlashRange.h in Headers */ = {isa = PBXBuildFile; fileRef = F48BD4C81A0B995000098DEE /* FlashRange.h */; };
 		F491EA4A119C833300F781BF /* DictData in Resources */ = {isa = PBXBuildFile; fileRef = F491EA49119C833300F781BF /* DictData */; };
 		F491EA4B119C833300F781BF /* DictData in Resources */ = {isa = PBXBuildFile; fileRef = F491EA49119C833300F781BF /* DictData */; };
 		F4980ADB1176FD6400142AFC /* IA.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C18816071447A20049FE3F /* IA.cc */; };
@@ -310,6 +308,9 @@
 		F4AE156010591B1200F1AB5A /* NArray.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4AE155E10591B1200F1AB5A /* NArray.cc */; };
 		F4AE156310591B7900F1AB5A /* QDCompression.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C826C30BCD542500392B90 /* QDCompression.cc */; };
 		F4AE156710591BC000F1AB5A /* Ink.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4AE156510591BC000F1AB5A /* Ink.cc */; };
+		F4AE56C51B0203DC00F15F10 /* ROMData.h in Headers */ = {isa = PBXBuildFile; fileRef = F4AE56C41B0203DC00F15F10 /* ROMData.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F4AE56C61B020B6B00F15F10 /* ObjectHeap.h in Headers */ = {isa = PBXBuildFile; fileRef = 66393DD304C7F08100A80002 /* ObjectHeap.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F4AE56D51B0249F100F15F10 /* NewtonPackage.h in Headers */ = {isa = PBXBuildFile; fileRef = F4CE81C61AEAB0BA004726AD /* NewtonPackage.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F4AEFE10184BBE790072ACAA /* NTK.rex in Resources */ = {isa = PBXBuildFile; fileRef = F4AEFE0F184BBE790072ACAA /* NTK.rex */; };
 		F4AEFE11184CBC8C0072ACAA /* Power.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4B784F80F265A02000CBAFE /* Power.cc */; };
 		F4AEFE13184E23DE0072ACAA /* UserDomain.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4AEFE12184E23DE0072ACAA /* UserDomain.cc */; };
@@ -381,8 +382,15 @@
 		F4CAAF781237DD2D005179CD /* Transformations.cc in Sources */ = {isa = PBXBuildFile; fileRef = F42E4E5A12243EF900D49B5D /* Transformations.cc */; };
 		F4CAAF821237E5DC005179CD /* RecDomain.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D86A5A06D7C07000BE7C2B /* RecDomain.cc */; };
 		F4CE3F610872DD3E00858B61 /* SWInterrupt.cc in Sources */ = {isa = PBXBuildFile; fileRef = F44301980817A10B0089C70B /* SWInterrupt.cc */; };
+		F4CE81C71AEAB0BA004726AD /* NewtonPackage.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4CE81C51AEAB0BA004726AD /* NewtonPackage.cc */; };
+		F4CE81C81AEAB0BA004726AD /* NewtonPackage.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4CE81C51AEAB0BA004726AD /* NewtonPackage.cc */; };
+		F4CE81C91AEAB0BA004726AD /* NewtonPackage.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4CE81C51AEAB0BA004726AD /* NewtonPackage.cc */; };
+		F4CE81CA1AEAB0BA004726AD /* NewtonPackage.h in Headers */ = {isa = PBXBuildFile; fileRef = F4CE81C61AEAB0BA004726AD /* NewtonPackage.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F4CE81CB1AEAB0BA004726AD /* NewtonPackage.h in Headers */ = {isa = PBXBuildFile; fileRef = F4CE81C61AEAB0BA004726AD /* NewtonPackage.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F4D0E04E06FB1ACF0035F2EF /* LargeBinaries.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D0E04D06FB1ACF0035F2EF /* LargeBinaries.cc */; };
 		F4D0E04F06FB1ACF0035F2EF /* LargeBinaries.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D0E04D06FB1ACF0035F2EF /* LargeBinaries.cc */; };
+		F4D18CCE1B0DCA2D007971CA /* Ref32.h in Headers */ = {isa = PBXBuildFile; fileRef = F448D9591A0D38EE00BC1C13 /* Ref32.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F4D18CCF1B0DCA31007971CA /* Ref32.h in Headers */ = {isa = PBXBuildFile; fileRef = F448D9591A0D38EE00BC1C13 /* Ref32.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F4D2F98A128C59A9009D5BA5 /* Voyager.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D2F989128C59A9009D5BA5 /* Voyager.cc */; };
 		F4D2F996128C5A9E009D5BA5 /* Startup.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D2F995128C5A9E009D5BA5 /* Startup.cc */; };
 		F4D2F9B6128D596F009D5BA5 /* TraceEvents.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D2F9B5128D596F009D5BA5 /* TraceEvents.cc */; };
@@ -396,7 +404,6 @@
 		F4D6113B190A9C160041C087 /* SerialNumber.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D61137190A9C160041C087 /* SerialNumber.cc */; };
 		F4D6113C190A9C160041C087 /* SerialNumber.h in Headers */ = {isa = PBXBuildFile; fileRef = F4D61138190A9C160041C087 /* SerialNumber.h */; };
 		F4D6113D190A9C160041C087 /* SerialNumber.h in Headers */ = {isa = PBXBuildFile; fileRef = F4D61138190A9C160041C087 /* SerialNumber.h */; };
-		F4D6113E190A9C160041C087 /* SerialNumber.h in Headers */ = {isa = PBXBuildFile; fileRef = F4D61138190A9C160041C087 /* SerialNumber.h */; };
 		F4D61140190AAD650041C087 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4D6113F190AAD650041C087 /* IOKit.framework */; };
 		F4D61148191AB3D60041C087 /* MuxStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4312AF309B451A700742BE0 /* MuxStore.cc */; };
 		F4D61149191AB3E70041C087 /* StoreObjRef.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4AA2F9211D662C300D04DF0 /* StoreObjRef.cc */; };
@@ -1045,6 +1052,7 @@
 		F4AE155F10591B1200F1AB5A /* NArray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NArray.h; sourceTree = "<group>"; };
 		F4AE156510591BC000F1AB5A /* Ink.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Ink.cc; sourceTree = "<group>"; };
 		F4AE156610591BC000F1AB5A /* Ink.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Ink.h; sourceTree = "<group>"; };
+		F4AE56C41B0203DC00F15F10 /* ROMData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ROMData.h; sourceTree = "<group>"; };
 		F4AEFE0F184BBE790072ACAA /* NTK.rex */ = {isa = PBXFileReference; lastKnownFileType = file; name = NTK.rex; path = OS/NTK.rex; sourceTree = "<group>"; };
 		F4AEFE12184E23DE0072ACAA /* UserDomain.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UserDomain.cc; sourceTree = "<group>"; };
 		F4AEFE1518523FEB0072ACAA /* StackManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StackManager.h; sourceTree = "<group>"; };
@@ -1109,6 +1117,8 @@
 		F4CAB04A123E5242005179CD /* Journal.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Journal.cc; sourceTree = "<group>"; };
 		F4CAB04D123F93B4005179CD /* TestAgent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = TestAgent.h; path = Testing/TestAgent.h; sourceTree = "<group>"; };
 		F4CAB04E123F93B4005179CD /* TestAgent.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = TestAgent.cc; path = Testing/TestAgent.cc; sourceTree = "<group>"; };
+		F4CE81C51AEAB0BA004726AD /* NewtonPackage.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NewtonPackage.cc; sourceTree = "<group>"; };
+		F4CE81C61AEAB0BA004726AD /* NewtonPackage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NewtonPackage.h; sourceTree = "<group>"; };
 		F4D0E04D06FB1ACF0035F2EF /* LargeBinaries.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LargeBinaries.cc; sourceTree = "<group>"; };
 		F4D2F989128C59A9009D5BA5 /* Voyager.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Voyager.cc; path = Platform/Voyager.cc; sourceTree = SOURCE_ROOT; };
 		F4D2F995128C5A9E009D5BA5 /* Startup.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Startup.cc; sourceTree = "<group>"; };
@@ -1406,6 +1416,9 @@
 				F4B784F70F265A02000CBAFE /* Power.h */,
 				F4B784F80F265A02000CBAFE /* Power.cc */,
 				F4D2F995128C5A9E009D5BA5 /* Startup.cc */,
+				F4CE81C61AEAB0BA004726AD /* NewtonPackage.h */,
+				F4CE81C51AEAB0BA004726AD /* NewtonPackage.cc */,
+				F4AE56C41B0203DC00F15F10 /* ROMData.h */,
 				F4B809E706F21C2A0042F1D4 /* ObjectSystem.cc */,
 				F4A8B4AA05737D8E004D6931 /* main.m */,
 				F458FCB81247510C00539427 /* Info-MessagePad.plist */,
@@ -2177,6 +2190,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F4CE81CA1AEAB0BA004726AD /* NewtonPackage.h in Headers */,
 				F48BD4CC1A0B995000098DEE /* FlashRange.h in Headers */,
 				F4D6113C190A9C160041C087 /* SerialNumber.h in Headers */,
 				F48BD4C41A0B987200098DEE /* FlashDriver.h in Headers */,
@@ -2196,6 +2210,7 @@
 				F4131071090570E400881447 /* NewtonMemory.h in Headers */,
 				F48BD4CD1A0B995000098DEE /* FlashRange.h in Headers */,
 				F41310720905710700881447 /* NewtonTime.h in Headers */,
+				F4CE81CB1AEAB0BA004726AD /* NewtonPackage.h in Headers */,
 				F41310730905710B00881447 /* NewtonTypes.h in Headers */,
 				F41310740905710F00881447 /* NewtonWidgets.h in Headers */,
 				F41310750905711A00881447 /* FakeFrames.h in Headers */,
@@ -2209,6 +2224,7 @@
 				F4131080090573CB00881447 /* UStringUtils.h in Headers */,
 				F4F3742E090A65AA000F707C /* ROMSymbols.h in Headers */,
 				F4F3742F090A65D8000F707C /* SymbolDefs.h in Headers */,
+				F4D18CCE1B0DCA2D007971CA /* Ref32.h in Headers */,
 				F4242897093DF14400B9659F /* Pipes.h in Headers */,
 				F4B73F0009DBE711003027C2 /* OSErrors.h in Headers */,
 			);
@@ -2223,10 +2239,9 @@
 				F4ECC2ED0DE492E70023D27A /* NewtonDebug.h in Headers */,
 				F4ECC2EE0DE492E70023D27A /* NewtonErrors.h in Headers */,
 				F4ECC2EF0DE492E70023D27A /* NewtonExceptions.h in Headers */,
-				F48BD4C61A0B987200098DEE /* FlashDriver.h in Headers */,
 				F4ECC2F00DE492E70023D27A /* NewtonMemory.h in Headers */,
 				F4ECC2F10DE492E70023D27A /* NewtonTime.h in Headers */,
-				F4D6113E190A9C160041C087 /* SerialNumber.h in Headers */,
+				F4AE56D51B0249F100F15F10 /* NewtonPackage.h in Headers */,
 				F4ECC2F20DE492E70023D27A /* NewtonTypes.h in Headers */,
 				F4FD7DD71AADCA8C006294D8 /* ObjHeader.h in Headers */,
 				F4ECC2F30DE492E70023D27A /* NewtonWidgets.h in Headers */,
@@ -2235,14 +2250,16 @@
 				F4ECC2F60DE492E70023D27A /* Iterators.h in Headers */,
 				F4A5F21A17CF54240004B6DB /* Funcs.h in Headers */,
 				F4ECC2F70DE492E70023D27A /* NewtonScript.h in Headers */,
+				F4AE56C61B020B6B00F15F10 /* ObjectHeap.h in Headers */,
 				F4ECC2F80DE492E70023D27A /* PackageParts.h in Headers */,
 				F4ECC2F90DE492E70023D27A /* Unicode.h in Headers */,
 				F4ECC2FA0DE492E70023D27A /* UStringUtils.h in Headers */,
 				F4ECC2FB0DE492E70023D27A /* ROMSymbols.h in Headers */,
 				F4ECC2FC0DE492E70023D27A /* SymbolDefs.h in Headers */,
-				F48BD4CE1A0B995000098DEE /* FlashRange.h in Headers */,
 				F4ECC2FD0DE492E70023D27A /* Pipes.h in Headers */,
+				F4D18CCF1B0DCA31007971CA /* Ref32.h in Headers */,
 				F4ECC2FE0DE492E70023D27A /* OSErrors.h in Headers */,
+				F4AE56C51B0203DC00F15F10 /* ROMData.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2295,7 +2312,6 @@
 				F4ECC3010DE492E70023D27A /* Resources */,
 				F4ECC3030DE492E70023D27A /* Sources */,
 				F4ECC3530DE492E70023D27A /* Frameworks */,
-				F4ECC3580DE492E70023D27A /* Rez */,
 			);
 			buildRules = (
 			);
@@ -2386,13 +2402,6 @@
 
 /* Begin PBXRezBuildPhase section */
 		F4B8094906F217930042F1D4 /* Rez */ = {
-			isa = PBXRezBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F4ECC3580DE492E70023D27A /* Rez */ = {
 			isa = PBXRezBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -2639,6 +2648,7 @@
 				F4AA87531293E11E00749A7C /* MPInterface.cc in Sources */,
 				F4123158129FC151008996E1 /* Recognizers.cc in Sources */,
 				F4D6114E191AB3FA0041C087 /* FlashTracker.cc in Sources */,
+				F4CE81C71AEAB0BA004726AD /* NewtonPackage.cc in Sources */,
 				F41232F812A4F90A008996E1 /* Unit.cc in Sources */,
 				F41233C112A51BE7008996E1 /* WordRecognizer.cc in Sources */,
 				F412399012B51AC3008996E1 /* ShapeRecognizer.cc in Sources */,
@@ -2669,6 +2679,7 @@
 				F4B809A806F21B3F0042F1D4 /* Lookup.cc in Sources */,
 				F4B809BA06F21B480042F1D4 /* ObjectHeap.cc in Sources */,
 				F4B809C006F21B4A0042F1D4 /* ObjectPrinter.cc in Sources */,
+				F4CE81C81AEAB0BA004726AD /* NewtonPackage.cc in Sources */,
 				F4D6114C191AB3F30041C087 /* StoreObjRef.cc in Sources */,
 				F4B809C606F21B500042F1D4 /* RefMemory.cc in Sources */,
 				F4D6114D191AB3F90041C087 /* FlashTracker.cc in Sources */,
@@ -2915,6 +2926,7 @@
 				F4A5F21017CF51F30004B6DB /* DrawImage.cc in Sources */,
 				F4A5F21117CF51F70004B6DB /* DrawText.cc in Sources */,
 				F413344D18F6B94A00248854 /* PSSManager.cc in Sources */,
+				F4CE81C91AEAB0BA004726AD /* NewtonPackage.cc in Sources */,
 				F46133B418E6026E00D3E03C /* FlashIterator.cc in Sources */,
 				F4BC0ABF195DA16B0096738D /* Parser.cc in Sources */,
 				F4A58FDA18BB8146008B0832 /* NTK.cc in Sources */,
