@@ -27,7 +27,7 @@
 	D a t a
 ------------------------------------------------------------------------------*/
 
-ULong		gCPSR = 0xC0 + kSuperMode;	// start out with interrupts disabled
+ULong		gCPSR = kSuperMode + kFIQDisable + kIRQDisable;	// start out with interrupts disabled
 
 ULong		gHardwareType = kGestalt_MachineType_Mac;
 ULong		gROMManufacturer = kGestalt_Manufacturer_Apple;
@@ -892,7 +892,7 @@ OSBoot(void)
 	ExitAtomic();
 
 // Send the idle task to sleep.
-	SleepTask();
+//	SleepTask();
 }
 
 #pragma mark -

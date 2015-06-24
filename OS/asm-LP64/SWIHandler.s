@@ -300,6 +300,7 @@ SwapIn:
 		movq		_gCurrentTask(%rip), %r11
 		movq		taskPSR(%r11), %rax
 		movl		%eax, _gCPSR(%rip)	# restore interrupt mode --> fire pending interrupt
+		call		_ServicePendingInterrupts
 		movq		taskrax(%r11), %rax	# restore all registers
 		movq		taskrbx(%r11), %rbx
 		movq		taskrcx(%r11), %rcx
@@ -352,6 +353,7 @@ CopyIsDone:
 ExitSWI:
 		movl		_gSPSR(%rip), %eax
 		movl		%eax, _gCPSR(%rip)		# restore interrupt mode --> fire pending interrupt
+		call		_ServicePendingInterrupts
 
 		movq		frrax(%rbp), %rax			# restore registers
 		movq		frrbx(%rbp), %rbx
