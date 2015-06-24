@@ -6,6 +6,7 @@
 	Written by:	Newton Research Group, 2009.
 */
 #undef forDebug
+//#define forDebug 1
 #define debugLevel 2
 
 #include "LargeObjects.h"
