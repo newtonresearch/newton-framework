@@ -85,7 +85,7 @@ public:
 
 				CStoreHashTable(CStore * inStore, PSSId inId);
 
-	StoreRef	insert(ULong inHash, char * inData, size_t inSize);
+	StoreRef	insert(ULong inHash, const char * inData, size_t inSize);
 	bool		get(StoreRef inRef, char * outData, size_t * ioSize);
 	void		abort(void);
 	size_t	totalSize(void) const;

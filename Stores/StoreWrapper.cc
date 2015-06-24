@@ -8,7 +8,7 @@
 
 #include "Objects.h"
 #include "Arrays.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "UStringUtils.h"
 #include "FaultBlocks.h"
 #include "Indexes.h"
@@ -630,7 +630,7 @@ CStoreHashTable::CStoreHashTable(CStore * inStore, PSSId inId)
 
 
 StoreRef
-CStoreHashTable::insert(ULong inHash, char * inData, size_t inSize)
+CStoreHashTable::insert(ULong inHash, const char * inData, size_t inSize)
 {
 	ArrayIndex	index = inHash & 0x3F;	// r10
 	PSSId		objId = fTable[index];	// r1, sp00
@@ -692,7 +692,7 @@ CStoreHashTable::insert(ULong inHash, char * inData, size_t inSize)
 			// use two writes
 			uint16_t	itemSize = inSize;
 			OSERRIF(fStore->write(objId, offset, &itemSize, sizeof(itemSize)));
-			OSERRIF(fStore->write(objId, offset + sizeof(itemSize), inData, inSize));
+			OSERRIF(fStore->write(objId, offset + sizeof(itemSize), (void *)inData, inSize));
 		}
 	}
 
@@ -877,8 +877,8 @@ CStoreWrapper::addMap(SortedMapTag * inMap, bool inSoupEntry, ArrayIndex * ioNum
 									|| (symHash == k_modTimeHash && SymbolCompare(tag, RSYM_modTime) == 0))))
 		{
 			totalHash = (totalHash ^ symHash) >> *ioNumOfTags;	// should be ROR
-			char *	symName = SymbolName(tag);
-			size_t	symLen = strlen(symName) + 1;
+			const char * symName = SymbolName(tag);
+			size_t symLen = strlen(symName) + 1;
 			memmove(mapBuf + bufLen, symName, symLen);
 			bufLen += symLen;
 			*outIndices++ = inMap->index;
@@ -985,7 +985,7 @@ CStoreWrapper::referenceToMap(StoreRef inRef)
 StoreRef
 CStoreWrapper::symbolToReference(RefArg inSymbol)
 {
-	char * symName = SymbolName(inSymbol);
+	const char * symName = SymbolName(inSymbol);
 	return fSymbolTable->insert(SymbolHash(inSymbol), symName, strlen(symName));
 }
 
