@@ -124,10 +124,13 @@ public:
 	void		initSink(size_t inSize, RefArg inRef, CPipeCallback * inCallback);
 	void		initSource(RefArg inRef, CPipeCallback * inCallback);
 
+	Ref		ref(void) const;
+
 private:
 //	int32_t		f14;
 	RefStruct	fTheRef;
 };
+inline Ref	CRefPipe::ref(void) const { return fTheRef; }
 
 
 /*------------------------------------------------------------------------------
