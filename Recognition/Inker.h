@@ -127,7 +127,7 @@ private:
 	bool			mapLCDExtent(const Rect * inRect, Rect * outRect);
 
 	char *		fPixMem;				// +00
-	PixelMap		fPixMap;				// +04
+	NativePixelMap	fPixMap;				// +04
 	Rect			fInkBounds;			// +20
 	ArrayIndex	fNumOfPts;			// +28
 	LPoint		fExtent;
