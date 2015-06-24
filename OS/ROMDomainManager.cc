@@ -295,7 +295,8 @@ GetROMDomainUserMonitor(void)
 #if !defined(forFramework)
 	return &gROMStoreDomainManager->fPageMonitor;
 #else
-	return 0;
+	static ObjectId dumdum = 0;
+	return (CUMonitor *)&dumdum;
 #endif
 }
 
@@ -1491,8 +1492,7 @@ CROMDomainManager1K::fault(ProcessorState * inState)
 	{
 		gRDMNumberOfFaults++;
 		long  addrOffset = inState->fAddr - fROMBase;
-		if (addrOffset > fROMSize
-		 || addrOffset < 0)
+		if (!(0 <= addrOffset && addrOffset < fROMSize))
 		{
 			ThrowErr(exPermissionViolation, kOSErrPermissionViolation);
 			return kOSErrNoMemory;
@@ -1534,8 +1534,7 @@ CROMDomainManager1K::fault(ProcessorState * inState)
 NewtonErr
 CROMDomainManager1K::XIPFault(ProcessorState * inState)
 {
-	if (inState->fAddr >= fXIPBase + fROMSize
-	 || inState->fAddr < fXIPBase)
+	if (!(fXIPBase <= inState->fAddr && inState->fAddr < fXIPBase + fROMSize))
 	{
 		ThrowErr(exPermissionViolation, kOSErrPermissionViolation);
 		return kOSErrNoMemory;

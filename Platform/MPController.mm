@@ -79,7 +79,7 @@ SetPlatformAlarm(int64_t inDelta)
 		else
 		{
 			// handle the scheduler interrupt
-//			putchar('>');
+			putchar('>');
 			DispatchFakeInterrupt(kIntSourceScheduler);
 //			GetPlatformDriver()->timerInterruptHandler();
 		}
@@ -99,7 +99,7 @@ SetPlatformAlarm(int64_t inDelta)
 		{
 //			gIsAlarmSet = NO;
 			// handle the timer interrupt
-//			putchar('!');
+			putchar('!');
 			DispatchFakeInterrupt(kIntSourceTimer);
 		}
 	});

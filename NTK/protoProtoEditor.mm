@@ -20,7 +20,7 @@ int		REPprintf(const char * inFormat, ...);
 }
 
 extern "C" Ref GetProtoVariable(RefArg inRcvr, RefArg inTag, bool * outExists);
-extern Ref	MakeStringOfLength(const UniChar * str, size_t numChars);
+extern Ref	MakeStringOfLength(const UniChar * str, ArrayIndex numChars);
 
 #define kTellUser				@"TellUser"
 
@@ -53,7 +53,7 @@ MakeString(NSString * inStr)
 	RefVar s;
 	UniChar buf[128];
 	UniChar * str = buf;
-	unsigned int strLen = [inStr length];
+	ArrayIndex strLen = [inStr length];
 	if (strLen > 128)
 		str = (UniChar *)malloc(strLen*sizeof(UniChar));
 	[inStr getCharacters: str];
@@ -661,7 +661,7 @@ TellUser(RefArg inRcvr, RefArg inString)
 	NSString * str = MakeNSString(inString);
 	// pass to view’s delegate == window controller
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
-	[[[txView window] windowController] tellUser:str];
+	[txView.window.windowController tellUser:str];
 	return inString;
 }
 
