@@ -44,7 +44,7 @@ CMsg::CMsg(char * inStr)
 CMsg::~CMsg()
 {
 	if (fMem)
-		free(fMem);
+		FreePtr(fMem);
 }
 
 
