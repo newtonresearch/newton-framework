@@ -122,9 +122,9 @@ MakeSymbol(const char * name)
 		// no need to intern it because itÕs already in there
 		return GetArraySlot(gSymbolTable, index);
 
-	RefVar	sym(AllocateBinary(kSymbolClass, sizeof(ULong) + strlen(name) + 1));
+	RefVar	sym(AllocateBinary(kSymbolClass, sizeof(ULong) + strlen(name) + 1));	// symbols are nul-terminated
 	*(ULong *)BinaryData(sym) = hash;
-	strcpy(SymbolName(sym), name);
+	strcpy((char *)SymbolName(sym), name);
 
 	// symbol has been created - add it to the table
 	if (gNumSymbols > Length(gSymbolTable) * 85 / 100)
@@ -303,12 +303,25 @@ UnsafeSymbolEqual(Ref sym1, Ref sym2, ULong hash)
 
 
 /*----------------------------------------------------------------------
-	Return a symbol's name.
+	Return a symbol's hash value.
 	Args:		sym		a symbol
-	Return:	char *	its name
+	Return:	ULong	the hash value
 ----------------------------------------------------------------------*/
 
-char *
+ULong
+SymbolHash(Ref sym)
+{
+	return *(ULong*) BinaryData(sym);
+}
+
+
+/*----------------------------------------------------------------------
+	Return a symbol's name.
+	Args:		sym		a symbol
+	Return:	const char *	its name
+----------------------------------------------------------------------*/
+
+const char *
 SymbolName(Ref sym)
 {
 	return BinaryData(sym) + sizeof(ULong);
@@ -320,19 +333,6 @@ FSymbolName(RefArg inRcvr, RefArg inSym)
 	if (!IsSymbol(inSym))
 		ThrowExFramesWithBadValue(kNSErrBadArgs, inSym);
 	return MakeStringFromCString(SymbolName(inSym));
-}
-
-
-/*----------------------------------------------------------------------
-	Return a symbol's hash value.
-	Args:		sym		a symbol
-	Return:	ULong	the hash value
-----------------------------------------------------------------------*/
-
-ULong
-SymbolHash(Ref sym)
-{
-	return *(ULong*) BinaryData(sym);
 }
 
 
@@ -384,7 +384,7 @@ InternExistingSymbol(Ref sym)
 {
 	ArrayIndex   index;
 	ULong  symHash = SymbolHash(sym);
-	char * symName = SymbolName(sym);
+	const char * symName = SymbolName(sym);
 
 	if (!FindSymbol(Slots(gSymbolTable), gSymbolTableSize, gSymbolTableHashShift, symName, symHash, &index))
 		SetArraySlot(gSymbolTable, index, sym);
