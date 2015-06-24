@@ -669,7 +669,6 @@ CPrivatePackageIterator::disposeDirectory(void)
 	Args:		--
 	Return:	error code
 ----------------------------------------------------------------------------- */
-const char * const kPackageMagicNumber = "package01";
 
 NewtonErr
 CPrivatePackageIterator::checkHeader(void)
@@ -801,7 +800,7 @@ CPrivatePackageIterator::getPartInfoDesc(ArrayIndex inPartIndex, PartInfo * cons
 {
 	PartEntry * part = fPkgParts+inPartIndex;
 
-	outInfo->autoLoad = (part->flags & kAutoLoadFlag) != 0;
+	outInfo->autoLoad = (part->flags & kAutoLoadPartFlag) != 0;
 	outInfo->autoRemove = (part->flags & kAutoRemovePartFlag) != 0;
 	outInfo->compressed = (part->flags & kCompressedFlag) != 0;
 	outInfo->notify = (part->flags & kNotifyFlag) != 0;
