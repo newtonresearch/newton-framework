@@ -56,7 +56,7 @@ MakePixelsObject(const Rect * inBounds, int inDepth, int inRowBytes, int inResX,
 	RefVar	data(AllocateBinary(SYMA(pixels), sizeof(PixelMap) + RectGetHeight(*inBounds) * inRowBytes));
 	CDataPtr dataPtr(data);
 	PixelMap * pixmap = (PixelMap *)(char *)dataPtr;
-	pixmap->baseAddr = (Ptr) sizeof(PixelMap);
+	pixmap->baseAddr = sizeof(PixelMap);
 	pixmap->rowBytes = inRowBytes;
 	pixmap->bounds = *inBounds;
 	pixmap->pixMapFlags = kPixMapOffset + kPixMapVersion2 + inDepth;
@@ -358,7 +358,7 @@ MakeSimplePattern(long inBits0, long inBits1, long inBits2, long inBits3, long i
 	if (pat)
 	{
 		PixelMap *  pixmap = *pat;
-		pixmap->baseAddr = (Ptr) offsetof(SimplePattern, pat);	// actually an offset, obviously
+		pixmap->baseAddr = offsetof(SimplePattern, pat);	// actually an offset, obviously
 		pixmap->rowBytes = 1;
 		SetRect(&pixmap->bounds, 0, 0, 8, 8);
 		pixmap->pixMapFlags = kPixMapOffset + kOneBitDepth;
@@ -384,7 +384,7 @@ MakeSimplePattern(const char * inBits)
 	if (pat)
 	{
 		PixelMap *  pixmap = *pat;
-		pixmap->baseAddr = (Ptr) offsetof(SimplePattern, pat);	// actually an offset, obviously
+		pixmap->baseAddr = offsetof(SimplePattern, pat);	// actually an offset, obviously
 		pixmap->rowBytes = 1;
 		SetRect(&pixmap->bounds, 0, 0, 8, 8);
 		pixmap->pixMapFlags = kPixMapOffset + kOneBitDepth;

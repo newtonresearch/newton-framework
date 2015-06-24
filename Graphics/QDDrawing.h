@@ -60,6 +60,7 @@ extern void		StrokeArc(WedgeShape * inShape, short inArc1, short inArc2);
 extern void		FillArc(WedgeShape * inShape, short inArc1, short inArc2);
 
 extern Ptr		GetPixelMapBits(PixelMap * pixmap);
+extern Ptr		GetPixelMapBits(NativePixelMap * pixmap);
 
 
 #endif	/* __QDDRAWING_H */

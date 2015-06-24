@@ -89,19 +89,19 @@ MakeCGPoint(Point inPt)
 CGRect
 MakeCGRect(Rect inRect)
 {
-	CGRect  r;
-	r.origin.x = inRect.left;
-	r.origin.y = gScreenHeight - inRect.bottom;
-	r.size.width = RectGetWidth(inRect);
-	r.size.height = RectGetHeight(inRect);
-	return r;
+	CGRect qr;
+	qr.origin.x = inRect.left;
+	qr.origin.y = gScreenHeight - inRect.bottom;
+	qr.size.width = RectGetWidth(inRect);
+	qr.size.height = RectGetHeight(inRect);
+	return qr;
 }
 
 
 CGRect
-MakeCGRectFrame(const Rect * inRect, float inLineWd)
+MakeCGRectFrame(Rect inRect, float inLineWd)
 {
-	CGRect r = MakeCGRect(*inRect);
+	CGRect r = MakeCGRect(inRect);
 	float  inset = inLineWd / 2.0;
 	return CGRectInset(r, inset, inset);
 }
@@ -521,14 +521,30 @@ FillArc(WedgeShape * inShape, short inArc1, short inArc2)
 Ptr
 GetPixelMapBits(PixelMap * pixmap)
 {
-	Ptr	pixBits = pixmap->baseAddr;
 	ULong storage = pixmap->pixMapFlags & kPixMapStorage;
-	if (storage == kPixMapOffset)
-		return pixBits + (OpaqueRef) pixmap;
-	else if (storage == kPixMapHandle)
-		return *(Handle) pixBits;
-	else if (storage == kPixMapPtr)
-		return pixBits;
+	if (storage == kPixMapOffset) {
+		return (Ptr)pixmap + pixmap->baseAddr;
+	} else if (storage == kPixMapHandle) {
+printf("GetPixelMapBits() using baseAddr as Handle!\n");
+		return *(Handle)pixmap->baseAddr;
+	} else if (storage == kPixMapPtr) {
+printf("GetPixelMapBits() using baseAddr as Ptr!\n");
+		return (Ptr)pixmap->baseAddr;
+	}
+	return NULL;
+}
+
+
+Ptr
+GetPixelMapBits(NativePixelMap * pixmap)
+{
+	ULong storage = pixmap->pixMapFlags & kPixMapStorage;
+	if (storage == kPixMapPtr) {
+		return (Ptr)pixmap->baseAddr;
+	// shouldn’t really be anything else
+	} else if (storage == kPixMapOffset) {
+		return (Ptr)pixmap + (unsigned long)pixmap->baseAddr;
+	}
 	return NULL;
 }
 
@@ -610,7 +626,7 @@ MakeSimplePattern(long inBits0, long inBits1, long inBits2, long inBits3, long i
 	if (pat)
 	{
 		PixelMap *  pixmap = *pat;
-		pixmap->baseAddr = (Ptr) offsetof(SimplePattern, pat);	// actually an offset, obviously
+		pixmap->baseAddr = offsetof(SimplePattern, pat);	// actually an offset, obviously
 		pixmap->rowBytes = 1;
 		SetRect(&pixmap->bounds, 0, 0, 8, 8);
 		pixmap->pixMapFlags = kPixMapOffset + kOneBitDepth;
@@ -638,7 +654,7 @@ MakeSimplePattern(const char * inBits)
 	if (pat)
 	{
 		PixelMap *  pixmap = *pat;
-		pixmap->baseAddr = (Ptr) offsetof(SimplePattern, pat);	// actually an offset, obviously
+		pixmap->baseAddr = offsetof(SimplePattern, pat);	// actually an offset, obviously
 		pixmap->rowBytes = 1;
 		SetRect(&pixmap->bounds, 0, 0, 8, 8);
 		pixmap->pixMapFlags = kPixMapOffset + kOneBitDepth;
@@ -756,7 +772,7 @@ GetStdGrayPattern(ULong inR, ULong inG, ULong inB)
 		long				gray = RGBtoGray(inR, inG, inB, 16, depth);
 		unsigned char  grayByte;
 		Ptr				grayPtr;
-		pix->baseAddr = (Ptr) sizeof(PixelMap);	// offset to gray data
+		pix->baseAddr = sizeof(PixelMap);	// offset to gray data
 		pix->rowBytes = numOfBytes / 8;				// 8 rows (of 8 pixels) in a std pattern
 		SetRect(&pix->bounds, 0, 0, 8, 8);
 		pix->pixMapFlags = kPixMapOffset + depth;

@@ -8,10 +8,9 @@
 
 #include "Ink.h"
 #include "QDGeometry.h"
-#include "CGGeometry.h"
+#include "CoreGraphics/CGGeometry.h"
 #include "ROMSymbols.h"
 
-extern CGRect  MakeCGRect(Rect inRect);
 
 // from DrawInk.cc
 struct CSStrokeHeader
@@ -363,6 +362,7 @@ InkDraw(RefArg inkObj, size_t inPenSize, long inX, long inY, bool inLive)
 #endif
 }
 
+extern CGRect MakeCGRect(Rect inRect);
 
 void
 InkDrawInRect(RefArg inkObj, size_t inPenSize, Rect * inOriginalBounds, Rect * inBounds, bool inLive)

@@ -81,7 +81,7 @@ private:
 	void	blitPortraitFlip(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode, int inMode);
 
 	ScreenGeometry			fInfo;			// +00
-	PixelMap					fPixMap;			// +10
+	NativePixelMap			fPixMap;			// +10
 	int						fOrientation;	// +2C
 	long						fContrast;		// +30
 	long						fContrast2;		// +34

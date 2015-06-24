@@ -1566,9 +1566,10 @@ PGCDrawPointProc(short inSelector, _POINT * inPt, _DCC * inContext)
 void
 DrawBufferedPoints(_DPINST * inPoints)
 {
+//printf("DrawBufferedPoints()\n");
 	if (inPoints->numOfPts != 0)
 	{
-		int		index;
+		ArrayIndex	index;
 		Point *	lastKnownPt;
 		Point *	thisPt, * nextPt;
 //		Rect		inkedBox;
@@ -1597,7 +1598,7 @@ DrawBufferedPoints(_DPINST * inPoints)
 		CGContextMoveToPoint(quartz, thisPt->h, thisPt->v);
 //printf("new path from %d, %d\n", thisPt->h, thisPt->v);
 
-		for ( ; index < inPoints->numOfPts; index++, nextPt++)
+		for ( ; index < inPoints->numOfPts; ++index, ++nextPt)
 		{
 /*			if (display->isLive)
 			{
@@ -1610,8 +1611,8 @@ DrawBufferedPoints(_DPINST * inPoints)
 //printf("drawing to %d, %d\n", nextPt->h, nextPt->v);
 			thisPt = nextPt;
 		}
-		CGContextStrokePath(quartz);
 //printf("path done\n");
+		CGContextStrokePath(quartz);
 		inPoints->lastPtOut = *thisPt;
 		inPoints->numOfPts = 0;
 	}

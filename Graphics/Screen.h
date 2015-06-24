@@ -79,7 +79,7 @@ struct ScreenParams
 };
 
 extern const ScreenParams	gScreenConstants;
-extern PixelMap				gScreenPixelMap;
+extern NativePixelMap		gScreenPixelMap;
 
 extern int	gScreenWidth;
 extern int	gScreenHeight;

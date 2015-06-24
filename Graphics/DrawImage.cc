@@ -229,50 +229,40 @@ FPictureBounds(RefArg inRcvr, RefArg inPicture)
 	A class to convert 1-bit bitmaps to pixel maps.
 ------------------------------------------------------------------------------*/
 
-/*	In a 64-bit world, the FramBitmap will no longer align with its 32-bit declaration.
-	Since the FramBitmap is only built by NTK we define the baseAddr as 32-bits, not a pointer.
-*/
-struct FramBitmap
-{
-	uint32_t	baseAddr;		// +00
-	short		rowBytes;		// +04
-	short		reserved1;		// pads to long
-	Rect		bounds;			// +08
-	char		data[];			// +10
-};
-
-
 class CPixelObj
 {
 public:
-						CPixelObj();
-						~CPixelObj();
+							CPixelObj();
+							~CPixelObj();
 
-	void				init(RefArg inBitmap);
-	void				init(RefArg inBitmap, bool);
+	void					init(RefArg inBitmap);
+	void					init(RefArg inBitmap, bool);
 
-	PixelMap *		pixMap(void)	const;
-	PixelMap *		mask(void)		const;
-	int				bitDepth(void)	const;
+	NativePixelMap *	pixMap(void)	const;
+	NativePixelMap *	mask(void)		const;
+	int					bitDepth(void)	const;
 
 private:
-	Ref				getFramBitmap(void);
-	PixelMap *		framBitmapToPixMap(const FramBitmap * inFramBits);
-	PixelMap *		framMaskToPixMap(const FramBitmap * inFramBits);
+	Ref					getFramBitmap(void);
+	NativePixelMap *	framBitmapToPixMap(const FramBitmap * inFramBits);
+	NativePixelMap *	framMaskToPixMap(const FramBitmap * inFramBits);
 
-	RefVar		fBitmapRef; // +00
-	PixelMap		fPixmap;		// +04
-	PixelMap *	fPixPtr;		// +20
-	PixelMap		fMask;
-	PixelMap *	fMaskPtr;	// +24
-	UChar *		fColorTable;// +28
-	int			fBitDepth;  // +2C
-	bool			fIsLocked;  // +30
+//	In a 64-bit world, we need to translate a 32-bit PixelMap.
+	NativePixelMap *	pixMapToPixMap(const PixelMap * inPixMap);
+
+	RefVar				fBitmapRef; // +00
+	NativePixelMap		fPixmap;		// +04
+	NativePixelMap *	fPixPtr;		// +20
+	NativePixelMap		fMask;
+	NativePixelMap *	fMaskPtr;	// +24
+	UChar *				fColorTable;// +28
+	int					fBitDepth;  // +2C
+	bool					fIsLocked;  // +30
 };
 
-inline	PixelMap *		CPixelObj::pixMap(void)		const		{ return fPixPtr; }
-inline	PixelMap *		CPixelObj::mask(void)		const		{ return fMaskPtr; }
-inline	int				CPixelObj::bitDepth(void)	const		{ return fBitDepth; }
+inline	NativePixelMap *	CPixelObj::pixMap(void)		const		{ return fPixPtr; }
+inline	NativePixelMap *	CPixelObj::mask(void)		const		{ return fMaskPtr; }
+inline	int					CPixelObj::bitDepth(void)	const		{ return fBitDepth; }
 
 
 CPixelObj::CPixelObj()
@@ -297,42 +287,42 @@ void
 CPixelObj::init(RefArg inBitmap)
 {
 	fBitmapRef = inBitmap;
+	// we cannot handle class='picture
 	if (IsInstance(inBitmap, RSYMpicture))
 		ThrowErr(exGraf, -8803);
 
-	if (IsFrame(inBitmap))
-	{
-		if (IsInstance(inBitmap, RSYMbitmap))
-		{
-			RefVar	colorData(GetFrameSlot(inBitmap, SYMA(colorData)));
-			if (ISNIL(colorData))
+	// get a ref to the bitmap, whatever slot it’s in
+	if (IsFrame(inBitmap)) {
+		if (IsInstance(inBitmap, RSYMbitmap)) {
+			RefVar colorData(GetFrameSlot(inBitmap, SYMA(colorData)));
+			if (ISNIL(colorData)) {
 				fBitmapRef = GetFrameSlot(inBitmap, SYMA(data));
-			else
+			} else {
 				fBitmapRef = getFramBitmap();
-		}
-		else
+			}
+		} else {
 			fBitmapRef = getFramBitmap();
+		}
 	}
 
+	// create a PixelMap from the bitmap
 	LockRef(fBitmapRef);
 	fIsLocked = YES;
-	if (IsInstance(fBitmapRef, RSYMpixels))
-	{
-		fPixPtr = (PixelMap *)BinaryData(fBitmapRef);
+	if (IsInstance(fBitmapRef, RSYMpixels)) {
+		fPixPtr = pixMapToPixMap((const PixelMap *)BinaryData(fBitmapRef));
 		fBitDepth = PixelDepth(fPixPtr);
-	}
-	else
+	} else {
 		fPixPtr = framBitmapToPixMap((const FramBitmap *)BinaryData(fBitmapRef));
+	}
 
 	// we don’t mask by drawing with srcBic transferMode any more
 	RefVar	theMask = GetFrameSlot(inBitmap, SYMA(mask));
-	if (NOTNIL(theMask))
-	{
+	if (NOTNIL(theMask)) {
 		CDataPtr  maskData(theMask);
 		fMaskPtr = framMaskToPixMap((const FramBitmap *)(char *)maskData);
-	}
-	else
+	} else {
 		fMaskPtr = NULL;
+	}
 }
 
 
@@ -344,27 +334,25 @@ CPixelObj::init(RefArg inBitmap, bool inHuh)
 	if (IsInstance(inBitmap, RSYMpicture))
 		ThrowErr(exGraf, -8803);
 
-	bool  isPixelData = NO;
-	RefVar	bits(GetFrameSlot(inBitmap, SYMA(data)));
-	if (NOTNIL(bits))
+	bool isPixelData = NO;
+	RefVar bits(GetFrameSlot(inBitmap, SYMA(data)));
+	if (NOTNIL(bits)) {
 		isPixelData = IsInstance(bits, RSYMpixels);
+	}
 
 	LockRef(fBitmapRef);
 	fIsLocked = YES;
-	if (isPixelData)
-	{
-		fPixPtr = (PixelMap *)BinaryData(fBitmapRef);
-	}
-	else
-	{
+	if (isPixelData) {
+		fPixPtr = pixMapToPixMap((const PixelMap *)BinaryData(fBitmapRef));
+	} else {
 		bits = GetFrameSlot(inBitmap, SYMA(mask));
-		if (NOTNIL(bits))
-		{
+		if (NOTNIL(bits)) {
 			CDataPtr  obj(bits);
 			fMaskPtr = framBitmapToPixMap((const FramBitmap *)(char *)obj);
 		}
-		if (inHuh || fMaskPtr == NULL)
+		if (inHuh || fMaskPtr == NULL) {
 			fPixPtr = framBitmapToPixMap((const FramBitmap *)BinaryData(getFramBitmap()));
+		}
 	}
 }
 
@@ -385,59 +373,49 @@ CPixelObj::getFramBitmap(void)
 		int	portDepth = PixelDepth(&thePort->portBits);
 #endif
 		int	portDepth = 8; // for CG grayscale
-		if (IsArray(colorData))
-		{
+		if (IsArray(colorData)) {
 		// find colorData that matches display most closely
 			int	depth;
 			int	maxDepth = 32767; // improbably large number
 			int	minDepth = 0;
 			CObjectIterator	iter(colorData);
-			for ( ; !iter.done(); iter.next())
-			{
+			for ( ; !iter.done(); iter.next()) {
 				depth = RINT(GetFrameSlot(iter.value(), SYMA(bitDepth)));
-				if (depth == portDepth)
-				{
+				if (depth == portDepth) {
 					fBitDepth = depth;
 					framBitmap = GetFrameSlot(iter.value(), SYMA(cBits));
 					colorTable = GetFrameSlot(iter.value(), SYMA(colorTable));
-				}
-				else if ((portDepth < depth && depth < maxDepth && (maxDepth = depth, 1))
-						|| (maxDepth == 32767 && portDepth > depth && depth > minDepth && (minDepth = depth, 1)))
-				{
+				} else if ((portDepth < depth && depth < maxDepth && (maxDepth = depth, 1))
+						|| (maxDepth == 32767 && portDepth > depth && depth > minDepth && (minDepth = depth, 1))) {
 					fBitDepth = depth;
 					framBitmap = GetFrameSlot(iter.value(), SYMA(cBits));
 					colorTable = GetFrameSlot(iter.value(), SYMA(colorTable));
 				}
 			}
-		}
-		else
-		{
+		} else {
 			fBitDepth = RINT(GetFrameSlot(colorData, SYMA(bitDepth)));
 			framBitmap = GetFrameSlot(colorData, SYMA(cBits));
 			colorTable = GetFrameSlot(colorData, SYMA(colorTable));
 		}
 
-		if (fBitDepth > 1 && NOTNIL(colorTable))
-		{
+		if (fBitDepth > 1 && NOTNIL(colorTable)) {
 			CDataPtr	colorTableData(colorTable);
-			size_t	numOfColors = Length(colorTable);
-			size_t	colorTableSize = 1 << fBitDepth;
+			ArrayIndex numOfColors = Length(colorTable);
+			ArrayIndex colorTableSize = 1 << fBitDepth;
 			fColorTable = (UChar *)NewPtr(colorTableSize);
-			if (fColorTable)
-			{
-				unsigned int i;
+			if (fColorTable) {
 				numOfColors /= 8;
 				if (numOfColors > colorTableSize)
 					numOfColors = colorTableSize;
 #if 0
 				Ptr defaultColorPtr = GetPixelMapBits(*GetFgPattern());
-				for (i = 0; i < colorTableSize; ++i)
+				for (ArrayIndex i = 0; i < colorTableSize; ++i) {
 					fColorTable[i] = *defaultColorPtr;
+				}
 #endif
 				ULong		r, g, b;
 				short *	colorTablePtr = (short *)(char *)colorTableData;
-				for (i = 0; i < numOfColors; ++i)
-				{
+				for (ArrayIndex i = 0; i < numOfColors; ++i) {
 					r = *colorTablePtr++;
 					g = *colorTablePtr++;
 					b = *colorTablePtr++;
@@ -452,23 +430,61 @@ CPixelObj::getFramBitmap(void)
 }
 
 
-PixelMap *
+NativePixelMap *
+CPixelObj::pixMapToPixMap(const PixelMap * inPixmap)
+{
+	fPixPtr->rowBytes = CANONICAL_SHORT(inPixmap->rowBytes);
+	fPixPtr->reserved1 = 0;
+	if (inPixmap->reserved1 == 0x11EB) {
+		// it’s already been swapped
+		fPixPtr->bounds.top = inPixmap->bounds.top;
+		fPixPtr->bounds.left = inPixmap->bounds.left;
+		fPixPtr->bounds.bottom = inPixmap->bounds.bottom;
+		fPixPtr->bounds.right = inPixmap->bounds.right;
+	} else {
+		fPixPtr->bounds.top = CANONICAL_SHORT(inPixmap->bounds.top);
+		fPixPtr->bounds.left = CANONICAL_SHORT(inPixmap->bounds.left);
+		fPixPtr->bounds.bottom = CANONICAL_SHORT(inPixmap->bounds.bottom);
+		fPixPtr->bounds.right = CANONICAL_SHORT(inPixmap->bounds.right);
+	}
+	fPixPtr->pixMapFlags = CANONICAL_LONG(inPixmap->pixMapFlags);
+	fPixPtr->deviceRes.h = CANONICAL_SHORT(inPixmap->deviceRes.h);
+	fPixPtr->deviceRes.v = CANONICAL_SHORT(inPixmap->deviceRes.v);
+
+	fPixPtr->grayTable = 0;	//(UChar *)CANONICAL_LONG(inPixmap->grayTable);
+
+	// our native pixmap baseAddr is ALWAYS a Ptr
+	if ((fPixPtr->pixMapFlags & kPixMapStorage) == kPixMapOffset) {
+		uint32_t offset = CANONICAL_LONG(inPixmap->baseAddr);
+		fPixPtr->baseAddr = (Ptr)inPixmap + offset;
+		fPixPtr->pixMapFlags = (fPixPtr->pixMapFlags & ~kPixMapStorage) | kPixMapPtr;
+	} else {
+printf("GetPixelMapBits() using baseAddr as Ptr!\n");
+	}
+
+	return fPixPtr;
+}
+
+
+NativePixelMap *
 CPixelObj::framBitmapToPixMap(const FramBitmap * inBitmap)
 {
-	fPixPtr->baseAddr = (Ptr) inBitmap->data;
-#if 0	//defined(forFramework)
-	fPixPtr->rowBytes = inBitmap->rowBytes;
-	fPixPtr->bounds.top = inBitmap->bounds.top;
-	fPixPtr->bounds.left = inBitmap->bounds.left;
-	fPixPtr->bounds.bottom = inBitmap->bounds.bottom;
-	fPixPtr->bounds.right = inBitmap->bounds.right;
-#else
+	// ALWAYS point to the data -- ignore the bitmap’s baseAddr
+	fPixPtr->baseAddr = (Ptr)inBitmap->data;
+
 	fPixPtr->rowBytes = CANONICAL_SHORT(inBitmap->rowBytes);
-	fPixPtr->bounds.top = CANONICAL_SHORT(inBitmap->bounds.top);
-	fPixPtr->bounds.left = CANONICAL_SHORT(inBitmap->bounds.left);
-	fPixPtr->bounds.bottom = CANONICAL_SHORT(inBitmap->bounds.bottom);
-	fPixPtr->bounds.right = CANONICAL_SHORT(inBitmap->bounds.right);
-#endif
+	if (inBitmap->reserved1 == 0x11EB) {
+		// it’s already been swapped
+		fPixPtr->bounds.top = inBitmap->bounds.top;
+		fPixPtr->bounds.left = inBitmap->bounds.left;
+		fPixPtr->bounds.bottom = inBitmap->bounds.bottom;
+		fPixPtr->bounds.right = inBitmap->bounds.right;
+	} else {
+		fPixPtr->bounds.top = CANONICAL_SHORT(inBitmap->bounds.top);
+		fPixPtr->bounds.left = CANONICAL_SHORT(inBitmap->bounds.left);
+		fPixPtr->bounds.bottom = CANONICAL_SHORT(inBitmap->bounds.bottom);
+		fPixPtr->bounds.right = CANONICAL_SHORT(inBitmap->bounds.right);
+	}
 	fPixPtr->pixMapFlags = kPixMapPtr + fBitDepth;
 	fPixPtr->deviceRes.h =
 	fPixPtr->deviceRes.v = kDefaultDPI;
@@ -480,23 +496,25 @@ CPixelObj::framBitmapToPixMap(const FramBitmap * inBitmap)
 }
 
 
-PixelMap *
+NativePixelMap *
 CPixelObj::framMaskToPixMap(const FramBitmap * inBitmap)
 {
-	fMask.baseAddr = (Ptr) inBitmap->data;
-#if 0 //defined(forFramework)
-	fMask.rowBytes = inBitmap->rowBytes;
-	fMask.bounds.top = inBitmap->bounds.top;
-	fMask.bounds.left = inBitmap->bounds.left;
-	fMask.bounds.bottom = inBitmap->bounds.bottom;
-	fMask.bounds.right = inBitmap->bounds.right;
-#else
+	// ALWAYS point to the data -- ignore the bitmap’s baseAddr
+	fMask.baseAddr = (Ptr)inBitmap->data;
+
 	fMask.rowBytes = CANONICAL_SHORT(inBitmap->rowBytes);
-	fMask.bounds.top = CANONICAL_SHORT(inBitmap->bounds.top);
-	fMask.bounds.left = CANONICAL_SHORT(inBitmap->bounds.left);
-	fMask.bounds.bottom = CANONICAL_SHORT(inBitmap->bounds.bottom);
-	fMask.bounds.right = CANONICAL_SHORT(inBitmap->bounds.right);
-#endif
+	if (inBitmap->reserved1 == 0x11EB) {
+		// it’s already been swapped
+		fMask.bounds.top = inBitmap->bounds.top;
+		fMask.bounds.left = inBitmap->bounds.left;
+		fMask.bounds.bottom = inBitmap->bounds.bottom;
+		fMask.bounds.right = inBitmap->bounds.right;
+	} else {
+		fMask.bounds.top = CANONICAL_SHORT(inBitmap->bounds.top);
+		fMask.bounds.left = CANONICAL_SHORT(inBitmap->bounds.left);
+		fMask.bounds.bottom = CANONICAL_SHORT(inBitmap->bounds.bottom);
+		fMask.bounds.right = CANONICAL_SHORT(inBitmap->bounds.right);
+	}
 	fMask.pixMapFlags = kPixMapPtr + 1;		// always 1 bit deep ??
 	fMask.deviceRes.h =
 	fMask.deviceRes.v = kDefaultDPI;
@@ -542,32 +560,34 @@ DrawBitmap(RefArg inBitmap, const Rect * inRect)
 		CGColorSpaceRef	baseColorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericGray);
 		CGColorSpaceRef	colorSpace = CGColorSpaceCreateIndexed(baseColorSpace, (1 << pix.bitDepth())-1, colorTable[pix.bitDepth()]);
 		CGDataProviderRef source = CGDataProviderCreateWithData(NULL, GetPixelMapBits(pix.pixMap()), pixmapHeight * pix.pixMap()->rowBytes, NULL);
-		CGDataProviderRef maskSource;
 		if (source)
 		{
+			// create entire image
 			image = CGImageCreate(pixmapWidth, pixmapHeight, pix.bitDepth(), pix.bitDepth(), pix.pixMap()->rowBytes,
 										colorSpace, kCGImageAlphaNone, source,
 										NULL, false, kCGRenderingIntentSaturation);
 			CGDataProviderRelease(source);
-/*
-			if (pix.mask() != NULL
-			&&  (maskSource = CGDataProviderCreateWithData(NULL, GetPixelMapBits(pix.mask()), pixmapHeight * pix.mask()->rowBytes, NULL)) != NULL)
-			{
-				CGImageRef	fullImage = image;
-				CGColorSpaceRef maskColorSpace = CGColorSpaceCreateDeviceGray();
-				CGImageRef	mask = CGImageCreate(pixmapWidth, pixmapHeight, 1, 1, pix.mask()->rowBytes,
-															maskColorSpace, kCGImageAlphaNone, maskSource,
-															NULL, false, kCGRenderingIntentDefault);
-				CGColorSpaceRelease(maskColorSpace);
-				CGDataProviderRelease(maskSource);
-				if (mask)
-				{
-					image = CGImageCreateWithMask(fullImage, mask);
-					CGImageRelease(fullImage);
-					CGImageRelease(mask);
+
+			if (pix.mask() != NULL) {
+				// image is masked
+				CGDataProviderRef maskSource;
+				if ((maskSource = CGDataProviderCreateWithData(NULL, GetPixelMapBits(pix.mask()), pixmapHeight * pix.mask()->rowBytes, NULL)) != NULL) {
+					CGImageRef	fullImage = image;
+					CGColorSpaceRef maskColorSpace = CGColorSpaceCreateDeviceGray();
+					CGImageRef	mask = CGImageCreate(pixmapWidth, pixmapHeight, 1, 1, pix.mask()->rowBytes,
+																maskColorSpace, kCGImageAlphaNone, maskSource,
+																NULL, false, kCGRenderingIntentDefault);
+					CGColorSpaceRelease(maskColorSpace);
+					CGDataProviderRelease(maskSource);
+					if (mask) {
+						// recreate image using original full image with mask
+						image = CGImageCreateWithMask(fullImage, mask);
+						CGImageRelease(fullImage);
+						CGImageRelease(mask);
+					}
 				}
 			}
-*/		}
+		}
 		CGColorSpaceRelease(colorSpace);
 		CGColorSpaceRelease(baseColorSpace);
 

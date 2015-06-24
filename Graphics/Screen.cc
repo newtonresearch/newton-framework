@@ -60,7 +60,7 @@ const ScreenParams gScreenConstants =		// was qdConstants 00380BCC
 	{ 0, 3, 2, 0, 1 },
 	{ 0, 0x1F, 0x0F, 0, 0x07 } };
 
-PixelMap	gScreenPixelMap;						// was qd.pixmap
+NativePixelMap	gScreenPixelMap;				// was qd.pixmap
 
 
 /* -----------------------------------------------------------------------------
@@ -95,7 +95,7 @@ struct
 struct AlertScreenInfo
 {
 	CScreenDriver *	display;
-	PixelMap				pixmap;
+	NativePixelMap		pixmap;
 	int					orientation;
 };
 
@@ -116,7 +116,7 @@ void	SetAlertScreenInfo(AlertScreenInfo * info);
 void	InitScreenTask(void);
 void	ScreenUpdateTask(void * inTask, size_t inSize, ObjectId inArg);
 extern "C" void	UpdateHardwareScreen(void);
-void	BlitToScreens(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
+void	BlitToScreens(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
 
 
 #pragma mark -
@@ -416,7 +416,7 @@ GetGrafInfo(int inSelector, void * outInfo)
 	switch (inSelector)
 	{
 	case kGrafPixelMap:
-		*(PixelMap *)outInfo = gScreenPixelMap;
+		*(NativePixelMap *)outInfo = gScreenPixelMap;
 		break;
 
 	case kGrafResolution:
@@ -608,12 +608,14 @@ UpdateHardwareScreen(void)
 ------------------------------------------------------------------------------*/
 
 void
-BlitToScreens(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode)
+BlitToScreens(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode)
 {
+/*
 	gScreen.driver->blit(inPixmap, inSrcBounds, inDstBounds, inTransferMode);
 
 	if (gScreen.auxDriver)
 		gScreen.auxDriver->blit(inPixmap, inSrcBounds, inDstBounds, inTransferMode);
+*/
 }
 
 #pragma mark -
@@ -625,7 +627,7 @@ StartDrawing(PixelMap * inPixmap, Rect * inBounds)
 #if defined(correct)
 		inPixmap = &GetCurrentPort()->portBits;
 #else
-		inPixmap = &gScreenPixelMap;
+		/*inPixmap = &gScreenPixelMap*/;
 #endif
 
 #if !defined(forFramework)
@@ -642,7 +644,7 @@ StopDrawing(PixelMap * inPixmap, Rect * inBounds)
 #if defined(correct)
 		inPixmap = &GetCurrentPort()->portBits;
 #else
-		inPixmap = &gScreenPixelMap;
+//		inPixmap = &gScreenPixelMap;
 #endif
 
 	if (GetPixelMapBits(inPixmap) == GetPixelMapBits(&gScreenPixelMap))
@@ -677,7 +679,7 @@ QDStartDrawing(PixelMap * inPixmap, Rect * inBounds)
 #if defined(correct)
 		inPixmap = &GetCurrentPort()->portBits;
 #else
-		inPixmap = &gScreenPixelMap;
+		/*inPixmap = &gScreenPixelMap*/;
 #endif
 
 #if !defined(forFramework)
@@ -695,7 +697,7 @@ QDStopDrawing(PixelMap * inPixmap, Rect * inBounds)
 #if defined(correct)
 		inPixmap = &GetCurrentPort()->portBits;
 #else
-		inPixmap = &gScreenPixelMap;
+//		inPixmap = &gScreenPixelMap;
 #endif
 
 	if (GetPixelMapBits(inPixmap) == GetPixelMapBits(&gScreenPixelMap))

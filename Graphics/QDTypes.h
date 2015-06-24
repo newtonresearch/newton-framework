@@ -130,11 +130,23 @@ struct PictureShape
 typedef void *		ShapePtr;
 
 
-/*	In a 64-bit world, the PixelMap will no longer align with its 32-bit declaration.
-	We define a legacy version of the struct for handling data built by NTK
-	or imported by NCX.
+/*	In a 64-bit world, the FramBitmap MUST still align with its 32-bit definition.
+	Since the FramBitmap is only built by NTK we can assume the baseAddr is a 32-bit offset, never a pointer.
 */
-struct PixelMap32
+struct FramBitmap
+{
+	uint32_t		baseAddr;		// +00
+	short			rowBytes;		// +04
+	short			reserved1;		// pads to long
+	Rect			bounds;			// +08
+	char			data[];			// +10
+}__attribute__((packed));
+
+
+/*	In a 64-bit world, the PixelMap MUST still align with its 32-bit definition
+	for handling data built by NTK or imported by NCX.
+*/
+struct PixelMap
 {
 	uint32_t		baseAddr;
 	short			rowBytes;
@@ -143,9 +155,11 @@ struct PixelMap32
 	ULong			pixMapFlags;
 	Point			deviceRes;		// resolution of input device (0 indicates kDefaultDPI)
 	uint32_t		grayTable;		// gray tone table
-};
+}__attribute__((packed));
 
-struct PixelMap
+/*	However, there are some uses (screen bitmaps, for example) where we need host-sized pointers.
+*/
+struct NativePixelMap
 {
 	Ptr			baseAddr;
 	short			rowBytes;
@@ -190,6 +204,7 @@ inline bool		ByComponent(const PixelMap * pixmap)		{ return pixmap->pixMapFlags 
 inline bool		AntiAlias(const PixelMap * pixmap)			{ return pixmap->pixMapFlags & kPixMapAntiAlias; }
 
 inline ULong	PixelDepth(const PixelMap * pixmap)			{ return pixmap->pixMapFlags & kPixMapDepth; }
+inline ULong	PixelDepth(const NativePixelMap * pixmap)	{ return pixmap->pixMapFlags & kPixMapDepth; }
 inline ULong	PixelMapVersion(const PixelMap * pixmap)	{ return pixmap->pixMapFlags & kPixMapVersionMask; }
 extern Ptr		PixelMapBits(const PixelMap * pixmap);
 

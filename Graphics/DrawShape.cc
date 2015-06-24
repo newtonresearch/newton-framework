@@ -799,82 +799,59 @@ MungeBounds(RefArg inShape)
 
 		if (EQ(shapeClass, SYMA(bitmap)))
 		{
-			PixelMap32 * pixMap32;
-			PixelMap pixMap;
-			memset(&pixMap, 0, sizeof(PixelMap));
 			RefVar bits;
 			if (NOTNIL(bits = GetProtoVariable(inShape, SYMA(data))))
 			{
-				CDataPtr pixmap32Data(bits);
-				pixMap32 = (PixelMap32 *)(Ptr) pixmap32Data;
+				CDataPtr pixmapData(bits);
 				if (IsInstance(bits, RSYMpixels))
 				{
-					pixMap.baseAddr = (Ptr) BYTE_SWAP_LONG(pixMap32->baseAddr);
-					pixMap.rowBytes = BYTE_SWAP_SHORT(pixMap32->rowBytes);
-					pixMap.bounds.top = BYTE_SWAP_SHORT(pixMap32->bounds.top);
-					pixMap.bounds.left = BYTE_SWAP_SHORT(pixMap32->bounds.left);
-					pixMap.bounds.bottom = BYTE_SWAP_SHORT(pixMap32->bounds.bottom);
-					pixMap.bounds.right = BYTE_SWAP_SHORT(pixMap32->bounds.right);
-					pixMap.pixMapFlags = BYTE_SWAP_LONG(pixMap32->pixMapFlags);
-					pixMap.deviceRes.h = BYTE_SWAP_SHORT(pixMap32->deviceRes.h);
-					pixMap.deviceRes.v = BYTE_SWAP_SHORT(pixMap32->deviceRes.v);
-					pixMap.grayTable = (UChar *)BYTE_SWAP_LONG(pixMap32->grayTable);
+					PixelMap * pixmap = (PixelMap *)(Ptr)pixmapData;
+					pixmap->reserved1 = 0x11EB;	// sign it so we know bounds have been swapped
+					pixmap->bounds.top = BYTE_SWAP_SHORT(pixmap->bounds.top);
+					pixmap->bounds.left = BYTE_SWAP_SHORT(pixmap->bounds.left);
+					pixmap->bounds.bottom = BYTE_SWAP_SHORT(pixmap->bounds.bottom);
+					pixmap->bounds.right = BYTE_SWAP_SHORT(pixmap->bounds.right);
 				}
 				else	// it’s a FramBitmap
 				{
-					pixMap.rowBytes = BYTE_SWAP_SHORT(pixMap32->rowBytes);
-					pixMap.bounds.top = BYTE_SWAP_SHORT(pixMap32->bounds.top);
-					pixMap.bounds.left = BYTE_SWAP_SHORT(pixMap32->bounds.left);
-					pixMap.bounds.bottom = BYTE_SWAP_SHORT(pixMap32->bounds.bottom);
-					pixMap.bounds.right = BYTE_SWAP_SHORT(pixMap32->bounds.right);
+					FramBitmap * bitmap = (FramBitmap *)(Ptr)pixmapData;
+					bitmap->reserved1 = 0x11EB;	// sign it so we know bounds have been swapped
+					bitmap->bounds.top = BYTE_SWAP_SHORT(bitmap->bounds.top);
+					bitmap->bounds.left = BYTE_SWAP_SHORT(bitmap->bounds.left);
+					bitmap->bounds.bottom = BYTE_SWAP_SHORT(bitmap->bounds.bottom);
+					bitmap->bounds.right = BYTE_SWAP_SHORT(bitmap->bounds.right);
 				}
-			// replace PixelMap32 data w/ PixelMap
-				SetLength(bits, sizeof(PixelMap));
-				CDataPtr pixmapData(bits);
-				memmove((Ptr)pixmapData, &pixMap, sizeof(PixelMap));
 			}
 			if (NOTNIL(bits = GetProtoVariable(inShape, SYMA(mask))))
 			{
-				CDataPtr pixmap32Data(bits);
-				pixMap32 = (PixelMap32 *)(Ptr) pixmap32Data;		// actually a FramBitmap
-				pixMap.rowBytes = BYTE_SWAP_SHORT(pixMap32->rowBytes);
-				pixMap.bounds.top = BYTE_SWAP_SHORT(pixMap32->bounds.top);
-				pixMap.bounds.left = BYTE_SWAP_SHORT(pixMap32->bounds.left);
-				pixMap.bounds.bottom = BYTE_SWAP_SHORT(pixMap32->bounds.bottom);
-				pixMap.bounds.right = BYTE_SWAP_SHORT(pixMap32->bounds.right);
-			// replace PixelMap32 data w/ PixelMap
-				SetLength(bits, sizeof(PixelMap));
 				CDataPtr pixmapData(bits);
-				memmove((Ptr)pixmapData, &pixMap, sizeof(PixelMap));
+				PixelMap * bitmap = (PixelMap *)(Ptr)pixmapData;
+				bitmap->reserved1 = 0x11EB;	// sign it so we know bounds have been swapped
+				bitmap->bounds.top = BYTE_SWAP_SHORT(bitmap->bounds.top);
+				bitmap->bounds.left = BYTE_SWAP_SHORT(bitmap->bounds.left);
+				bitmap->bounds.bottom = BYTE_SWAP_SHORT(bitmap->bounds.bottom);
+				bitmap->bounds.right = BYTE_SWAP_SHORT(bitmap->bounds.right);
 			}
 			if (NOTNIL(bits = GetProtoVariable(inShape, SYMA(bits))))
 			{
-				CDataPtr pixmap32Data(bits);
-				pixMap32 = (PixelMap32 *)(Ptr) pixmap32Data;		// actually a FramBitmap
-				pixMap.rowBytes = BYTE_SWAP_SHORT(pixMap32->rowBytes);
-				pixMap.bounds.top = BYTE_SWAP_SHORT(pixMap32->bounds.top);
-				pixMap.bounds.left = BYTE_SWAP_SHORT(pixMap32->bounds.left);
-				pixMap.bounds.bottom = BYTE_SWAP_SHORT(pixMap32->bounds.bottom);
-				pixMap.bounds.right = BYTE_SWAP_SHORT(pixMap32->bounds.right);
-			// replace PixelMap32 data w/ PixelMap
-				SetLength(bits, sizeof(PixelMap));
 				CDataPtr pixmapData(bits);
-				memmove((Ptr)pixmapData, &pixMap, sizeof(PixelMap));
+				PixelMap * bitmap = (PixelMap *)(Ptr)pixmapData;
+				bitmap->reserved1 = 0x11EB;	// sign it so we know bounds have been swapped
+				bitmap->bounds.top = BYTE_SWAP_SHORT(bitmap->bounds.top);
+				bitmap->bounds.left = BYTE_SWAP_SHORT(bitmap->bounds.left);
+				bitmap->bounds.bottom = BYTE_SWAP_SHORT(bitmap->bounds.bottom);
+				bitmap->bounds.right = BYTE_SWAP_SHORT(bitmap->bounds.right);
 			}
 			if (NOTNIL(bits = GetProtoVariable(inShape, SYMA(colorData)))
 			&&  NOTNIL(bits = GetProtoVariable(bits, SYMA(cBits))))
 			{
-				CDataPtr pixmap32Data(bits);
-				pixMap32 = (PixelMap32 *)(Ptr) pixmap32Data;		// actually a FramBitmap
-				pixMap.rowBytes = BYTE_SWAP_SHORT(pixMap32->rowBytes);
-				pixMap.bounds.top = BYTE_SWAP_SHORT(pixMap32->bounds.top);
-				pixMap.bounds.left = BYTE_SWAP_SHORT(pixMap32->bounds.left);
-				pixMap.bounds.bottom = BYTE_SWAP_SHORT(pixMap32->bounds.bottom);
-				pixMap.bounds.right = BYTE_SWAP_SHORT(pixMap32->bounds.right);
-			// replace PixelMap32 data w/ PixelMap
-				SetLength(bits, sizeof(PixelMap));
 				CDataPtr pixmapData(bits);
-				memmove((Ptr)pixmapData, &pixMap, sizeof(PixelMap));
+				PixelMap * bitmap = (PixelMap *)(Ptr)pixmapData;
+				bitmap->reserved1 = 0x11EB;	// sign it so we know bounds have been swapped
+				bitmap->bounds.top = BYTE_SWAP_SHORT(bitmap->bounds.top);
+				bitmap->bounds.left = BYTE_SWAP_SHORT(bitmap->bounds.left);
+				bitmap->bounds.bottom = BYTE_SWAP_SHORT(bitmap->bounds.bottom);
+				bitmap->bounds.right = BYTE_SWAP_SHORT(bitmap->bounds.right);
 			}
 		}
 
@@ -892,8 +869,7 @@ MungeBounds(RefArg inShape)
 		{
 			CDataPtr textData(GetProtoVariable(inShape, SYMA(data)));
 			UniChar * s = (UniChar *)(Ptr) textData;
-			int i, count =  Length(textData) / sizeof(UniChar);
-			for (i = 0; i < count; i++, s++)
+			for (ArrayIndex i = 0, count = Length(textData) / sizeof(UniChar); i < count; ++i, ++s)
 				*s = BYTE_SWAP_SHORT(*s);
 		}
 	}
@@ -1482,7 +1458,6 @@ commondraw:
 			{
 			//	set up clipping regions
 				RefVar	fontSpec(Clone(RA(canonicalGrayFontSpec)));	// sp10
-			//	RefVar	fontSpec(AllocateFrame());
 				SetFrameSlot(fontSpec, SYMA(size), MAKEINT(GetFontSize(inStyle->fFontSpec)));
 				SetFrameSlot(fontSpec, SYMA(face), MAKEINT(GetFontFace(inStyle->fFontSpec)));
 				SetFrameSlot(fontSpec, SYMA(family), GetFontFamilySym(inStyle->fFontSpec));

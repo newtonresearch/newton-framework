@@ -55,6 +55,7 @@ TextBounds(CRichString & inStr, RefArg inFont, Rect * ioRect, long inJustifyH)
 
 #include "Objects.h"
 #include "Globals.h"
+#include "ROMResources.h"
 #include "Lookup.h"
 #include "Iterators.h"
 #include "OSErrors.h"
@@ -429,11 +430,12 @@ DrawUnicodeText(const UniChar * inStr, size_t inLength, /* inFont,*/ const Rect 
 	box.size.height += 8;
 
 //	fill the text box so we can see where it is
+#if 0
 	CGContextSaveGState(quartz);
 	CGContextSetFillColorWithColor(quartz, CGColorCreateGenericRGB(1.0, 0.85, 0.85, 1.0));
 	CGContextFillRect(quartz, box);
 	CGContextRestoreGState(quartz);
-
+#endif
 
 	CGContextSetTextMatrix(quartz, CGAffineTransformIdentity);
 	CGContextSetTextDrawingMode(quartz, kCGTextStroke);
