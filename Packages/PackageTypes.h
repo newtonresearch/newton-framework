@@ -65,7 +65,7 @@ typedef long		RemoveObjPtr;
 
 
 // the magic number header for a package
-extern const char * const	kPackageMagicNumber;
+extern "C" const char * const	kPackageMagicNumber;
 
 const long kMaxInfoSize					= 64;
 const long kMaxCompressorNameSize	= 32;
