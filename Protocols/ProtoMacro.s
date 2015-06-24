@@ -18,7 +18,6 @@
 .macro New
 		pushq		%rbp						# prolog
 		movq		%rsp, %rbp
-		subq		$(8), %rsp				# keep stack 16-byte aligned
 		movq		%rdi, %rsi				# implementation name is 2nd arg to AllocInstanceByName
 		leaq		$0(%rip), %rdi			# interface name is 1st arg
 		call		__Z19AllocInstanceByNamePKcS0_
@@ -35,11 +34,13 @@
 		movq		%rsp, %rbp
 		movl		$($0), %eax
 		movq		8(%rdi), %rdi			# rdi -> "real" this
-		pushq		%rdi						# save instance -- also keep stack 16-byte aligned
+		pushq		%rdi						# save instance
+		subq		$(8), %rsp				# keep stack 16-byte aligned
 		movq		16(%rdi), %r10			# r10 -> btable
 		movl		0(%r10,%rax,4), %eax	# fetch address of dispatch branch
 		addq		%r10, %rax
 		call		*%rax						# call it
+		addq		$(8), %rsp				# realign stack
 		popq		%rdi
 		leave
 		jmp		__Z12FreeInstanceP9CProtocol	# tail call to free mem
