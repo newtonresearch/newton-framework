@@ -13,6 +13,7 @@
 #include "Tokens.h"
 #include "Unicode.h"
 #include "UStringUtils.h"
+#include "ROMResources.h"
 
 // integer Ref limits
 #if __LP64__
@@ -565,7 +566,11 @@ CCompiler::consumeToken(void)
 				}
 				return makeCharacterToken(chValue);
 			}
-			return makeCharacterToken(theChar);
+			{
+				UniChar uChar = theChar;
+				consumeChar();
+				return makeCharacterToken(uChar);
+			}
 
 		case '<':
 			consumeChar();

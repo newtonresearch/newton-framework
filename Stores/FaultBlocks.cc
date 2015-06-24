@@ -8,13 +8,13 @@
 
 #include "Objects.h"
 #include "ObjHeader.h"
-#include "Globals.h"
 #include "Funcs.h"
 #include "RefMemory.h"
 #include "LargeBinaries.h"
 #include "FaultBlocks.h"
 #include "StoreStreamObjects.h"
 #include "OSErrors.h"
+#include "ROMResources.h"
 
 
 /*------------------------------------------------------------------------------

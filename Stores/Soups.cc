@@ -7,7 +7,7 @@
 */
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Funcs.h"
 #include "Unicode.h"
 #include "FaultBlocks.h"

@@ -22,6 +22,7 @@
 #include "Lookup.h"
 #include "Symbols.h"
 #include "Funcs.h"
+#include "ROMResources.h"
 
 #include "Compiler.h"
 #include "Tokens.h"
@@ -220,6 +221,64 @@ ParseString(RefArg inStr)
 	end_try;
 
 	return codeBlock;
+}
+
+
+/*------------------------------------------------------------------------------
+	Compile a file.
+	Top-level expressions are compiled in sequence.
+	Exceptions are caught and notified to gREPout but not rethrown.
+	Args:		inFilename		path of file containing NewtonScript
+	Return:	result of final codeblock execution
+------------------------------------------------------------------------------*/
+
+Ref
+CompileFile(const char * inFilename)
+{
+	RefVar result;
+	RefVar codeBlock;
+
+	FILE * fd = fopen(inFilename, "r");
+	if (fd == NULL)
+		ThrowMsg("couldn't open file");
+
+	CStdioInputStream stream(fd, inFilename);
+	CCompiler compiler(&stream, YES);
+
+	newton_try
+	{
+		while (!feof(fd))
+		{
+			codeBlock = compiler.compile();
+
+			if (NOTNIL(GetFrameSlot(RA(gVarFrame), MakeSymbol("showCodeBlocks"))))
+			{
+				gREPout->print("(#%X) ", (Ref)codeBlock);
+				PrintObject(codeBlock, 0);
+				gREPout->print("\n");
+				Disassemble(codeBlock);		// not original
+			}
+		}
+	}
+	newton_catch(exRefException)
+	{
+		RefVar data(*(RefStruct *)CurrentException()->data);
+		if (IsFrame(data)
+		&&  ISNIL(GetFrameSlot(data, SYMA(filename))))
+		{
+			SetFrameSlot(data, SYMA(filename), MakeStringFromCString(stream.fileName()));
+			SetFrameSlot(data, SYMA(lineNumber), MAKEINT(compiler.lineNo()));
+		}
+		gREPout->exceptionNotify(CurrentException());
+	}
+	newton_catch_all
+	{
+		gREPout->exceptionNotify(CurrentException());
+	}
+	end_try;
+
+	fclose(fd);
+	return result;
 }
 
 

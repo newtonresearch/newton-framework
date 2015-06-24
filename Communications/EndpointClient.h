@@ -143,7 +143,7 @@ public:
 	PScriptDataOut *	make(void);
 	void			destroy(void);
 
-	Ptr			translate(void * inParms, CPipeCallback * inCallback);
+	OpaqueRef	translate(void * inParms, CPipeCallback * inCallback);
 
 private:
 	NewtonErr	parseOutputLength(RefArg, FormType, long, long*);
@@ -173,7 +173,7 @@ public:
 	POptionDataOut *	make(void);
 	void			destroy(void);
 
-	Ptr			translate(void * inParms, CPipeCallback * inCallback);
+	OpaqueRef	translate(void * inParms, CPipeCallback * inCallback);
 };
 
 struct OptionDataOutParms

@@ -17,6 +17,7 @@
 #include "Strings.h"
 #include "UStringUtils.h"
 #include "Locales.h"
+#include "ROMResources.h"
 
 
 /*------------------------------------------------------------------------------

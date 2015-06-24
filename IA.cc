@@ -9,6 +9,7 @@
 
 #include "Objects.h"
 #include "Globals.h"
+#include "ROMResources.h"
 #include "Arrays.h"
 #include "Iterators.h"
 #include "Unicode.h"

@@ -12,6 +12,7 @@
 #include "Lookup.h"
 #include "NewtonErrors.h"
 #include "Opcodes.h"
+#include "ROMResources.h"
 
 
 /* -----------------------------------------------------------------------------
@@ -584,9 +585,17 @@ PrintInstruction(bool in_function, unsigned char * instruction, RefArg inLiteral
 		{
 			if (in_function)
 			{
-				ArrayIndex debugNamesBaseIndex, literalNameIndex;
-				if (NOTNIL(inDebugInfo) && (debugNamesBaseIndex = RINT(GetArraySlot(inDebugInfo, 0)) + 1, literalNameIndex = debugNamesBaseIndex + b - 3), NOTNIL(GetArraySlot(inDebugInfo, literalNameIndex)))
-					REPprintf("%ld [%s]", b, SymbolName(GetArraySlot(inDebugInfo, literalNameIndex)));
+				const char * literalName = NULL;
+				if (NOTNIL(inDebugInfo))
+				{
+					ArrayIndex debugNamesBaseIndex = RINT(GetArraySlot(inDebugInfo, 0)) + 1;
+					ArrayIndex literalNameIndex = debugNamesBaseIndex + b - 3;
+					RefVar literal(GetArraySlot(inDebugInfo, literalNameIndex));
+					if (NOTNIL(literal))
+						literalName = SymbolName(literal);
+				}
+				if (literalName)
+					REPprintf("%ld [%s]", b, literalName);
 				else
 					REPprintf("%ld", b);
 			}

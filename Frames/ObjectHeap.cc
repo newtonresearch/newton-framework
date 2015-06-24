@@ -19,6 +19,7 @@
 #include "LargeBinaries.h"
 #include "Globals.h"
 #include "RefMemory.h"
+#include "ROMResources.h"
 
 extern "C" void	SafelyPrintString(UniChar * str);
 
@@ -134,7 +135,7 @@ struct GCContext
 	DIYGCRegistration *	extObjs;		// variable size array of DIYGCRegistrations
 	GCRegistration *		extGC;		// variable size array of GCRegistrations
 } gGC
-= { YES, NULL, NULL, NULL };
+= { true, NULL, NULL, NULL };
 
 CObjectHeap *	gHeap;
 ObjectCache		gCached;
@@ -165,10 +166,10 @@ InitStartupHeap(void)
 	gCached.lenRef = INVALIDPTRREF;
 	gCached.offset = offsetCache;
 
-	gPrintMaps = NO;
-	gUriahROM = NO;
-	gUriahPrintArrays = NO;
-	gUriahSaveOutput = NO;
+	gPrintMaps = false;
+	gUriahROM = false;
+	gUriahPrintArrays = false;
+	gUriahSaveOutput = false;
 }
 
 void
@@ -275,7 +276,7 @@ AllocateMapWithTags(RefArg inSuperMap, RefArg tagsArray)
 	Ref map = AllocateMap(inSuperMap, limit);
 	FrameMapObject * mapPtr = (FrameMapObject *)PTR(map);
 	ArrayObject * tags = (ArrayObject *)ObjectPtr(tagsArray);
-	bool isProtoFlagSet = NO;
+	bool isProtoFlagSet = false;
 	mapPtr->objClass = kMapShared;
 
 	for (ArrayIndex i = 0; i < limit; ++i)
@@ -285,7 +286,7 @@ AllocateMapWithTags(RefArg inSuperMap, RefArg tagsArray)
 		if (!isProtoFlagSet && SymbolCompare(tag, RSYM_proto))
 		{
 			mapPtr->objClass |= kMapProto;
-			isProtoFlagSet = YES;
+			isProtoFlagSet = true;
 		}
 	}
 
@@ -558,7 +559,7 @@ TotalClone(RefArg obj)
 			return r;
 		}
 		CPrecedents	o1, o2;
-		r = TotalClone1(obj, o1, o2, NO);
+		r = TotalClone1(obj, o1, o2, false);
 	}
 	return r;
 }
@@ -577,7 +578,7 @@ EnsureInternal(RefArg obj)
 			return r;
 		}
 		CPrecedents	o1, o2;
-		r = TotalClone1(obj, o1, o2, YES);
+		r = TotalClone1(obj, o1, o2, true);
 		if (ISNIL(r))
 			r = obj;
 	}
@@ -974,7 +975,7 @@ GetActualHeapInfo(Heap inHeap, void ** outStart, void ** outEnd, ArrayIndex * ou
 		*outFreeSize = 0;
 		long seed = HeapSeed(inHeap);
 		void * block = NULL;
-		bool r8 = YES;
+		bool r8 = true;
 		Size blockSize;
 		ObjectId blockOwner;
 		int result = NextHeapBlock(inHeap, seed, block, &block, NULL, NULL, NULL, &blockSize, &blockOwner);
@@ -985,7 +986,7 @@ GetActualHeapInfo(Heap inHeap, void ** outStart, void ** outEnd, ArrayIndex * ou
 		if (r8)
 		{
 			*outStart = *outEnd = (Ptr)block;
-			r8 = NO;
+			r8 = false;
 		}
 		(*outUsedBlocks)++;
 		*outEnd = (void *)((Ptr)*outEnd + blockSize);
@@ -1001,8 +1002,8 @@ FGetHeapStats(RefArg rcvr, RefArg inOptions)
 {
 	RefVar stats(AllocateFrame());
 
-	bool garbageCollectFrames = NO;
-	bool includeSystemReleasable = NO;
+	bool garbageCollectFrames = false;
+	bool includeSystemReleasable = false;
 	if (NOTNIL(inOptions))
 	{
 		garbageCollectFrames = NOTNIL(GetFrameSlot(inOptions, MakeSymbol("garbageCollectFrames")));
@@ -1122,8 +1123,8 @@ CDeclawingRange::inAnyRange(Ref ref) const
 	const CDeclawingRange *	range;
 	for (range = this; range != NULL; range = nextRange)
 		if (range->inRange(ref))
-			return YES;
-	return NO;
+			return true;
+	return false;
 	
 }
 
@@ -1167,9 +1168,9 @@ CObjectHeap::CObjectHeap(size_t inSize, bool allocateInTempMemory)
 
 	freeHeap = heapBase;
 
-	inGC = NO;
+	inGC = false;
 	declaw = NULL;
-	inDeclaw = NO;
+	inDeclaw = false;
 }
 
 
@@ -1791,9 +1792,9 @@ CObjectHeap::registerRangeForDeclawing(ULong start, ULong end)
 	if (range)
 	{
 		declaw = range;
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -1812,7 +1813,7 @@ CObjectHeap::declawRefsInRegisteredRanges(void)
 	if (declaw == NULL)
 		return;
 
-	inDeclaw = YES;
+	inDeclaw = true;
 PRINTF(("CObjectHeap::declawRefsInRegisteredRanges()\n"));
 ENTER_FUNC
 	// Update all refs in heap
@@ -1865,7 +1866,7 @@ PRINTF(("updating %d external objects\n", count));
 		declaw = nextRange;
 	}
 EXIT_FUNC
-	inDeclaw = NO;
+	inDeclaw = false;
 }
 
 
@@ -1883,7 +1884,7 @@ size_t free, largest;
 
 	if (inGC)
 		ThrowErr(exFrames, kNSErrGcDuringGc);
-	inGC = YES;
+	inGC = true;
 PRINTF(("CObjectHeap::GC()\n"));
 ENTER_FUNC
 
@@ -1899,7 +1900,7 @@ ENTER_FUNC
 		REPprintf("\n[ GC! start %ld/%ld...", free, largest);
 	}
 	
-	isTWAMarked = NO;
+	isTWAMarked = false;
 	weakLink = NULL;
 
 	// mark the RefVar handle block
@@ -1915,7 +1916,7 @@ PRINTF(("marking %d roots\n", count));
 		{
 			Ref * p = *rp;
 			if (*p == gSymbolTable)
-				isTWAMarked = YES;
+				isTWAMarked = true;
 			else if (*p != INVALIDPTRREF)
 				mark(*p);
 		}
@@ -1966,7 +1967,7 @@ heapStatistics(&free, &largest);
 if (free > kHeapSize)
 REPprintf("wacko free heap size %d!\n",free);
 
-	inGC = NO;
+	inGC = false;
 
 //	ValidateHeap(GetCurrentHeap(), -1);
 
@@ -2020,7 +2021,7 @@ CObjectHeap::mark(Ref ref)
 	SlottedObject *	obj;
 	ArrayIndex	index;
 #if debugLevel > 1
-bool isIntroduced = NO;
+bool isIntroduced = false;
 #endif
 
 	for ( ; ; )
@@ -2034,7 +2035,7 @@ bool isIntroduced = NO;
 		 && (obj->flags & kObjMarked) == 0)
 		{
 #if debugLevel > 1
-if (!isIntroduced) { isIntroduced = YES; printf("MARK #%08X ", ref); }
+if (!isIntroduced) { isIntroduced = true; printf("MARK #%08X ", ref); }
 #endif
 			obj->flags |= kObjMarked;
 			if (obj->slot[0] == kWeakArrayClass)

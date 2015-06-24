@@ -9,7 +9,7 @@
 #include "Objects.h"
 #include "ObjHeader.h"
 #include "Iterators.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Funcs.h"
 #include "Frames.h"
 #include "Arrays.h"

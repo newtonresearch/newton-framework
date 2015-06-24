@@ -11,6 +11,7 @@
 #include "Lookup.h"
 #include "Interpreter.h"
 #include "RefMemory.h"
+#include "ROMResources.h"
 
 extern bool	IsFaultBlock(Ref r);
 

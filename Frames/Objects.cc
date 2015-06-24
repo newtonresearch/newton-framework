@@ -16,6 +16,7 @@
 #include "Symbols.h"
 #include "Lookup.h"
 #include "OSErrors.h"
+#include "ROMResources.h"
 
 extern bool	IsFaultBlock(Ref r);
 extern bool	IsPackageHeader(Ptr inData, size_t inSize);
@@ -337,13 +338,14 @@ RegisterClass(const char * name, const char * superName)
 bool
 IsSubclass(Ref obj, Ref super)
 {
-	char *	superName, * subName, * dot;
-
 	if (!IsSymbol(obj) || !IsSymbol(super))
 		return EQRef(obj, super);
 
 	if (EQRef(obj, super))
 		return YES;
+
+	const char * superName, * subName;
+	char * dot;
 
 	superName = SymbolName(super);
 	if (*superName == 0)

@@ -7,7 +7,7 @@
 */
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Unicode.h"
 #include "RichStrings.h"
 #include "UStringUtils.h"
@@ -316,8 +316,8 @@ KeyToSKey(RefArg inKey, RefArg inType, SKey * outKey, short * outSize, bool * ou
 
 	else if (EQ(inType, SYMA(symbol)))
 	{
-		char * s = SymbolName(inKey);
-		outKey->set(strlen(s), s);
+		const char * s = SymbolName(inKey);
+		outKey->set(strlen(s), (void *)s);
 		isNonNumericKey = YES;
 	}
 

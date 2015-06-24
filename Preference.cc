@@ -10,6 +10,7 @@
 #include "Globals.h"
 #include "Lookup.h"
 #include "Preference.h"
+#include "ROMResources.h"
 
 
 Ref

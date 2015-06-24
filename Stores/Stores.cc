@@ -8,7 +8,7 @@
 
 #include "Objects.h"
 #include "Arrays.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "LargeBinaries.h"
 #include "PrecedentsForIO.h"
 #include "OSErrors.h"

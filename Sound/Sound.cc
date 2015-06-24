@@ -12,6 +12,7 @@
 #include "Lookup.h"
 #include "MagicPointers.h"
 #include "Preference.h"
+#include "ROMResources.h"
 #include "cfloat"
 
 extern Ref	SPrintObject(RefArg obj);

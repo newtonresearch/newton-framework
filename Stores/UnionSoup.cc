@@ -7,7 +7,7 @@
 */
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "StoreWrapper.h"
 #include "Cursors.h"
 #include "FaultBlocks.h"

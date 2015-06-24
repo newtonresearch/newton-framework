@@ -8,6 +8,7 @@
 
 #include "Objects.h"
 #include "UserGlobals.h"
+#include "ROMResources.h"
 #include "Interpreter.h"
 #include "OSErrors.h"
 #include "ErrorNotify.h"

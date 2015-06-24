@@ -122,7 +122,7 @@ CEzPipeProtocol::readDockerHeader(EventType& outCommand, size_t& outLength)
 /* -------------------------------------------------------------------------------
 	Write an event header to the output stream.
 	Args:		inCommand
-				inNoMore		YES => no data for this command, it can go now
+				inNoMore		true => no data for this command, it can go now
 	Return:	--
 ------------------------------------------------------------------------------- */
 
@@ -136,14 +136,14 @@ CEzPipeProtocol::writeDockerHeader(EventType inCommand, bool inNoMore)
 	header.length = 0;
 	if (inNoMore)
 	{
-		fPipe->writeChunk(&header, sizeof(header), NO);
+		fPipe->writeChunk(&header, sizeof(header), false);
 		fPipe->flushWrite();
 	}
 	else
 	{
 		// more to come
 		// we don’t know the size yet so don’t write that
-		fPipe->writeChunk(&header, sizeof(header)-sizeof(header.length), NO);
+		fPipe->writeChunk(&header, sizeof(header)-sizeof(header.length), false);
 	}
 }
 
@@ -173,28 +173,28 @@ CDocker::CDocker()
 	fDesktopKey.lo = 0;
 	fNewtonKey.hi = 0;
 	fNewtonKey.lo = 0;
-	fAC = NO;
+	fAC = false;
 	fDesktopType = 2;
-	fAF = NO;
+	fAF = false;
 	fProtocolVersion = kBaseProtocolVersion;
 	fEvtLength = 0;
 	fError = noErr;
 	fPipe = NULL;
-	fB1 = NO;
-	fIsSelectiveSync = NO;
-	f2C = NO;
-	f2D = NO;
+	fB1 = false;
+	fIsSelectiveSync = false;
+	f2C = false;
+	f2D = false;
 	f2E = 0;
 	f28 = NILREF;
-	f2F = NO;
-	f30 = NO;
+	f2F = false;
+	f30 = false;
 	fLengthRead = 0;
-	f31 = NO;
+	f31 = false;
 	fLengthWritten = 0;
-	fIsLocked = NO;
+	fIsLocked = false;
 	fVBOCompression = kCompressedVBOs;
-	fAD = NO;
-	fAE = NO;
+	fAD = false;
+	fAE = false;
 	f7C = NULL;
 	fRegdExtensionIds = NULL;
 	f58 = 0;
@@ -204,8 +204,8 @@ CDocker::CDocker()
 	f68 = 0;
 	f6C = NILREF;
 	f70 = NILREF;
-	fB3 = NO;
-	fB4 = NO;
+	fB3 = false;
+	fB4 = false;
 	fSessionType = kSettingUpSession;
 }
 
@@ -281,8 +281,8 @@ CDocker::waitForStopToComplete()
 		{
 			FYieldToFork(RA(NILREF));
 		}
-		fAF = NO;
-		fB0 = NO;
+		fAF = false;
+		fB0 = false;
 	}
 }
 
@@ -301,7 +301,7 @@ CDocker::getDockerLock(void)
 bool
 CDocker::waitAndLockDocker(void)
 {
-	bool isAcquired = NO;
+	bool isAcquired = false;
 	ULong now = Ticks();
 	for (ULong elapsedTicks = 0; getDockerLock() && elapsedTicks < 600; elapsedTicks = Ticks() - now)
 	{
@@ -309,8 +309,8 @@ CDocker::waitAndLockDocker(void)
 	}
 	if (!getDockerLock())
 	{
-		fIsLocked = YES;
-		isAcquired = YES;
+		fIsLocked = true;
+		isAcquired = true;
 	}
 	return isAcquired;
 }
@@ -319,7 +319,7 @@ CDocker::waitAndLockDocker(void)
 void
 CDocker::unlockDocker(void)
 {
-	fIsLocked = NO;
+	fIsLocked = false;
 }
 
 
@@ -339,9 +339,9 @@ CDocker::doConnection(RefArg inArg1, RefArg inArg2, RefArg inArg3, bool& outArg4
 	if (fB3)
 		return noErr;
 
-	fAF = NO;
-	bool sp00 = NO;
-	outArg4 = YES;
+	fAF = false;
+	bool sp00 = false;
+	outArg4 = true;
 	fError = noErr;
 	if (fAC == 0)
 		fError = kDockErrBadPasswordError;
@@ -364,16 +364,16 @@ CDocker::doConnection(RefArg inArg1, RefArg inArg2, RefArg inArg3, bool& outArg4
 				compatibilityHacks();
 			else
 			{
-				if (f2F && bytesAvailable(YES) == 0)
+				if (f2F && bytesAvailable(true) == 0)
 				{
 					if (fSessionType == kSynchronizeSession)
-						writeDockerHeader(kDRequestToSync, YES);
+						writeDockerHeader(kDRequestToSync, true);
 					else if (fSessionType == kRestoreSession)
-						writeDockerHeader(kDRequestToRestore, YES);
+						writeDockerHeader(kDRequestToRestore, true);
 					else
 						writeResult(noErr);
 				}
-				outArg4 = NO;
+				outArg4 = false;
 				while (fError == noErr && !outArg4 && !sp00 && !fAF)
 				{
 					readDockerHeader(fEvtTag, fEvtLength);
@@ -381,8 +381,8 @@ CDocker::doConnection(RefArg inArg1, RefArg inArg2, RefArg inArg3, bool& outArg4
 					if (fSessionType == 9)
 					{
 						keyboardProcessCommand();
-						sp00 = YES;
-						f2F = YES;
+						sp00 = true;
+						f2F = true;
 					}
 				}
 			}
@@ -403,7 +403,7 @@ CDocker::doConnection(RefArg inArg1, RefArg inArg2, RefArg inArg3, bool& outArg4
 	}
 	if (fError == noErr && fSessionType == kSynchronizeSession && sp00)
 	{
-		fIsSelectiveSync = YES;
+		fIsSelectiveSync = true;
 	}
 	f6C = NILREF;
 	f70 = NILREF;
@@ -421,7 +421,7 @@ void
 CDocker::connect(RefArg inArg1, RefArg inOptions, RefArg inPassword)
 {
 //	r4:r6 r9 r5
-	fB3 = NO;
+	fB3 = false;
 	fError = noErr;
 
 	waitAndLockDocker();
@@ -437,7 +437,7 @@ CDocker::connect(RefArg inArg1, RefArg inOptions, RefArg inPassword)
 		if (NOTNIL(timeoutOption))
 			timeout = RINT(timeoutOption);
 		fPipe->init(inOptions, timeout*kSeconds);
-		fB1 = YES;
+		fB1 = true;
 		if (fAF)
 			ThrowErr(exLongError, kDockErrProtocolError);
 		timeoutOption = GetFrameSlot(inOptions, SYMA(idleTimeout));
@@ -450,8 +450,8 @@ CDocker::connect(RefArg inArg1, RefArg inOptions, RefArg inPassword)
 		readDockerHeader(fEvtTag, fEvtLength);
 		if (fEvtTag == kDLoadPackage)
 		{
-			fAE = YES;
-			fAC = YES;
+			fAE = true;
+			fAC = true;
 			fSessionType = kLoadPackageSession;
 		}
 		else if (fEvtTag == kDInitiateDocking)
@@ -470,7 +470,7 @@ CDocker::connect(RefArg inArg1, RefArg inOptions, RefArg inPassword)
 			{
 				if (fAF)
 					ThrowErr(exLongError, kDockErrIncompatibleProtocol);
-				fAC = YES;
+				fAC = true;
 			}
 			if (fEvtTag == kDWhichIcons)
 			{
@@ -503,7 +503,7 @@ CDocker::connect(RefArg inArg1, RefArg inOptions, RefArg inPassword)
 			if (fAF)
 				ThrowErr(exLongError, kDockErrProtocolError);
 
-			f2F = YES;
+			f2F = true;
 		}
 		else
 			ThrowErr(exLongError, fEvtTag == kDRequestToDock ? kDockErrDesktopError : kDockErrBadHeader);
@@ -529,8 +529,8 @@ CDocker::processBuiltinCommand(bool& outDisconnected)
 		return kDockErrBadPasswordError;
 
 	waitAndLockDocker();
-	outDisconnected = NO;
-	bool sp00 = NO;
+	outDisconnected = false;
+	bool sp00 = false;
 	newton_try
 	{
 		processCommand(outDisconnected, sp00);
@@ -553,11 +553,11 @@ CDocker::stop(void)
 {
 	if (getDockerLock())
 	{
-		fAF = YES;
-		fB0 = NO;
+		fAF = true;
+		fB0 = false;
 		if (fPipe)
 			fPipe->abort();
-		fB0 = YES;
+		fB0 = true;
 	}
 }
 
@@ -615,7 +615,7 @@ CDocker::reserveCurrentStore(RefArg inArg)
 void
 CDocker::writeSoupNames(void)
 {
-	writeDockerHeader(kDSoupNames, NO);
+	writeDockerHeader(kDSoupNames, false);
 	;
 }
 
@@ -738,30 +738,30 @@ CDocker::cleanUpIfStopping(bool inArg1)
 		if (fError == 0 || fError == r9)
 		{
 			if (fProtocolVersion <= kBaseProtocolVersion)
-				return YES;
+				return true;
 			if (fError != noErr)
 				r9 = fError;
 			fError = noErr;
 			newton_try
 			{
 				// cancel the operation
-				writeDockerHeader(kDOperationCanceled, YES);
-				bool doSyncStream = YES;
+				writeDockerHeader(kDOperationCanceled, true);
+				bool doSyncStream = true;
 				// wait for acknowledge
 				while(fError ==noErr && fEvtTag != kDOpCanceledAck && inArg1 == 0)
 				{
 					if (doSyncStream)
 					{
 						findDockerHeader(fEvtTag, fEvtLength);
-						doSyncStream = NO;
+						doSyncStream = false;
 					}
 					else
 						readDockerHeader(fEvtTag, fEvtLength);
 					if (fEvtTag == kDDisconnect)
-						inArg1 = YES;
+						inArg1 = true;
 					flushCommand();
 				}
-				f2F = YES;
+				f2F = true;
 			}
 			newton_catch_all
 			{
@@ -779,11 +779,11 @@ CDocker::cleanUpIfStopping(bool inArg1)
 void
 CDocker::processCommand(bool& outDisconnected, bool& outDone)
 {
-	outDisconnected = NO;
-	outDone = NO;
-	f2F = NO;
-	if (checkProtocolExtension(fEvtTag, outDone) == NO
-	&&  checkProtocolPatch(fEvtTag, outDone) == NO)
+	outDisconnected = false;
+	outDone = false;
+	f2F = false;
+	if (checkProtocolExtension(fEvtTag, outDone) == false
+	&&  checkProtocolPatch(fEvtTag, outDone) == false)
 	{
 		switch (fEvtTag)
 		{
@@ -802,14 +802,14 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 			flushCommand();
 			break;
 		case kDOperationCanceled:
-			outDone = YES;
-			writeDockerHeader(kDOpCanceledAck, YES);
+			outDone = true;
+			writeDockerHeader(kDOpCanceledAck, true);
 			break;
 		case kDOperationDone:
-			outDone = YES;
+			outDone = true;
 			break;
 		case kDDisconnect:
-			outDisconnected = YES;
+			outDisconnected = true;
 			break;
 
 		case kDUnknownCommand:
@@ -855,10 +855,10 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 			setStoreSignature();
 			break;
 		case kDSetCurrentStore:
-			setCurrentStore(NO);
+			setCurrentStore(false);
 			break;
 		case kDSetStoreGetNames:
-			setCurrentStore(YES);
+			setCurrentStore(true);
 			break;
 		case kDSetStoreToDefault:
 			setStoreToDefault();
@@ -871,7 +871,7 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 
 // Soup
 		case kDSetSoupGetInfo:
-			setCurrentSoup(YES);
+			setCurrentSoup(true);
 			break;
 		case kDGetSoupNames:
 			writeSoupNames();
@@ -880,13 +880,13 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 			writeSoupIDs();
 			break;
 		case kDGetIndexDescription:
-			writeIndexDescription(NO);
+			writeIndexDescription(false);
 			break;
 		case kDGetChangedIndex:
-			writeIndexDescription(YES);
+			writeIndexDescription(true);
 			break;
 		case kDGetSoupInfo:
-			writeSoupInfo(NO);
+			writeSoupInfo(false);
 			break;
 		case kDSetSoupInfo:
 			setSoupInfoFrame();
@@ -896,7 +896,7 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 			setSoupSignature();
 			break;
 		case kDSetCurrentSoup:
-			setCurrentSoup(NO);
+			setCurrentSoup(false);
 			break;
 		case kDCreateSoup:
 			createSoup();
@@ -920,10 +920,10 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 
 // Soup Entries
 		case kDAddEntry:
-			addEntry(NO);
+			addEntry(false);
 			break;
 		case kDAddEntryWithUniqueID:
-			addEntry(YES);
+			addEntry(true);
 			break;
 		case kDReturnEntry:
 			returnEntry(kDEntry);
@@ -986,8 +986,8 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 			readPackage();
 			writeResult(fError);
 			if (fSessionType != kRestoreSession && fProtocolVersion == kDanteProtocolVersion)
-				outDone = YES;
-			f2F = YES;
+				outDone = true;
+			f2F = true;
 			break;
 		case kDRemovePackage:
 			doRemovePackage();
@@ -1001,10 +1001,10 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 
 // Function/Method Calls
 		case kDCallGlobalFunction:
-			callFunction(YES);
+			callFunction(true);
 			break;
 		case kDCallRootMethod:	// definitely crmf
-			callFunction(NO);
+			callFunction(false);
 			break;
 
 		case kDResult:
@@ -1017,7 +1017,7 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 // Sync
 		case kDDesktopInControl:
 			fSessionType = kSettingUpSession;
-			f2F = NO;
+			f2F = false;
 			break;
 		case kDRequestToSync:
 			fSessionType = kSynchronizeSession;
@@ -1065,7 +1065,7 @@ CDocker::processCommand(bool& outDisconnected, bool& outDone)
 	}
 
 	if (outDone)
-		f2F = YES;
+		f2F = true;
 }
 
 
@@ -1082,7 +1082,7 @@ CDocker::doRemovePackage(void)
 	if (NOTNIL(pkgEntry))
 		NSCallGlobalFn(SYMA(RemovePackage), pkgEntry);
 	writeResult(noErr);
-	addChangedSoup(SYMA(changed), YES);
+	addChangedSoup(SYMA(changed), true);
 }
 
 
@@ -1166,9 +1166,9 @@ CDocker::installProtocolExtension(RefArg inName, RefArg inFn, ULong inId)
 	}
 	end_try;
 
-	cleanUpIfStopping(NO);
+	cleanUpIfStopping(false);
 	if (fError != kDockErrProtocolExtAlreadyRegistered)
-		cleanUpIfError(NO);
+		cleanUpIfError(false);
 
 	return fError;
 }
@@ -1234,8 +1234,8 @@ CDocker::removeProtocolExtension(RefArg inName, ULong inId)
 	}
 	end_try;
 
-	cleanUpIfStopping(NO);
-	cleanUpIfError(NO);
+	cleanUpIfStopping(false);
+	cleanUpIfError(false);
 
 	return fError;
 }
@@ -1248,16 +1248,16 @@ CDocker::checkProtocolExtension(ULong inId, bool& ioDone)
 	if (fRegdExtensionIds
 	&&  (index = fRegdExtensionIds->find(inId)) != kIndexNotFound)
 	{
-		f30 = YES;
+		f30 = true;
 		bool wasLocked = getDockerLock();
 		unlockDocker();
 		ioDone = NOTNIL(NSCall(GetArraySlot(fRegdExtensionFns, index)));
-		f30 = NO;
+		f30 = false;
 		if (wasLocked)
 			waitAndLockDocker();
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -1265,7 +1265,7 @@ bool
 CDocker::checkProtocolPatch(ULong inId, bool& ioDone)
 {
 	// this really does nothing
-	return NO;
+	return false;
 }
 
 
@@ -1305,8 +1305,8 @@ CDocker::bytesAvailable(bool inArg1)
 	Read a chunk from the input stream.
 	Args:		inBuf			buffer for data
 				inLength		size of chunk
-				inNoMore		YES => no more to come
-	Return:	boolean		YES => EOF
+				inNoMore		true => no more to come
+	Return:	boolean		true => EOF
 ------------------------------------------------------------------------------- */
 
 bool
@@ -1346,7 +1346,7 @@ CDocker::readBytes(size_t& ioLength, RefVar inTarget)
 			if (fLengthRead == fEvtLength)
 			{
 				fLengthRead = 0;
-				f30 = NO;
+				f30 = false;
 			}
 		}
 		XENDTRY;
@@ -1357,8 +1357,8 @@ CDocker::readBytes(size_t& ioLength, RefVar inTarget)
 	}
 	end_try;
 
-	cleanUpIfStopping(NO);
-	cleanUpIfError(NO);
+	cleanUpIfStopping(false);
+	cleanUpIfError(false);
 	unlockDocker();
 	return fError;
 }
@@ -1394,11 +1394,11 @@ CDocker::readCommand(RefVar& outCmd, bool inArg2, bool inArg3)
 		RefVar data;
 		if (!inArg2)
 		{
-			f30 = YES;
+			f30 = true;
 			readData(data);
 		}
 		SetFrameSlot(outCmd, SYMA(data), data);
-		f2F = YES;
+		f2F = true;
 	}
 	newton_catch_all
 	{
@@ -1406,8 +1406,8 @@ CDocker::readCommand(RefVar& outCmd, bool inArg2, bool inArg3)
 	}
 	end_try;
 
-	cleanUpIfStopping(NO);
-	cleanUpIfError(NO);
+	cleanUpIfStopping(false);
+	cleanUpIfError(false);
 	unlockDocker();
 	return fError;
 }
@@ -1425,8 +1425,8 @@ CDocker::readCommandData(RefVar& outData)
 
 	readData(outData);
 
-	cleanUpIfStopping(NO);
-	cleanUpIfError(NO);
+	cleanUpIfStopping(false);
+	cleanUpIfError(false);
 	unlockDocker();
 	return fError;
 }
@@ -1463,7 +1463,7 @@ CDocker::readString(size_t inLength)
 		XFAILIF(str == NULL, outOfMemory();)
 		newton_try
 		{
-			readChunk(str, inLength, YES);
+			readChunk(str, inLength, true);
 		}
 		cleanup
 		{
@@ -1522,7 +1522,7 @@ CDocker::readData(RefVar& outData)
 	}
 	XENDTRY;
 
-	f30 = NO;
+	f30 = false;
 }
 
 
@@ -1567,7 +1567,7 @@ CDocker::flushCommand(void)
 		XFAILIF(buf == NULL, outOfMemory();)
 		unwind_protect
 		{
-			readChunk(buf, fEvtLength, YES);
+			readChunk(buf, fEvtLength, true);
 		}
 		on_unwind
 		{
@@ -1600,8 +1600,8 @@ CDocker::flushCommandData(void)
 	}
 	XENDTRY;
 
-	cleanUpIfStopping(NO);
-	cleanUpIfError(NO);
+	cleanUpIfStopping(false);
+	cleanUpIfError(false);
 	unlockDocker();
 	return fError;
 }
@@ -1691,7 +1691,7 @@ CDocker::readDesktopInfo(void)
 		fDesktopApps = NILREF;
 
 	// respond with info about us -- actual version, and our key
-	writeDockerHeader(kDNewtonInfo, NO);
+	writeDockerHeader(kDNewtonInfo, false);
 	*fPipe << (ULong)(3*sizeof(ULong));	// evt length
 
 	ULong ourProtocolVersion = RINT(GetProtoVariable(f20, SYMA(protocolVersion)));
@@ -1795,10 +1795,10 @@ CDocker::writeBytes(RefArg inTarget)
 				dataLength = lenRemaining;
 			fLengthWritten += dataLength;
 			CDataPtr data(inTarget);
-			fPipe->writeChunk((Ptr)data, dataLength, NO);
+			fPipe->writeChunk((Ptr)data, dataLength, false);
 			if (fLengthWritten == fEvtLength)
 			{
-				f31 = NO;
+				f31 = false;
 				fPipe->flushWrite();
 			}
 		}
@@ -1810,8 +1810,8 @@ CDocker::writeBytes(RefArg inTarget)
 	}
 	end_try;
 
-	cleanUpIfStopping(NO);
-	cleanUpIfError(NO);
+	cleanUpIfStopping(false);
+	cleanUpIfError(false);
 	unlockDocker();
 	return fError;
 }
@@ -1830,7 +1830,7 @@ CDocker::pad(size_t inLength)
 	if (delta > 0)
 	{
 		ULong padding = 0;
-		fPipe->writeChunk(&padding, kStreamAlignment-delta, NO);
+		fPipe->writeChunk(&padding, kStreamAlignment-delta, false);
 	}
 }
 
@@ -1838,7 +1838,7 @@ CDocker::pad(size_t inLength)
 void
 CDocker::writeLong(EventType inTag, ULong inValue)
 {
-	writeDockerHeader(inTag, NO);
+	writeDockerHeader(inTag, false);
 	*fPipe << (ULong)sizeof(inValue);
 	*fPipe << inValue;
 	fPipe->flushWrite();
@@ -1857,7 +1857,7 @@ CDocker::writeString(const UniChar * inString)
 {
 	size_t dataLen = (Ustrlen(inString) + 1) * sizeof(UniChar);
 	*fPipe << dataLen;
-	fPipe->writeChunk(inString, dataLen, NO);
+	fPipe->writeChunk(inString, dataLen, false);
 	pad(dataLen);
 	fPipe->flushWrite();
 }
@@ -1868,7 +1868,7 @@ CDocker::writeRef(EventType inTag, RefArg inValue)
 {
 	if (inTag == 0)
 	{
-		CObjectWriter writer(inValue, *fPipe, NO);
+		CObjectWriter writer(inValue, *fPipe, false);
 		newton_try
 		{
 			writer.write();
@@ -1882,8 +1882,8 @@ CDocker::writeRef(EventType inTag, RefArg inValue)
 	else
 	{
 		size_t nsofLength = 0;
-		writeDockerHeader(inTag, NO);
-		CObjectWriter writer(inValue, *fPipe, NO);
+		writeDockerHeader(inTag, false);
+		CObjectWriter writer(inValue, *fPipe, false);
 		newton_try
 		{
 			if (fVBOCompression == 2
@@ -1949,7 +1949,7 @@ CDocker::writeInheritanceFrame(void)
 	}
 	streamLen += sizeof(numOfSlots);
 
-	writeDockerHeader(kDInheritance, NO);
+	writeDockerHeader(kDInheritance, false);
 	*fPipe << streamLen;
 
 	*fPipe << numOfSlots;
@@ -1957,9 +1957,9 @@ CDocker::writeInheritanceFrame(void)
 	for ( ; !iter2.done(); iter2.next())
 	{
 		char * symName = SymbolName(iter2.tag());
-		fPipe->writeChunk(symName, strlen(symName)+1, NO);
+		fPipe->writeChunk(symName, strlen(symName)+1, false);
 		symName = SymbolName(iter2.value());
-		fPipe->writeChunk(symName, strlen(symName)+1, NO);
+		fPipe->writeChunk(symName, strlen(symName)+1, false);
 	}
 
 	pad(streamLen);
@@ -1982,7 +1982,7 @@ void
 CDocker::testMessage(void)
 {
 	if (fEvtLength == 0)
-		writeDockerHeader(kDTest, YES);
+		writeDockerHeader(kDTest, true);
 
 	else
 	{
@@ -1990,11 +1990,11 @@ CDocker::testMessage(void)
 		{
 			char * buf = NewPtr(fEvtLength);
 			XFAILIF(buf == NULL, outOfMemory();)
-			readChunk(buf, fEvtLength, YES);
+			readChunk(buf, fEvtLength, true);
 
-			writeDockerHeader(kDTest, NO);
+			writeDockerHeader(kDTest, false);
 			*fPipe << fEvtLength;
-			fPipe->writeChunk(buf, fEvtLength, NO);
+			fPipe->writeChunk(buf, fEvtLength, false);
 			pad(fEvtLength);
 			fPipe->flushWrite();
 			FreePtr(buf);
@@ -2018,12 +2018,12 @@ void
 CDocker::testRefMessage(void)
 {
 	if (fEvtLength == 0)
-		writeDockerHeader(kDRefTest, YES);
+		writeDockerHeader(kDRefTest, true);
 
 	else
 	{
 		RefVar value(readRef(RA(NILREF)));
-		writeDockerHeader(kDRefTest, NO);
+		writeDockerHeader(kDRefTest, false);
 		writeRef(kDRefTest, value);
 	}
 }

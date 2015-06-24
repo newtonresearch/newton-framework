@@ -14,6 +14,8 @@
 #include "Symbols.h"
 #include "Arrays.h"
 #include "Frames.h"
+#include "ROMResources.h"
+#include "ROMData.h"
 
 /*------------------------------------------------------------------------------
 	P l a i n   C   F u n c t i o n   I n t e r f a c e

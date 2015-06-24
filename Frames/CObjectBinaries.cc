@@ -12,7 +12,7 @@
 
 #include "CObjectBinaries.h"
 #include "ObjectHeap.h"
-#include "Globals.h"
+#include "ROMResources.h"
 
 
 /*------------------------------------------------------------------------------

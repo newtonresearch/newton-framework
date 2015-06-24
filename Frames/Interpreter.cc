@@ -22,6 +22,7 @@
 #include "NewtGlobals.h"
 #include "DeveloperNotification.h"
 #include "REPTranslators.h"
+#include "ROMResources.h"
 
 DeclareException(exMessage, exRootException);
 DeclareException(exInterpreter, exRootException);

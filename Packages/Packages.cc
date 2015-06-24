@@ -9,18 +9,18 @@
 #include "Objects.h"
 #include "PackageParts.h"
 #include "LargeBinaries.h"
-#include "Globals.h"
 #include "NewtonScript.h"
 #include "MemoryPipe.h"
 #include "EndpointPipe.h"
 #include "EndpointClient.h"
+#include "ROMResources.h"
 
 
 /* -----------------------------------------------------------------------------
 	D a t a
 ----------------------------------------------------------------------------- */
 
-const char * const	kPackageMagicNumber = "package01";
+const char * const kPackageMagicNumber = "package01";
 
 
 extern "C" {

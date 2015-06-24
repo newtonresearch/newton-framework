@@ -13,7 +13,7 @@
 #include "LargeObjectStore.h"
 #include "CachedReadStore.h"
 #include "StoreCompander.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Funcs.h"
 #include "OSErrors.h"
 extern void DumpHex(void * inBuf, size_t inLen);

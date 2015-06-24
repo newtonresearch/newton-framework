@@ -13,6 +13,7 @@
 #include "Interpreter.h"
 #include "RichStrings.h"
 #include "UStringUtils.h"
+#include "ROMResources.h"
 
 /*------------------------------------------------------------------------------
 	P l a i n   C   F u n c t i o n   I n t e r f a c e
@@ -687,8 +688,8 @@ StringerStringObject(RefArg obj, Ptr outText, int * outTextSize, Ptr outInk, int
 
 	else if (IsSymbol(obj))
 	{
-		Ptr	sym = SymbolName(obj);
-		long  symLen = strlen(sym);
+		const char * sym = SymbolName(obj);
+		int symLen = strlen(sym);
 		*outTextSize = symLen;
 		*outInkSize = 0;
 		if (outText != NULL)

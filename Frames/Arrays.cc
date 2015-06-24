@@ -8,7 +8,7 @@
 
 #include "Objects.h"
 #include "ObjHeader.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "RefMemory.h"
 #include "Symbols.h"
 #include "Arrays.h"

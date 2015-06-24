@@ -14,6 +14,7 @@
 #include "Lookup.h"
 #include "Symbols.h"
 #include "Iterators.h"
+#include "ROMResources.h"
 
 #include "Compiler.h"
 

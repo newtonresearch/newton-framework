@@ -12,7 +12,6 @@
 
 #include "Objects.h"
 #include "ObjHeader.h"
-#include "Globals.h"
 #include "Arrays.h"
 #include "Unicode.h"
 #include "UStringUtils.h"
@@ -21,6 +20,7 @@
 #include "Iterators.h"
 #include "Locales.h"
 #include "Maths.h"
+#include "ROMResources.h"
 
 
 /*------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ MakeString(const UniChar * str)
 
 
 Ref
-MakeStringOfLength(const UniChar * str, size_t numChars)
+MakeStringOfLength(const UniChar * str, ArrayIndex numChars)
 {
 	UniChar *	data;
 	RefVar	obj(AllocateBinary(SYMA(string), (numChars + 1) * sizeof(UniChar)));
@@ -293,21 +293,19 @@ ParamStrParse(CRichString * ioStr, ArrayIndex ioOffset, bool inIgnore, bool inSu
 		if (ch == '^')
 		{
 			// next char should be a placeholder 0..9, conditional ?, or escaped ^|
-//L37
-			nxOffset = ioOffset + 1;	// r7
+			nxOffset = ioOffset + 1;
 			if (nxOffset < ioStr->length())
 			{
 				ch2 = ioStr->getChar(nxOffset);
 				switch (ch2)
 				{
 				case '?':
-//L130
-					ch = ioStr->getChar(ioOffset + 2);	// r7
+					ch = ioStr->getChar(ioOffset + 2);
 					ioStr->deleteRange(ioOffset, 3);
 					if ('0' <= ch && ch <= '9')
 					{
 						arg = GetArraySlot(inArgs, ch - '0');
-						bool	doPhrase = NOTNIL(arg) && !(IsString(arg) && StrEmpty(arg));	// r10
+						bool	doPhrase = NOTNIL(arg) && !(IsString(arg) && StrEmpty(arg));
 						// parse phrase up to opening | delimiter
 						nxOffset = ParamStrParse(ioStr, ioOffset, !doPhrase, inSuppress, inArgs);
 						c1Offset = nxOffset;
@@ -337,7 +335,6 @@ ParamStrParse(CRichString * ioStr, ArrayIndex ioOffset, bool inIgnore, bool inSu
 					}
 					else
 					{
-//L219
 						// funny placeholder - skip past | | section
 						c1Offset = ParamStrParse(ioStr, ioOffset, YES, inSuppress, inArgs);
 						ioOffset = ParamStrParse(ioStr, c1Offset + 1, YES, inSuppress, inArgs);
@@ -354,14 +351,12 @@ ParamStrParse(CRichString * ioStr, ArrayIndex ioOffset, bool inIgnore, bool inSu
 				case '7':
 				case '8':
 				case '9':
-//L64
 					if (inIgnore)
 						ioOffset += 2;
 					else if (inSuppress)
 						ioStr->deleteRange(ioOffset, 2);
 					else
 					{
-//L81
 						ch = ioStr->getChar(nxOffset);
 						if ('0' <= ch && ch <= '9')	// could have fallen thru switch?
 						{
@@ -378,7 +373,6 @@ ParamStrParse(CRichString * ioStr, ArrayIndex ioOffset, bool inIgnore, bool inSu
 
 				case '^':
 				case '|':
-//L122
 					// treat as escaped characters
 					if (inSuppress)
 					{
@@ -390,13 +384,11 @@ ParamStrParse(CRichString * ioStr, ArrayIndex ioOffset, bool inIgnore, bool inSu
 					break;
 
 				default:
-//L237
 					// ignore funny placeholder
 					ioOffset += 2;
 					break;
 				}
 			}
-//L128
 		}
 
 		else if (ch == '|')
@@ -406,7 +398,6 @@ ParamStrParse(CRichString * ioStr, ArrayIndex ioOffset, bool inIgnore, bool inSu
 		else
 			// itÕs not an interesting character, just move along
 			ioOffset++;
-//L27
 		if (sp04)
 			break;
 	}

@@ -13,6 +13,8 @@
 #include "Frames.h"
 #include "Arrays.h"
 #include "LargeBinaries.h"
+#include "ROMResources.h"
+#include "ROMData.h"
 
 extern ObjHeader * ObjectPtr1(Ref inObj, long inTag, bool inDoFaultCheck);
 

@@ -12,6 +12,7 @@
 #include "Unicode.h"
 #include "UStringUtils.h"
 #include "RichStrings.h"
+#include "ROMResources.h"
 
 
 Ref

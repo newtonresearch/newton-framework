@@ -7,7 +7,7 @@
 */
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "RefMemory.h"
 #include "Unicode.h"
 #include "NewtonTime.h"

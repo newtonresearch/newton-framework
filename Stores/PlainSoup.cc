@@ -18,7 +18,7 @@
 */
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Unicode.h"
 #include "NewtonTime.h"
 #include "UStringUtils.h"

@@ -12,6 +12,7 @@
 #include "Globals.h"
 #include "REPTranslators.h"
 #include "Funcs.h"
+#include "ROMResources.h"
 
 /*----------------------------------------------------------------------
 	D e c l a r a t i o n s
@@ -113,7 +114,7 @@ PrintFramesErrorMsg(const char * inStr, RefArg inData)
 	R e a d - E v a l u a t e - P r i n t   L o o p
 ------------------------------------------------------------------------------*/
 
-// for NCX
+// for NCX, NTX
 FILE * logout = NULL;
 void	RedirectStdioOutTranslator(FILE * inFRef);
 

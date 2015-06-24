@@ -20,12 +20,24 @@ typedef int32_t Ref32;
 		Ref32 destRef; \
 	}gc;
 
+struct ObjHeader32
+{
+	OBJHEADER32
+}__attribute__((packed));
+
+struct BinaryObject32
+{
+	OBJHEADER32
+	Ref32		objClass;
+	char		data[];
+}__attribute__((packed));
+
 struct ArrayObject32
 {
 	OBJHEADER32
 	Ref32		objClass;
 	Ref32		slot[];
-};
+}__attribute__((packed));
 
 struct SymbolObject32
 {
@@ -33,32 +45,16 @@ struct SymbolObject32
 	Ref32		objClass;
 	ULong		hash;
 	char		name[];
-};
+}__attribute__((packed));
 
 struct StringObject32
 {
 	OBJHEADER32
 	Ref32		objClass;
 	UniChar	str[];
-};
+}__attribute__((packed));
 
 
-#if defined(hasByteSwapping)
-#define k4ByteAlignmentFlag 0x01000000
-#else
 #define k4ByteAlignmentFlag 0x00000001
-#endif
-
-#if __LP64__
-#include <map>
-typedef std::map<Ref32, Ref> RefMap;
-
-extern bool		IsObjClass(Ref obj, const char * inClassName);
-
-extern void		FixUpRef(Ref32 * inRefPtr, char * inBaseAddr);
-extern size_t	ScanRef(Ref32 * inRefPtr, char * inBaseAddr);
-extern void		CopyRef(ArrayObject32 * &inSrcPtr, ArrayObject * &inDstPtr, RefMap & inMap, char * inBaseAddr, ULong inAlignment);
-extern void		UpdateRef(Ref * inRefPtr, RefMap & inMap);
-#endif
 
 #endif	/* __REF32_H */

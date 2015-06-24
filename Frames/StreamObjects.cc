@@ -8,9 +8,9 @@
 
 #include "Objects.h"
 #include "Frames.h"
-#include "Globals.h"
 #include "StreamObjects.h"
 #include "LargeBinaries.h"
+#include "ROMResources.h"
 
 
 /*------------------------------------------------------------------------------
@@ -659,8 +659,8 @@ CObjectReader::scan(void)
 	case kNSBinaryObject:
 	case kNSString:
 		{
-			bool	isEOF;
-			size_t	objSize = longFromPipe();
+			bool isEOF;
+			size_t objSize = longFromPipe();
 
 			if (objType == kNSString)
 			{
@@ -679,7 +679,7 @@ CObjectReader::scan(void)
 			{
 				// byte-swap unichars in the string
 				UniChar * s = (UniChar *)BinaryData(obj);
-				for (ArrayIndex i = objSize/sizeof(UniChar); i > 0; i--, s++)
+				for (ArrayIndex i = objSize/sizeof(UniChar); i > 0; --i, ++s)
 					*s = BYTE_SWAP_SHORT(*s);
 			}
 			else if (IsReal(obj))
@@ -698,32 +698,32 @@ CObjectReader::scan(void)
 	case kNSArray:
 	case kNSPlainArray:
 		{
-			ArrayIndex	i, numOfSlots = longFromPipe();
+			ArrayIndex numOfSlots = longFromPipe();
 			obj = MakeArray(numOfSlots);
 			fPrecedents->add(obj);
 
 			if (objType != kNSPlainArray)
 				((ArrayObject *)ObjectPtr(obj))->objClass = scan();
 
-			for (i = 0; i < numOfSlots; ++i)
+			for (ArrayIndex i = 0; i < numOfSlots; ++i)
 				SetArraySlot(obj, i, scan());
 		}
 		break;
 
 	case kNSFrame:
 		{
-			ArrayIndex	i, numOfSlots = longFromPipe();
-			ArrayIndex	index = fPrecedents->add(RA(NILREF));	// placeholder
+			ArrayIndex numOfSlots = longFromPipe();
+			ArrayIndex index = fPrecedents->add(RA(NILREF));	// placeholder
 
-			RefVar	tags(MakeArray(numOfSlots));
-			for (i = 0; i < numOfSlots; ++i)
+			RefVar tags(MakeArray(numOfSlots));
+			for (ArrayIndex i = 0; i < numOfSlots; ++i)
 				SetArraySlot(tags, i, scan());
 
-			RefVar	map(AllocateMapWithTags(RA(NILREF), tags));
+			RefVar map(AllocateMapWithTags(RA(NILREF), tags));
 			obj = AllocateFrameWithMap(map);
 			fPrecedents->replace(index, obj);
 
-			for (i = 0; i < numOfSlots; ++i)
+			for (ArrayIndex i = 0; i < numOfSlots; ++i)
 				SetArraySlot(obj, i, scan());
 		}
 		break;
@@ -1197,7 +1197,7 @@ CObjectWriter::scan(void)
 			{
 				fPipe << (unsigned char) kNSSymbol;
 
-				char *		sym = SymbolName(fObj);
+				const char *	sym = SymbolName(fObj);
 				ArrayIndex	symLen = strlen(sym);
 				longToPipe(symLen);
 				fPipe.writeChunk(sym, symLen, NO);

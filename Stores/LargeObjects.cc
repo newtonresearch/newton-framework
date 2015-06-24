@@ -6,11 +6,23 @@
 	Written by:	Newton Research Group.
 */
 
+#define __USERMONITOR_H 1
+#include "UserObjects.h"
+class CUMonitor
+{
+public:
+					CUMonitor(ObjectId id = 0);
+					operator	ObjectId()	const;
+	NewtonErr	invokeRoutine(int inSelector, void * ioMsg);
+};
+inline			CUMonitor::CUMonitor(ObjectId id)  { }
+inline			CUMonitor::operator ObjectId()	const  { return 0; }
+
 #include "LargeObjects.h"
 #include "LargeBinaries.h"
 #include "PackageManager.h"
 #include "UStringUtils.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "OSErrors.h"
 #include "RDM.h"
 
@@ -26,6 +38,15 @@ extern Ref	ToObject(CStore * inStore);
 
 
 extern CROMDomainManager1K * gROMStoreDomainManager;
+
+
+#pragma mark -
+/*--------------------------------------------------------------------------------
+	C U M o n i t o r
+	Not the real thing: but allows us to invoke routines in the gROMStoreDomainManager.
+--------------------------------------------------------------------------------*/
+inline NewtonErr	CUMonitor::invokeRoutine(int inSelector, void * ioMsg)  { return gROMStoreDomainManager->userRequest(inSelector, ioMsg); }
+extern CUMonitor *	GetROMDomainUserMonitor(void);
 
 
 #pragma mark -
@@ -116,20 +137,12 @@ MapLargeObject(VAddr * outAddr, CStore * inStore, PSSId inId, bool inReadOnly)
 
 	NewtonErr	err;
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fStore = inStore;
 	parms.fObjId = inId;
 	parms.fRO = inReadOnly;
 	if ((err = um.invokeRoutine(kRDM_MapLargeObject, &parms)) == noErr)
 		*outAddr = parms.fAddr;
-#else
-	parms.fStore = inStore;
-	parms.fObjId = inId;
-	parms.fRO = inReadOnly;
-	if ((err = gROMStoreDomainManager->userRequest(kRDM_MapLargeObject, &parms)) == noErr)
-		*outAddr = parms.fAddr;
-#endif
 	return err;
 }
 
@@ -139,14 +152,9 @@ UnmapLargeObject(CStore ** outStore, PSSId * outId, VAddr inAddr)
 {
 	NewtonErr	err;
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fAddr = inAddr;
 	err = um.invokeRoutine(kRDM_UnmapLargeObject, &parms);
-#else
-	parms.fAddr = inAddr;
-	err = gROMStoreDomainManager->userRequest(kRDM_UnmapLargeObject, &parms);;
-#endif
 	*outStore = parms.fStore;
 	*outId = parms.fObjId;
 	return err;
@@ -167,18 +175,11 @@ FlushLargeObject(CStore * inStore, PSSId inId)
 {
 	NewtonErr	err;
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fStore = inStore;
 	parms.fObjId = inId;
 	parms.fPkgId = 0;
 	err = um.invokeRoutine(kRDM_FlushLargeObject, &parms);
-#else
-	parms.fStore = inStore;
-	parms.fObjId = inId;
-	parms.fPkgId = 0;
-	err = gROMStoreDomainManager->userRequest(kRDM_FlushLargeObject, &parms);
-#endif
 	if (err == kOSErrNoSuchPackage)
 		err = noErr;
 	return err;
@@ -190,18 +191,11 @@ ResizeLargeObject(VAddr * outAddr, VAddr inAddr, size_t inLength, long inArg4)
 {
 	NewtonErr	err;
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fAddr = inAddr;
 	parms.fSize = inLength;
 	parms.f14 = inArg4;
 	err = um.invokeRoutine(kRDM_ResizeLargeObject, &parms);
-#else
-	parms.fAddr = inAddr;
-	parms.fSize = inLength;
-	parms.f14 = inArg4;
-	err = gROMStoreDomainManager->userRequest(kRDM_ResizeLargeObject, &parms);
-#endif
 	*outAddr = parms.fAddr;
 	return err;
 }
@@ -215,14 +209,9 @@ AbortObject(CStore * inStore, PSSId inId)
 	if ((err = StoreToVAddr(&addr, inStore, inId)) == noErr)
 	{
 		RDMParams	parms;
-#if 0
-		CUMonitor	um(GetROMDomainUserMonitor());
+		CUMonitor	um(*GetROMDomainUserMonitor());
 		parms.fAddr = addr;
 		err = um.invokeRoutine(kRDM_AbortObject, &parms);
-#else
-		parms.fAddr = addr;
-		err = gROMStoreDomainManager->userRequest(kRDM_AbortObject, &parms);
-#endif
 	}
 	else if (inStore->inSeparateTransaction(inId))
 		err = LODefaultDoTransaction(inStore, inId, 0, 1, YES);
@@ -235,14 +224,9 @@ AbortObjects(CStore * inStore)
 {
 	NewtonErr	err;
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fStore = inStore;
 	err = um.invokeRoutine(kRDM_AbortObject, &parms);
-#else
-	parms.fStore = inStore;
-	err = gROMStoreDomainManager->userRequest(kRDM_AbortObject, &parms);
-#endif
 	return err;
 }
 
@@ -252,14 +236,9 @@ CommitObject(VAddr inAddr)
 {
 	NewtonErr	err;
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fAddr = inAddr;
 	err = um.invokeRoutine(kRDM_CommitObject, &parms);
-#else
-	parms.fAddr = inAddr;
-	err = gROMStoreDomainManager->userRequest(kRDM_CommitObject, &parms);
-#endif
 	return err;
 }
 
@@ -268,14 +247,9 @@ CommitObjects(CStore * inStore)
 {
 	NewtonErr	err;
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fStore = inStore;
 	err = um.invokeRoutine(kRDM_CommitObject, &parms);
-#else
-	parms.fStore = inStore;
-	err = gROMStoreDomainManager->userRequest(kRDM_CommitObject, &parms);
-#endif
 	return err;
 }
 
@@ -283,14 +257,9 @@ CommitObjects(CStore * inStore)
 NewtonErr
 GetLargeObjectInfo(RDMParams * outParms, VAddr inAddr)
 {
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	outParms->fAddr = inAddr;
 	return um.invokeRoutine(kRDM_GetLargeObjectInfo, outParms);
-#else
-	outParms->fAddr = inAddr;
-	return gROMStoreDomainManager->userRequest(kRDM_GetLargeObjectInfo, outParms);
-#endif
 }
 
 
@@ -298,16 +267,10 @@ bool
 LargeObjectIsDirty(VAddr inAddr)
 {
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fAddr = inAddr;
 	return um.invokeRoutine(kRDM_GetLargeObjectInfo, &parms) == noErr
 		 && parms.fDirty;
-#else
-	parms.fAddr = inAddr;
-	return gROMStoreDomainManager->userRequest(kRDM_GetLargeObjectInfo, &parms) == noErr
-		 && parms.fDirty;
-#endif
 }
 
 
@@ -315,16 +278,10 @@ bool
 LargeObjectIsReadOnly(VAddr inAddr)
 {
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fAddr = inAddr;
 	return um.invokeRoutine(kRDM_GetLargeObjectInfo, &parms) != noErr
 		 || parms.fRO;
-#else
-	parms.fAddr = inAddr;
-	return gROMStoreDomainManager->userRequest(kRDM_GetLargeObjectInfo, &parms) != noErr
-		 || parms.fRO;
-#endif
 }
 
 
@@ -332,26 +289,22 @@ size_t
 ObjectSize(VAddr inAddr)
 {
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fAddr = inAddr;
 	parms.fSize = 0;
 	XTRY
 	{
 		XFAIL(um.invokeRoutine(kRDM_GetLargeObjectInfo, &parms))
+#if 0
 		if (IsPackageHeader(inAddr, sizeof(PackageDirectory)))
 		{
 			CPackageIterator	iter(inAddr);
 			XFAIL(iter.init)
 			return iter.packageSize();
 		}
+#endif
 	}
 	XENDTRY;
-#else
-	parms.fAddr = inAddr;
-	parms.fSize = 0;
-	gROMStoreDomainManager->userRequest(kRDM_GetLargeObjectInfo, &parms);
-#endif
 	return parms.fSize;
 }
 
@@ -361,14 +314,9 @@ VAddrToStore(CStore ** outStore, PSSId * outId, VAddr inAddr)
 {
 	NewtonErr	err;
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fAddr = inAddr;
 	err = um.invokeRoutine(kRDM_GetLargeObjectInfo, &parms);
-#else
-	parms.fAddr = inAddr;
-	err = gROMStoreDomainManager->userRequest(kRDM_GetLargeObjectInfo, &parms);
-#endif
 	*outStore = parms.fStore;
 	*outId = parms.fObjId;
 	return err;
@@ -380,16 +328,10 @@ StoreToVAddr(VAddr * outAddr, CStore * inStore, PSSId inId)
 {
 	NewtonErr	err;
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fStore = inStore;
 	parms.fObjId = inId;
 	err = um.invokeRoutine(kRDM_StoreToVAddr, &parms);
-#else
-	parms.fStore = inStore;
-	parms.fObjId = inId;
-	err = gROMStoreDomainManager->userRequest(kRDM_StoreToVAddr, &parms);
-#endif
 	*outAddr = parms.fAddr;
 	return err;
 }
@@ -399,15 +341,10 @@ bool
 LargeObjectAddressIsValid(VAddr inAddr)
 {
 	RDMParams	parms;
-#if 0
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms.fAddr = inAddr;
 	return um.invokeRoutine(kRDM_LargeObjectAddress, &parms) == noErr
 		 && IsValidStore(parms.fStore);	// calls CPSSManager
-#else
-	parms.fAddr = inAddr;
-	return gROMStoreDomainManager->userRequest(kRDM_LargeObjectAddress, &parms) == noErr;
-#endif
 }
 
 
@@ -1154,7 +1091,7 @@ FlushPackageCache(VAddr inAddr)
 {
 #if 0
 	RDMParams	parms;
-	CUMonitor	um(GetROMDomainUserMonitor());
+	CUMonitor	um(*GetROMDomainUserMonitor());
 	parms->fAddr = inAddr;
 	um.invokeRoutine(kRDM_FlushLargeObject, &parms);
 	ICacheClear();
@@ -1195,24 +1132,20 @@ IdToVAddr(PSSId inId, VAddr * outAddr)
 void
 VAddrToId(PSSId * outId, VAddr inAddr)
 {
-#if 0
 	RDMParams	parms;
-	CUMonitor	um(GetROMDomainUserMonitor());
-	parms->fAddr = inAddr;
-	*outId = (um.invokeRoutine(kRDM_LargeObjectAddress, &parms) == noErr) ? parms->fPkgId : kNoId;
-#endif
+	CUMonitor	um(*GetROMDomainUserMonitor());
+	parms.fAddr = inAddr;
+	*outId = (um.invokeRoutine(kRDM_LargeObjectAddress, &parms) == noErr) ? parms.fPkgId : kNoId;
 }
 
 
 void
 VAddrToBase(VAddr * outBase, VAddr inAddr)
 {
-#if 0
 	RDMParams	parms;
-	CUMonitor	um(GetROMDomainUserMonitor());
-	parms->fAddr = inAddr;
-	*outBase = (um.invokeRoutine(kRDM_LargeObjectAddress, &parms) == noErr) ? parms->fAddr : 0;
-#endif
+	CUMonitor	um(*GetROMDomainUserMonitor());
+	parms.fAddr = inAddr;
+	*outBase = (um.invokeRoutine(kRDM_LargeObjectAddress, &parms) == noErr) ? parms.fAddr : 0;
 }
 
 

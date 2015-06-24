@@ -754,11 +754,11 @@ CNewScriptEndpointClient::parseInput(FormType inType, long inArg2, long inArg3, 
 		}
 		newton_try
 		{
-			UnflattenPtrParms xParms;
-			xParms.x00 = inBuf;
-			xParms.x04 = inArg3;
-			xParms.x08 = NILREF;
-			obj = fFrameDataInXlator->translate(&xParms, NULL);
+			UnflattenPtrParms parms;
+			parms.x00 = inBuf;
+			parms.x04 = inArg3;
+			parms.x08 = NILREF;
+			obj = fFrameDataInXlator->translate(&parms, NULL);
 		}
 		newton_catch(exTranslator)
 		{
@@ -770,13 +770,13 @@ CNewScriptEndpointClient::parseInput(FormType inType, long inArg2, long inArg3, 
 	{
 		newton_try
 		{
-			ScriptDataInParms xParms;
-			xParms.x00 = inBuf;
-			xParms.x04 = inArg3;
-			xParms.x08 = inType;
-			xParms.x0C = inArg2;
-			xParms.x10 = inArg5;
-			obj = getScriptDataInXlator()->translate(&xParms, NULL);
+			ScriptDataInParms parms;
+			parms.x00 = inBuf;
+			parms.x04 = inArg3;
+			parms.x08 = inType;
+			parms.x0C = inArg2;
+			parms.x10 = inArg5;
+			obj = getScriptDataInXlator()->translate(&parms, NULL);
 		}
 		newton_catch(exTranslator)
 		{
@@ -1609,11 +1609,11 @@ CNewScriptEndpointClient::convertToOptionArray(RefArg inOptions, COptionArray * 
 		}
 		newton_try
 		{
-			OptionDataOutParms xParms;
-			xParms.x00 = ioArray;
-			xParms.x04 = inOptions;
-			xParms.x08 = getScriptDataOutXlator();
-			fOptionDataOutXlator->translate(&xParms, NULL);
+			OptionDataOutParms parms;
+			parms.x00 = ioArray;
+			parms.x04 = inOptions;
+			parms.x08 = getScriptDataOutXlator();
+			fOptionDataOutXlator->translate(&parms, NULL);
 		}
 		newton_catch(exTranslator)
 		{
@@ -1639,11 +1639,11 @@ CNewScriptEndpointClient::convertFromOptionArray(RefArg outOptions, COptionArray
 		}
 		newton_try
 		{
-			OptionDataInParms xParms;
-			xParms.x00 = inArray;
-			xParms.x04 = outOptions;
-			xParms.x08 = getScriptDataInXlator();
-			fOptionDataInXlator->translate(&xParms, NULL);
+			OptionDataInParms parms;
+			parms.x00 = inArray;
+			parms.x04 = outOptions;
+			parms.x08 = getScriptDataInXlator();
+			fOptionDataInXlator->translate(&parms, NULL);
 		}
 		newton_catch(exTranslator)
 		{
@@ -1941,11 +1941,11 @@ CNewScriptEndpointClient::outputFrame(RefArg inData, bool inSync, ULong inFlags,
 		}
 		newton_try
 		{
-			FlattenPtrParms xParms;
-			xParms.x00 = inData;
-			xParms.allocHandle = NO;
-			xParms.offset = sizeof(ArrayIndex);
-			dataPtr = fFrameDataOutXlator->translate(&xParms, NULL);
+			FlattenPtrParms parms;
+			parms.ref = inData;
+		//	parms.allocHandle = NO;
+			parms.offset = sizeof(ArrayIndex);
+			dataPtr = fFrameDataOutXlator->translate(&parms, NULL);
 		}
 		newton_catch(exTranslator)
 		{
@@ -1980,13 +1980,13 @@ CNewScriptEndpointClient::outputData(RefArg inData, FormType inForm, bool inSync
 	{
 		newton_try
 		{
-			ScriptDataOutParms xParms;
-			xParms.x00 = inData;
-			xParms.x04 = inForm;
-			xParms.x08 = fEncoding;
-			xParms.x0C = NO;
-			xParms.x10 = 0;
-			dataPtr = getScriptDataOutXlator()->translate(&xParms, NULL);
+			ScriptDataOutParms parms;
+			parms.x00 = inData;
+			parms.x04 = inForm;
+			parms.x08 = fEncoding;
+			parms.x0C = NO;
+			parms.x10 = 0;
+			dataPtr = getScriptDataOutXlator()->translate(&parms, NULL);
 		}
 		newton_catch(exTranslator)
 		{

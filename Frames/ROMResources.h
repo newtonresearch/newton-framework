@@ -60,4 +60,22 @@ extern Ref * RS##name;
 #undef DEFFRAME10
 #undef DEFPROTOFRAME10
 
+
+/* -----------------------------------------------------------------------------
+	M e m o r y   M a p
+	Although we don’t actually have a ROM, we do have immutable resources:
+	symbols, for example. Should we try to detect those?
+----------------------------------------------------------------------------- */
+#if defined(forMessagePad)
+#define ISINROM(_r) (ULong(Ref(_r)) < 0x03800000)
+#define NOTINROM(_r) (ULong(Ref(_r)) >= 0x03800000)
+#define ISINPACKAGE(_r) (ULong(Ref(_r)) >= 0x60000000 && ULong(Ref(_r)) < 0x68000000)
+#else
+#define ISINROM(_r) NO
+#define NOTINROM(_r) YES
+#define ISINPACKAGE(_r) NO
+#endif
+#define ISRO(_r) (ISINROM(_r) || ISINPACKAGE(_r))
+
+
 #endif	/* __ROMRESOURCES__ */

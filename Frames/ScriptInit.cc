@@ -14,6 +14,8 @@
 #include "Iterators.h"
 #include "MagicPointers.h"
 #include "RAMInfo.h"
+#include "ROMResources.h"
+#include "ROMData.h"
 
 #if !defined(correct)
 extern void			MakeROMResources(void);

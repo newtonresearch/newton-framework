@@ -14,6 +14,7 @@
 #include "FaultBlocks.h"
 #include "RefMemory.h"
 #include "PackageParts.h"
+#include "ROMResources.h"
 
 extern void	InstantiateLargeObject(VAddr * ioAddr);	// HACK
 
