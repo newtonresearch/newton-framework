@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F42998ED069580EB00CAA2A8"
-               BuildableName = "MachOtoNTK.app"
+               BuildableName = "ResMaker.app"
                BlueprintName = "ResMaker"
                ReferencedContainer = "container:ResMaker.xcodeproj">
             </BuildableReference>
@@ -33,7 +33,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F42998ED069580EB00CAA2A8"
-            BuildableName = "MachOtoNTK.app"
+            BuildableName = "ResMaker.app"
             BlueprintName = "ResMaker"
             ReferencedContainer = "container:ResMaker.xcodeproj">
          </BuildableReference>
@@ -44,22 +44,20 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
-      buildConfiguration = "Development"
+      buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       allowLocationSimulation = "YES">
-      <PathRunnable
-         FilePath = "/Users/simon/Library/Developer/Xcode/DerivedData/ResMaker-gojqxftkdhbnwygahrbzvcnxbqpu/Build/Products/Development/ResMaker.app">
-      </PathRunnable>
-      <MacroExpansion>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F42998ED069580EB00CAA2A8"
-            BuildableName = "MachOtoNTK.app"
+            BuildableName = "ResMaker.app"
             BlueprintName = "ResMaker"
             ReferencedContainer = "container:ResMaker.xcodeproj">
          </BuildableReference>
-      </MacroExpansion>
+      </BuildableProductRunnable>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
@@ -69,11 +67,12 @@
       useCustomWorkingDirectory = "NO"
       buildConfiguration = "Deployment"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F42998ED069580EB00CAA2A8"
-            BuildableName = "MachOtoNTK.app"
+            BuildableName = "ResMaker.app"
             BlueprintName = "ResMaker"
             ReferencedContainer = "container:ResMaker.xcodeproj">
          </BuildableReference>

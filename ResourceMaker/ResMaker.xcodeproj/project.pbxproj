@@ -140,92 +140,49 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		F4F9288C0C81CD920077CA66 /* Development */ = {
+		F4F9288C0C81CD920077CA66 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INFOPLIST_FILE = "Info-ResMaker.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PREBINDING = NO;
 				PRODUCT_NAME = ResMaker;
-				SECTORDER_FLAGS = "";
 				WARNING_CFLAGS = (
 					"-Wmost",
 					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
 				);
 				WRAPPER_EXTENSION = app;
 			};
-			name = Development;
+			name = Debug;
 		};
-		F4F9288D0C81CD920077CA66 /* Deployment */ = {
+		F4F9288D0C81CD920077CA66 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				INFOPLIST_FILE = "Info-MachOtoNTK.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = MachOtoNTK;
-				SECTORDER_FLAGS = "";
+				INFOPLIST_FILE = "Info-ResMaker.plist";
+				PRODUCT_NAME = ResMaker;
 				WARNING_CFLAGS = (
 					"-Wmost",
 					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
 				);
 				WRAPPER_EXTENSION = app;
 			};
-			name = Deployment;
+			name = Release;
 		};
-		F4F9288E0C81CD920077CA66 /* Default */ = {
+		F4F928900C81CD920077CA66 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_OPTIMIZATION_LEVEL = 0;
-				INFOPLIST_FILE = "Info-MachOtoNTK.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = MachOtoNTK;
-				SECTORDER_FLAGS = "";
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-				WRAPPER_EXTENSION = app;
-			};
-			name = Default;
-		};
-		F4F928900C81CD920077CA66 /* Development */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD)";
 				SDKROOT = macosx;
 			};
-			name = Development;
+			name = Debug;
 		};
-		F4F928910C81CD920077CA66 /* Deployment */ = {
+		F4F928910C81CD920077CA66 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD)";
 				SDKROOT = macosx;
 			};
-			name = Deployment;
-		};
-		F4F928920C81CD920077CA66 /* Default */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD)";
-				SDKROOT = macosx;
-			};
-			name = Default;
+			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
@@ -233,22 +190,20 @@
 		F4F9288B0C81CD920077CA66 /* Build configuration list for PBXNativeTarget "ResMaker" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F4F9288C0C81CD920077CA66 /* Development */,
-				F4F9288D0C81CD920077CA66 /* Deployment */,
-				F4F9288E0C81CD920077CA66 /* Default */,
+				F4F9288C0C81CD920077CA66 /* Debug */,
+				F4F9288D0C81CD920077CA66 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Default;
+			defaultConfigurationName = Release;
 		};
 		F4F9288F0C81CD920077CA66 /* Build configuration list for PBXProject "ResMaker" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F4F928900C81CD920077CA66 /* Development */,
-				F4F928910C81CD920077CA66 /* Deployment */,
-				F4F928920C81CD920077CA66 /* Default */,
+				F4F928900C81CD920077CA66 /* Debug */,
+				F4F928910C81CD920077CA66 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Default;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
