@@ -131,16 +131,8 @@ CPixelMapCompander::init(CStore * inStore, PSSId inRootId, PSSId inParmsId, bool
 			XFAIL(err = inStore->read(fPixMapId, 0, fPixMapObj, objSize))
 #if defined(hasByteSwapping)
 			fPixMapObj->size = BYTE_SWAP_LONG(fPixMapObj->size);
-#if __LP64__
-			// byte swap 64-bit long
-			ULong tmp, *p;
-			p = (ULong *)&fPixMapObj->pixMap.baseAddr;
-			tmp = BYTE_SWAP_LONG(p[1]);
-			p[1] = BYTE_SWAP_LONG(p[0]);
-			p[0] = tmp;
-#else
-			fPixMapObj->pixMap.baseAddr = (Ptr)BYTE_SWAP_LONG((uint32_t)fPixMapObj->pixMap.baseAddr);
-#endif
+
+			fPixMapObj->pixMap.baseAddr = BYTE_SWAP_LONG(fPixMapObj->pixMap.baseAddr);
 			fPixMapObj->pixMap.rowBytes = BYTE_SWAP_SHORT(fPixMapObj->pixMap.rowBytes);
 			fPixMapObj->pixMap.bounds.top = BYTE_SWAP_SHORT(fPixMapObj->pixMap.bounds.top);
 			fPixMapObj->pixMap.bounds.left = BYTE_SWAP_SHORT(fPixMapObj->pixMap.bounds.left);
@@ -149,9 +141,8 @@ CPixelMapCompander::init(CStore * inStore, PSSId inRootId, PSSId inParmsId, bool
 			fPixMapObj->pixMap.pixMapFlags = BYTE_SWAP_LONG(fPixMapObj->pixMap.pixMapFlags);
 			fPixMapObj->pixMap.deviceRes.h = BYTE_SWAP_SHORT(fPixMapObj->pixMap.deviceRes.h);
 			fPixMapObj->pixMap.deviceRes.v = BYTE_SWAP_SHORT(fPixMapObj->pixMap.deviceRes.v);
-#if defined(QD_Gray)
-			fPixMapObj->pixMap.grayTable = (UChar *)BYTE_SWAP_LONG((ULong)fPixMapObj->pixMap.grayTable);
-#endif
+			fPixMapObj->pixMap.grayTable = BYTE_SWAP_LONG(fPixMapObj->pixMap.grayTable);
+
 			fPixMapObj->x20 = BYTE_SWAP_LONG(fPixMapObj->x20);
 			fPixMapObj->x24 = BYTE_SWAP_LONG(fPixMapObj->x24);
 			fPixMapObj->x28 = BYTE_SWAP_LONG(fPixMapObj->x28);
@@ -307,7 +298,7 @@ CPixelMapCompander::write(size_t inOffset, char * inBuf, size_t inBufLen, VAddr 
 		}
 		uint32_t * bufPtr = (uint32_t *)inBuf;
 		int i;
-		for (i = inBufLen / sizeof(int32_t); i > 0; i--)
+		for (i = inBufLen / sizeof(int32_t); i > 0; --i)
 		{
 			if (*bufPtr++ != 0)
 				break;

@@ -15,12 +15,12 @@
 
 struct PixMapObj
 {
-	size_t	size;
+	uint32_t	size;
 	PixelMap	pixMap;
 	int32_t	x20;
 	int32_t	x24;
 	int32_t	x28;
-};
+}__attribute__((packed));
 
 
 /*------------------------------------------------------------------------------
