@@ -46,9 +46,9 @@ public:
 
 struct UnflattenPtrParms
 {
-	UChar *	x00;
-	long		x04;
-	RefVar	x08;
+	Ptr			ptr;			// the Ptr to be unflattened
+	ArrayIndex	ptrSize;		// size of that Ptr
+	RefVar		options;		// options frame to be passed to object reader
 };
 
 
@@ -68,6 +68,13 @@ public:
 	Ref			translate(void * inParms, CPipeCallback * inCallback);
 };
 
+struct UnflattenRefParms
+{
+	Ref			ref;			// the binary object Ref to be unflattened
+	RefVar		options;		// options frame to be passed to object reader
+	bool			disallowFunctions;
+};
+
 
 /*------------------------------------------------------------------------------
 	P S t r e a m I n R e f
@@ -85,6 +92,15 @@ public:
 	Ref			translate(void * inParms, CPipeCallback * inCallback);
 };
 
+class CEndpoint;
+struct StreamInParms
+{
+	RefVar		options;		// options frame to be passed to object reader
+	CEndpoint *	ep;
+	uint32_t		timeout;		// Timeout
+	bool			framing;
+};
+
 
 /*------------------------------------------------------------------------------
 	P F r a m e S i n k
@@ -97,7 +113,7 @@ public:
 	static PFrameSink *	make(const char * inName);
 	VIRTUAL void		destroy(void) ENDVIRTUAL;
 
-	VIRTUAL Ptr			translate(void * inParms, CPipeCallback * inCallback) ENDVIRTUAL;
+	VIRTUAL OpaqueRef	translate(void * inParms, CPipeCallback * inCallback) ENDVIRTUAL;
 };
 
 class COptionArray;
@@ -112,6 +128,7 @@ struct FrameSinkParms
 
 /*------------------------------------------------------------------------------
 	P F l a t t e n P t r
+	Flatten a Ref into an allocated Ptr.
 ------------------------------------------------------------------------------*/
 
 PROTOCOL PFlattenPtr : public PFrameSink
@@ -123,19 +140,22 @@ public:
 	PFlattenPtr *	make(void);
 	void			destroy(void);
 
-	Ptr			translate(void * inParms, CPipeCallback * inCallback);
+	OpaqueRef	translate(void * inParms, CPipeCallback * inCallback);
 };
 
 struct FlattenPtrParms
 {
-	RefVar	x00;
-	bool		allocHandle;
-	long		offset;
+	RefVar	ref;				// the Ref to be flattened
+#if defined(correct)
+	bool		allocHandle;	// true => allocate a Handle instead of a Ptr
+#endif
+	long		offset;			// offset into Ptr at which to flatten the Ref; allows data to be prefixed by size, etc.
 };
 
 
 /*------------------------------------------------------------------------------
 	P F l a t t e n R e f
+	Flatten a Ref into a binary object Ref.
 ------------------------------------------------------------------------------*/
 
 PROTOCOL PFlattenRef : public PFrameSink
@@ -147,7 +167,13 @@ public:
 	PFlattenRef *	make(void);
 	void			destroy(void);
 
-	Ptr			translate(void * inParms, CPipeCallback * inCallback);
+	OpaqueRef	translate(void * inParms, CPipeCallback * inCallback);
+};
+
+struct FlattenRefParms
+{
+	RefVar	ref;				// the Ref to be flattened
+	RefArg	store;			// store on which to create binary object, or nil
 };
 
 
@@ -164,7 +190,15 @@ public:
 	PStreamOutRef *	make(void);
 	void			destroy(void);
 
-	Ptr			translate(void * inParms, CPipeCallback * inCallback);
+	OpaqueRef	translate(void * inParms, CPipeCallback * inCallback);
+};
+
+struct StreamOutParms
+{
+	RefVar		ref;			// the Ref to be flattened
+	CEndpoint *	ep;
+	uint32_t		timeout;		// Timeout
+	bool			framing;
 };
 
 

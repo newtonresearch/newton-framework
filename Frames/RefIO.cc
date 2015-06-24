@@ -90,60 +90,43 @@ UnflattenFile(const char * inFilename)
 
 
 #pragma mark -
-#if 0
 /*------------------------------------------------------------------------------
 	P F l a t t e n P t r
+	Flatten a Ref into a Ptr that we allocate.
 ------------------------------------------------------------------------------*/
 
 PROTOCOL_IMPL_SOURCE_MACRO(PFlattenPtr)
 
-Ptr
+OpaqueRef
 PFlattenPtr::translate(void * inContext, CPipeCallback * ioCallback)
 {
-	Ptr sp44 = NULL;
-	Handle sp40 = NULL;
+	// redacted to remove Handle operations
+	Ptr ptr = NULL;
 	if (inContext)
 	{
-		//sp-40
-		CPtrPipe pipe;		//sp28
-		CObjectWriter writer(inContext->x00, pipe, NO);	//sp00
-		ArrayIndex r6 = inContext->offset + writer.size();
-		if (inContext->allocHandle)
-		{
-			sp40 = NewHandle(r6);
-			if (sp40 == NULL)
-				ThrowErr(exTranslator, MemError());
-			HLock(sp40);
-			sp44 = *sp40;
-		}
-		else
-		{
-			sp44 = NewPtr(r6);
-			if (sp44 == NULL)
-				ThrowErr(exTranslator, MemError());
-		}
-		pipe.init(sp44, r6, NO, ioCallback);
-		if (inContext->offset > 0)
-			pipe.writeSeek(inContext->offset, kSeekFromBeginning);
+		FlattenPtrParms * parms = (FlattenPtrParms *)inContext;
+		CPtrPipe pipe;
+		CObjectWriter writer(parms->ref, pipe, NO);
+		ArrayIndex ptrSize = parms->offset + writer.size();
+		ptr = NewPtr(ptrSize);
+		if (ptr == NULL)
+			ThrowErr(exTranslator, MemError());
+
+		pipe.init(ptr, ptrSize, NO, ioCallback);
+		if (parms->offset > 0)
+			pipe.writeSeek(parms->offset, -1/*kSeekFromBeginning*/);
 		newton_try
 		{
 			writer.write();
 		}
 		newton_catch_all
 		{
-			if (sp40)
-				FreeHandle(sp40);
-			else if (sp44)
-				FreePtr(sp44);
+			if (ptr)
+				FreePtr(ptr), ptr = NULL;
 		}
 		end_try;
-		if (sp40)
-		{
-			HUnlock(sp40);
-			return sp40;		// obviously we don’t really want to do this in a non-Handle world
-		}
 	}
-	return sp44;
+	return (OpaqueRef)ptr;
 }
 
 
@@ -159,34 +142,38 @@ PUnflattenPtr::translate(void * inContext, CPipeCallback * ioCallback)
 	RefVar obj;
 	if (inContext)
 	{
+		UnflattenPtrParms * parms = (UnflattenPtrParms *)inContext;
 		CPtrPipe pipe;
-		pipe.init(inContext->x00, inContext->x04, NO, ioCallback);
+		pipe.init(parms->ptr, parms->ptrSize, NO, ioCallback);
 
-		CObjectReader reader(pipe, inContext->x08);
+		CObjectReader reader(pipe, parms->options);
 		obj = reader.read();
 	}
 	return obj;
 }
 
-#pragma mark -
 
+#pragma mark -
 /*------------------------------------------------------------------------------
 	P F l a t t e n R e f
+	Flatten a Ref into a binary object.
 ------------------------------------------------------------------------------*/
 
 PROTOCOL_IMPL_SOURCE_MACRO(PFlattenRef)
 
-Ref
+OpaqueRef
 PFlattenRef::translate(void * inContext, CPipeCallback * ioCallback)
 {
 	RefVar obj;
 	if (inContext)
 	{
+		FlattenRefParms * parms = (FlattenRefParms *)inContext;
 		CRefPipe pipe;
-		CObjectWriter writer(inContext->x00, pipe, NO);
-		pipe.initSink(writer.size(), inContext->x04, ioCallback);
+		CObjectWriter writer(parms->ref, pipe, NO);
+		pipe.initSink(writer.size(), parms->store, ioCallback);
 
 		writer.write();
+		obj = pipe.ref();
 	}
 	return obj;
 }
@@ -204,11 +191,13 @@ PUnflattenRef::translate(void * inContext, CPipeCallback * ioCallback)
 	RefVar obj;
 	if (inContext)
 	{
-		CRefPipe pipe;
-		pipe.initSource(inContext, ioCallback);
+		UnflattenRefParms * parms = (UnflattenRefParms *)inContext;
 
-		CObjectReader reader(pipe, inContext->x04);	// Ref options
-		if (inContext->x08)
+		CRefPipe pipe;
+		pipe.initSource(parms->ref, ioCallback);
+
+		CObjectReader reader(pipe, parms->options);
+		if (parms->disallowFunctions)
 			reader.setFunctionsAllowed(NO);
 		newton_try
 		{
@@ -224,24 +213,27 @@ PUnflattenRef::translate(void * inContext, CPipeCallback * ioCallback)
 	return obj;
 }
 
+#if 0
 #pragma mark -
-
 /*------------------------------------------------------------------------------
 	P S t r e a m O u t R e f
 ------------------------------------------------------------------------------*/
+#include "EndpointPipe.h"
 
 PROTOCOL_IMPL_SOURCE_MACRO(PStreamOutRef)
 
-Ref
+OpaqueRef
 PStreamOutRef::translate(void * inContext, CPipeCallback * ioCallback)
 {
 	RefVar obj;
 	if (inContext)
 	{
-		CEndpointPipe pipe;
-		pipe.init(inContext->x04, 0, 512, inContext->x08, inContext->x0C, ioCallback);
+		StreamOutParms * parms = (StreamOutParms *)inContext;
 
-		CObjectWriter	writer(inContext->x00, pipe, NO);
+		CEndpointPipe pipe;
+		pipe.init(parms->ep, 0, 512, parms->timeout, parms->framing, ioCallback);
+
+		CObjectWriter	writer(parms->ref, pipe, NO);
 		if (ioCallback != NULL)
 			ioCallback->f04 = writer.size();
 		writer.write();
@@ -263,10 +255,12 @@ PStreamInRef::translate(void * inContext, CPipeCallback * ioCallback)
 	RefVar obj;
 	if (inContext)
 	{
-		CEndpointPipe pipe;
-		pipe.init(inContext->x04, 512, 0, inContext->x08, inContext->x0C, ioCallback);
+		StreamInParms * parms = (StreamInParms *)inContext;
 
-		CObjectReader	reader(pipe, inContext->x00);
+		CEndpointPipe pipe;
+		pipe.init(parms->ep, 512, 0, parms->timeout, parms->framing, ioCallback);
+
+		CObjectReader reader(pipe, parms->options);
 		newton_try
 		{
 			obj = reader.read();
@@ -281,15 +275,15 @@ PStreamInRef::translate(void * inContext, CPipeCallback * ioCallback)
 	return obj;
 }
 
-#pragma mark -
 
+#pragma mark -
 /*------------------------------------------------------------------------------
 	P S c r i p t D a t a O u t
 ------------------------------------------------------------------------------*/
 
 PROTOCOL_IMPL_SOURCE_MACRO(PScriptDataOut)
 
-Ref
+OpaqueRef
 PScriptDataOut::translate(void * inContext, CPipeCallback * ioCallback)
 {
 	RefVar obj;
@@ -417,14 +411,14 @@ PScriptDataIn::parseInput(FormType inType, long, long, bool*, RefArg, NewtonErr 
 
 PROTOCOL_IMPL_SOURCE_MACRO(POptionDataOut)
 
-Ref
+OpaqueRef
 POptionDataOut::translate(void * inContext, CPipeCallback * ioCallback)
 {
 	RefVar obj;
 	if (inContext)
 	{
 		obj = convertToOptionArray(inContext->x04, inContext->x00, inContext->x08);
-		return inContext->x04;
+		return inContext->x00;
 	}
 	return noErr;
 }
@@ -443,7 +437,7 @@ POptionDataOut::parseOutput(PFrameSink * inArg1, RefArg inArg2, FormType inArg3,
 
 
 /*------------------------------------------------------------------------------
-	P S c r i p t D a t a I n
+	P O p t i o n D a t a I n
 ------------------------------------------------------------------------------*/
 
 PROTOCOL_IMPL_SOURCE_MACRO(POptionDataIn)
