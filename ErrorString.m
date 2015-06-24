@@ -13,7 +13,7 @@ GetFramesErrorString(int inErr)
 {
 	NSString * key = [NSString stringWithFormat: @"%d", inErr];
 	NSString * errStr = NSLocalizedStringFromTable(key, @"Error", NULL);
-	return [errStr UTF8String];
+	return errStr.UTF8String;
 }
 
 
@@ -28,10 +28,10 @@ NSURL *
 ApplicationSupportFolder(void)
 {
 	NSFileManager * fmgr = [NSFileManager defaultManager];
-	NSURL * baseURL = [fmgr URLForDirectory: NSApplicationSupportDirectory inDomain: NSUserDomainMask appropriateForURL: nil create: YES error: nil];
-	NSURL * appFolder = [baseURL URLByAppendingPathComponent: @"Newton"];
+	NSURL * baseURL = [fmgr URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:nil];
+	NSURL * appFolder = [baseURL URLByAppendingPathComponent:@"Newton"];
 	// if folder doesn’t exist, create it
-	[fmgr createDirectoryAtPath: [appFolder path] withIntermediateDirectories: NO attributes: nil error: nil];
+	[fmgr createDirectoryAtPath:appFolder.path withIntermediateDirectories:NO attributes:nil error:nil];
 	return appFolder;
 }
 
@@ -45,6 +45,6 @@ ApplicationSupportFolder(void)
 const char *
 StoreBackingFile(const char * inStoreName)
 {
-	NSURL * url = [ApplicationSupportFolder() URLByAppendingPathComponent: [NSString stringWithUTF8String:inStoreName]];
+	NSURL * url = [ApplicationSupportFolder() URLByAppendingPathComponent:[NSString stringWithUTF8String:inStoreName]];
 	return url.fileSystemRepresentation;
 }
