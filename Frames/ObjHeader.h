@@ -215,9 +215,9 @@ ObjHeader *	ObjectPtr(Ref r);
 }
 #endif
 
-#define REF(_o) ((Ref)((Ref)_o + 1))
-#define PTR(_o) ((ObjHeader*)((Ref)_o - 1))
-#define INC(_o,_i) ((ObjHeader*)((char*)_o + _i))
+#define REF(_o) ((Ref)((Ref)(_o) + 1))
+#define PTR(_o) ((ObjHeader*)((Ref)(_o) - 1))
+#define INC(_o,_i) ((ObjHeader*)((char*)(_o) + _i))
 
 #define SLOTCOUNT(_o) (ArrayIndex)((_o->size - sizeof(ObjHeader)) / sizeof(Ref))
 #define ARRAYLENGTH(_o) (ArrayIndex)((_o->size - SIZEOF_ARRAYOBJECT) / sizeof(Ref))
