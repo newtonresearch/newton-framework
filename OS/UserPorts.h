@@ -36,7 +36,7 @@ public:
 					CUMsgToken();
 
 	void			init(void);
-	NewtonErr	cashMessageToken(size_t * outSize, void * inContent, size_t inSize, ULong inOffset = 0, bool inCopyDone = YES);
+	NewtonErr	cashMessageToken(size_t * outSize, void * inContent, size_t inSize, ULong inOffset = 0, bool inCopyDone = true);
 	NewtonErr	replyRPC(void * inContent, size_t inSize, NewtonErr inReplyResult = noErr);
 	NewtonErr	getUserRefCon(OpaqueRef * outRefCon);
 
@@ -82,7 +82,7 @@ public:
 	void	operator=(const CUAsyncMessage & inCopy);
 	void	operator=(const CUMsgToken & inCopy);
 
-	NewtonErr	init(bool inSendRPC = YES);
+	NewtonErr	init(bool inSendRPC = true);
 	NewtonErr	setCollectorPort(ObjectId inPortId);
 	NewtonErr	setUserRefCon(OpaqueRef inRefCon);
 	NewtonErr	getUserRefCon(OpaqueRef * outRefCon);
@@ -153,19 +153,19 @@ public:
 	void			operator=(const CUPort & inCopy);
 	NewtonErr	init();
 
-	NewtonErr	send(void * inContent, size_t inSize, Timeout inTimeout = kNoTimeout, ULong inMsgType = 0, bool inUrgent = NO)
+	NewtonErr	send(void * inContent, size_t inSize, Timeout inTimeout = kNoTimeout, ULong inMsgType = 0, bool inUrgent = false)
 							{ return sendGoo(kBuiltInSMemMsgId, 0, inContent, inSize, inMsgType, 0, inUrgent, inTimeout, 0); }
-	NewtonErr	sendRPC(size_t * outSize, void * inContent, size_t inSize, void * ioReplyBuf, size_t inReplySize, Timeout inTimeout = kNoTimeout, ULong inMsgType = 0, bool inUrgent = NO)
+	NewtonErr	sendRPC(size_t * outSize, void * inContent, size_t inSize, void * ioReplyBuf, size_t inReplySize, Timeout inTimeout = kNoTimeout, ULong inMsgType = 0, bool inUrgent = false)
 							{ return sendRPCGoo(kBuiltInSMemMsgId, kBuiltInSMemId, outSize, inContent, inSize, inMsgType, 0, inUrgent, ioReplyBuf, inReplySize, inTimeout, NULL); }
 
 				// async versions of send...
-	NewtonErr	send(CUAsyncMessage * inAsync, void * inContent, size_t inSize, Timeout inTimeout = kNoTimeout, CTime * inFutureTimeToSend = NULL, ULong inMsgType = 0, bool inUrgent = NO)
+	NewtonErr	send(CUAsyncMessage * inAsync, void * inContent, size_t inSize, Timeout inTimeout = kNoTimeout, CTime * inFutureTimeToSend = NULL, ULong inMsgType = 0, bool inUrgent = false)
 							{ return sendGoo(inAsync->getMsgId(), 0, inContent, inSize, inMsgType, kPortFlags_Async, inUrgent, inTimeout, inFutureTimeToSend); }
-	NewtonErr	sendRPC(CUAsyncMessage* async, void * inContent, size_t inSize, void * ioReplyBuf, size_t inReplySize, Timeout inTimeout = kNoTimeout, CTime * inFutureTimeToSend = NULL, ULong inMsgType = 0, bool inUrgent = NO)
+	NewtonErr	sendRPC(CUAsyncMessage* async, void * inContent, size_t inSize, void * ioReplyBuf, size_t inReplySize, Timeout inTimeout = kNoTimeout, CTime * inFutureTimeToSend = NULL, ULong inMsgType = 0, bool inUrgent = false)
 							{ return sendRPCGoo(async->getMsgId(), async->getReplyMemId(), NULL, inContent, inSize, inMsgType, kPortFlags_Async, inUrgent, ioReplyBuf, inReplySize, inTimeout, inFutureTimeToSend); }
 
-	NewtonErr	receive(size_t * outSize, void * inContent, size_t inSize, CUMsgToken * inToken = NULL, ULong * outMsgType = NULL, Timeout inTimeout = kNoTimeout, ULong inMsgFilter = kMsgType_MatchAll, bool onMsgAvail = NO, bool tokenOnly = NO);
-	NewtonErr	receive(CUAsyncMessage * inAsync, Timeout inTimeout = kNoTimeout, ULong inMsgFilter = kMsgType_MatchAll, bool onMsgAvail = NO);
+	NewtonErr	receive(size_t * outSize, void * inContent, size_t inSize, CUMsgToken * inToken = NULL, ULong * outMsgType = NULL, Timeout inTimeout = kNoTimeout, ULong inMsgFilter = kMsgType_MatchAll, bool onMsgAvail = false, bool tokenOnly = false);
+	NewtonErr	receive(CUAsyncMessage * inAsync, Timeout inTimeout = kNoTimeout, ULong inMsgFilter = kMsgType_MatchAll, bool onMsgAvail = false);
 
 	NewtonErr	isMsgAvailable(ULong inMsgFilter = kMsgType_MatchAll)
 							{ return receive(NULL, (Timeout) kNoTimeout, inMsgFilter); }
@@ -179,7 +179,7 @@ private:
 	NewtonErr	sendRPCGoo(ObjectId inMsgId, ObjectId inReplyId, size_t * outSize, void * content, size_t size, ULong msgType, ULong flags, bool urgent,
 							void * ioReplyBuf, ULong inReplySize, Timeout inTimeout, CTime * inFutureTimeToSend);
 	NewtonErr	sendForSleepTill(CTime * inFutureTimeToSend)
-							{ return sendGoo(kBuiltInSMemMsgId, 0, NULL, 0, 0, 0, NO, kTimeOutImmediate, inFutureTimeToSend); }
+							{ return sendGoo(kBuiltInSMemMsgId, 0, NULL, 0, 0, 0, false, kTimeOutImmediate, inFutureTimeToSend); }
 
 	friend void SleepTill(CTime * inFutureTimeToSend);
 };
@@ -201,7 +201,7 @@ extern NewtonErr SendForInterrupt(ObjectId inPortId, ObjectId inMsgId, ObjectId 
 						void * inContent, size_t inSize,
 						ULong inMsgType = kMsgType_FromInterrupt,
 						Timeout inTimeout = 0, CTime * inFutureTimeToSend = NULL,
-						bool inUrgent = NO);
+						bool inUrgent = false);
 
 
 #endif	/* __USERPORTS_H */

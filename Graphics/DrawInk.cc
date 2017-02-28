@@ -16,7 +16,7 @@
 
 #include "Objects.h"
 #include "Iterators.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "OSErrors.h"
 
 
@@ -267,7 +267,37 @@ int		DecodeShortStroke(_DCC * inContext);
 
 
 #pragma mark -
+/*------------------------------------------------------------------------------
+	S t r o k e   B u n d l e
+------------------------------------------------------------------------------*/
 
+void
+DrawStrokeBundle(RefArg inStroke, Rect * inSrcRect, Rect * inDstRect)
+{
+// cf CView::scale()
+//	CTransform	xform;
+//	xform.setup(inSrcRect, inDstRect, false);
+
+	RefVar strokes(GetFrameSlot(inStroke, SYMA(strokes)));
+	for (ArrayIndex i = 0, count = Length(strokes); i < count; ++i) {
+		RefVar pts(GetArraySlot(strokes, i));
+		CDataPtr ptsData(pts);
+		FPoint * srcPtr = (FPoint *)(char *)ptsData;
+
+		CGPoint pt;
+		CGContextBeginPath(quartz);
+//		pt = xform.scale(*srcPtr);		// original does TPoint::Scale(const TTransform&)
+		CGContextMoveToPoint(quartz, pt.x, pt.y);
+		for (ArrayIndex j = 1, numOfPts = Length(pts) / sizeof(Point); j < numOfPts; ++j) {
+			++srcPtr;
+//			pt = xform.scale(*srcPtr);
+			CGContextAddLineToPoint(quartz, pt.x, pt.y);
+		}
+		CGContextStrokePath(quartz);
+	}
+}
+
+#pragma mark -
 /*------------------------------------------------------------------------------
 	I n k y   E x p e r i m e n t a t i o n
 ------------------------------------------------------------------------------*/
@@ -417,14 +447,14 @@ GenericCSCompress(CRecStroke ** inStrokes, uint16_t inArg2)
 void
 CSExpandGroup(CSStrokeHeader * inData, ULong inArg2, float inArg3, float inArg4)	// float <- Fixed
 {
-	GenericCSExpandGroup(inData, inArg2, inArg3, inArg4, 1.0, 1.0, YES);
+	GenericCSExpandGroup(inData, inArg2, inArg3, inArg4, 1.0, 1.0, true);
 }
 
 
 void
 CSRawExpandGroup(CSStrokeHeader * inData, ULong inArg2, float inArg3, float inArg4, float inArg5, float inArg6)	// float <- Fixed
 {
-	GenericCSExpandGroup(inData, inArg3, inArg4, inArg5, inArg6, NO);
+	GenericCSExpandGroup(inData, inArg3, inArg4, inArg5, inArg6, false);
 }
 
 
@@ -575,7 +605,7 @@ DecoderOpen(UShort inArg1, CSStrokeRef inStroke, UShort inArg3, CSParmsRef inPar
 		context->x0C = inArg3;
 		context->instanceData = NULL;
 		context->proc = StorePointProcDefault;	// TDIL says NULL
-		context->isFirstStroke = YES;
+		context->isFirstStroke = true;
 		context->x76 = inArg5;
 
 		return context;
@@ -610,8 +640,8 @@ DecoderRun(_DCC * inContext)
 
 		inContext->x20 = (unsigned char *)inContext->x1C;	// don’t need this, it’s a relic of the Handle implementation
 
-		inContext->skipPoint.isInUse = YES;
-		inContext->skipPoint.isReady = NO;
+		inContext->skipPoint.isInUse = true;
+		inContext->skipPoint.isReady = false;
 		inContext->skipPoint.x38 = -1;
 		inContext->skipPoint.x06 = 8;
 		inContext->skipPoint.x04 = 4;
@@ -763,7 +793,7 @@ ReadNewStroke(_DCC * inContext, short * outType)
 	{
 		if (inContext->isFirstStroke)
 		{
-			inContext->isFirstStroke = NO;
+			inContext->isFirstStroke = false;
 			XFAIL(!DecodeWord_NEW(inContext, STROKE_TBL, outType))
 			if (*outType == 2)
 			{
@@ -908,13 +938,13 @@ GetSkipPoint(tag_SKP * ioSkipPoint, short inX, short inY)
 {
 	if (!ioSkipPoint->isInUse)
 	{
-		ioSkipPoint->isReady = YES;
+		ioSkipPoint->isReady = true;
 		ioSkipPoint->outPoint.x = inX;
 		ioSkipPoint->outPoint.y = inY;
 		return 1;
 	}
 
-	ioSkipPoint->isReady = NO;
+	ioSkipPoint->isReady = false;
 	ioSkipPoint->x08.x = inX;			// in tablet space?
 	ioSkipPoint->x08.y = inY;
 	ioSkipPoint->x0C.x = inX / 8;		// in display space?
@@ -948,7 +978,7 @@ GetSkipPoint(tag_SKP * ioSkipPoint, short inX, short inY)
 		{
 			_POINT	d1, d2;
 			ioSkipPoint->outPoint = ioSkipPoint->x28[0];
-			ioSkipPoint->isReady = YES;
+			ioSkipPoint->isReady = true;
 			d1.x = ioSkipPoint->x1C[1].x - ioSkipPoint->x1C[0].x;
 			d1.y = ioSkipPoint->x1C[1].y - ioSkipPoint->x1C[0].y;
 			d2.x = ioSkipPoint->x1C[2].x - ioSkipPoint->x1C[1].x;
@@ -989,10 +1019,10 @@ ClearSkipPoint(tag_SKP * inSkipPoint)
 		return 0;
 
 	if (inSkipPoint->x38 == -1)
-		inSkipPoint->isReady = NO;
+		inSkipPoint->isReady = false;
 	else
 	{
-		inSkipPoint->isReady = YES;
+		inSkipPoint->isReady = true;
 		inSkipPoint->outPoint = inSkipPoint->x28[0];
 		for (ArrayIndex i = 0; i < inSkipPoint->x38; ++i)
 		{
@@ -1747,7 +1777,7 @@ bool
 HWRMemoryUnlockHandle(HWRef h)
 {
 	HUnlock((Handle)h);
-	return YES;
+	return true;
 }
 
 
@@ -1755,7 +1785,7 @@ bool
 HWRMemoryFreeHandle(HWRef h)
 {
 	DisposeHandle((Handle)h);
-	return YES;
+	return true;
 }
 
 
@@ -1788,6 +1818,6 @@ bool
 HWRMemoryFree(void * p)
 {
 	DisposeHandle(*(Handle*)--p);
-	return YES;
+	return true;
 }
 #endif

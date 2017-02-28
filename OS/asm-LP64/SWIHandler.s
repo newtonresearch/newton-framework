@@ -53,16 +53,21 @@
 
 		.set	frrbp,   0
 		.set	frtask, -8
-		.set	frr10,  -16
-		.set	frr9,   -24
-		.set	frr8,   -32
-		.set	frrdi,  -40
-		.set	frrsi,  -48
-		.set	frrdx,  -56
-		.set	frrcx,  -64
-		.set	frrbx,  -72
-		.set	frrax,  -80
-		.set	frSize, 96
+		.set	frr15,  -16
+		.set	frr14,  -24
+		.set	frr13,  -32
+		.set	frr12,  -40
+		.set	frr11,  -48
+		.set	frr10,  -56
+		.set	frr9,   -64
+		.set	frr8,   -72
+		.set	frrdi,  -80
+		.set	frrsi,  -88
+		.set	frrdx,  -96
+		.set	frrcx,  -104
+		.set	frrbx,  -112
+		.set	frrax,  -120
+		.set	frSize, 128
 
 /* ----------------------------------------------------------------
 	A SWI has a stack that looks like:
@@ -72,6 +77,11 @@
 
 		rbp					<-- our stack frame, 16 byte aligned
 		task
+		r15
+		r14
+		r13
+		r12
+		r11
 		r10
 		r9
 		r8
@@ -137,6 +147,11 @@ SWI:
 		movq		%r8,  frr8(%rbp)
 		movq		%r9,  frr9(%rbp)
 		movq		%r10, frr10(%rbp)
+		movq		%r11, frr11(%rbp)
+		movq		%r12, frr12(%rbp)
+		movq		%r13, frr13(%rbp)
+		movq		%r14, frr14(%rbp)
+		movq		%r15, frr15(%rbp)
 
 		movl		$(svc_32+IRQdisable+FIQdisable), %eax
 		xchgl		%eax, _gCPSR(%rip)	# set supervisor mode, disable interrupts
@@ -220,8 +235,9 @@ SwapOut:
 		movl		_gSPSR(%rip), %eax		# save PSR in task
 		movq		%rax, taskPSR(%r11)
 
-		movl		$(svc_32+IRQdisable+FIQdisable), %ecx
-		xchgl		%ecx, _gCPSR(%rip)		# disable interrupts while we’re saving registers
+		movl		_gCPSR(%rip), %ecx
+		movl		$(svc_32+IRQdisable+FIQdisable), %eax
+		xchgl		%eax, _gCPSR(%rip)		# disable interrupts while we’re saving registers
 
 		movq		frrbx(%rbp), %rax			# save all registers
 		movq		%rax, taskrbx(%r11)
@@ -239,6 +255,17 @@ SwapOut:
 		movq		%rax, taskr9(%r11)
 		movq		frr10(%rbp), %rax
 		movq		%rax, taskr10(%r11)
+		movq		frr11(%rbp), %rax
+		movq		%rax, taskr11(%r11)
+		movq		frr12(%rbp), %rax
+		movq		%rax, taskr12(%r11)
+		movq		frr13(%rbp), %rax
+		movq		%rax, taskr13(%r11)
+		movq		frr14(%rbp), %rax
+		movq		%rax, taskr14(%r11)
+		movq		frr15(%rbp), %rax
+		movq		%rax, taskr15(%r11)
+
 		movq		frrbp(%rbp), %rax
 		movq		%rax, taskrbp(%r11)
 		leaq		16(%rbp), %rax				# <-- assume stack is always aligned with frame
@@ -255,8 +282,9 @@ SwapOut:
 		movl		_gSPSR(%rip), %eax		# save PSR in task
 		movq		%rax, taskPSR(%r11)
 
-		movl		$(svc_32+IRQdisable+FIQdisable), %ecx
-		xchgl		%ecx, _gCPSR(%rip)		# disable interrupts while we’re saving registers
+		movl		_gCPSR(%rip), %ecx
+		movl		$(svc_32+IRQdisable+FIQdisable), %eax
+		xchgl		%eax, _gCPSR(%rip)		# disable interrupts while we’re saving registers
 
 		movq		taskrip(%r11), %rax
 		movq		%rax, frlk(%rbp)			# restore saved PC in LK for return
@@ -277,6 +305,17 @@ SwapOut:
 		movq		%rax, taskr9(%r11)
 		movq		frr10(%rbp), %rax
 		movq		%rax, taskr10(%r11)
+		movq		frr11(%rbp), %rax
+		movq		%rax, taskr11(%r11)
+		movq		frr12(%rbp), %rax
+		movq		%rax, taskr12(%r11)
+		movq		frr13(%rbp), %rax
+		movq		%rax, taskr13(%r11)
+		movq		frr14(%rbp), %rax
+		movq		%rax, taskr14(%r11)
+		movq		frr15(%rbp), %rax
+		movq		%rax, taskr15(%r11)
+
 		movq		frrbp(%rbp), %rax
 		movq		%rax, taskrbp(%r11)
 		leaq		16(%rbp), %rax			# <-- assume stack is always aligned with frame
@@ -301,6 +340,8 @@ SwapIn:
 		movq		taskPSR(%r11), %rax
 		movl		%eax, _gCPSR(%rip)	# restore interrupt mode --> fire pending interrupt
 		call		_ServicePendingInterrupts
+
+		movq		_gCurrentTask(%rip), %r11
 		movq		taskrax(%r11), %rax	# restore all registers
 		movq		taskrbx(%r11), %rbx
 		movq		taskrcx(%r11), %rcx
@@ -310,11 +351,16 @@ SwapIn:
 		movq		taskr8(%r11),  %r8
 		movq		taskr9(%r11),  %r9
 		movq		taskr10(%r11), %r10
+		movq		taskr12(%r11), %r12
+		movq		taskr13(%r11), %r13
+		movq		taskr14(%r11), %r14
+		movq		taskr15(%r11), %r15
 
 		movq		taskrbp(%r11), %rbp
 		movq		taskrsp(%r11), %rsp	# changing the stack!
 
 		pushq		taskrip(%r11)			# restore saved PC ready for return
+		movq		taskr11(%r11), %r11	# can finally restore r11
 
 // set up new environment
 
@@ -364,6 +410,11 @@ ExitSWI:
 		movq		frr8(%rbp),  %r8
 		movq		frr9(%rbp),  %r9
 		movq		frr10(%rbp), %r10
+		movq		frr11(%rbp), %r11
+		movq		frr12(%rbp), %r12
+		movq		frr13(%rbp), %r13
+		movq		frr14(%rbp), %r14
+		movq		frr15(%rbp), %r15
 
 		addq		$frSize, %rsp		# epilog
 		popq		%rbp
@@ -451,8 +502,9 @@ DoPortSend:
 		movl		_gSPSR(%rip), %eax		# save PSR in task
 		movq		%rax, taskPSR(%r11)
 
-		movl		$(svc_32+IRQdisable+FIQdisable), %ecx
-		xchgl		%ecx, _gCPSR(%rip)		# disable interrupts while we’re saving registers
+		movl		_gCPSR(%rip), %ecx
+		movl		$(svc_32+IRQdisable+FIQdisable), %eax
+		xchgl		%eax, _gCPSR(%rip)		# disable interrupts while we’re saving registers
 
 		movq		frrbx(%rbp), %rax			# save all registers
 		movq		%rax, taskrbx(%r11)
@@ -470,6 +522,17 @@ DoPortSend:
 		movq		%rax, taskr9(%r11)
 		movq		frr10(%rbp), %rax
 		movq		%rax, taskr10(%r11)
+		movq		frr11(%rbp), %rax
+		movq		%rax, taskr11(%r11)
+		movq		frr12(%rbp), %rax
+		movq		%rax, taskr12(%r11)
+		movq		frr13(%rbp), %rax
+		movq		%rax, taskr13(%r11)
+		movq		frr14(%rbp), %rax
+		movq		%rax, taskr14(%r11)
+		movq		frr15(%rbp), %rax
+		movq		%rax, taskr15(%r11)
+
 		movq		frrbp(%rbp), %rax
 		movq		%rax, taskrbp(%r11)
 		leaq		frrbp+16(%rbp), %rax		# <-- assume stack is always aligned with frame
@@ -509,8 +572,9 @@ Received:
 		movl		_gSPSR(%rip), %eax		# save PSR in task
 		movq		%rax, taskPSR(%r11)
 
-		movl		$(svc_32+IRQdisable+FIQdisable), %ecx
-		xchgl		%ecx, _gCPSR(%rip)		# disable interrupts while we’re saving registers
+		movl		_gCPSR(%rip), %ecx
+		movl		$(svc_32+IRQdisable+FIQdisable), %eax
+		xchgl		%eax, _gCPSR(%rip)		# disable interrupts while we’re saving registers
 
 		movq		frrbx(%rbp), %rax			# save all registers
 		movq		%rax, taskrbx(%r11)
@@ -528,10 +592,19 @@ Received:
 		movq		%rax, taskr9(%r11)
 		movq		frr10(%rbp), %rax
 		movq		%rax, taskr10(%r11)
+		movq		frr11(%rbp), %rax
+		movq		%rax, taskr11(%r11)
+		movq		frr12(%rbp), %rax
+		movq		%rax, taskr12(%r11)
+		movq		frr13(%rbp), %rax
+		movq		%rax, taskr13(%r11)
+		movq		frr14(%rbp), %rax
+		movq		%rax, taskr14(%r11)
+		movq		frr15(%rbp), %rax
+		movq		%rax, taskr15(%r11)
 
 		movq		frrbp(%rbp), %rax
 		movq		%rax, taskrbp(%r11)
-
 		leaq		frrbp+16(%rbp), %rax		# <-- assume stack is always aligned with frame
 		movq		%rax, taskrsp(%r11)
 
@@ -539,7 +612,8 @@ Received:
 
 		movq		frlk(%rbp), %rax
 		movq		%rax, taskrip(%r11)		# save PC
-		movq		frrax(%rbp), %rax
+
+		movq		frrax(%rbp), %rax			# restore return code
 		jmp		Done
 
 
@@ -605,8 +679,9 @@ DoGeneric:
 		movl		_gSPSR(%rip), %eax		# save PSR in task
 		movq		%rax, taskPSR(%r11)
 
-		movl		$(svc_32+IRQdisable+FIQdisable), %ecx
-		xchgl		%ecx, _gCPSR(%rip)		# disable interrupts while we’re saving registers
+		movl		_gCPSR(%rip), %ecx
+		movl		$(svc_32+IRQdisable+FIQdisable), %eax
+		xchgl		%eax, _gCPSR(%rip)		# disable interrupts while we’re saving registers
 
 		movq		frrbx(%rbp), %rax			# save all registers
 		movq		%rax, taskrbx(%r11)
@@ -618,6 +693,24 @@ DoGeneric:
 		movq		%rax, taskrsi(%r11)
 		movq		frrdi(%rbp), %rax
 		movq		%rax, taskrdi(%r11)
+
+		movq		frr8(%rbp), %rax
+		movq		%rax, taskr8(%r11)
+		movq		frr9(%rbp), %rax
+		movq		%rax, taskr9(%r11)
+		movq		frr10(%rbp), %rax
+		movq		%rax, taskr10(%r11)
+		movq		frr11(%rbp), %rax
+		movq		%rax, taskr11(%r11)
+		movq		frr12(%rbp), %rax
+		movq		%rax, taskr12(%r11)
+		movq		frr13(%rbp), %rax
+		movq		%rax, taskr13(%r11)
+		movq		frr14(%rbp), %rax
+		movq		%rax, taskr14(%r11)
+		movq		frr15(%rbp), %rax
+		movq		%rax, taskr15(%r11)
+
 		movq		%rbp, taskrbp(%r11)
 		movq		%rsp, taskrsp(%r11)
 
@@ -625,6 +718,7 @@ DoGeneric:
 
 		movq		frlk(%rbp), %rax
 		movq		%rax, taskrip(%r11)		# save PC
+
 		movq		frrax(%rbp), %rax
 		jmp		Done
 
@@ -687,11 +781,11 @@ DoSemOp:
 		movq		%rax, frrax(%rbp)
 		movq		frtask(%rbp), %r11
 
-		movl		_gSPSR(%rip), %eax		# save PSR in task
-		movq		%rax, taskPSR(%r11)
+		movl		_gSPSR(%rip), %ecx		# save PSR in task
+		movq		%rcx, taskPSR(%r11)
 
-		movl		$(svc_32+IRQdisable+FIQdisable), %ecx
-		xchgl		%ecx, _gCPSR(%rip)		# disable interrupts while we’re saving registers
+		movl		$(svc_32+IRQdisable+FIQdisable), %eax
+		xchgl		%eax, _gCPSR(%rip)		# disable interrupts while we’re saving registers
 
 		movq		frrbx(%rbp), %rax			# save all registers
 		movq		%rax, taskrbx(%r11)
@@ -703,6 +797,24 @@ DoSemOp:
 		movq		%rax, taskrsi(%r11)
 		movq		frrdi(%rbp), %rax
 		movq		%rax, taskrdi(%r11)
+
+		movq		frr8(%rbp), %rax
+		movq		%rax, taskr8(%r11)
+		movq		frr9(%rbp), %rax
+		movq		%rax, taskr9(%r11)
+		movq		frr10(%rbp), %rax
+		movq		%rax, taskr10(%r11)
+		movq		frr11(%rbp), %rax
+		movq		%rax, taskr11(%r11)
+		movq		frr12(%rbp), %rax
+		movq		%rax, taskr12(%r11)
+		movq		frr13(%rbp), %rax
+		movq		%rax, taskr13(%r11)
+		movq		frr14(%rbp), %rax
+		movq		%rax, taskr14(%r11)
+		movq		frr15(%rbp), %rax
+		movq		%rax, taskr15(%r11)
+
 		movq		%rbp, taskrbp(%r11)
 		movq		%rsp, taskrsp(%r11)
 
@@ -924,8 +1036,9 @@ DoMonitorDispatch:
 		movl		_gSPSR(%rip), %eax		# save PSR in task
 		movq		%rax, taskPSR(%r11)
 
-		movl		$(svc_32+IRQdisable+FIQdisable), %ecx
-		xchgl		%ecx, _gCPSR(%rip)		# disable interrupts while we’re saving registers
+		movl		_gCPSR(%rip), %ecx
+		movl		$(svc_32+IRQdisable+FIQdisable), %eax
+		xchgl		%eax, _gCPSR(%rip)		# disable interrupts while we’re saving registers
 
 		movq		frrdi(%rbp), %rax			# save registers rbx, rcx, rdx, rsi, rdi, rbp, rsp, rip
 		movq		%rax, taskarg1(%r11)
@@ -946,6 +1059,24 @@ DoMonitorDispatch:
 		movq		%rax, taskrsi(%r11)
 		movq		frrdi(%rbp), %rax
 		movq		%rax, taskrdi(%r11)
+
+		movq		frr8(%rbp), %rax
+		movq		%rax, taskr8(%r11)
+		movq		frr9(%rbp), %rax
+		movq		%rax, taskr9(%r11)
+		movq		frr10(%rbp), %rax
+		movq		%rax, taskr10(%r11)
+		movq		frr11(%rbp), %rax
+		movq		%rax, taskr11(%r11)
+		movq		frr12(%rbp), %rax
+		movq		%rax, taskr12(%r11)
+		movq		frr13(%rbp), %rax
+		movq		%rax, taskr13(%r11)
+		movq		frr14(%rbp), %rax
+		movq		%rax, taskr14(%r11)
+		movq		frr15(%rbp), %rax
+		movq		%rax, taskr15(%r11)
+
 		movq		frrbp(%rbp), %rax
 		movq		%rax, taskrbp(%r11)
 		leaq		frrbp+16(%rbp), %rax		# <-- assume stack is always aligned with frame

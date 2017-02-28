@@ -1,0 +1,208 @@
+ce_term : IDENTIFIER
+ce_term : NUMBER
+ce_term : '(' const_expr ')'
+ce_term : '(' type ')' '(' const_expr ')'
+
+ce_unary : '~' ce_term
+ce_unary : '!' ce_term
+ce_unary : '+' ce_term
+ce_unary : '-' ce_term
+ce_unary : ce_term
+
+ce_times_div_mod : ce_unary '%' ce_unary
+ce_times_div_mod : ce_unary '/' ce_times_div_mod
+ce_times_div_mod : ce_unary '*' ce_times_div_mod
+ce_times_div_mod : ce_unary
+
+ce_plus_minus : ce_times_div_mod '-' ce_plus_minus
+ce_plus_minus : ce_times_div_mod '+' ce_plus_minus
+ce_plus_minus : ce_times_div_mod
+
+ce_lsh_rsh : ce_plus_minus RSH ce_lsh_rsh
+ce_lsh_rsh : ce_plus_minus LSH ce_lsh_rsh
+ce_lsh_rsh : ce_plus_minus
+
+ce_lt_le_gt_ge : ce_lsh_rsh GE ce_lt_le_gt_ge
+ce_lt_le_gt_ge : ce_lsh_rsh '>' ce_lt_le_gt_ge
+ce_lt_le_gt_ge : ce_lsh_rsh LE ce_lt_le_gt_ge
+ce_lt_le_gt_ge : ce_lsh_rsh '<' ce_lt_le_gt_ge
+ce_lt_le_gt_ge : ce_lsh_rsh
+
+ce_eq_ne : ce_lt_le_gt_ge NE ce_eq_ne
+ce_eq_ne : ce_lt_le_gt_ge EQEQ ce_eq_ne
+ce_eq_ne : ce_lt_le_gt_ge
+
+ce_and : ce_eq_ne '&' ce_and
+ce_and : ce_eq_ne
+ce_xor : ce_and '^' ce_xor\
+ce_xor : ce_and
+ce_or : ce_xor '|' ce_or
+ce_or : ce_xor
+
+const_expr : ce_or
+const_expr_opt : const_expr
+const_expr_opt :	<enum_elem : IDENTIFIER '=' const_expr
+						 enum_elem : IDENTIFIER
+						 enum_2 : enum_2 ',' enum_elem
+						 enum_2 : enum_elem
+						 enum_2 :	enum_body : '{' enum_2 ',' '}'
+						 				enum_body : '{' enum_2 '}'
+						 				enum_body_opt : enum_body
+						 				enum_body_opt :
+						 				ignored_semi_or_braces : '{'
+						 				ignored_semi_or_braces : ';'
+						 				ignored_braces_opt : ignored_braces_opt : '{'
+						 											base_type : VOID
+						 											base_type : LONG DOUBLE
+						 											base_type : DOUBLE
+						 											base_type : FLOAT
+						 											base_type : UNSIGNED LONG INT
+						 											base_type : SIGNED LONG INT
+						 											base_type : UNSIGNED LONG
+						 											base_type : SIGNED LONG
+						 											base_type : LONG INT
+						 											base_type : LONG
+						 											base_type : UNSIGNED SHORT INT
+						 											base_type : SIGNED SHORT INT
+						 											base_type : SHORT UNSIGNED INT
+						 											base_type : SHORT SIGNED INT
+						 											base_type : SHORT INT
+						 											base_type : UNSIGNED INT
+						 											base_type : SIGNED INT
+						 											base_type : INT
+						 											base_type : UNSIGNED SHORT
+						 											base_type : SIGNED SHORT
+						 											base_type : SHORT
+						 											base_type : UNSIGNED CHAR
+						 											base_type : SIGNED CHAR
+						 											base_type : CHAR
+						 											pointer : pointer CONST
+						 											pointer : '&'
+						 											pointer : pointer '&'
+						 											pointer : '*'
+						 											pointer : pointer '*'\
+						 											identifier_opt : IDENTIFIER
+						 											identifier_opt : 0AeYen
+						 											type3 : UNION identifier_opt ignored_braces_opt
+						 											type3 : CLASS IDENTIFIER superclass_list_opt ignored_braces_opt
+						 											type3 : STRUCT identifier_opt superclass_list_opt ignored_braces_opt
+						 											type3 : IDENTIFIER (type3 : base_type type2 : VOLATILE type3
+						type2 : type3 CONST
+						type2 : CONST type3
+						type2 : type3
+						type1 : ENUM identifier_opt enum_body_opt
+						type1 : type2 pointer
+						type1 : type2
+						type : PASCAL type
+						type : type1 '(' '*' identifier_opt ')' '(' arg_list ')'
+						type : type1
+						default_arg_value_opt : '=' IDENTIFIER
+						default_arg_value_opt : '=' const_expr
+						default_arg_value_opt :
+						arg_list : ELLIPSES
+						arg_list : type IDENTIFIER default_arg_value_opt ',' arg_list
+						arg_list : type default_arg_value_opt ',' arg_list
+						arg_list : type IDENTIFIER default_arg_value_opt
+						arg_list : type default_arg_value_opt
+						arg_list : VOID
+						arg_list :
+						placement : '@' const_expr
+						placement :
+						vector_opt : '[' const_expr_opt ']'
+						vector_opt :
+						superclass_list_elem : IDENTIFIER
+						superclass_list_elem : PRIVATE IDENTIFIER
+						superclass_list_elem : PUBLIC IDENTIFIER
+						superclass_list_2 : superclass_list_2 ',' superclass_list_elem
+						superclass_list_2 : superclass_list_elem
+						superclass_list_opt : ':' superclass_list_2
+						superclass_list_opt :
+						top_level_ignored_stuff : ';'
+						top_level_ignored_stuff : EXTERN
+						top_level_ignored_stuff : EXTERN STRING
+						top_level_ignored_stuff : EXTERN type IDENTIFIER
+						top_level_ignored_stuff : EXTERN STRING type IDENTIFIER
+						top_level_ignored_stuff : EXTERN base_type '(' IDENTIFIER
+						top_level_ignored_stuff : STATIC
+						top_level_ignored_stuff : INLINE
+						top_level_ignored_stuff : opt_parenthesized_id '('
+						top_level_ignored_stuff : type opt_parenthesized_id '[' const_expr_opt ']' ';'
+						top_level_ignored_stuff : type opt_parenthesized_id ';'
+						top_level_ignored_stuff : type opt_parenthesized_id '('
+						opt_parenthesized_id : '(' IDENTIFIER ')'
+						opt_parenthesized_id : IDENTIFIER
+						CONST_opt : CONST
+						CONST_opt :
+						meth_not_impl : type IDENTIFIER '(' arg_list ')' CONST_opt placement '{'
+						meth_not_impl : '~' IDENTIFIER '(' ')' placement ';'
+						meth_not_impl : IDENTIFIER '(' arg_list ')' placement ';'
+						method : meth_not_impl
+						method : PSEUDOSTATIC IDENTIFIER '(' arg_list ')' CONST_opt ignored_semi_or_braces
+						method : PSEUDOSTATIC type IDENTIFIER '(' arg_list ')' CONST_opt ignored_semi_or_braces
+						method : STATIC type IDENTIFIER '(' arg_list ')' CONST_opt placement ignored_semi_or_braces
+						method : type IDENTIFIER '(' arg_list ')' CONST_opt placement ';'
+						field : type IDENTIFIER vector_opt ';'
+						sig_elem : '(' NUMBER opt_dot NUMBER ')'
+						sig_elem : '(' NUMBER opt_dot STRING ')'
+						sig_elem : '(' STRING opt_dot NUMBER ')'
+						sig_elem : '(' STRING opt_dot STRING ')'
+						sig_elem : '(' NUMBER ')'
+						sig_elem : '(' STRING ')'
+						sig_elem : NUMBER
+						sig_elem : STRING
+						sig_body : sig_elem
+						sig_body : sig_body opt_dot sig_elem
+						opt_dot :
+						opt_dot : '.'
+						body_elem : FRIEND
+						body_elem : VIRTUAL
+						body_elem : '~' IDENTIFIER '(' ')' placement '{'
+						body_elem : IDENTIFIER '(' arg_list ')' placement '{'
+						body_elem : PROTECTED ':'
+						body_elem : PRIVATE ':'
+						body_elem : PUBLIC ':'
+						body_elem : CAPABILITIES '(' sig_body ')'
+						body_elem : field
+						body_elem : method
+						monitor_body : monitor_body body_elem
+						monitor_body :
+						protocol_body : protocol_body body_elem
+						protocol_body :
+						protocol_version_opt :
+						protocol_version_opt : VERSION '(' const_expr '.' const_expr ')'
+						protocol_version_opt : VERSION '(' const_expr ')'
+						protocolgen_decl : MONITOR IDENTIFIER ';'
+						protocolgen_decl : PROTOCOL IDENTIFIER ';'
+						protocolgen_decl : MONITOR IDENTIFIER ':' PUBLIC IDENTIFIER protocol_version_opt '{' $$3 monitor_body '}'
+						$$3 :
+						protocolgen_decl : PROTOCOL IDENTIFIER ':' PUBLIC IDENTIFIER protocol_version_opt '{' $$2 protocol_body '}'
+						$$2 :
+						aug_type_elem : IDENTIFIER '[' const_expr_opt ']'
+						aug_type_elem : pointer IDENTIFIER '[' const_expr_opt ']'
+						aug_type_elem : pointer IDENTIFIER
+						aug_type_elem : IDENTIFIER
+						typedef_list :
+						typedef_list : aug_type_elem
+						typedef_list : typedef_list ',' aug_type_elem
+						id_decl_list_elem :
+						id_decl_list_elem : IDENTIFIER '[' const_expr_opt ']'
+						id_decl_list_elem : pointer IDENTIFIER '[' const_expr_opt ']'
+						id_decl_list_elem : pointer IDENTIFIER
+						id_decl_list_elem : IDENTIFIER
+						id_decl_list : id_decl_list_elem
+						id_decl_list : id_decl_list ',' id_decl_list_elem
+						clause : protocolgen_decl
+						clause : EXTERN STRING '{' clauses '}'
+						clause : TYPEDEF type $$1 typedef_list ';'
+						$$$1 :
+						clause : type id_decl_list ';'
+						clause : type IDENTIFIER '=' const_expr
+						clause : top_level_ignored_stuff
+						clauses : clause clauses
+						clauses :
+$accept : clauses
+
+VOLATILE PASCALDELETE NEW OPERATOR FRIEND VIRTUAL CLCL OROR ANDAND RSH LSH GE LENE EQEQ INLINENUMBER ENUM STATICEXTERN ELLIPSES OSTYPE PROTECTED PRIVATE PUBLIC CONST
+FLOAT DOUBLE VOID UNSIGNED SIGNED LONG INT SHORT CHAR
+CLASS UNION STRUCTTYPEDEF IDENTIFIER STRING VERSION CAPABILITIES PSEUDOSTATIC MONITOR PROTOCOL
+'~' '}' '|' '{' '^' ']' '[' '@' '>' '=' '<' ';' ':' '/' '.' '-' ',' '+' '*' ')' '(' '&' '%' '!' end-of-file

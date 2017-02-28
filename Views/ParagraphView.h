@@ -23,7 +23,7 @@ public:
 							~CParagraphView();
 
 	virtual	void		init(RefArg inContext, CView * inView);
-	virtual	void		realDraw(Rect * inBounds);
+	virtual	void		realDraw(Rect& inRect);
 
 	Ref	extractRangeAsRichString(ArrayIndex inRangeStart, ArrayIndex inRangeEnd);
 	Ref	extractTextRange(ArrayIndex inRangeStart, ArrayIndex inRangeEnd);
@@ -71,7 +71,7 @@ public:
 	void	HandleCaret(unsigned long, long, Point&, Point&, Point&, Point&);
 	void	HandleHilite(CUnit*, long, unsigned char);
 	void	HandleLineGesture(long, Point&, Point&);
-	void	HandleScrub(const Rect&, long, CUnit*, unsigned char);
+	int	HandleScrub(const Rect&, int, CUnit*, bool);
 	void	HandleTap(Point&);
 	void	HandleWord(const unsigned short*, unsigned long, const Rect&, const Point&, unsigned long, unsigned long, RefArg, unsigned char, long*, CUnit*);
 	void	HiliteAll(void);

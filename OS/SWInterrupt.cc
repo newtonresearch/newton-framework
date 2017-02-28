@@ -109,10 +109,10 @@ extern NewtonErr	SetTabletCalibrationDataSWI(void);
 extern NewtonErr	GetTabletCalibrationDataSWI(void);
 
 //	Debugger
-extern void			SRegisterPackageWithDebugger(ULong, ULong);
-extern void			SRegisterLoadedCodeWithDebugger(ULong, ULong, ULong);
-extern void			SDeregisterLoadedCodeWithDebugger(ULong);
-extern void			SInformDebuggerMemoryReloaded(ULong, ULong);
+extern void			SRegisterPackageWithDebugger(void * inAddr, ULong inPkgId);
+extern void			SRegisterLoadedCodeWithDebugger(void * inAddr, const char * infoStr, ULong inId);
+extern void			SDeregisterLoadedCodeWithDebugger(ULong inId);
+extern void			SInformDebuggerMemoryReloaded(void * inAddr, ULong inSize);
 
 //	Patching
 extern void			BackupPatch(ULong);
@@ -426,16 +426,19 @@ GenericSWIHandler(int inSelector, OpaqueRef inArg1, OpaqueRef inArg2, OpaqueRef 
 		result = GetTabletCalibrationDataSWI();
 		break;
 
-	case 53:	// 426
-//		SRegisterLoadedCodeWithDebugger(inArg1, inArg2, inArg3);
+//	SRegisterLoadedCodeWithDebugger(void * inAddr, const char * infoStr, ULong inId);
+	case kRegisterCodeWithDebugger:	// 426
+		SRegisterLoadedCodeWithDebugger((void *)inArg1, (const char *)inArg2, inArg3);
 		break;
 
-	case 54:	// 431
-//		SDeregisterLoadedCodeWithDebugger(inArg1);
+//	SDeregisterLoadedCodeWithDebugger(ULong inId);
+	case kDeregisterCodeWithDebugger	:	// 431
+		SDeregisterLoadedCodeWithDebugger(inArg1);
 		break;
 
-	case 55:	// 434
-//		SInformDebuggerMemoryReloaded(inArg1, inArg2);
+//	SInformDebuggerMemoryReloaded(void * inAddr, ULong inSize);
+	case kInformDebuggerMemoryReloaded:	// 434
+		SInformDebuggerMemoryReloaded((void *)inArg1, inArg2);
 		break;
 
 	case 56:	// 438
@@ -485,8 +488,9 @@ GenericSWIHandler(int inSelector, OpaqueRef inArg1, OpaqueRef inArg2, OpaqueRef 
 		result = noErr;
 		break;
 
-	case 66:	// 422
-//		SRegisterPackageWithDebugger(inArg1, inArg2);
+//	SRegisterPackageWithDebugger(void * inAddr, ULong inPkgId);
+	case kRegisterPackageWithDebugger:	// 422
+		SRegisterPackageWithDebugger((void *)inArg1, inArg2);
 		break;
 
 //	CUPort::reset(ULong inSendersResetFlags, ULong inReceiversResetFlags)

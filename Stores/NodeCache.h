@@ -22,7 +22,7 @@ struct NodeHeader
 	UShort	numOfSlots;			// +0A
 
 	UShort	keyFieldOffset[1];	// +0C	actually variable length, but always at least 1
-} __attribute__ ((__packed__));
+} __attribute__((__packed__));
 
 struct DupNodeHeader
 {
@@ -34,7 +34,7 @@ struct DupNodeHeader
 	UShort	bytesUsed;			// +0C
 	short		x0E;
 	char		x10[];
-} __attribute__ ((__packed__));
+} __attribute__((__packed__));
 
 
 struct NodeRef
@@ -76,7 +76,7 @@ private:
 };
 
 inline bool	CNodeCache::flush(CSoupIndex * inSoupIndex)
-{ if (fNumOfEntries > 32) { commit(inSoupIndex); return YES; } return NO; }
+{ if (fNumOfEntries > 32) { commit(inSoupIndex); return true; } return false; }
 
 inline int	CNodeCache::modCount(void) const
 { return fModCount; }

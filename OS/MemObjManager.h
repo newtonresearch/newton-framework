@@ -98,7 +98,7 @@ public:
 class CPersistentDBEntry : public CMemDBEntry
 {
 public:
-	void			init(ULong inName, bool inArg2 = YES, ArrayIndex index = kIndexNotFound);
+	void			init(ULong inName, bool inArg2 = true, ArrayIndex index = kIndexNotFound);
 
 	Heap			fHeap;			// +04
 	VAddr			fBase;			// +08

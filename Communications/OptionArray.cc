@@ -132,7 +132,7 @@ CSubArrayOption::CSubArrayOption(size_t inSize, ULong inCount)
 
 COptionArray::COptionArray()
 {
-	fIsShared = NO;
+	fIsShared = false;
 	fArrayBlock = NULL;
 	fIterator = NULL;
 	fCount = 0;
@@ -170,7 +170,7 @@ COptionArray::init(ObjectId inSharedId, ULong inOptionCount)
 	{
 		XFAIL(err = copyFromShared(inSharedId, inOptionCount))
 		fSharedMemoryObject = inSharedId;
-		fIsShared = YES;
+		fIsShared = true;
 	}
 	XENDTRY;
 	return err;
@@ -402,7 +402,7 @@ COptionArray::makeShared(ULong inPermissions)
 		{
 			XFAIL(err = fSharedMemoryObject.init())
 			XFAIL(err = fSharedMemoryObject.setBuffer(fArrayBlock, getSize(), inPermissions))
-			fIsShared = YES;
+			fIsShared = true;
 		}
 		XENDTRY;
 	}
@@ -413,7 +413,7 @@ NewtonErr
 COptionArray::unshare()
 {
 	fSharedMemoryObject.destroyObject();
-	fIsShared = NO;
+	fIsShared = false;
 	return noErr;
 }
 

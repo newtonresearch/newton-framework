@@ -40,10 +40,10 @@ CRecUnit::~CRecUnit()
 CRecUnit *
 CRecUnit::make(CRecDomain * inDomain, ULong inType, ULong inArg3, CArray * inAreas)
 {
-	CRecUnit * recUnit;
+	CRecUnit * recUnit = new CRecUnit;
 	XTRY
 	{
-		XFAIL((recUnit = new CRecUnit) == NULL)
+		XFAIL(recUnit == NULL)
 		XFAILIF(recUnit->iRecUnit(inDomain, inType, inArg3, inAreas) != noErr, recUnit->release(); recUnit = NULL;)
 	}
 	XENDTRY;
@@ -311,13 +311,13 @@ CRecUnit::countStrokes(void)
 
 /* -----------------------------------------------------------------------------
 	Args:		--
-	Return:	YES => we own the stroke
+	Return:	true => we own the stroke
 ----------------------------------------------------------------------------- */
 
 bool
 CRecUnit::ownsStroke(void)
 {
-	return NO;
+	return false;
 }
 
 
@@ -513,10 +513,10 @@ CRecUnit::getBBox(FRect * outBox)
 CRecUnitList *
 CRecUnitList::make(void)
 {
-	CRecUnitList * list;
+	CRecUnitList * list = new CRecUnitList;
 	XTRY
 	{
-		XFAIL((list = new CRecUnitList) == NULL)
+		XFAIL(list == NULL)
 		XFAILIF(list->iRecUnitList() != noErr, list->release(); list = NULL;)
 	}
 	XENDTRY;

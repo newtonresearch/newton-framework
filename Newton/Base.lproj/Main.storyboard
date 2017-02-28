@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="6751" systemVersion="14D136" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="33z-Jg-UGK">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6751"/>
+    </dependencies>
+    <scenes>
+        <!--Application-->
+        <scene sceneID="ijt-pc-IpN">
+            <objects>
+                <application id="ivX-SP-Fyq" sceneMemberID="viewController">
+                    <menu key="mainMenu" title="Main Menu" systemMenu="main" id="dKj-yu-4vk">
+                        <items>
+                            <menuItem title="Newton" id="Lxa-s9-ah0">
+                                <menu key="submenu" title="Newton" systemMenu="apple" id="tbE-Jc-FNc">
+                                    <items>
+                                        <menuItem title="About Newton" id="OzC-a3-gUb">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="Zry-06-ieV">
+                                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                        </menuItem>
+                                        <menuItem title="Preferences..." keyEquivalent="," id="k60-PB-9bD"/>
+                                        <menuItem isSeparatorItem="YES" id="Dpd-Sp-vfb">
+                                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                        </menuItem>
+                                        <menuItem title="Services" id="f52-C7-zdv">
+                                            <menu key="submenu" title="Services" systemMenu="services" id="AdL-zL-hRj"/>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="g8N-64-ddd">
+                                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                        </menuItem>
+                                        <menuItem title="Hide Newton" keyEquivalent="h" id="uU8-X8-yvP">
+                                            <connections>
+                                                <action selector="hide:" target="ivX-SP-Fyq" id="T8t-RE-3UW"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Hide Others" keyEquivalent="h" id="2EC-PS-aGV">
+                                            <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                            <connections>
+                                                <action selector="hideOtherApplications:" target="ivX-SP-Fyq" id="2T8-xE-obO"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Show All" id="2Yu-Ah-FGp">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="unhideAllApplications:" target="ivX-SP-Fyq" id="0Fe-lu-kcb"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="N6o-UU-ffx">
+                                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                        </menuItem>
+                                        <menuItem title="Quit Newton" keyEquivalent="q" id="opK-FN-iPf">
+                                            <connections>
+                                                <action selector="terminate:" target="ivX-SP-Fyq" id="Pty-wF-ptQ"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="File" id="PXS-HS-qok">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="File" id="1oI-fT-W6A">
+                                    <items>
+                                        <menuItem title="New Newton" keyEquivalent="n" id="uvs-fR-I65"/>
+                                        <menuItem title="Open…" keyEquivalent="o" id="vI7-y8-hqa"/>
+                                        <menuItem title="Open Recent" id="Q01-F2-UrD">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Open Recent" systemMenu="recentDocuments" id="ipp-Y9-Nxh">
+                                                <items>
+                                                    <menuItem title="Clear Menu" id="qeE-dL-Qgn"/>
+                                                </items>
+                                            </menu>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="ZGN-ec-xEu"/>
+                                        <menuItem title="Close" keyEquivalent="w" id="v5y-Vz-Pgb"/>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Edit" id="vB6-7S-qeR">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Edit" id="0dH-mG-VXL">
+                                    <items>
+                                        <menuItem title="Copy" keyEquivalent="c" id="iDu-2j-CrT"/>
+                                        <menuItem title="Paste" keyEquivalent="v" id="9bd-Qa-BRX"/>
+                                        <menuItem title="Delete" id="rRj-hM-Oec">
+                                            <string key="keyEquivalent" base64-UTF8="YES">
+CA
+</string>
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                        </menuItem>
+                                        <menuItem title="Select All" keyEquivalent="a" id="rnG-5g-AIl"/>
+                                        <menuItem isSeparatorItem="YES" id="nbj-Em-CNq"/>
+                                        <menuItem title="Find" id="imK-Fe-ca9">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <menu key="submenu" title="Find" id="W9m-Pb-76Z">
+                                                <items>
+                                                    <menuItem title="Find…" tag="1" keyEquivalent="f" id="XTo-aH-8p8"/>
+                                                    <menuItem title="Find Next" tag="2" keyEquivalent="g" id="IXs-re-6p0"/>
+                                                    <menuItem title="Find Previous" tag="3" keyEquivalent="G" id="LCA-w1-Tr7"/>
+                                                    <menuItem title="Use Selection for Find" tag="7" keyEquivalent="e" id="39L-Zc-M67"/>
+                                                    <menuItem title="Jump to Selection" keyEquivalent="j" id="tVH-tX-OdL"/>
+                                                </items>
+                                            </menu>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Window" id="DuK-Sk-Qcg">
+                                <menu key="submenu" title="Window" systemMenu="window" id="I47-se-3k6">
+                                    <items>
+                                        <menuItem title="Minimize" keyEquivalent="m" id="HEd-A4-LIo"/>
+                                        <menuItem isSeparatorItem="YES" id="1Ey-4q-aRT">
+                                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                                        </menuItem>
+                                        <menuItem title="Bring All to Front" id="889-Ra-yfY"/>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Help" id="IZZ-aK-6y8">
+                                <menu key="submenu" title="Help" id="fKC-PW-6nb">
+                                    <items>
+                                        <menuItem title="Newton Help" tag="411" keyEquivalent="?" id="eBJ-1P-QIN"/>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                        </items>
+                    </menu>
+                    <connections>
+                        <outlet property="delegate" destination="Hpi-kJ-PLz" id="EGb-Ld-fKg"/>
+                    </connections>
+                </application>
+                <customObject id="jp6-81-vDU" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+                <customObject id="Hpi-kJ-PLz" userLabel="App Delegate" customClass="MPController"/>
+            </objects>
+            <point key="canvasLocation" x="-224" y="139"/>
+        </scene>
+        <!--Window Controller-->
+        <scene sceneID="7B4-Ls-dnu">
+            <objects>
+                <windowController id="33z-Jg-UGK" customClass="MPWindowController" sceneMemberID="viewController">
+                    <window key="window" title="Newton" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" releasedWhenClosed="NO" showsToolbarButton="NO" frameAutosaveName="messagepad" animationBehavior="default" id="xEB-lJ-ChP">
+                        <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
+                        <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+                        <rect key="contentRect" x="180" y="760" width="340" height="500"/>
+                        <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1417"/>
+                    </window>
+                    <connections>
+                        <segue destination="bPQ-3y-Cd5" kind="relationship" relationship="window.shadowedContentViewController" id="OVI-Dr-OH7"/>
+                    </connections>
+                </windowController>
+                <customObject id="JYU-ZS-zXa" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-210" y="489"/>
+        </scene>
+        <!--View Controller-->
+        <scene sceneID="Fk9-zT-4rV">
+            <objects>
+                <viewController id="bPQ-3y-Cd5" sceneMemberID="viewController">
+                    <view key="view" id="oYx-r8-YBG" customClass="MPView">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="480"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </view>
+                </viewController>
+                <customObject id="BCQ-k5-BEa" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="252" y="479"/>
+        </scene>
+    </scenes>
+</document>

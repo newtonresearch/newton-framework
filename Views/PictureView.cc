@@ -8,7 +8,7 @@
 
 #include "PictureView.h"
 
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Strings.h"
 #include "Iterators.h"
 #include "DrawShape.h"
@@ -37,7 +37,7 @@ CPictureView::clickOptions(void)
 /*------------------------------------------------------------------------------
 	Highlight the picture.
 	If the picture has a mask then use that.
-	Args:		inHilite		hilite - YES or NO
+	Args:		inHilite		hilite - true or false
 	Return:	--
 ------------------------------------------------------------------------------*/
 
@@ -48,24 +48,22 @@ CPictureView::hilite(bool inHilite)
 
 	if (NOTNIL(icon) && IsFrame(icon) && FrameHasSlot(icon, SYMA(mask)) && visibleDeep())
 	{
-/*		CRegion		vr = setupVisRgn();
-		CRegionVar	viewVisRgn(vr);
-*/		unwind_protect
+//		CRegion		vr = setupVisRgn();
+//		CRegionVar	viewVisRgn(vr);
+		unwind_protect
 		{
-			ULong		justify;
-			if ((justify = viewJustify & vjEverything))		// intentional assignment
-			{
-				if (ISNIL(getCacheProto(kIndexViewJustify)))
-					justify = vjCenterH | vjCenterV;
+			ULong justify = viewJustify & vjEverything;
+			if (justify == 0 && ISNIL(getCacheProto(kIndexViewJustify))) {
+				justify = vjCenterH | vjCenterV;
 			}
-			DrawPicture(icon, &viewBounds, justify);
+			DrawPicture(icon, &viewBounds, justify, -modeXor);	// XOR the mask
 		}
 		on_unwind
 		{
-/*			GrafPtr  thePort;
-			GetPort(&thePort);
-			CopyRgn(viewVisRgn, thePort->visRgn);
-*/		}
+//			GrafPtr  thePort;
+//			GetPort(&thePort);
+//			CopyRgn(viewVisRgn, thePort->visRgn);
+		}
 		end_unwind;
 	}
 
@@ -76,15 +74,15 @@ CPictureView::hilite(bool inHilite)
 
 /*------------------------------------------------------------------------------
 	Draw the pictureÕs highlights?
-	Args:		inHilite		hilite - YES or NO
+	Args:		inHilite		hilite - true or false
 	Return:	--
 ------------------------------------------------------------------------------*/
 
 void
 CPictureView::drawHilites(bool inHilite)
 {
-	if (inHilite == NO)
-		CView::hilite(YES);
+	if (inHilite == false)
+		CView::hilite(true);
 }
 
 
@@ -95,7 +93,7 @@ CPictureView::drawHilites(bool inHilite)
 ------------------------------------------------------------------------------*/
 
 void
-CPictureView::realDraw(Rect * inRect)
+CPictureView::realDraw(Rect& inRect)
 {
 //	Ignore the given Rect and use our viewBounds instead
 	drawUsingRect(&viewBounds);
@@ -114,13 +112,13 @@ CPictureView::drawUsingRect(const Rect * inRect)
 	RefVar icon(getValue(SYMA(icon), RA(NILREF)));
 	if (NOTNIL(icon))
 	{
-		ULong		justify;
-		if ((justify = viewJustify & vjEverything))		// intentional assignment
-		{
-			if (ISNIL(getCacheProto(kIndexViewJustify)))
-				justify = vjCenterH | vjCenterV;
+		ULong justify = viewJustify & vjEverything;
+		if (justify == 0 && ISNIL(getCacheProto(kIndexViewJustify))) {
+			justify = vjCenterH | vjCenterV;
 		}
-		DrawPicture(icon, inRect, justify);
+		RefVar transferMode(getProto(SYMA(viewTransferMode)));
+		int mode = ISNIL(transferMode) ? modeCopy : RVALUE(transferMode);
+		DrawPicture(icon, inRect, justify, mode);
 	}
 }
 
@@ -152,7 +150,7 @@ CPictureView::addDragInfo(CDragInfo * outDragInfo)
 {
 //	if (!CView::addDragInfo(outDragInfo))
 //		outDragInfo->addDragItem(SYMA(picture), fContext, STRRdrawing);
-	return YES;
+	return true;
 }
 
 

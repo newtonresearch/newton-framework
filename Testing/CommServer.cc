@@ -19,7 +19,7 @@ CCommServer::CCommServer(bool inArg1, bool inArg2, UniChar * inType)
 	f0D = inArg1;
 	Ustrcpy(fATType, inType);
 	fEvtLength = 0;
-	fIsBusy = NO;
+	fIsBusy = false;
 }
 
 
@@ -48,7 +48,8 @@ CCommServer::connectToTestServer(CEzEndpointPipe ** outPipe)
 	XTRY
 	{
 		XFAILIF(fATEntity[0] == 0, err = -1;)
-		XFAILNOT(fPipe = new CEzEndpointPipe, err = -2;)
+		fPipe = new CEzEndpointPipe;
+		XFAILIF(fPipe == NULL, err = -2;)
 		if (fATEntity[0] == '*' && fATEntity[2] == 0)
 		{
 			if (fATEntity[1] >= '0' && fATEntity[1] <= '9')
@@ -76,7 +77,7 @@ CCommServer::connectToTestServer(CEzEndpointPipe ** outPipe)
 		}
 		newton_catch(exPipe)
 		{
-			testPipeExceptionHandler((NewtonErr)(unsigned long)CurrentException()->data;;);
+			testPipeExceptionHandler((NewtonErr)(long)CurrentException()->data);
 		}
 		end_try;
 	}
@@ -100,7 +101,7 @@ CCommServer::disconnectFromTestServer(void)
 		}
 		newton_catch(exPipe)
 		{
-			testPipeExceptionHandler((NewtonErr)(unsigned long)CurrentException()->data;;);
+			testPipeExceptionHandler((NewtonErr)(long)CurrentException()->data);
 		}
 		end_try;
 
@@ -132,12 +133,12 @@ CCommServer::getResponse(size_t * outLength)
 	DockEventHeader header;
 
 	size_t chunkLen = 2 * sizeof(ULong);
-	readChunk(&header.evtClass, chunkLen, NO);
+	readChunk(&header.evtClass, chunkLen, false);
 
 	if (header.evtClass == kNewtEventClass || header.evtId != kTestServerEventId)
 	{
 		chunkLen = 2 * sizeof(ULong);
-		readChunk(&header.evtTag, chunkLen, NO);
+		readChunk(&header.evtTag, chunkLen, false);
 		response = header.evtTag;
 		fEvtLength = header.evtLength;
 		if (outLength)
@@ -158,7 +159,7 @@ CCommServer::readChunk(void * inBuf, size_t inLength, bool inDone)
 	}
 	newton_catch(exPipe)
 	{
-		testPipeExceptionHandler((NewtonErr)(unsigned long)CurrentException()->data;;);
+		testPipeExceptionHandler((NewtonErr)(long)CurrentException()->data);
 	}
 	end_try;
 
@@ -174,12 +175,12 @@ CCommServer::readString(char * inStr, size_t inLength, bool inDone)
 {
 	NewtonErr err = noErr;
 	bool isEOF;
-	bool isEOS = NO;
+	bool isEOS = false;
 	for (ArrayIndex i = 0; i < inLength && err == noErr && !isEOS; ++i)
 	{
-		isEOF = readChunk(inStr+i, 1, NO);
+		isEOF = readChunk(inStr+i, 1, false);
 		if (inStr[i] == 0)
-			isEOS = YES;
+			isEOS = true;
 		if (isEOF)
 			err = -2;
 		if (i == inLength-1)
@@ -210,7 +211,7 @@ CCommServer::flushPadding(size_t inLength)
 		}
 		newton_catch(exPipe)
 		{
-			testPipeExceptionHandler((NewtonErr)(unsigned long)CurrentException()->data;;);
+			testPipeExceptionHandler((NewtonErr)(long)CurrentException()->data);
 		}
 		end_try;
 	}
@@ -231,11 +232,11 @@ CCommServer::sendChunk(void * inBuf, size_t inLength, bool inDone)
 	newton_try
 	{
 		fPipe << inLength;
-		fPipe.writeChunk(inBuf, inLength, NO);
+		fPipe.writeChunk(inBuf, inLength, false);
 	}
 	newton_catch(exPipe)
 	{
-		testPipeExceptionHandler((NewtonErr)(unsigned long)CurrentException()->data;;);
+		testPipeExceptionHandler((NewtonErr)(long)CurrentException()->data);
 	}
 	end_try;
 	pad(inLength);
@@ -247,7 +248,7 @@ CCommServer::sendChunk(void * inBuf, size_t inLength, bool inDone)
 		}
 		newton_catch(exPipe)
 		{
-			testPipeExceptionHandler((NewtonErr)(unsigned long)CurrentException()->data;;);
+			testPipeExceptionHandler((NewtonErr)(long)CurrentException()->data);
 		}
 		end_try;
 	}
@@ -269,11 +270,11 @@ CCommServer::pad(size_t inLength)
 		newton_try
 		{
 			ULong padding = 0;
-			fPipe.writeChunk(&padding, kStreamAlignment-delta, NO);
+			fPipe.writeChunk(&padding, kStreamAlignment-delta, false);
 		}
 		newton_catch(exPipe)
 		{
-			testPipeExceptionHandler((NewtonErr)(unsigned long)CurrentException()->data;;);
+			testPipeExceptionHandler((NewtonErr)(long)CurrentException()->data);
 		}
 		end_try;
 	}

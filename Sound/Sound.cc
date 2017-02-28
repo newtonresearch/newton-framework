@@ -7,7 +7,7 @@
 */
 
 #include "Sound.h"
-#include "SoundChannel.h"
+#include "UserSoundChannel.h"
 #include "Globals.h"
 #include "Lookup.h"
 #include "MagicPointers.h"
@@ -110,7 +110,7 @@ PlaySound(RefArg inContext, RefArg inSound)
 Ref
 FSoundPlayEnabled(RefArg inContext, RefArg inSound)
 {
-	return (((EQRef(inSound, ROM_click) || EQRef(inSound, ROM_hiliteSound)) && NOTNIL(GetPreference(SYMA(penSoundEffects))))
+	return (((EQ(inSound, RA(click)) || EQ(inSound, RA(hiliteSound))) && NOTNIL(GetPreference(SYMA(penSoundEffects))))
 			 || NOTNIL(GetPreference(SYMA(actionSoundEffects)))) ? TRUEREF : NILREF;
 }
 
@@ -167,7 +167,7 @@ FPlaySoundSync(RefArg inContext, RefArg inSound)
 		{
 			XFAIL(err = gSoundChannel->stop(NULL, NULL))
 			XFAIL(err = gSoundChannel->schedule(inSound))
-			XFAIL(err = gSoundChannel->start(NO))
+			XFAIL(err = gSoundChannel->start(false))
 		}
 		XENDTRY;
 		XDOFAIL(err)
@@ -187,12 +187,12 @@ FPlaySoundIrregardless(RefArg inContext, RefArg inSound)
 #if !defined(forFramework)
 	if (NOTNIL(inSound) && GlobalSoundChannel() != NULL)
 	{
-		NewtonErr	err;
+		NewtonErr err = noErr;
 		XTRY
 		{
 			XFAIL(err = gSoundChannel->stop(NULL, NULL))
 			XFAIL(err = gSoundChannel->schedule(inSound))
-			XFAIL(err = gSoundChannel->start(YES))
+			XFAIL(err = gSoundChannel->start(true))
 		}
 		XENDTRY;
 		XDOFAIL(err)
@@ -343,8 +343,6 @@ FSetOutputDevice(RefArg inRcvr, RefArg inDevice)
 	return MAKEINT(dev);
 }
 
-extern Ref * RS_clickSong;
-extern Ref * RS_clicks;	// original doesn’t underscore
 
 Ref
 FClicker(RefArg inRcvr)
@@ -361,7 +359,7 @@ FClicker(RefArg inRcvr)
 			index = 0;
 		RefVar	note(GetArraySlot(song, index));
 		if (ISINT(note))
-			note = GetArraySlot(RA(_clicks), RINT(note));
+			note = GetArraySlot(RA(clicks), RINT(note));
 		FPlaySoundIrregardless(RA(NILREF), note);
 		SetFrameSlot(gVarFrame, SYMA(_curClick), MAKEINT(index));
 	}

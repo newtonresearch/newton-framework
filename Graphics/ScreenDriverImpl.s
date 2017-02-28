@@ -51,8 +51,8 @@ __ZN18CMainDisplayDriver9classInfoEv:
 		BRA		__ZN18CMainDisplayDriver9powerInitEv
 		BRA		__ZN18CMainDisplayDriver7powerOnEv
 		BRA		__ZN18CMainDisplayDriver8powerOffEv
-		BRA		__ZN18CMainDisplayDriver4blitEP8PixelMapP4RectS3_i
-		BRA		__ZN18CMainDisplayDriver10doubleBlitEP8PixelMapS1_P4RectS3_i
+		BRA		__ZN18CMainDisplayDriver4blitEP14NativePixelMapP4RectS3_i
+		BRA		__ZN18CMainDisplayDriver10doubleBlitEP14NativePixelMapS1_P4RectS3_i
 		BRA		__ZN18CMainDisplayDriver10getFeatureEi
 		BRA		__ZN18CMainDisplayDriver10setFeatureEii
 		BRA		__ZN18CMainDisplayDriver18autoAdjustFeaturesEv

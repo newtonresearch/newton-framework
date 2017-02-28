@@ -9,10 +9,11 @@
 #include "Quartz.h"
 #include "QDPatterns.h"
 #include "QDDrawing.h"
+#include "Geometry.h"
 
 #include "Objects.h"
 #include "ViewFlags.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 
 extern void	InitScreen(void);
 extern void	InitQDCompression(void);
@@ -23,7 +24,7 @@ extern void	InitQDCompression(void);
 ------------------------------------------------------------------------------*/
 extern int		gScreenHeight;
 
-CGFloat				gLineWidth;
+CGFloat			gLineWidth;
 
 CGColorRef		gBlackColor;
 CGColorRef		gDarkGrayColor;
@@ -511,7 +512,6 @@ FillArc(WedgeShape * inShape, short inArc1, short inArc2)
 {}
 
 #pragma mark -
-
 /*------------------------------------------------------------------------------
 	Return a pointer to the bitmap in a PixelMap.
 	Args:		pixmap		the PixelMap
@@ -519,38 +519,113 @@ FillArc(WedgeShape * inShape, short inArc1, short inArc2)
 ------------------------------------------------------------------------------*/
 
 Ptr
-GetPixelMapBits(PixelMap * pixmap)
+PixelMapBits(const PixelMap * inPixmap)
 {
-	ULong storage = pixmap->pixMapFlags & kPixMapStorage;
+	ULong storage = inPixmap->pixMapFlags & kPixMapStorage;
 	if (storage == kPixMapOffset) {
-		return (Ptr)pixmap + pixmap->baseAddr;
+		return (Ptr)inPixmap + inPixmap->baseAddr;
 	} else if (storage == kPixMapHandle) {
-printf("GetPixelMapBits() using baseAddr as Handle!\n");
-		return *(Handle)pixmap->baseAddr;
+printf("PixelMapBits() using baseAddr as Handle!\n");
+		return *(Handle)inPixmap->baseAddr;
 	} else if (storage == kPixMapPtr) {
-printf("GetPixelMapBits() using baseAddr as Ptr!\n");
-		return (Ptr)pixmap->baseAddr;
+printf("PixelMapBits() using baseAddr as Ptr!\n");
+		return (Ptr)inPixmap->baseAddr;
 	}
 	return NULL;
 }
 
 
 Ptr
-GetPixelMapBits(NativePixelMap * pixmap)
+PixelMapBits(const NativePixelMap * inPixmap)
 {
-	ULong storage = pixmap->pixMapFlags & kPixMapStorage;
+	ULong storage = inPixmap->pixMapFlags & kPixMapStorage;
 	if (storage == kPixMapPtr) {
-		return (Ptr)pixmap->baseAddr;
+		return (Ptr)inPixmap->baseAddr;
 	// shouldn’t really be anything else
 	} else if (storage == kPixMapOffset) {
-		return (Ptr)pixmap + (unsigned long)pixmap->baseAddr;
+		return (Ptr)inPixmap + (unsigned long)inPixmap->baseAddr;
 	}
 	return NULL;
 }
 
 
 #pragma mark -
+/* -----------------------------------------------------------------------------
+	PixelMap hit testing.
+----------------------------------------------------------------------------- */
+#include "Screen.h"
 
+bool
+PtInPixelMap(const NativePixelMap * inPixmap, int inX, int inY)
+{
+	if (inX >= 0 && inX < RectGetWidth(inPixmap->bounds)
+	&&  inY >= 0 && inY < RectGetHeight(inPixmap->bounds))
+	{
+		int bitsPerPixel = PixelDepth(inPixmap);
+		// point to row containing target pixel
+		ULong * pixPtr = (ULong *)(PixelMapBits(inPixmap) + inY * inPixmap->rowBytes);
+		// read word containing target pixel
+		ULong pixWord = pixPtr[inX >> gScreenConstants.xShift[bitsPerPixel]];
+		// get index of pixel in that word
+		int pixIndex = inX & gScreenConstants.xMask[bitsPerPixel];
+		int bitIndex = bitsPerPixel * pixIndex;
+		// shift pixel down
+		ULong pixBits = pixWord >> (32 - bitsPerPixel - bitIndex);
+		int maskIndex = gScreenConstants.maskIndex[bitsPerPixel];
+		return (pixBits & gScreenConstants.pixelMask[maskIndex]) != 0;
+	}
+	return false;
+}
+
+
+int
+PtInCPixelMap(const NativePixelMap * inPixmap, int inX, int inY)
+{
+	if (inX >= 0 && inX < RectGetWidth(inPixmap->bounds)
+	&&  inY >= 0 && inY < RectGetHeight(inPixmap->bounds))
+	{
+		int bitsPerPixel = PixelDepth(inPixmap);
+		// point to row containing target pixel
+		ULong * pixPtr = (ULong *)(PixelMapBits(inPixmap) + inY * inPixmap->rowBytes);
+		// read word containing target pixel
+		ULong pixWord = pixPtr[inX >> gScreenConstants.xShift[bitsPerPixel]];
+		// get index of pixel in that word
+		int pixIndex = inX & gScreenConstants.xMask[bitsPerPixel];
+		int bitIndex = bitsPerPixel * pixIndex;
+		// shift pixel down
+		ULong pixBits = pixWord >> (32 - bitsPerPixel - bitIndex);
+		int maskIndex = gScreenConstants.maskIndex[bitsPerPixel];
+		return (pixBits & gScreenConstants.pixelMask[maskIndex]);
+	}
+	return -1;
+}
+
+
+int
+PtInMask(const NativePixelMap * inPixmap, int inX, int inY)
+{
+	if (inX >= 0 && inX < RectGetWidth(inPixmap->bounds)
+	&&  inY >= 0 && inY < RectGetHeight(inPixmap->bounds))
+	{
+		int bitsPerPixel = PixelDepth(inPixmap);
+		// point to row containing target pixel
+		ULong * pixPtr = (ULong *)(PixelMapBits(inPixmap) + inY * inPixmap->rowBytes);
+		// read word containing target pixel
+		ULong pixWord = pixPtr[inX >> gScreenConstants.xShift[bitsPerPixel]];
+		// get index of pixel in that word
+		int pixIndex = inX & gScreenConstants.xMask[bitsPerPixel];
+		int bitIndex = bitsPerPixel * pixIndex;
+		// shift pixel down
+		ULong pixBits = pixWord >> (32 - bitsPerPixel - bitIndex);
+		int maskIndex = gScreenConstants.maskIndex[bitsPerPixel];
+		if ((pixBits & gScreenConstants.pixelMask[maskIndex]) != 0)
+			return 0;
+	}
+	return -1;
+}
+
+
+#pragma mark -
 /*------------------------------------------------------------------------------
 	C o l o u r s
 ------------------------------------------------------------------------------*/
@@ -679,14 +754,14 @@ MakeGrayPattern(RefArg inPat)
 	Set the pattern for drawing a view’s frame.
 	Used only by View.cc.
 	Args:		inPatNo
-	Return:	YES	if a standard pattern was set
-				NO		if a custom pattern was specified
+	Return:	true	if a standard pattern was set
+				false		if a custom pattern was specified
 ------------------------------------------------------------------------------*/
 
 bool
 SetPattern(int inPatNo)
 {
-	bool			isSet = YES;
+	bool			isSet = true;
 	CGColorRef	ptn;
 
 	switch (inPatNo)
@@ -716,7 +791,7 @@ SetPattern(int inPatNo)
 	case vfCustom:
 		break;
 	default:
-		isSet = NO;
+		isSet = false;
 	}
 	if (isSet)
 	{
@@ -836,15 +911,15 @@ GetPattern(RefArg inPatNo, bool * ioTakeOwnership, CGColorRef * ioPat, bool inDe
 			}
 			if (*ioPat != NULL)
 			{
-				*ioTakeOwnership = YES;
-				gotPattern = YES;
+				*ioTakeOwnership = true;
+				gotPattern = true;
 			}
 		}
 	}
 
 	else if (IsFrame(inPatNo))
 	{
-		if (EQRef(ClassOf(inPatNo), RSYMditherPattern))
+		if (EQ(ClassOf(inPatNo), SYMA(ditherPattern)))
 		{
 #if 0
 			ULong	r, g, b;
@@ -894,7 +969,7 @@ GetPattern(RefArg inPatNo, bool * ioTakeOwnership, CGColorRef * ioPat, bool inDe
 					if (*ioTakeOwnership)
 						CGColorRelease(*ioPat);
 					HLock(ptn);
-					*ioPat = MakeSimpleGrayPattern(GetPixelMapBits(*ptn), fgColor, bgColor);
+					*ioPat = MakeSimpleGrayPattern(PixelMapBits(*ptn), fgColor, bgColor);
 					HUnlock(ptn);
 					DisposePattern(ptn);
 				}
@@ -908,22 +983,22 @@ GetPattern(RefArg inPatNo, bool * ioTakeOwnership, CGColorRef * ioPat, bool inDe
 			}
 			if (*ioPat != NULL)
 			{
-				*ioTakeOwnership = YES;
-				gotPattern = YES;
+				*ioTakeOwnership = true;
+				gotPattern = true;
 			}
 #endif
 		}
 	}
 
-	else if (EQ(ClassOf(inPatNo), RSYMgrayPattern))
+	else if (EQ(ClassOf(inPatNo), SYMA(grayPattern)))
 	{
 		if (*ioTakeOwnership)
 			CGColorRelease(*ioPat);
 		*ioPat = MakeGrayPattern(inPatNo);
 		if (*ioPat != NULL)
 		{
-			*ioTakeOwnership = YES;
-			gotPattern = YES;
+			*ioTakeOwnership = true;
+			gotPattern = true;
 		}
 	}
 
@@ -935,8 +1010,8 @@ GetPattern(RefArg inPatNo, bool * ioTakeOwnership, CGColorRef * ioPat, bool inDe
 		*ioPat = MakeSimplePattern(patData);
 		if (*ioPat != NULL)
 		{
-			*ioTakeOwnership = YES;
-			gotPattern = YES;
+			*ioTakeOwnership = true;
+			gotPattern = true;
 		}
 	}
 	

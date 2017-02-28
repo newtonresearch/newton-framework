@@ -141,19 +141,19 @@ ICache::lookup(Ref value, Ref sym, Ref * frPtr, Ref * valuePtr, bool * exists, A
 	{
 		if (p->fr == INVALIDPTRREF)
 		{
-			*exists = NO;
+			*exists = false;
 			*valuePtr = NILREF;
 		}
 		else
 		{
-			*exists = YES;
+			*exists = true;
 			*valuePtr = ((FrameObject *)ObjectPtr(p->fr))->slot[p->index];
 			*frPtr = p->fr;
 			*indexPtr = p->index;
 		}
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -165,21 +165,21 @@ ICache::lookupValue(Ref value, Ref sym, Ref * valuePtr, bool * exists)
 	ICachedItem *	p = &cache[i];
 	if (p->value != INVALIDPTRREF
 	 && p->hash == hash
-	 && EQRef(p->value, value) && UnsafeSymbolEqual(p->slot, sym, hash))
+	 && EQ(p->value, value) && UnsafeSymbolEqual(p->slot, sym, hash))
 	{
 		if (p->fr == INVALIDPTRREF)
 		{
-			*exists = NO;
+			*exists = false;
 			*valuePtr = NILREF;
 		}
 		else
 		{
-			*exists = YES;
+			*exists = true;
 			*valuePtr = ((FrameObject *)ObjectPtr(p->fr))->slot[p->index];
 		}
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -294,64 +294,60 @@ ICacheClearFrame(Ref fr)
 bool
 XFindImplementor(RefArg inRcvr, RefArg inTag, RefVar * outImpl, RefVar * value)
 {
-	RefVar	left, current; // r6, sp00
-	Ref		frMap;			// r8
-	FrameObject * frPtr;		// r10
-	ArrayIndex	slotIndex;		// sp04
-	bool		exists;			// sp08
-
 	if (ISNIL(inRcvr))
-		return NO;
+		return false;
+
+	ArrayIndex slotIndex;
+	bool exists;
 
 	if (gFindImplCache->lookup(inRcvr, inTag, (Ref *)outImpl->h, (Ref *)value->h, &exists, &slotIndex))
 		return exists;
 
-	left = current = inRcvr;
+	RefVar frMap;
+	RefVar left(inRcvr);
+	RefVar impl(inRcvr);
 
-	if (gProtoCache->lookup(current, inTag, (Ref *)outImpl->h, (Ref *)value->h, &exists, &slotIndex))
+	if (gProtoCache->lookup(impl, inTag, (Ref *)outImpl->h, (Ref *)value->h, &exists, &slotIndex))
 	{
 		if (exists)
 		{
-			gFindImplCache->insert(current, inTag, *outImpl, slotIndex);
-			return exists;
+			gFindImplCache->insert(inRcvr, inTag, *outImpl, slotIndex);
+			return exists;	// ie true
 		}
 
 		frMap = ((FrameObject *)ObjectPtr(left))->map;
-		slotIndex = FindOffset(frMap, RSYM_parent);
+		slotIndex = FindOffset(frMap, SYMA(_parent));
 		if (slotIndex == kIndexNotFound)
 		{
 			gFindImplCache->insert(inRcvr, inTag, INVALIDPTRREF, 0);
-			return NO;
+			return false;
 		}
 
-		left = current = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
+		left = impl = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
 	}
 
-	bool	spm00 = YES;
-	while (NOTNIL(current))
+	bool useTheCacheLuke = true;	// spm00
+	while (NOTNIL(impl))
 	{
-		Ref	r9 = INVALIDPTRREF;
-		while (NOTNIL(current))
+		Ref roProto = INVALIDPTRREF;
+		while (NOTNIL(impl))
 		{
-			frPtr = (FrameObject *)ObjectPtr(current);
+			FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);	// r10
 			if (NOTFRAME(frPtr))
-				ThrowBadTypeWithFrameData(kNSErrNotAFrame, current);
+				ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
-			if (r9 == INVALIDPTRREF && ISRO(frPtr)
-			&& gROProtoCache->lookup(r9 = current, inTag, (Ref *)outImpl->h, (Ref *)value->h, &exists, &slotIndex))
+			if (roProto == INVALIDPTRREF && ISRO(frPtr)
+			&& (roProto = impl, gROProtoCache->lookup(roProto, inTag, (Ref *)outImpl->h, (Ref *)value->h, &exists, &slotIndex)))
 			{
 				if (exists)
 				{
 					// found it in the cache
-					if (spm00)
+					if (useTheCacheLuke)
 						gProtoCache->insert(left, inTag, *outImpl, slotIndex);
 					gFindImplCache->insert(inRcvr, inTag, *outImpl, slotIndex);
-					return YES;
+					return true;
 				}
-				else
-				{
-					frMap = frPtr->map;
-				}
+				frMap = frPtr->map;
 			}
 			else
 			{
@@ -360,109 +356,102 @@ XFindImplementor(RefArg inRcvr, RefArg inTag, RefVar * outImpl, RefVar * value)
 				if (slotIndex != kIndexNotFound)
 				{
 					// found the implementor!
-					*outImpl = current;
-					*value = ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
+					*outImpl = impl;
+					*value = ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 
-					if (r9 != INVALIDPTRREF)
-						gROProtoCache->insert(r9, inTag, current, slotIndex);
-					if (spm00)
-						gProtoCache->insert(left, inTag, current, slotIndex);
-					gFindImplCache->insert(inRcvr, inTag, current, slotIndex);
-					return YES;
+					if (roProto != INVALIDPTRREF)
+						gROProtoCache->insert(roProto, inTag, impl, slotIndex);
+					if (useTheCacheLuke)
+						gProtoCache->insert(left, inTag, impl, slotIndex);
+					gFindImplCache->insert(inRcvr, inTag, impl, slotIndex);
+					return true;
 				}
 			}
 
 			// slot is not in this context so keep looking up the _proto chain
-			slotIndex = FindOffset(frMap, RSYM_proto);
+			slotIndex = FindOffset(frMap, SYMA(_proto));
 			if (slotIndex == kIndexNotFound)
 				break;
-			current = ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
+			impl = ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 		}
 		// end-of-proto-lookup
 
-		if (spm00)
+		// no _proto, or _proto is nil
+		if (useTheCacheLuke)
 		{
 			gProtoCache->insert(left, inTag, INVALIDPTRREF, 0);
-			slotIndex = 0;
+			useTheCacheLuke = false;
 		}
-		if (r9 != INVALIDPTRREF)
-			gROProtoCache->insert(r9, inTag, INVALIDPTRREF, 0);
+		if (roProto != INVALIDPTRREF)
+			gROProtoCache->insert(roProto, inTag, INVALIDPTRREF, 0);
 
 		frMap = ((FrameObject *)ObjectPtr(left))->map;
-		slotIndex = FindOffset(frMap, RSYM_parent);
+		slotIndex = FindOffset(frMap, SYMA(_parent));
 		if (slotIndex == kIndexNotFound)
 			break;
-		left = current = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
+		left = impl = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
 	}
 	// end-of-parent-lookup
 
+	// couldnÕt find it
 	gFindImplCache->insert(inRcvr, inTag, INVALIDPTRREF, 0);
-	return NO;
+	return false;
 }
 
 
 bool
 XFindProtoImplementor(RefArg inRcvr, RefArg inTag, RefVar * outImpl, RefVar * value)
 {
-	RefVar	left, current;
-	Ref		frMap;
-	FrameObject * frPtr;
-	ArrayIndex	slotIndex;
-	bool		exists;
-
 	// must have a context
 	if (ISNIL(inRcvr))
-		return NO;
+		return false;
 
 	// and it must be a frame
-	current = inRcvr;
-	frPtr = (FrameObject *)ObjectPtr(current);
+	RefVar impl(inRcvr);
+	FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);
 	if (NOTFRAME(frPtr))
-		ThrowBadTypeWithFrameData(kNSErrNotAFrame, current);
-	frMap = frPtr->map;
+		ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
-	left = INVALIDPTRREF;
+	RefVar frMap(frPtr->map);
+	Ref roProto = INVALIDPTRREF;
 	for ( ; ; )
 	{
 		// look in _protoÉ
-		slotIndex = FindOffset(frMap, RSYM_proto);
+		ArrayIndex slotIndex = FindOffset(frMap, SYMA(_proto));
 		if (slotIndex == kIndexNotFound)
 		// _proto (and therefore implementor) wasnÕt found
 			break;
 
 		// Éwhich must be a frame
-		current = ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
-		frPtr = (FrameObject *)ObjectPtr(current);
+		impl = ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
+		frPtr = (FrameObject *)ObjectPtr(impl);
 		if (NOTFRAME(frPtr))
-			ThrowBadTypeWithFrameData(kNSErrNotAFrame, current);
+			ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
-		if (left == INVALIDPTRREF && ISRO(frPtr))
-		{
-			// this is first context weÕve encountered
-			left = current;
-			if (gROProtoCache->lookup(left, inTag, (Ref *)outImpl->h, (Ref *)value->h, &exists, &slotIndex))
-				return exists;
-		}
+		bool exists;
+		if (roProto == INVALIDPTRREF && ISRO(frPtr)
+		&& (roProto = impl, gROProtoCache->lookup(roProto, inTag, (Ref *)outImpl->h, (Ref *)value->h, &exists, &slotIndex)))
+			return exists;
 
 		frMap = frPtr->map;
 		slotIndex = FindOffset(frMap, inTag);
 		if (slotIndex != kIndexNotFound)
 		{
 			// found the implementor!
-			*outImpl = current;
-			*value = ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
+			*outImpl = impl;
+			*value = ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 
-			if (left != INVALIDPTRREF)
-				gROProtoCache->insert(left, inTag, current, slotIndex);
-			return YES;
+			if (roProto != INVALIDPTRREF)
+				gROProtoCache->insert(roProto, inTag, impl, slotIndex);
+			return true;
 		}
 		// else slot is not in this context so keep looking up the _proto chain
 	}
 
 	// implementor wasnÕt found
-	if (left != INVALIDPTRREF)
-		gROProtoCache->insert(left, inTag, INVALIDPTRREF, 0);
-	return NO;
+	if (roProto != INVALIDPTRREF)
+		gROProtoCache->insert(roProto, inTag, INVALIDPTRREF, 0);
+	return false;
 }
 
 
@@ -476,7 +465,7 @@ XFindProtoImplementor(RefArg inRcvr, RefArg inTag, RefVar * outImpl, RefVar * va
 Ref
 FindImplementor(RefArg inRcvr, RefArg inTag)
 {
-	RefVar	impl, value;
+	RefVar impl, value;
 
 	if (XFindImplementor(inRcvr, inTag, &impl, &value))
 		return impl;
@@ -487,35 +476,30 @@ FindImplementor(RefArg inRcvr, RefArg inTag)
 Ref
 FindProtoImplementor(RefArg inRcvr, RefArg inTag)
 {
-	Ref		context, value;
-	RefVar	left, current;
-	Ref		frMap;
-	FrameObject * frPtr;
-	ArrayIndex	slotIndex;
-	bool		exists;
-
 	// must have a context
 	if (ISNIL(inRcvr))
 		return NILREF;
 
 	// try the cache first
-	if (gProtoCache->lookup(inRcvr, inTag, &context, &value, &exists, &slotIndex))
+	Ref context, value;
+	bool exists;
+	ArrayIndex slotIndex;
+	if (gProtoCache->lookup(inRcvr, inTag, &context, &value, &exists, &slotIndex))	// 4 0 C 8
 		return exists ? context : NILREF;
 
-	left = INVALIDPTRREF;
-	for (current = inRcvr; NOTNIL(current); )
+	Ref roProto = INVALIDPTRREF;
+	RefVar frMap;
+	RefVar impl(inRcvr);
+	while (NOTNIL(impl))
 	{
-		frPtr = (FrameObject *)ObjectPtr(current);
+		FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);
 		if (NOTFRAME(frPtr))
-			ThrowBadTypeWithFrameData(kNSErrNotAFrame, current);
+			ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
-		if (left == INVALIDPTRREF && ISRO(frPtr))
+		if (roProto == INVALIDPTRREF && ISRO(frPtr)
+		&& (roProto = impl, gROProtoCache->lookup(roProto, inTag, &context, &value, &exists, &slotIndex)))
 		{
-			// this is first context weÕve encountered
-			// try the cache
-			left = current;
-			if (gROProtoCache->lookup(left, inTag, &context, &value, &exists, &slotIndex))
-				return exists ? context : NILREF;
+			return exists ? context : NILREF;
 		}
 
 		frMap = frPtr->map;
@@ -524,25 +508,22 @@ FindProtoImplementor(RefArg inRcvr, RefArg inTag)
 		if (slotIndex != kIndexNotFound)
 		{
 			// found the implementor!
-			if (left == INVALIDPTRREF)
-				gROProtoCache->insert(inRcvr, inTag, current, slotIndex);
-			gProtoCache->insert(inRcvr, inTag, current, slotIndex);
-			return current;
+			if (roProto != INVALIDPTRREF)
+				gROProtoCache->insert(roProto, inTag, impl, slotIndex);
+			gProtoCache->insert(inRcvr, inTag, impl, slotIndex);
+			return impl;
 		}
 
 		// not in this context - look in _proto
-		slotIndex = FindOffset(frMap, RSYM_proto);
+		slotIndex = FindOffset(frMap, SYMA(_proto));
 		if (slotIndex == kIndexNotFound)
-		{
-			// no _proto
-			if (left != INVALIDPTRREF)
-				gROProtoCache->insert(left, inTag, INVALIDPTRREF, 0);
 			break;
-		}
-		current = ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
+		impl = ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 	}
 
 	// implementor wasnÕt found
+	if (roProto != INVALIDPTRREF)
+		gROProtoCache->insert(roProto, inTag, INVALIDPTRREF, 0);
 	gProtoCache->insert(inRcvr, inTag, INVALIDPTRREF, 0);
 	return NILREF;
 }
@@ -563,79 +544,86 @@ FindProtoImplementor(RefArg inRcvr, RefArg inTag)
 Ref
 XGetVariable(RefArg inRcvr, RefArg inTag, bool * outExists, int lookup)
 {
-	Ref		context, value;
-	RefVar	left, current;
-	Ref		frMap;
-	FrameObject * frPtr;
-	ArrayIndex	slotIndex;
-	bool		isFound;
-
 	// must have pointer to exists flag
+	bool exists;
 	if (outExists == NULL)
-		outExists = &isFound;
+		outExists = &exists;
 
 	// nil start context => canÕt be found
 	if (ISNIL(inRcvr))
 	{
-		*outExists = NO;
+		*outExists = false;
 		return NILREF;
 	}
 
-	// try the cache first
+	// try the get-variable cache first
+	Ref value;
 	if (gGetVarCache->lookupValue(inRcvr, inTag, &value, outExists))
 		return value;
 
 	// now start looking properly
-	left = current = inRcvr;
+	RefVar	frMap;
+	ArrayIndex slotIndex;
+	RefVar	left(inRcvr);
+	RefVar	impl(inRcvr);
+if (lookup > kLexicalLookup)
+	printf("XGetVariable(lookup=%d)\n",lookup);
 	if (lookup == kLexicalLookup)
 	{
 		do
 		{
-			slotIndex = FindOffset(((FrameObject *)ObjectPtr(current))->map, inTag);
+			frMap = ((FrameObject *)ObjectPtr(impl))->map;
+			slotIndex = FindOffset(frMap, inTag);
 			if (slotIndex != kIndexNotFound)
 			{
-				*outExists = YES;
-				gGetVarCache->insert(inRcvr, inTag, current, slotIndex);
-				return ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
+				// found the slot in this frame
+				*outExists = true;
+				// update the get-variable cache
+				gGetVarCache->insert(inRcvr, inTag, impl, slotIndex);
+				return ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 			}
-			current = UnsafeGetFrameSlot(current, RSYM_nextArgFrame, &isFound);
-		} while (NOTNIL(current) && Length(current) > 0);
-		left = current = UnsafeGetFrameSlot(left, RSYM_parent, &isFound);
+			// this is lexical -- try the _nextArgFrame
+			impl = UnsafeGetFrameSlot(impl, SYMA(_nextArgFrame), &exists);
+		} while (NOTNIL(impl) && Length(impl) > 0);
+		// okay, not found in the lexical scope, try the _parent next
+		left = impl = UnsafeGetFrameSlot(left, SYMA(_parent), &exists);
 	}
 
-	if (NOTNIL(current) && gProtoCache->lookup(current, inTag, &context, &value, outExists, &slotIndex))
+	Ref context;
+	if (NOTNIL(impl) && gProtoCache->lookup(impl, inTag, &context, &value, outExists, &slotIndex))
 	{
 		if (*outExists)
 		{
 			gGetVarCache->insert(inRcvr, inTag, context, slotIndex);
 			return value;
 		}
-		slotIndex = FindOffset(((FrameObject *)ObjectPtr(current))->map, RSYM_parent);
+		frMap = ((FrameObject *)ObjectPtr(left))->map;
+		slotIndex = FindOffset(frMap, SYMA(_parent));
 		if (slotIndex == kIndexNotFound)
 		{
-			*outExists = NO;
+			*outExists = false;
 			gGetVarCache->insert(inRcvr, inTag, INVALIDPTRREF, 0);
 			return NILREF;
 		}
-		current = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
+		left = impl = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
 	}
 
-	bool  sp = YES;
-	while (NOTNIL(current))
+	bool useTheCacheLuke = true;
+	while (NOTNIL(impl))
 	{
 		Ref roProto = INVALIDPTRREF;
-		frPtr = (FrameObject *)ObjectPtr(current);
+		FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);
 		if (NOTFRAME(frPtr))
-			ThrowBadTypeWithFrameData(kNSErrNotAFrame, current);
+			ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
 		if (roProto == INVALIDPTRREF && ISRO(frPtr)
-		&& gROProtoCache->lookup(roProto = current, inTag, &context, &value, outExists, &slotIndex))
+		&& (roProto = impl, gROProtoCache->lookup(roProto, inTag, &context, &value, outExists, &slotIndex)))
 		{
 			if (*outExists)
 			{
-				gGetVarCache->insert(inRcvr, inTag, current, slotIndex);
-				if (sp)
-					gProtoCache->insert(left, inTag, current, slotIndex);
+				gGetVarCache->insert(inRcvr, inTag, impl, slotIndex);
+				if (useTheCacheLuke)
+					gProtoCache->insert(left, inTag, impl, slotIndex);
 				return value;
 			}
 			else
@@ -649,39 +637,39 @@ XGetVariable(RefArg inRcvr, RefArg inTag, bool * outExists, int lookup)
 			slotIndex = FindOffset(frMap, inTag);
 			if (slotIndex != kIndexNotFound)
 			{
-				*outExists = YES;
-				gGetVarCache->insert(inRcvr, inTag, current, slotIndex);
-				if (sp)
-					gProtoCache->insert(left, inTag, current, slotIndex);
+				*outExists = true;
+				gGetVarCache->insert(inRcvr, inTag, impl, slotIndex);
+				if (useTheCacheLuke)
+					gProtoCache->insert(left, inTag, impl, slotIndex);
 				if (roProto != INVALIDPTRREF)
-					gROProtoCache->insert(roProto, inTag, current, slotIndex);
-				return ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
+					gROProtoCache->insert(roProto, inTag, impl, slotIndex);
+				return ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 			}
 		}
 
 		// slot is not in this context so keep looking up the _proto chain
-		slotIndex = FindOffset(frMap, RSYM_proto);
-		if (slotIndex != kIndexNotFound)
-			current = ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
-		else
+		slotIndex = FindOffset(frMap, SYMA(_proto));
+		if (slotIndex == kIndexNotFound
+		||	 ISNIL(impl = ((FrameObject *)ObjectPtr(impl))->slot[slotIndex]))
 		{
-			if (sp)
+			// no _proto, or _proto is nil
+			if (useTheCacheLuke)
 			{
 				gProtoCache->insert(left, inTag, INVALIDPTRREF, 0);
-				sp = NO;
+				useTheCacheLuke = false;
 			}
 			if (roProto != INVALIDPTRREF)
 				gROProtoCache->insert(roProto, inTag, INVALIDPTRREF, 0);
+			// try the next _parent
 			frMap = ((FrameObject *)ObjectPtr(left))->map;
-			slotIndex = FindOffset(frMap, RSYM_parent);
-			if (slotIndex != kIndexNotFound)
-				left = current = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
-			else
+			slotIndex = FindOffset(frMap, SYMA(_parent));
+			if (slotIndex == kIndexNotFound)
 				break;
+			left = impl = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
 		}
 	}
 
-	*outExists = NO;
+	*outExists = false;
 	gGetVarCache->insert(inRcvr, inTag, INVALIDPTRREF, 0);
 	return NILREF;
 }
@@ -702,50 +690,51 @@ XGetVariable(RefArg inRcvr, RefArg inTag, bool * outExists, int lookup)
 Ref
 GetVariable(RefArg inRcvr, RefArg inTag, bool * outExists, int inLookup)
 {
-	RefVar	left, current;
-	bool		isFound;
-
 	// throw exception if no context
 	if (ISNIL(inRcvr))
 		ThrowExInterpreterWithSymbol(kNSErrNilContext, inRcvr);
 
 	// ensure weÕve got a vital pointer -- original checks each time itÕs set
+	bool exists;
 	if (outExists == NULL)
-		outExists = &isFound;
+		outExists = &exists;
 
 	// assume weÕre going to find it
-	*outExists = YES;
+	*outExists = true;
 
-	// look thru _parent chain
-	for (left = inRcvr; NOTNIL(left); left = GetFrameSlot(left, SYMA(_parent)))
+	RefVar next;
+	RefVar impl(inRcvr);
+	while (NOTNIL(impl))
 	{
-		if (FrameHasSlot(left, inTag))
+		if (FrameHasSlot(impl, inTag))
 		{
 			if (gInterpreter->tracing >= 2)
-				gInterpreter->traceGet(inRcvr, left, inTag);
-			return GetFrameSlot(left, inTag);
+				gInterpreter->traceGet(inRcvr, impl, inTag);
+			return GetFrameSlot(impl, inTag);
 		}
 
 		// look thru _proto/_nextArgFrame chain
-		for (current = GetFrameSlot(left, (inLookup == kLexicalLookup) ? SYMA(_nextArgFrame) : SYMA(_proto));
-			  NOTNIL(current);
-			  current = GetFrameSlot(current, (inLookup == kLexicalLookup) ? SYMA(_nextArgFrame) : SYMA(_proto)))
+		for (next = GetFrameSlot(impl, (inLookup == kLexicalLookup) ? SYMA(_nextArgFrame) : SYMA(_proto));
+			  NOTNIL(next);
+			  next = GetFrameSlot(next, (inLookup == kLexicalLookup) ? SYMA(_nextArgFrame) : SYMA(_proto)))
 		{
-			if (FrameHasSlot(current, inTag))
+			if (FrameHasSlot(next, inTag))
 			{
 				if (gInterpreter->tracing >= 2)
-					gInterpreter->traceGet(inRcvr, current, inTag);
-				return GetFrameSlot(current, inTag);
+					gInterpreter->traceGet(inRcvr, next, inTag);
+				return GetFrameSlot(next, inTag);
 			}
 		}
 		// lexical lookup only applies to original context
 		inLookup = kNoLookup;
+		// follow the _parent chain
+		impl = GetFrameSlot(impl, SYMA(_parent));
 	}
 
 	// variable wasnÕt found
 	if (gInterpreter->tracing >= 2)
-		gInterpreter->traceGet(inRcvr, left, inTag);
-	*outExists = NO;
+		gInterpreter->traceGet(inRcvr, inRcvr, inTag);
+	*outExists = false;
 	return NILREF;
 }
 
@@ -761,73 +750,70 @@ GetVariable(RefArg inRcvr, RefArg inTag, bool * outExists, int inLookup)
 Ref
 GetProtoVariable(RefArg inRcvr, RefArg inTag, bool * outExists)
 {
-	Ref		value;
-	RefVar	left, current;
-	Ref		frMap;
-	FrameObject * frPtr;
-	ArrayIndex	slotIndex;
-	bool		isFound;
-
 	// throw exception if no context
 	if (ISNIL(inRcvr))
 		ThrowExInterpreterWithSymbol(kNSErrNilContext, inRcvr);
 
-	// ensure weÕve got a vital pointer
+	// cache lookups expect this pointer
+	bool exists;
 	if (outExists == NULL)
-		outExists = &isFound;
+		outExists = &exists;
 
 	// try the cache first
+	Ref value;
 	if (gProtoCache->lookupValue(inRcvr, inTag, &value, outExists))
 		return value;
 
-	left = INVALIDPTRREF;
-	for (current = inRcvr; NOTNIL(current); )
+	Ref roProto = INVALIDPTRREF;
+	RefVar frMap;
+	ArrayIndex slotIndex;
+	RefVar impl(inRcvr);
+	while (NOTNIL(impl))
 	{
-		frPtr = (FrameObject *)ObjectPtr(current);
+		FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);
 		// must have a frame
 		if (NOTFRAME(frPtr))
 #if defined(forNTK)
 			break;
 #else
-			ThrowBadTypeWithFrameData(kNSErrNotAFrame, current);
+			ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 #endif
 
-		if (left == INVALIDPTRREF && ISRO(frPtr))
+		if (roProto == INVALIDPTRREF && ISRO(frPtr)
+		&& (roProto = impl, gROProtoCache->lookupValue(roProto, inTag, &value, outExists)))
 		{
-			left = current;
-			if (gROProtoCache->lookupValue(current, inTag, &value, outExists))
-				return value;
+			return value;
 		}
 
-		// look in the current frame map for the name of the variable
+		// look in the impl frame map for the name of the variable
 		frMap = frPtr->map;
 		slotIndex = FindOffset(frMap, inTag);
 		if (slotIndex != kIndexNotFound)
 		{
 			// found it!
 			// cache it and return its value
-			*outExists = YES;
+			*outExists = true;
 			if (gInterpreter->tracing >= 2)
-				gInterpreter->traceGet(inRcvr, current, inTag);
-			if (left != INVALIDPTRREF)
-				gROProtoCache->insert(left, inTag, current, slotIndex);
-			gProtoCache->insert(inRcvr, inTag, current, slotIndex);
-			return ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
+				gInterpreter->traceGet(inRcvr, impl, inTag);
+			if (roProto != INVALIDPTRREF)
+				gROProtoCache->insert(roProto, inTag, impl, slotIndex);
+			gProtoCache->insert(inRcvr, inTag, impl, slotIndex);
+			return ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 		}
 
 		// follow the _proto chain
-		slotIndex = FindOffset(frMap, RSYM_proto);
+		slotIndex = FindOffset(frMap, SYMA(_proto));
 		if (slotIndex == kIndexNotFound)
 			break;
-		current = ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
+		impl = ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 	}
 
 	// variable wasnÕt found
-//	if (gInterpreter->tracing >= 2)
-//		gInterpreter->traceGet(inRcvr, current, name);
-	*outExists = NO;
-	if (left != INVALIDPTRREF)
-		gROProtoCache->insert(left, inTag, INVALIDPTRREF, 0);
+	if (gInterpreter->tracing >= 2)
+		gInterpreter->traceGet(inRcvr, inRcvr, inTag);
+	*outExists = false;
+	if (roProto != INVALIDPTRREF)
+		gROProtoCache->insert(roProto, inTag, INVALIDPTRREF, 0);
 	gProtoCache->insert(inRcvr, inTag, INVALIDPTRREF, 0);
 	return NILREF;
 }
@@ -861,7 +847,7 @@ SetVariable(RefArg inRcvr, RefArg inTag, RefArg inValue)
 bool
 SetVariableOrGlobal(RefArg inRcvr, RefArg inTag, RefArg inValue, int inLookup)
 {
-	RefVar	left, current;
+	RefVar	left, impl;
 	Ref		frMap;
 	FrameObject * frPtr;
 	ArrayIndex	slotIndex;
@@ -872,29 +858,29 @@ SetVariableOrGlobal(RefArg inRcvr, RefArg inTag, RefArg inValue, int inLookup)
 	{
 		// lexical lookup
 		// follow _nextArgFrame in current context
-		for (current = left; NOTNIL(current); current = UnsafeGetFrameSlot(current, RSYM_nextArgFrame, &exists))
+		for (impl = left; NOTNIL(impl); impl = UnsafeGetFrameSlot(impl, SYMA(_nextArgFrame), &exists))
 		{
-			frMap = ((FrameObject *)ObjectPtr(current))->map;
+			frMap = ((FrameObject *)ObjectPtr(impl))->map;
 			slotIndex = FindOffset(frMap, inTag);
 			if (slotIndex != kIndexNotFound)
 			{
 				if (gInterpreter->tracing >= 2)
-					gInterpreter->traceSet(inRcvr, current, inTag, inValue);
-				((FrameObject *)ObjectPtr(current))->slot[slotIndex] = inValue;
-				return YES;
+					gInterpreter->traceSet(inRcvr, impl, inTag, inValue);
+				((FrameObject *)ObjectPtr(impl))->slot[slotIndex] = inValue;
+				return true;
 			}
 		}
 		// not found, try _parent next
-		left = UnsafeGetFrameSlot(left, RSYM_parent, &exists);
+		left = UnsafeGetFrameSlot(left, SYMA(_parent), &exists);
 	}
 
 	while (NOTNIL(left))
 	{
-		for (current = left; NOTNIL(current); )
+		for (impl = left; NOTNIL(impl); )
 		{
-			frPtr = (FrameObject *)ObjectPtr(current);
+			frPtr = (FrameObject *)ObjectPtr(impl);
 			if (NOTFRAME(frPtr))
-				ThrowBadTypeWithFrameData(kNSErrNotAFrame, current);
+				ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
 			frMap = frPtr->map;
 			slotIndex = FindOffset(frMap, inTag);
@@ -902,26 +888,26 @@ SetVariableOrGlobal(RefArg inRcvr, RefArg inTag, RefArg inValue, int inLookup)
 			{
 				// found it!
 				if (gInterpreter->tracing >= 2)
-					gInterpreter->traceSet(inRcvr, current, inTag, inValue);
-				if (left == current)
+					gInterpreter->traceSet(inRcvr, impl, inTag, inValue);
+				if (left == impl)
 					// can set it in this context
-					((FrameObject *)ObjectPtr(current))->slot[slotIndex] = inValue;
+					((FrameObject *)ObjectPtr(impl))->slot[slotIndex] = inValue;
 				else
 					// must set it in the left frame
 					SetFrameSlot(left, inTag, inValue);
-				return YES;
+				return true;
 			}
 
 			// follow the _proto chain
-			slotIndex = FindOffset(frMap, RSYM_proto);
+			slotIndex = FindOffset(frMap, SYMA(_proto));
 			if (slotIndex == kIndexNotFound)
 				break;
-			current = ((FrameObject *)ObjectPtr(current))->slot[slotIndex];
+			impl = ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 		}
 
 		// follow the _parent chain
 		frMap = ((FrameObject *)ObjectPtr(left))->map;
-		slotIndex = FindOffset(frMap, RSYM_parent);
+		slotIndex = FindOffset(frMap, SYMA(_parent));
 		if (slotIndex == kIndexNotFound)
 			break;
 		left = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
@@ -932,7 +918,7 @@ SetVariableOrGlobal(RefArg inRcvr, RefArg inTag, RefArg inValue, int inLookup)
 		if (gInterpreter->tracing >= 2)
 			gInterpreter->traceSet(RA(gVarFrame), RA(gVarFrame), inTag, inValue);
 		SetFrameSlot(RA(gVarFrame), inTag, inValue);
-		return YES;
+		return true;
 	}
 
 	if (inLookup & kSetSelfLookup)
@@ -940,7 +926,7 @@ SetVariableOrGlobal(RefArg inRcvr, RefArg inTag, RefArg inValue, int inLookup)
 		if (gInterpreter->tracing >= 2)
 			gInterpreter->traceSet(inRcvr, inRcvr, inTag, inValue);
 		SetFrameSlot(inRcvr, inTag, inValue);
-		return YES;
+		return true;
 	}
 
 	if (inLookup & kSetGlobalLookup)
@@ -948,10 +934,10 @@ SetVariableOrGlobal(RefArg inRcvr, RefArg inTag, RefArg inValue, int inLookup)
 		if (gInterpreter->tracing >= 2)
 			gInterpreter->traceSet(RA(gVarFrame), RA(gVarFrame), inTag, inValue);
 		SetFrameSlot(RA(gVarFrame), inTag, inValue);
-		return YES;
+		return true;
 	}
 
-	return NO;
+	return false;
 }
 
 
@@ -968,8 +954,8 @@ IsParent(RefArg fr, RefArg start)
 	RefVar parent(start);
 	for ( ; NOTNIL(parent); parent = GetFrameSlot(parent, SYMA(_parent)))
 		if (EQ(parent, fr))
-			return YES;
-	return NO;
+			return true;
+	return false;
 }
 
 #pragma mark -

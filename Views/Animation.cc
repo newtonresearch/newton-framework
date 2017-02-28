@@ -8,7 +8,7 @@
 
 #include "RootView.h"
 
-#include "Globals.h"
+#include "ROMResources.h"
 #include "NewtonTime.h"
 #include "MagicPointers.h"
 #include "Sound.h"
@@ -16,7 +16,7 @@
 
 #include "Screen.h"
 #include "Animation.h"
-#include "QDGeometry.h"
+#include "Geometry.h"
 #include "DrawShape.h"
 
 
@@ -73,7 +73,7 @@ DisposeCAnimate(void * inData)
 CAnimate::CAnimate()
 {
 	fContext = new RefStruct;	// why not make this a member rather than a pointer?
-	fA5 = NO;
+	fA5 = false;
 
 	fException.header.catchType = kExceptionCleanup;
 	fException.object = this;
@@ -107,8 +107,7 @@ CAnimate::~CAnimate()
 void
 CAnimate::doEffect(RefArg inSoundEffect)
 {
-	if ((fMask & (1 << fEffect)) == 0
-	 && fView != NULL)
+	if (!FLAGTEST(fMask, 1 << fEffect) && fView != NULL)
 	{
 		gRootView->smartInvalidate(&fView->viewBounds);
 		gRootView->update();
@@ -117,8 +116,8 @@ CAnimate::doEffect(RefArg inSoundEffect)
 	bool	isAnything = !EmptyRect(&f74);
 	if (fA5 && (!isAnything /*|| fSaveScreen.allocateBuffers(&f74)*/))
 	{
-//		if (gSlowMotion == 0)
-//			StartDrawing(NULL, NULL);
+		if (gSlowMotion == 0)
+			StartDrawing(NULL, NULL);
 
 		Rect caretBounds = gRootView->getCaretRect();
 		if (isAnything)
@@ -161,7 +160,7 @@ CAnimate::doEffect(RefArg inSoundEffect)
 				break;
 			}
 
-//			StopDrawing(NULL, NULL);
+			StopDrawing(NULL, NULL);
 		}
 	}
 
@@ -212,23 +211,23 @@ CAnimate::poofEffect(void)
 {
 	PlaySound(*fContext, ROM_poof);
 
-	DrawPicture(ROM_cloud1, &fxBox, vjFullH + vjFullV);
-//	StopDrawing(NULL, NULL);
+	DrawPicture(ROM_cloud1, &fxBox, vjFullH + vjFullV, modeMask);
+	StopDrawing(NULL, NULL);
 	Wait(100);	// milliseconds - was 2 ticks
 
-//	StartDrawing(NULL, NULL);
+	StartDrawing(NULL, NULL);
 //	fSaveScreen.restoreScreenBits(&f74, NULL);
-	DrawPicture(ROM_cloud2, &fxBox, vjFullH + vjFullV);
-//	StopDrawing(NULL, NULL);
+	DrawPicture(ROM_cloud2, &fxBox, vjFullH + vjFullV, modeMask);
+	StopDrawing(NULL, NULL);
 	Wait(100);
 
-//	StartDrawing(NULL, NULL);
+	StartDrawing(NULL, NULL);
 //	fSaveScreen.restoreScreenBits(&f74, NULL);
-	DrawPicture(ROM_cloud3, &fxBox, vjFullH + vjFullV);
-//	StopDrawing(NULL, NULL);
+	DrawPicture(ROM_cloud3, &fxBox, vjFullH + vjFullV, modeMask);
+	StopDrawing(NULL, NULL);
 	Wait(100);
 
-//	StartDrawing(NULL, NULL);
+	StartDrawing(NULL, NULL);
 //	fSaveScreen.restoreScreenBits(&f74, NULL);
 
 	fView->dirty(&f74);
@@ -245,19 +244,18 @@ CAnimate::poofEffect(void)
 ------------------------------------------------------------------------------*/
 
 void
-CAnimate::setupPlainEffect(CView * inView, bool inArg2, long inFX)
+CAnimate::setupPlainEffect(CView * inView, bool inArg2, int inFX)
 {
-	if ((fMask & (1 << kPlainEffect)) != 0)
+	if (FLAGTEST(fMask, (1 << kPlainEffect)))
 	{
-/*
-		inView->dirty(&fxBox);
+		inView->outerBounds(&fxBox);
 
-		GrafPtr	thePort;
-		GetPort(&thePort);
-		Rect *	portBounds = &thePort->portRect;
-		if ((fxBox.bottom - fxBox.top) > (portBounds->bottom - portBounds->top)
-		 || (fxBox.right - fxBox.left) > (portBounds->right - portBounds->left))
-			SectRect(portBounds, &fxBox, &fxBox);
+//		GrafPtr	thePort;
+//		GetPort(&thePort);
+//		Rect *	portBounds = &thePort->portRect;
+//		if (RectGetHeight(fxBox) > RectGetHeight(*portBounds)
+//		 || RectGetWidth(fxBox) > RectGetWidth(*portBounds))
+//			SectRect(portBounds, &fxBox, &fxBox);
 
 		preSetup(inView, kPlainEffect);
 
@@ -275,7 +273,6 @@ CAnimate::setupPlainEffect(CView * inView, bool inArg2, long inFX)
 			effectBounds = inArg2 ? fxBox : gZeroRect;	// actually just zeroes it out
 			postSetup(&fxBox, &effectBounds, &fxBox);
 		}
-*/
 	}
 
 	else
@@ -296,7 +293,7 @@ CAnimate::setupPlainEffect(CView * inView, bool inArg2, long inFX)
 void
 CAnimate::setupTrashEffect(CView * inView)
 {
-	if ((fMask & (1 << kTrashEffect)) != 0)
+	if (FLAGTEST(fMask, (1 << kTrashEffect)))
 	{
 		inView->outerBounds(&fxBox);
 		if (fxBox.bottom > gScreenHeight)
@@ -334,9 +331,9 @@ CAnimate::setupTrashEffect(CView * inView)
 ------------------------------------------------------------------------------*/
 
 void
-CAnimate::setupSlideEffect(CView * inView, const Rect * inBounds, long inOffsetV, long inOffsetH)
+CAnimate::setupSlideEffect(CView * inView, const Rect * inBounds, int inOffsetV, int inOffsetH)
 {
-	if ((fMask & (1 << kSlideEffect)) == 0)
+	if (FLAGTEST(fMask, (1 << kSlideEffect)))
 	{
 		Rect	slideBounds = *inBounds;
 		fxBox = *inBounds;
@@ -424,22 +421,24 @@ CAnimate::setupSlideEffect(CView * inView, const Rect * inBounds, long inOffsetV
 				inBounds		area to be poofed
 	Return:	--
 ------------------------------------------------------------------------------*/
+#define kMinPoofWidth 89
+#define kMinPoofHeight 54
 
 void
 CAnimate::setupPoofEffect(CView * inView, const Rect * inBounds)
 {
-	if ((fMask & (1 << kPoofEffect)) != 0)
+	if (FLAGTEST(fMask, 1 << kPoofEffect))
 	{
 		fxBox = *inBounds;
 
 		// donÕt let the poof be too small - we want to see it!
-		if (inBounds->right - inBounds->left < 89
-		||  inBounds->bottom - inBounds->top < 54)
+		if (inBounds->right - inBounds->left < kMinPoofWidth
+		||  inBounds->bottom - inBounds->top < kMinPoofHeight)
 		{
 			fxBox.left = (inBounds->left + inBounds->right)/2 - 44;
-			fxBox.right = fxBox.left + 89;
+			fxBox.right = fxBox.left + kMinPoofWidth;
 			fxBox.top = (inBounds->top + inBounds->bottom)/2 - 27;
-			fxBox.bottom = fxBox.top + 54;
+			fxBox.bottom = fxBox.top + kMinPoofHeight;
 		}
 
 		preSetup(inView, kPoofEffect);
@@ -466,7 +465,7 @@ void
 CAnimate::setupDragEffect(CView * inView)
 {
 	fMask = 0xFFFFFFFF;
-	setupPlainEffect(inView, NO, fxDrawerEffect);
+	setupPlainEffect(inView, false, fxDrawerEffect);
 }
 
 #pragma mark -
@@ -483,7 +482,7 @@ CAnimate::preSetup(CView * inView, EffectKind inWhat)
 {
 	fView = inView;
 	fEffect = inWhat;
-	fA4 = NO;
+	fA4 = false;
 	f90 = 0;
 	f94 = 0;
 	f98 = 0x7FFE;
@@ -535,13 +534,13 @@ CAnimate::postSetup(const Rect * inBnd1, const Rect * inBnd2, const Rect * inBnd
 			gRootView->dirtyCaret();
 		}
 //L168
-		fBits.copyFromScreen(&sp54, &sp54, srcCopy, NULL);
+		fBits.copyFromScreen(&sp54, &sp54, modeCopy, NULL);
 		if (!EmptyRgn(sp18))	// CBaseRegion
 		{
 			fBits.beginDrawing(*(Point*)inBnd3);
-			gSkipVisRegions = YES;
+			gSkipVisRegions = true;
 			fView->update(sp18, NULL);
-			gSkipVisRegions = NO;
+			gSkipVisRegions = false;
 			fBits.endDrawing();
 		}
 //L196

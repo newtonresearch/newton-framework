@@ -109,19 +109,19 @@ protected:
 
 public:
 // New calls for 2.0
-					NewtonErr	nBind(COptionArray* opt = NULL, Timeout timeOut = kNoTimeout, bool sync = YES);
-					NewtonErr	nListen(COptionArray* opt = NULL, CBufferSegment* data = NULL, long* seq = NULL, Timeout timeOut = kNoTimeout, bool sync = YES);
-					NewtonErr	nAccept(CEndpoint* resfd, COptionArray* opt = NULL, CBufferSegment* data = NULL, long seq = 0, Timeout timeOut = kNoTimeout, bool sync = YES);
-					NewtonErr	nConnect(COptionArray* opt = NULL, CBufferSegment* data = NULL, long* seq = NULL, Timeout timeOut = kNoTimeout, bool sync = YES);
-					NewtonErr	nRelease(Timeout timeOut = kNoTimeout, bool sync = YES);
-					NewtonErr	nDisconnect(CBufferSegment* data = NULL, long reason = 0, long seq = 0, Timeout timeOut = kNoTimeout, bool sync = YES);
-					NewtonErr	nUnBind(Timeout timeOut = kNoTimeout, bool sync = YES);
-					NewtonErr	nOptMgmt(ULong arrayOpCode, COptionArray* options, Timeout timeOut = kNoTimeout, bool sync = YES);
-					NewtonErr	nSnd(UByte* buf, ArrayIndex* count, ULong flags, Timeout timeOut = kNoTimeout, bool sync = YES, COptionArray* opt = NULL);
-					NewtonErr	nRcv(UByte* buf, ArrayIndex* count, ArrayIndex thresh, ULong* flags, Timeout timeOut = kNoTimeout, bool sync = YES, COptionArray* opt = NULL);
-					NewtonErr	nSnd(CBufferSegment* buf, ULong flags, Timeout timeOut = kNoTimeout, bool sync = YES, COptionArray* opt = NULL);
-					NewtonErr	nRcv(CBufferSegment* buf, ArrayIndex thresh, ULong* flags, Timeout timeOut = kNoTimeout, bool sync = YES, COptionArray* opt = NULL);
-					NewtonErr	nAbort(bool sync = YES);
+					NewtonErr	nBind(COptionArray* opt = NULL, Timeout timeOut = kNoTimeout, bool sync = true);
+					NewtonErr	nListen(COptionArray* opt = NULL, CBufferSegment* data = NULL, long* seq = NULL, Timeout timeOut = kNoTimeout, bool sync = true);
+					NewtonErr	nAccept(CEndpoint* resfd, COptionArray* opt = NULL, CBufferSegment* data = NULL, long seq = 0, Timeout timeOut = kNoTimeout, bool sync = true);
+					NewtonErr	nConnect(COptionArray* opt = NULL, CBufferSegment* data = NULL, long* seq = NULL, Timeout timeOut = kNoTimeout, bool sync = true);
+					NewtonErr	nRelease(Timeout timeOut = kNoTimeout, bool sync = true);
+					NewtonErr	nDisconnect(CBufferSegment* data = NULL, long reason = 0, long seq = 0, Timeout timeOut = kNoTimeout, bool sync = true);
+					NewtonErr	nUnBind(Timeout timeOut = kNoTimeout, bool sync = true);
+					NewtonErr	nOptMgmt(ULong arrayOpCode, COptionArray* options, Timeout timeOut = kNoTimeout, bool sync = true);
+					NewtonErr	nSnd(UByte* buf, ArrayIndex* count, ULong flags, Timeout timeOut = kNoTimeout, bool sync = true, COptionArray* opt = NULL);
+					NewtonErr	nRcv(UByte* buf, ArrayIndex* count, ArrayIndex thresh, ULong* flags, Timeout timeOut = kNoTimeout, bool sync = true, COptionArray* opt = NULL);
+					NewtonErr	nSnd(CBufferSegment* buf, ULong flags, Timeout timeOut = kNoTimeout, bool sync = true, COptionArray* opt = NULL);
+					NewtonErr	nRcv(CBufferSegment* buf, ArrayIndex thresh, ULong* flags, Timeout timeOut = kNoTimeout, bool sync = true, COptionArray* opt = NULL);
+					NewtonErr	nAbort(bool sync = true);
 					NewtonErr	timeout(ULong refCon);
 					bool			isPending(ULong which);
 
@@ -133,8 +133,8 @@ protected:
 	CEndpointEventHandler *	fEventHandler;		// our event handler for talking to transport provider
 	ULong							fClientRefCon;		// client event handler for setting up client events
 	CCMOTransportInfo *		fInfo;				// information about our transport provider
-	bool							fSync;				// YES if we are currently synchronous
-	bool							fToolIsRunning;	// YES if the tool is up and running
+	bool							fSync;				// true if we are currently synchronous
+	bool							fToolIsRunning;	// true if the tool is up and running
 };
 
 inline int	CEndpoint::getState(void) const	{ return fState; }

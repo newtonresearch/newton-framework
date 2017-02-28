@@ -157,12 +157,12 @@ public:
 	bool					trackStroke(CStroke * inStroke, CVisKeyIterator * inIter);
 
 // Drawing
-	virtual	void		realDraw(Rect * inBounds);
+	virtual	void		realDraw(Rect& inRect);
 	void					drawKey(CVisKeyIterator & inIter, bool inIsHighlighted, bool);
 	void					drawKeyFrame(CVisKeyIterator & inIter, bool inIsHighlighted, bool);
 
 // first				f28;
-	long				fKeyArrayIndex;			// +30	if key has several caps, the current index
+	int				fKeyArrayIndex;			// +30	if key has several caps, the current index
 	bool				fKeyResultsAreKeycodes;	// +34
 	RefStruct		fKeyDefinitions;			// +38
 	RefStruct		fKeyReceiverView;			// +3C

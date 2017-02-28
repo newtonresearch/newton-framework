@@ -204,7 +204,7 @@ Ref	QueryEntriesWithTags(RefArg soup, RefArg tags);
 
 extern "C" {
 Ref	CommonSoupQuery(RefArg inRcvr, RefArg inQuerySpec);
-Ref	SoupCollect(RefArg inRcvr);
+Ref	SoupCollect(RefArg inRcvr, RefArg inQuerySpec);
 
 Ref	CursorCountEntries(RefArg inRcvr);
 Ref	CursorClone(RefArg inRcvr);

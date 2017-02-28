@@ -25,14 +25,12 @@ CNodeCache::CNodeCache()
 	fPool = (NodeRef *)NewPtr(kInitialPoolSize * sizeof(NodeRef));	// was NewHandle
 	if (fPool == NULL)
 		OutOfMemory();
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		p->id = 0;
 		p->lru = 0;
 		p->index = NULL;
-		p->isInUse = NO;
+		p->isInUse = false;
 		p->node = (NodeHeader *)NewPtr(512);
 		if (p->node == NULL)
 			OutOfMemory();
@@ -44,9 +42,7 @@ CNodeCache::CNodeCache()
 
 CNodeCache::~CNodeCache()
 {
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 		FreePtr((Ptr)p->node);
 	FreePtr((Ptr)fPool);
 }
@@ -55,14 +51,12 @@ CNodeCache::~CNodeCache()
 NodeHeader *
 CNodeCache::findNode(CSoupIndex * index, PSSId inId)
 {
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		if (p->id == inId)
 		{
 			p->index = index;
-			p->isInUse = YES;
+			p->isInUse = true;
 			p->lru = ++fUseCount;
 			return p->node;
 		}
@@ -75,19 +69,18 @@ NodeHeader *
 CNodeCache::rememberNode(CSoupIndex * index, PSSId inId, size_t inSize, bool inDup, bool inDirty)
 {
 	int highestLRU = fUseCount + 1;
-	bool isPoolModified = YES;
+	bool isPoolModified = true;
 	NodeHeader * theNode;
 	NodeRef * aNodeToRemember = NULL;
+
 	// look in the pool for a likely node to reuse
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		if (p->id == 0)
 		{
 			// this one’s free
 			aNodeToRemember = p;
-			isPoolModified = NO;
+			isPoolModified = false;
 			break;
 		}
 		if (!p->isInUse && p->lru < highestLRU)
@@ -114,6 +107,7 @@ CNodeCache::rememberNode(CSoupIndex * index, PSSId inId, size_t inSize, bool inD
 		theNode = (NodeHeader *)NewPtr(inSize);
 		if (theNode == NULL)
 		{
+			// memory situation really bad: revert size of pool
 			fPool = (NodeRef *)ReallocPtr((Ptr)fPool, fNumOfEntries * sizeof(NodeRef));
 			OutOfMemory();
 		}
@@ -128,7 +122,7 @@ CNodeCache::rememberNode(CSoupIndex * index, PSSId inId, size_t inSize, bool inD
 	aNodeToRemember->isDirty = inDirty;
 	aNodeToRemember->lru = ++fUseCount;
 	aNodeToRemember->index = index;
-	aNodeToRemember->isInUse = YES;
+	aNodeToRemember->isInUse = true;
 	return theNode;
 }
 
@@ -136,16 +130,14 @@ CNodeCache::rememberNode(CSoupIndex * index, PSSId inId, size_t inSize, bool inD
 void
 CNodeCache::forgetNode(PSSId inId)
 {
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		if (p->id == inId)
 		{
 			p->id = 0;
 			p->lru = 0;
 			p->index = NULL;
-			p->isInUse = NO;
+			p->isInUse = false;
 			fModCount++;
 			break;
 		}
@@ -156,9 +148,7 @@ CNodeCache::forgetNode(PSSId inId)
 void
 CNodeCache::deleteNode(PSSId inId)
 {
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		if (p->id == inId)
 		{
@@ -166,7 +156,7 @@ CNodeCache::deleteNode(PSSId inId)
 			p->id = 0;
 			p->lru = 0;
 			p->index = NULL;
-			p->isInUse = NO;
+			p->isInUse = false;
 			OSERRIF(index->store()->deleteObject(inId));
 			fModCount++;
 			break;
@@ -178,13 +168,11 @@ CNodeCache::deleteNode(PSSId inId)
 void
 CNodeCache::dirtyNode(NodeHeader * inNode)
 {
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		if (p->node == inNode)
 		{
-			p->isDirty = YES;
+			p->isDirty = true;
 			fModCount++;
 			break;
 		}
@@ -195,30 +183,29 @@ CNodeCache::dirtyNode(NodeHeader * inNode)
 void
 CNodeCache::commit(CSoupIndex * index)
 {
-	bool isUsed = NO;
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	bool isUsed = false;
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		if (p->index == index)
 		{
-			p->isInUse = NO;
+			p->isInUse = false;
 			if (p->isDirty)
 			{
 				if (p->isDup)
 					index->updateDupNode(p->node);
 				else
 					index->updateNode(p->node);
-				p->isDirty = NO;
+				p->isDirty = false;
 			}
 		}
 		else if (p->isInUse)
-			isUsed = YES;
+			isUsed = true;
 	}
+
 	if (!isUsed && fNumOfEntries > 8)
 	{
 		// shrink the cache
-		for (p = fPool + 8; p < pLimit; p++)
+		for (NodeRef * p = fPool + 8, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 			FreePtr((Ptr)p->node);
 		fPool = (NodeRef *)ReallocPtr((Ptr)fPool, 8 * sizeof(NodeRef));
 		fNumOfEntries = 8;
@@ -230,12 +217,10 @@ CNodeCache::commit(CSoupIndex * index)
 void
 CNodeCache::reuse(CSoupIndex * index)
 {
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		if (p->index == index)
-			p->isInUse = YES;
+			p->isInUse = true;
 			// don’t break
 	}
 }
@@ -244,16 +229,14 @@ CNodeCache::reuse(CSoupIndex * index)
 void
 CNodeCache::abort(CSoupIndex * index)
 {
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		if (p->index == index)
 		{
 			p->index = NULL;
-			p->isInUse = NO;
+			p->isInUse = false;
 			p->id = 0;
-			p->isDirty = NO;
+			p->isDirty = false;
 			// don’t break
 		}
 	}
@@ -264,15 +247,13 @@ CNodeCache::abort(CSoupIndex * index)
 void
 CNodeCache::clear(void)
 {
-	NodeRef * p = fPool;
-	NodeRef * pLimit = p + fNumOfEntries;
-	for ( ; p < pLimit; p++)
+	for (NodeRef * p = fPool, * pLimit = fPool + fNumOfEntries; p < pLimit; ++p)
 	{
 		p->index = NULL;
-		p->isInUse = NO;
+		p->isInUse = false;
 		p->id = 0;
 		p->lru = 0;
-		p->isDirty = NO;
+		p->isDirty = false;
 	}
 	fModCount++;
 }

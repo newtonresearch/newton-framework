@@ -96,9 +96,7 @@ CVoyagerPlatform::init(void)
 
 void
 CVoyagerPlatform::backlightTrigger(void)
-{
-	return 0;
-}
+{}
 
 void
 CVoyagerPlatform::registerPowerSwitchInterrupt(void)
@@ -129,7 +127,7 @@ CVoyagerPlatform::timerInterruptHandler(void)
 
 bool
 CVoyagerPlatform::resetZAPStoreCheck(void)
-{ return NO; }
+{ return false; }
 
 
 NewtonErr
@@ -154,13 +152,13 @@ CVoyagerPlatform::pauseSystem(void)
 NewtonErr
 CVoyagerPlatform::powerOffSystem(void)
 {
-	f36 = YES;
+	f36 = true;
 #if defined(correct)
-	DebuggerPowerCycleProc(YES);
+	DebuggerPowerCycleProc(true);
 	SaveCPUStateAndStopSystem();
-	DebuggerPowerCycleProc(NO);
+	DebuggerPowerCycleProc(false);
 #endif
-	f36 = NO;
+	f36 = false;
 	return noErr;
 }
 

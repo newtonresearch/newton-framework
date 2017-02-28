@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "PackageHandler():REx.cc">
+      </ContextState>
+      <ContextState
+         contextName = "AddBlock(unsigned int, CChunk*, void (*)(CChunk*, long)):REx.cc">
+      </ContextState>
+      <ContextState
+         contextName = "ProcessPackages(CChunk*, long):REx.cc">
+      </ContextState>
+      <ContextState
+         contextName = "RAMAllocHandler():REx.cc">
+         <PersistentStrings>
+            <PersistentString
+               value = "(RAMAllocEntry [3])table-&gt;table">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "BlockHandler():REx.cc">
+      </ContextState>
+      <ContextState
+         contextName = "CChunk::append(void*, unsigned long):Chunk.cc">
+      </ContextState>
+      <ContextState
+         contextName = "PerformOutput():REx.cc">
+      </ContextState>
+      <ContextState
+         contextName = "CPackageAccessor::directory():PackageAccessor.cc">
+      </ContextState>
+      <ContextState
+         contextName = "CFramesPartAccessor::CFramesPartAccessor(char*, long, long):PackageAccessor.cc">
+         <PersistentStrings>
+            <PersistentString
+               value = "(ArrayObject32*)inPart">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "CPackageAccessor::isPackage():PackageAccessor.cc">
+      </ContextState>
+      <ContextState
+         contextName = "CPackageAccessor::isPackage() const:PackageAccessor.cc">
+      </ContextState>
+      <ContextState
+         contextName = "CLexer::getToken(Token&amp;):Lexer.cc">
+      </ContextState>
+      <ContextState
+         contextName = "CLexer::consumeToken():Lexer.cc">
+      </ContextState>
+      <ContextState
+         contextName = "CChunk::data():Chunk.h">
+      </ContextState>
+      <ContextState
+         contextName = "CLexer::get(Kind, Token&amp;, bool):Lexer.cc">
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

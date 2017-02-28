@@ -78,13 +78,17 @@ struct PSSStoreInfo
 };
 
 
+// number of PCMCIA slots available in Newton hardware
+// cf gNumberOfHWSockets which is the number actually implememted
+#define kNumberOfHWSockets 4
+
 struct PSSSlotInfo
 {
 	void		clear(void);
 
 	int				f00;
 	CCardMessage	f04;
-	PSSStoreInfo	fBC[4];
+	PSSStoreInfo	fBC[kNumberOfHWSockets];
 // size +1FC
 };
 
@@ -140,12 +144,12 @@ private:
 	CUObject				f178;
 	CUAsyncMessage		f180;
 	CEvent				f190;		// size +B4
-	CUAsyncMessage		f244[4];
-	CPSSEvent			f284[4];
-	ArrayIndex			f304;		// numOfHWSockets
-	PSSSlotInfo			f308[4];
-	CUMsgToken *		fAF8[4];
-	PSSSlotInfo *		fB08[4];
+	CUAsyncMessage		f244[kNumberOfHWSockets];
+	CPSSEvent			f284[kNumberOfHWSockets];
+	ArrayIndex			fNumOfSlots;	//+304
+	PSSSlotInfo			f308[kNumberOfHWSockets];
+	CUMsgToken *		fAF8[kNumberOfHWSockets];
+	PSSSlotInfo *		fB08[kNumberOfHWSockets];
 // size +B18
 };
 

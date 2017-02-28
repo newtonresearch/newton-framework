@@ -38,7 +38,7 @@ extern "C"
 	D a t a
 --------------------------------------------------------------------------------*/
 
-bool  gWantDeferred = NO;
+bool  gWantDeferred = false;
 
 
 /*--------------------------------------------------------------------------------
@@ -384,7 +384,7 @@ SMemMsgCheckForDoneKernelGlue(ObjectId inId, ULong inFlags)
 				if (msg->fStatus != kInProgress)
 					err = msg->fStatus;
 				msg->fNotify = *gCurrentTask;
-				err = msg->completeMsg(NO, msg->fType, err);
+				err = msg->completeMsg(false, msg->fType, err);
 			}
 			else if (FLAGTEST(inFlags, kSMemMsgFlags_BlockTillDone))
 			{
@@ -399,7 +399,7 @@ SMemMsgCheckForDoneKernelGlue(ObjectId inId, ULong inFlags)
 			else if (FLAGTEST(inFlags, kSMemMsgFlags_Abort))
 			{
 				msg->fNotify = *gCurrentTask;
-				err = msg->completeMsg(YES, 0, kOSErrCallAborted);
+				err = msg->completeMsg(true, 0, kOSErrCallAborted);
 			}
 			else
 			{
@@ -462,7 +462,7 @@ LowLevelCopyDoneFromKernelGlue(NewtonErr inErr, CTask * inTask, VAddr inReturn)
 
 	CSharedMemMsg *	msg = NULL;
 	if (inTask == gCurrentTask)
-		gCopyDone = YES;
+		gCopyDone = true;
 	if (inErr == noErr)
 		inErr = inTask->fCopySavedErr;
 	ConvertIdToObj(kSharedMemMsgType, inTask->fCopySavedMemMsgId, &msg);
@@ -538,7 +538,7 @@ CSharedMemMsg::~CSharedMemMsg(void)
 
 	gTimerEngine->remove(this);
 	if (fStatus == kInProgress  || FLAGTEST(fType, kMsgType_CollectorMask))
-		completeMsg(YES, 0, kOSErrSharedMemMsgNoLongerExists);
+		completeMsg(true, 0, kOSErrSharedMemMsgNoLongerExists);
 }
 
 
@@ -586,7 +586,7 @@ CSharedMemMsg::init(CEnvironment * inEnvironment)
 NewtonErr
 CSharedMemMsg::completeSender(NewtonErr inErr)
 {
-	return completeMsg(NO, kMsgType_CollectedSender, inErr);
+	return completeMsg(false, kMsgType_CollectedSender, inErr);
 }
 
 
@@ -600,7 +600,7 @@ CSharedMemMsg::completeSender(NewtonErr inErr)
 NewtonErr
 CSharedMemMsg::completeReceiver(CSharedMemMsg * inMsg, NewtonErr inErr)
 {
-	bool	isCollector = NO;
+	bool	isCollector = false;
 
 	if (inErr == noErr)
 	{
@@ -733,7 +733,7 @@ SendForInterrupt(ObjectId inPortId, ObjectId inMsgId, ObjectId inReplyId,
 		EnterFIQAtomic();
 		XFAILIF(msg->fStatus == kInProgress || FLAGTEST(msg->fType, kMsgType_CollectorMask), ExitFIQAtomic(); err = kOSErrMessageAlreadyPosted;)
 		msg->fStatus = kInProgress;
-		gWantDeferred = YES;
+		gWantDeferred = true;
 		gDeferredSends->add(msg);
 #if defined(correct)
 		if (IsFIQMode())
@@ -784,7 +784,7 @@ void		NotifyTimeout(CSharedMemMsg * inMsg);
 void
 QueueNotify(CSharedMemMsg * inMsg)
 {
-	gWantDeferred = YES;
+	gWantDeferred = true;
 	gTimerDeferred->add(inMsg);
 }
 
@@ -802,7 +802,7 @@ DoDeferrals(void)
 	EnterAtomic();
 	if (gWantDeferred)
 	{
-		gWantDeferred = NO;
+		gWantDeferred = false;
 		ExitAtomic();
 		PortDeferredSendNotify();
 		DeferredNotify();

@@ -20,11 +20,15 @@
 #include "REP.h"
 #include "ROMResources.h"
 #include "ROMData.h"
+#include "Interpreter.h"
+
+#define forDebug 1
+//#define forExperiment 1
 
 #if defined(forFramework)
-#define kBundleId CFSTR("com.newton.objects")
+#define kBundleId CFSTR("org.newton.objects")
 #else
-#define kBundleId CFSTR("com.newton.messagepad")
+#define kBundleId CFSTR("org.newton.messagepad")
 #endif
 
 #define kNSDictData CFSTR("DictData")
@@ -66,8 +70,6 @@ extern "C" {
 void	NSLog(CFStringRef format, ...);
 void  InitObjectSystem(void);
 }
-		 void			InitStartupHeap(void);
-		 void			FixStartupHeap(void);
 
 		 void			MakeROMResources(void);
 static void			InitBuiltInFunctions(void);
@@ -79,9 +81,11 @@ static void			LoadDictionaries(void);
 	D a t a
 ------------------------------------------------------------------------------*/
 
+void *			gConstNSDataStart, * gConstNSDataEnd;
+
 ConstNSData *  gConstNSData;
 char *			gDictData;
-int				gFramesInitialized = NO;
+int				gFramesInitialized = false;
 TaskGlobals		gMyTaskGlobals;
 NewtGlobals		gMyNewtGlobals;
 
@@ -100,6 +104,9 @@ ULong		GetTicks(void) {
 	return now.convertTo(kMilliseconds)/20;
 }
 
+extern "C" Ref FAddDeferredSend(RefArg inRcvr, RefArg inTarget, RefArg inMsg, RefArg inArg) { return NILREF; }
+extern "C" Ref FAddDeferredCall(RefArg inRcvr, RefArg inMsg, RefArg inArg) { return NILREF; }
+
 // RefStack allocates a new stack, but we don’t want the whole VM system
 extern "C" NewtonErr	NewStack(ObjectId inDomainId, size_t inMaxSize, ObjectId inOwnerId, VAddr * outTopOfStack, VAddr * outBottomOfStack)
 {
@@ -116,6 +123,7 @@ extern "C" NewtonErr	FreePagedMem(VAddr inAddressInArea)
 	free((void *)inAddressInArea);
 	return noErr;
 }
+
 #if 1
 /*------------------------------------------------------------------------------
 	S t u b s
@@ -221,15 +229,15 @@ InitObjectSystem(void)
 		gRootView->fContext.h->stackPos = 0;
 
 		gRootView->fContext = Clone(gConstNSData->rootContext);	// must make it mutable
-		SetFrameSlot(gRootView->fContext, SYMA(_proto), RA(rootProto));
-		RefVar vwChildren(GetFrameSlot(RA(rootProto), SYMA(viewChildren)));
+		SetFrameSlot(gRootView->fContext, SYMA(_proto), RA(viewRoot));
+		RefVar vwChildren(GetFrameSlot(RA(viewRoot), SYMA(viewChildren)));
 		FOREACH(vwChildren, child)
 			RefVar contextTag(GetFrameSlot(child, SYMA(preallocatedContext)));
 			if (NOTNIL(contextTag))
 			{
 				RefVar mutableChild(Clone(child));
 				SetFrameSlot(gRootView->fContext, contextTag, mutableChild);
-				if (SymbolCompareLexRef(contextTag, RSYMassistant) == 0)
+				if (SymbolCompareLexRef(contextTag, SYMA(assistant)) == 0)
 				{
 					RefVar assistLine(AllocateFrame());
 					SetFrameSlot(assistLine, SYMA(entryLine), AllocateFrame());
@@ -241,7 +249,7 @@ InitObjectSystem(void)
 #else
 		ResetFromResetSwitch();
 #endif
-		gFramesInitialized = YES;
+		gFramesInitialized = true;
 	}
 }
 
@@ -250,24 +258,11 @@ InitObjectSystem(void)
 	Simulate NewtonScript ROM resources by loading NTK .pkg
 	and creating Refs from the elements in its array.
 ------------------------------------------------------------------------------*/
-extern Ref * RSstorePrototype;
-extern Ref * RScursorPrototype;
-extern Ref * RS_clicks;
 
 void
 MakeROMResources(void)
 {
 	LoadNSData();
-	InitStartupHeap();
-	FixStartupHeap();
-// Can only use FOREACH after globals have been set up
-	InitBuiltInFunctions();
-// Hack in parent function frames
-	((FrameObject *)PTR(*RSstorePrototype))->slot[0] = gConstNSData->storeParent;
-	((FrameObject *)PTR(*RSplainSoupPrototype))->slot[0] = gConstNSData->soupParent;
-	((FrameObject *)PTR(*RScursorPrototype))->slot[0] = gConstNSData->cursorParent;
-// and click song
-	*RS_clicks = gConstNSData->clicks;
 #if defined(forDarkStar)
 	LoadDictionaries();
 #endif
@@ -281,10 +276,6 @@ MakeROMResources(void)
 
 	NOTE!
 	NTK generates 32-bit Refs; we need to rebuild all Refs for a 64-bit world.
-
-	ALSO NOTE!
-	NCX is going to import packages with 32-bit Refs so we can’t have a 64-bit
-	world for that.
 
 ------------------------------------------------------------------------------*/
 #include "NewtonPackage.h"
@@ -302,50 +293,11 @@ LoadNSData(void)
 	NewtonPackage pkg(pathStr);
 	gConstNSData = (ConstNSData *)&((ArrayObject *)PTR(pkg.partRef(0)))->slot[0];
 
+	gConstNSDataStart = pkg.partPkgData(0)->data;
+	gConstNSDataEnd = (char *)gConstNSDataStart + pkg.partPkgData(0)->size;
+
 	CFRelease(pkgPath);
 	CFRelease(url);
-}
-
-
-/*------------------------------------------------------------------------------
-	Fix up the funcPtrs in plain C functions to their addresses in this
-	invocation.
-	NOTE  that because function addresses are long-aligned, they appear as
-			NS integers (albeit shifted down). Neat, huh?
-	Args:		--
-	Return:	--
-------------------------------------------------------------------------------*/
-
-void
-InitBuiltInFunctions(void)
-{
-	CFBundleRef newtBundle = CFBundleGetBundleWithIdentifier(kBundleId);
-	CFStringRef functionName;
-	Ref functionPtr;
-
-	FOREACH_WITH_TAG(gConstNSData->plainCFunctions, fnTag, fnFrame)
-		SymbolObject * fnTagRec = (SymbolObject *)PTR(fnTag);
-		FrameObject * fnFrameRec = (FrameObject *)PTR(fnFrame);
-		functionName = CFStringCreateWithCString(NULL, fnTagRec->name, kCFStringEncodingMacRoman);
-		functionPtr = (Ref) CFBundleGetFunctionPointerForName(newtBundle, functionName);
-#if defined(forNTK)
-		if (functionPtr == 0)
-		{
-			char fname[32];
-			strcpy(fname, fnTagRec->name);
-			fname[0] &= ~0x20;	// Capitalize the name -- may share a lowercase symbol name
-			CFRelease(functionName);
-			functionName = CFStringCreateWithCString(NULL, fname, kCFStringEncodingMacRoman);
-			functionPtr = (Ref) CFBundleGetFunctionPointerForName(newtBundle, functionName);
-		}
-#endif
-#if defined(forDebug)
-if (functionPtr == 0) printf("%s: nil function pointer, frame 0x%08X\n", fnTagRec->name, fnFrameRec);
-printf("%s: #%08X\n", fnTagRec->name, functionPtr);
-#endif
-		fnFrameRec->slot[1] = functionPtr;
-		CFRelease(functionName);
-	END_FOREACH	
 }
 
 
@@ -369,16 +321,14 @@ LoadDictionaries(void)
 	CFRelease(dictPath);
 	CFRelease(url);
 
-	if (fp == NULL)
-		return;
-
-	fseek(fp, 0, SEEK_END);
-	dictSize = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-	gDictData = (char *)malloc(dictSize);
-	fread(gDictData, dictSize, 1, fp);
-
-	fclose(fp);
+	if (fp != NULL) {
+		fseek(fp, 0, SEEK_END);
+		dictSize = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		gDictData = (char *)malloc(dictSize);
+		fread(gDictData, dictSize, 1, fp);
+		fclose(fp);
+	}
 }
 #endif
 
@@ -394,7 +344,7 @@ LoadPNG(const char * inName)
 	CFRelease(name);
 	CGDataProviderRef dataProvider = CGDataProviderCreateWithURL(url);
 	CFRelease(url);
-	CGImageRef png = CGImageCreateWithPNGDataProvider(dataProvider, NULL, NO, kCGRenderingIntentDefault);
+	CGImageRef png = CGImageCreateWithPNGDataProvider(dataProvider, NULL, false, kCGRenderingIntentDefault);
 	CFRelease(dataProvider);
 	return png;
 }

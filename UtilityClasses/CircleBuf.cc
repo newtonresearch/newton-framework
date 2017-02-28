@@ -36,7 +36,7 @@ CCircleBuf::~CCircleBuf()
 NewtonErr
 CCircleBuf::allocate(ArrayIndex inSize)
 {
-	return allocate(inSize, NO, eNormalBuffer, 0);
+	return allocate(inSize, false, eNormalBuffer, 0);
 }
 
 

@@ -322,8 +322,8 @@ CNewInternalFlash::flashAllowedLocations(bool * outBank1, bool * outBank2)
 	NewtonErr err = noErr;
 
 	// let ’em have both barrels
-	*outBank1 = YES;
-	*outBank2 = YES;
+	*outBank1 = true;
+	*outBank2 = true;
 
 	XTRY
 	{
@@ -345,15 +345,15 @@ CNewInternalFlash::flashAllowedLocations(bool * outBank1, bool * outBank2)
 			// we have a valid REx config entry
 			// only two entries alowed
 			XFAILIF(config->count > 2, err = kFlashErrUnsupportedConfiguration;)
-			*outBank1 = NO;
-			*outBank2 = NO;
+			*outBank1 = false;
+			*outBank2 = false;
 			for (ArrayIndex i = 0; i < config->count; ++i)
 			{
 				PAddr flashBankAddr = config->table[i];
 				if (flashBankAddr == kFlashBank1PhysAddress)
-					*outBank1 = YES;
+					*outBank1 = true;
 				else if (flashBankAddr == kFlashBank2PhysAddress)
-					*outBank2 = YES;
+					*outBank2 = true;
 				else
 					XFAIL(err = kFlashErrUnsupportedConfiguration)
 			}
@@ -377,7 +377,7 @@ CNewInternalFlash::avoidConflictWithRExInIOSpace(bool * outBank)
 	for (ArrayIndex i = 0; i < kMaxROMExtensions; ++i)
 	{
 		if ((PAddr)gGlobalsThatLiveAcrossReboot.fRExPtr[i] == kFlashBank2PhysAddress)
-			*outBank = NO;
+			*outBank = false;
 	}
 #endif
 }
@@ -390,7 +390,7 @@ CNewInternalFlash::configureFlashBank(VAddr& ioBankAddr, VAddr& inROAddr, VAddr&
 
 	if (f54)
 		// we’re using the MMU -- map the address
-		AddNewSecPNJT(kFlashBank1RWAddress, kFlashBank1PhysAddress, 0, kReadWrite, NO);
+		AddNewSecPNJT(kFlashBank1RWAddress, kFlashBank1PhysAddress, 0, kReadWrite, false);
 
 	fBCR->configureFlashBankDataSize(kMemoryLane32Bit);
 
@@ -402,10 +402,12 @@ CNewInternalFlash::configureFlashBank(VAddr& ioBankAddr, VAddr& inROAddr, VAddr&
 		{
 			C32BitFlashRange * range;
 #if defined(correct)
-			XFAILNOT(range = (C32BitFlashRange *)fAllocator->allocate(sizeof(C32BitFlashRange)), err = kOSErrNoMemory;)
+			range = (C32BitFlashRange *)fAllocator->allocate(sizeof(C32BitFlashRange));
+			XFAILIF(range == NULL, err = kOSErrNoMemory;)
 			new(range) C32BitFlashRange(driver, ioBankAddr, inROAddr, inRWAddr, kMemoryLane32Bit, info, *fAllocator);
 #else
-			XFAILNOT(range = new C32BitFlashRange(driver, ioBankAddr, inROAddr, inRWAddr, kMemoryLane32Bit, info, *fAllocator), err = kOSErrNoMemory;)
+			range = new C32BitFlashRange(driver, ioBankAddr, inROAddr, inRWAddr, kMemoryLane32Bit, info, *fAllocator);
+			XFAILIF(range == NULL, err = kOSErrNoMemory;)
 #endif
 			err = addFlashRange(range, ioBankAddr, inROAddr, inRWAddr, kFlashBank1PhysAddress);
 		}
@@ -427,7 +429,7 @@ CNewInternalFlash::configureIOBank(VAddr& ioBankAddr, VAddr& inROAddr, VAddr& in
 
 	if (f54)
 		// we’re using the MMU -- map the address
-		AddNewSecPNJT(inRWAddr, kFlashBank2PhysAddress, 0, kReadWrite, NO);
+		AddNewSecPNJT(inRWAddr, kFlashBank2PhysAddress, 0, kReadWrite, false);
 
 	XTRY
 	{
@@ -437,10 +439,12 @@ CNewInternalFlash::configureIOBank(VAddr& ioBankAddr, VAddr& inROAddr, VAddr& in
 		{
 			C32BitFlashRange * range;
 #if defined(correct)
-			XFAILNOT(range = (C32BitFlashRange *)fAllocator->allocate(sizeof(C32BitFlashRange)), err = kOSErrNoMemory;)
+			range = (C32BitFlashRange *)fAllocator->allocate(sizeof(C32BitFlashRange));
+			XFAILIF(range == NULL, err = kOSErrNoMemory;)
 			new(range) CFlashRange(driver, ioBankAddr, inROAddr, inRWAddr, kMemoryLane32Bit, info, *fAllocator);
 #else
-			XFAILNOT(range = new C32BitFlashRange(driver, ioBankAddr, inROAddr, inRWAddr, kMemoryLane32Bit, info, *fAllocator), err = kOSErrNoMemory;)
+			range = new C32BitFlashRange(driver, ioBankAddr, inROAddr, inRWAddr, kMemoryLane32Bit, info, *fAllocator);
+			XFAILIF(range == NULL, err = kOSErrNoMemory;)
 #endif
 			err = addFlashRange(range, ioBankAddr, inROAddr, inRWAddr, kFlashBank2PhysAddress);
 		}
@@ -458,10 +462,10 @@ CNewInternalFlash::addFlashRange(CFlashRange * inRange, VAddr& ioBankAddr, VAddr
 
 	fRange[fNumOfRanges++] = inRange;
 	if (!f58 || inRange->fFlashChipInfo.x08)
-		f58 = YES;
+		f58 = true;
 	ioBankAddr += inRange->fRangeSize;
-	alignAndMapVMRange(inROAddr, inPhysAddr, inRange->fRangeSize, YES, kReadOnly);
-	alignAndMapVMRange(inRWAddr, inPhysAddr, inRange->fRangeSize * (inRange->fDataWidth / 4), NO, kReadWrite);
+	alignAndMapVMRange(inROAddr, inPhysAddr, inRange->fRangeSize, true, kReadOnly);
+	alignAndMapVMRange(inRWAddr, inPhysAddr, inRange->fRangeSize * (inRange->fDataWidth / 4), false, kReadWrite);
 	if (fBlockSize < inRange->fBlockSize)
 		fBlockSize = inRange->fBlockSize;
 	inRange->resetAllBlocksStatus();
@@ -527,7 +531,7 @@ CNewInternalFlash::searchForFlashDrivers(void)
 			classInfo->makeAt(instance);
 #else
 			CFlashDriver * instance = new CPseudoFlashDriver;
-			XFAILNOT(instance, err = kOSErrNoMemory;)
+			XFAILIF(instance == NULL, err = kOSErrNoMemory;)
 #endif
 			fDriver[fNumOfDrivers++] = instance;
 			err = instance->init(*fAllocator);
@@ -547,10 +551,10 @@ CNewInternalFlash::findDriverAble(CFlashDriver*& outDriver, VAddr inAddr, eMemor
 		if (driver->identify(inAddr, inLane, outInfo))
 		{
 			outDriver = driver;
-			return YES;
+			return true;
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -573,7 +577,7 @@ CNewInternalFlash::checkFor4LaneFlash(VAddr inAddr, SFlashChipInformation& outIn
 	{
 		outInfo = lane1Info;
 		outDriver = lane1Driver;
-		return YES;
+		return true;
 	}
 
 	if (findDriverAble(lane1Driver, inAddr, kMemoryLane8Bit2, lane1Info)
@@ -589,19 +593,19 @@ CNewInternalFlash::checkFor4LaneFlash(VAddr inAddr, SFlashChipInformation& outIn
 	{
 		outInfo = lane1Info;
 		outDriver = lane1Driver;
-		return YES;
+		return true;
 	}
 	
-	return YES;//NO;
+	return true;//false;
 }
 
 bool
 CNewInternalFlash::checkFor2LaneFlash(VAddr, SFlashChipInformation&, CFlashDriver*&, eMemoryLane)
-{ return NO; }
+{ return false; }
 
 bool
 CNewInternalFlash::checkFor1LaneFlash(VAddr, SFlashChipInformation&, CFlashDriver*&, eMemoryLane)
-{ return NO; }
+{ return false; }
 
 
 NewtonErr
@@ -620,12 +624,14 @@ CNewInternalFlash::initializeState(CMemoryAllocator * inAllocator, eInitHWOption
 		f64 = kNoBlockIndex;
 		f44 = NULL;
 		fEraseErr = noErr;
-		f58 = NO;
+		f58 = false;
 #if defined(correct)
-		if (IsSuperMode())
+		if (IsSuperMode()) {
 			fSemaphore = NULL;
-		else
-			XFAILNOT(fSemaphore = new CULockingSemaphore, err = kOSErrNoMemory;)
+		} else {
+			fSemaphore = new CULockingSemaphore;
+			XFAILNOT(fSemaphore == NULL, err = kOSErrNoMemory;)
+		}
 #endif
 		f54 = inOptions;
 		fBCR = CBankControlRegister::getBankControlRegister();
@@ -882,7 +888,7 @@ CNewInternalFlash::internalCheckEraseCompletion(NewtonErr& outErr, eCheckEraseOp
 {
 	outErr = fEraseErr;
 	if (f44 == NULL)
-		return YES;
+		return true;
 
 	for (;;)
 	{
@@ -891,11 +897,11 @@ CNewInternalFlash::internalCheckEraseCompletion(NewtonErr& outErr, eCheckEraseOp
 			f44 = NULL;
 			if (outErr)
 				fEraseErr = outErr;
-			return YES;
+			return true;
 		}
 
 		if (inOption == kEraseAsync)
-			return NO;
+			return false;
 
 		Sleep(5 * kMilliseconds);
 	}
@@ -1005,7 +1011,7 @@ CNewInternalFlash::isVirgin(ZAddr inAddr, size_t inLength)
 //	CULockingSemaphoreGrabber grab(fSemaphore);
 	if (inAddr > fStoreSize - fBlockSize)
 		// improbable address
-		return NO;
+		return false;
 
 	size_t blockLen;
 	for (size_t lenRemaining = inLength; lenRemaining > 0; inAddr += blockLen, lenRemaining -= blockLen)
@@ -1019,7 +1025,7 @@ CNewInternalFlash::isVirgin(ZAddr inAddr, size_t inLength)
 		CFlashRange * range;
 		PAddr blockBase = fBlockMap[blockNo] * fBlockSize;
 		if (findRange(blockBase, range) != noErr)
-			return NO;
+			return false;
 
 		if (blockOffset == 0)
 		{
@@ -1028,9 +1034,9 @@ CNewInternalFlash::isVirgin(ZAddr inAddr, size_t inLength)
 			blockLen -= 4;
 		}
 		if (!range->isVirgin(blockBase + blockOffset, blockLen))
-			return NO;
+			return false;
 	}
-	return YES;
+	return true;
 }
 
 
@@ -1058,7 +1064,7 @@ void
 CNewInternalFlash::getWriteProtected(bool * outWP)
 {
 	// this is what the original does
-	*outWP = NO;
+	*outWP = false;
 }
 
 

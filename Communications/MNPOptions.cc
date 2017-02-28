@@ -20,7 +20,7 @@ CCMOMNPAllocate::CCMOMNPAllocate()
 	setLabel(kCMOMNPAllocate);
 	SETOPTIONLENGTH(CCMOMNPAllocate);
 
-	fMNPAlloc = YES;
+	fMNPAlloc = true;
 }
 
 
@@ -105,9 +105,9 @@ CCMOMNPDebugConnect::CCMOMNPDebugConnect()
 	setLabel(kCMOMNPDebugConnect);
 	SETOPTIONLENGTH(CCMOMNPDebugConnect);
 
-	fARACompatibleMode = NO;
-	fClass4 = YES;
-	fStreamModeMax = YES;
+	fARACompatibleMode = false;
+	fClass4 = true;
+	fStreamModeMax = true;
 	fMaxCredit = 8;
 	fMaxDataSize = 64;
 }

@@ -21,18 +21,15 @@ extern ObjHeader * ObjectPtr1(Ref inObj, long inTag, bool inDoFaultCheck);
 
 /*------------------------------------------------------------------------------
 	Newton stores magic pointers in a sized C array.
+const MagicPointerTable gROMMagicPointerTable = {872, Ref,...};
+------------------------------------------------------------------------------*/
 
 struct MagicPointerTable
 {
-	ULong	numOfPointers;
-	Ref	magicPointer[872];
-};
-
-const MagicPointerTable magicPointers = {872};		// 01D80000
-
-	We generate magic pointers as a NS array. so the code is slightly different.
-------------------------------------------------------------------------------*/
-
+	ArrayIndex	numOfPointers;
+	Ref			magicPointer[872];
+}__attribute__((packed));
+extern MagicPointerTable gROMMagicPointerTable;
 
 #define kMPTableShift	12
 #define kMPTableMask		0x3FFFF000
@@ -57,10 +54,10 @@ ResolveMagicPtr(Ref r)
 
 	if (table == 0)		// table 0 is yer actual magic pointers
 	{
-#if defined(correct)
-		if (index < magicPointers.numOfPointers)
+#if 1
+		if (index < gROMMagicPointerTable.numOfPointers)
 		{
-			return ObjectPtr(magicPointers.magicPointer[index]);
+			return ObjectPtr(gROMMagicPointerTable.magicPointer[index]);
 		}
 #else
 		ArrayObject *  mp = (ArrayObject *)PTR(gConstNSData->magicPointers);
@@ -129,7 +126,7 @@ ObjectPtr(Ref r)
 	{
 		return ResolveMagicPtr(r);
 	}
-	return ObjectPtr1(r, tag, NO);
+	return ObjectPtr1(r, tag, false);
 }
 
 
@@ -148,7 +145,7 @@ FaultCheckObjectPtr(Ref r)
 	{
 		return ResolveMagicPtr(r);
 	}
-	return ObjectPtr1(r, tag, YES);	// only difference from ObjectPtr()
+	return ObjectPtr1(r, tag, true);	// only difference from ObjectPtr()
 }
 
 
@@ -171,7 +168,7 @@ NoFaultObjectPtr(Ref r)
 	{
 		return ResolveMagicPtr(r);
 	}
-	return ObjectPtr1(r, tag, NO);
+	return ObjectPtr1(r, tag, false);
 }
 
 
@@ -189,7 +186,7 @@ ForwardReference(Ref r)
 	if (ISREALPTR(r))
 	{
 		ForwardingObject * foPtr = (ForwardingObject *)PTR(r);
-		if (foPtr->flags & kObjForward)
+		if (FLAGTEST(foPtr->flags, kObjForward))
 			return ForwardReference1(foPtr);
 	}
 	return r;
@@ -219,7 +216,7 @@ ForwardReference1(ForwardingObject * foPtr)
 			fr = ref;
 			fo = (ForwardingObject *)NoFaultObjectPtr(ref);
 		}
-	} while (fo->flags & kObjForward);
+	} while (FLAGTEST(fo->flags, kObjForward));
 	ref = MAKEPTR(fo);
 	if (fr == INVALIDPTRREF)
 		fr = ref;
@@ -253,7 +250,7 @@ DirtyObject(Ref r)
 {
 	ObjHeader * oPtr = ObjectPtr(r);
 
-	if ((oPtr->flags & kObjReadOnly) == 0)
+	if (!FLAGTEST(oPtr->flags, kObjReadOnly))
 		oPtr->flags |= kObjDirty;
 }
 
@@ -269,7 +266,7 @@ UndirtyObject(Ref r)
 {
 	ObjHeader * oPtr = ObjectPtr(r);
 
-	if ((oPtr->flags & kObjReadOnly) == 0)
+	if (!FLAGTEST(oPtr->flags, kObjReadOnly))
 		oPtr->flags &= ~kObjDirty;
 }
 
@@ -286,7 +283,7 @@ LockRef(Ref r)
 {
 	ObjHeader * oPtr = ObjectPtr(r);
 
-	if (oPtr->flags & kObjReadOnly)
+	if (FLAGTEST(oPtr->flags, kObjReadOnly))
 		return;
 	if (oPtr->gc.count.locks == 0xFF)
 		return;
@@ -306,7 +303,7 @@ UnlockRef(Ref r)
 {
 	ObjHeader * oPtr = ObjectPtr(r);
 
-	if (oPtr->flags & kObjReadOnly)
+	if (FLAGTEST(oPtr->flags, kObjReadOnly))
 		return;
 	if (oPtr->gc.count.locks == 0xFF)
 		return;
@@ -345,7 +342,7 @@ Ref *
 Slots(Ref r)
 {
 	ArrayObject * oPtr = (ArrayObject *)ObjectPtr(r);
-	if (!(oPtr->flags & kObjSlotted))
+	if (!FLAGTEST(oPtr->flags, kObjSlotted))
 		ThrowBadTypeWithFrameData(kNSErrNotAnArray, r);
 
 	return oPtr->slot;
@@ -418,7 +415,7 @@ EQ1(Ref a, Ref b)
 	if (ISREALPTR(a))
 	{
 		obj1 = PTR(a);
-		if (obj1->flags & kObjForward)
+		if (FLAGTEST(obj1->flags, kObjForward))
 			obj1 = PTR(ForwardReference(a));
 	}
 	else
@@ -427,17 +424,17 @@ EQ1(Ref a, Ref b)
 	if (ISREALPTR(b))
 	{
 		obj2 = PTR(b);
-		if (obj2->flags & kObjForward)
+		if (FLAGTEST(obj2->flags, kObjForward))
 			obj2 = PTR(ForwardReference(b));
 	}
 	else
 		obj2 = NoFaultObjectPtr(b);
 
 	if (obj1 == obj2)
-		return YES;
+		return true;
 /*
 	if (a < x0071FC4C && b < x0071FC4C)		// x0071FC4C is "RExBlock"
-		return NO;
+		return false;
 */
 //	There are some loose symbols in the ROM - they arenÕt in the symbol table
 //	so we have to make a manual check for them.
@@ -450,7 +447,7 @@ EQ1(Ref a, Ref b)
 bool
 EQRef(Ref a, Ref b)
 {
-	return (a == b) ? YES : ((a & b & kTagPointer) ? EQ1(a,b) : NO);
+	return (a == b) ? true : ((a & b & kTagPointer) ? EQ1(a,b) : false);
 }
 
 #pragma mark -
@@ -468,13 +465,13 @@ SetupListEQ(Ref obj)
 		if (ISREALPTR(obj))
 		{
 			objPtr = PTR(obj);
-			if (objPtr->flags & kObjForward)
-				return (Ptr) PTR(ForwardReference(obj));
+			if (FLAGTEST(objPtr->flags, kObjForward))
+				return (Ptr)PTR(ForwardReference(obj));
 		}
 		else
-			return (Ptr) NoFaultObjectPtr(obj);
+			return (Ptr)NoFaultObjectPtr(obj);
 	}
-	return (Ptr) objPtr;
+	return (Ptr)objPtr;
 }
 
 
@@ -484,16 +481,16 @@ ListEQ1(Ref a, Ref b, Ptr bPtr)	// very similar to EQ1
 	ObjHeader * aPtr = PTR(a);
 	if (ISREALPTR(a))
 	{
-		if (aPtr->flags & kObjForward)
+		if (FLAGTEST(aPtr->flags, kObjForward))
 			aPtr = PTR(ForwardReference(a));
 	}
 	else
 		aPtr = NoFaultObjectPtr(a);
 	if (aPtr == (ObjHeader *)bPtr)
-		return YES;
+		return true;
 /*
 	if (a < x0071FC4C && b < x0071FC4C)		// x0071FC4C is "RExBlock"
-		return NO;
+		return false;
 */
 	return (((SymbolObject *)aPtr)->objClass == kSymbolClass && ((SymbolObject *)bPtr)->objClass == kSymbolClass
 	    &&  ((SymbolObject *)aPtr)->hash == ((SymbolObject *)bPtr)->hash
@@ -504,5 +501,5 @@ ListEQ1(Ref a, Ref b, Ptr bPtr)	// very similar to EQ1
 bool
 ListEQ(Ref a, Ref b, Ptr bPtr)
 {
-	return (a == b) ? YES : ((a & b & kTagPointer) ? ListEQ1(a,b,bPtr) : NO);
+	return (a == b) ? true : ((a & b & kTagPointer) ? ListEQ1(a,b,bPtr) : false);
 }

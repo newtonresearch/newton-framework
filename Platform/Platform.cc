@@ -90,6 +90,14 @@ PowerOnSystem(void)
 {
 	return GetPlatformDriver()->powerOnSystem();
 }
+// PowerOffSystem is in Scheduler.cc
+
+
+NewtonErr
+PowerOffSystemKernelGlue(void)
+{
+	return GetPlatformDriver()->powerOffSystem();
+}
 
 
 NewtonErr
@@ -103,10 +111,21 @@ PauseSystemKernelGlue(void)
 }
 
 
-NewtonErr
-PowerOffSystemKernelGlue(void)
+void
+IOPowerOn(ULong inSelector)
 {
-	return GetPlatformDriver()->powerOffSystem();
+	CPlatformDriver * driver = GetPlatformDriver();
+	if (driver)
+		driver->powerOnSubsystem(inSelector);
+}
+
+
+void
+IOPowerOff(ULong inSelector)
+{
+	CPlatformDriver * driver = GetPlatformDriver();
+	if (driver)
+		driver->powerOffSubsystem(inSelector);
 }
 
 
@@ -230,7 +249,7 @@ CMacPlatform::timerInterruptHandler(void)
 
 bool
 CMacPlatform::resetZAPStoreCheck(void)
-{ return NO; }
+{ return false; }
 
 
 NewtonErr

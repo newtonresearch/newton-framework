@@ -38,6 +38,10 @@ Ref	FDV(RefArg inRcvr, RefArg inView);
 Ref	FViewAutopsy(RefArg inRcvr, RefArg inWhat);
 Ref	FInsetRect(RefArg inRcvr, RefArg ioRect, RefArg inX, RefArg inY);
 Ref	FOffsetRect(RefArg inRcvr, RefArg ioRect, RefArg inX, RefArg inY);
+Ref	FIsPtInRect(RefArg inRcvr, RefArg inX, RefArg inY, RefArg inRect);
+Ref	FRectsOverlap(RefArg inRcvr, RefArg inRect1, RefArg inRect2);
+Ref	FSectRect(RefArg inRcvr, RefArg inRect1, RefArg inRect2);
+Ref	FUnionRect(RefArg inRcvr, RefArg inRect1, RefArg inRect2);
 }
 
 
@@ -112,9 +116,9 @@ FDV(RefArg inRcvr, RefArg inView)
 		view->dump(0);
 		for (ArrayIndex i = 0; i < 8; ++i)
 		{
-			view->hilite(YES);
+			view->hilite(true);
 			Wait(100);
-			view->hilite(NO);
+			view->hilite(false);
 			Wait(100);
 		}
 	}
@@ -167,5 +171,90 @@ FOffsetRect(RefArg inRcvr, RefArg ioRect, RefArg inX, RefArg inY)
 		return ToObject(&box);
 	}
 	return NILREF;	
+}
+
+
+Ref
+FIsPtInRect(RefArg inRcvr, RefArg inX, RefArg inY, RefArg inRect)
+{
+	Rect  box;
+	if (FromObject(inRect, &box))
+	{
+		Point pt;
+		pt.h = RINT(inX);
+		pt.v = RINT(inY);
+		return MAKEBOOLEAN(PtInRect(pt, &box));
+	}
+	return NILREF;	
+}
+
+
+Ref
+FRectsOverlap(RefArg inRcvr, RefArg inRect1, RefArg inRect2)
+{
+	Rect  box1, box2;
+	if (FromObject(inRect1, &box1) && FromObject(inRect2, &box2))
+	{
+		return MAKEBOOLEAN(Overlaps(&box1, &box2));
+	}
+	return NILREF;	
+}
+
+
+Ref
+FSectRect(RefArg inRcvr, RefArg inRect1, RefArg inRect2)
+{
+	Rect  box1, box2;
+	if (FromObject(inRect1, &box1) && FromObject(inRect2, &box2))
+	{
+		Rect sectBox;
+		SectRect(&box1, &box2, &sectBox);
+		return ToObject(&sectBox);
+	}
+	return NILREF;	
+}
+
+
+Ref
+FUnionRect(RefArg inRcvr, RefArg inRect1, RefArg inRect2)
+{
+	if (ISNIL(inRect1))
+		return Clone(inRect2);
+	
+	Rect  box1, box2;
+	if (FromObject(inRect1, &box1) && FromObject(inRect2, &box2))
+	{
+		Rect unionBox;
+		UnionRect(&box1, &box2, &unionBox);
+		return ToObject(&unionBox);
+	}
+	return NILREF;	
+}
+
+
+Ref
+FUnionPoint(RefArg inRcvr, RefArg inRect, RefArg inX, RefArg inY)
+{
+	Rect  box;
+	if (ISNIL(inRect))
+	{
+		box.top = RINT(inY);
+		box.left = RINT(inX);
+		box.bottom = RINT(inY);
+		box.right = RINT(inX);
+		return ToObject(&box);
+	}
+	else
+	{
+		if (FromObject(inRect, &box))
+		{
+			Point pt;
+			pt.h = RINT(inX);
+			pt.v = RINT(inY);
+			UnionRect(&box, pt);
+			return ToObject(&box);
+		}
+	}
+	return NILREF;
 }
 

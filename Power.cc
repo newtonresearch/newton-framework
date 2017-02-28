@@ -8,8 +8,13 @@
 
 #include "Objects.h"
 #include "Power.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
+#include "EventHandler.h"
 
+
+/*--------------------------------------------------------------------------------
+	P l a i n   C   I n t e r f a c e
+--------------------------------------------------------------------------------*/
 
 extern "C" {
 Ref	FPowerOff(RefArg rcvr);
@@ -26,50 +31,79 @@ Ref	FGetPowerStats(RefArg rcvr);
 Ref	FResetPowerStats(RefArg rcvr);
 }
 
-int	SleepUntilNextWakeup(void);
-ULong	CyclePower(void);
 
-#if 0
-Ref
-FPowerOff(RefArg rcvr)
+/*--------------------------------------------------------------------------------
+	C P o w e r E v e n t H a n d l e r
+--------------------------------------------------------------------------------*/
+typedef int PowerPlantStatus;
+int	SetBatteryType(ULong, ULong);
+int	GetPowerPlantStatus(ULong, PowerPlantStatus *);
+int	GetRawPowerPlantStatus(ULong, PowerPlantStatus *);
+int	GetPowerPlantCount(void);
+
+#if !defined(forFramework)
+
+void
+CPowerEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
 {
-	Ref reason;
-	int wakeReason = SleepUntilNextWakeup();
-
-	//...zzz...
-
-	FMinimumBatteryCheck(RA(NILREF));
-	if (EQ(GetPreference(SYMA(blessedApp)), SYMA(setup)))
-		LoadInkerCalibration();
-	gLastWakeupTime = GetGlobalTime();
-	switch (wakeReason)
+#if defined(correct)
+	switch (inEvent->x08)
 	{
+	case 1:
 	case 2:
-		reason = RSYMserialGPI;
-		break;
 	case 3:
-		reason = RSYMalarm;
+		inEvent->x08 = 100;
+		setReply(16, inEvent);
 		break;
 	case 4:
-		reason = RSYMuser;
+		inEvent->x08 = GetPowerPlantStatus(inEvent->x0C, &inEvent->x10);
+		setReply(68, inEvent);
 		break;
 	case 5:
-		reason = RSYMcardLock;
+		inEvent->x08 = GetRawPowerPlantStatus(inEvent->x0C, &inEvent->x10);
+		setReply(68, inEvent);
+		break;
+	case 6:
+		inEvent->x0C = GetPowerPlantCount();
+		setReply(16, inEvent);
 		break;
 	case 7:
-		reason = RSYMinterconnect;
+		inEvent->x0C = SetBatteryType(inEvent->x0C, inEvent->x10);
 		break;
 	default:
-		reason = RSYMbecause;
-		break;
+		gPowerManager->doCommand(inToken, inSize, inEvent);
+		gPowerManager->eventSetReply(16);
 	}
-	return reason;
+#endif
 }
 
+
+void
+CPowerEventHandler::eventCompletionProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
+{
+#if defined(correct)
+	gPowerManager->doReply(inToken, inSize, inEvent);
+#endif
+}
+
+#endif
+
+
+/*--------------------------------------------------------------------------------
+	P o w e r
+--------------------------------------------------------------------------------*/
+extern "C" {
+Ref	FSetLCDContrast(RefArg inRcvr, RefArg inContrast);
+}
+
+
+int	SleepUntilNextWakeup(void);
+ULong	CyclePower(void);
 
 int
 SleepUntilNextWakeup(void)
 {
+#if defined(correct)
 	ULong pwrEvt;
 	FBacklight(RA(NILREF), RA(NILREF));
 	pwrEvt = CyclePower();
@@ -77,15 +111,19 @@ SleepUntilNextWakeup(void)
 		ClearHardKeymap();
 	FSetLCDContrast(RA(NILREF), GetPreference(SYMA(lcdContrast)));
 	return TranslatePowerEvent(pwrEvt);
+#else
+	return 0;
+#endif
 }
 
 
 ULong
 CyclePower(void)
 {
+#if defined(correct)
 	//CSysEventRequest sp+2C
-	CSendSystemEvent sysEvent('pwof');	//sp18
-	CPowerEvent pwrEvent('sysm', 'pwof');		//sp08
+	CSendSystemEvent sysEvent(kSysEvent_PowerOff);	//sp18
+	CPowerEvent pwrEvent(kSystemEventId, kSysEvent_PowerOff);		//sp08
 	StackLimits limits;			//sp00
 	ULong pwrEvt;
 	NewtonErr err;
@@ -94,7 +132,7 @@ CyclePower(void)
 	sysEvent.sendSystemEvent(&pwrEvent, 12);
 
 	BatteryShutDown();
-	LCDPowerOff(YES);
+	LCDPowerOff(true);
 	TabShutDown();
 
 	while (IsInternalFlashEraseActive())
@@ -124,14 +162,81 @@ CyclePower(void)
 		UnlockStack(&limits);
 	}
 
-	LCDPowerInit(YES);
-	sysEvent->setEvent('pwon');
+	LCDPowerInit(true);
+	sysEvent->setEvent(kSysEvent_PowerOn);
 	sysEvent->sendSystemEvent(&pwrEvent, 16);
 	TabWakeup();
 	gPowerInterruptAsyncMessage->abort();
 	return pwrEvt;
-}
+#else
+	return 0;
 #endif
+}
+
+
+/*--------------------------------------------------------------------------------
+	P l a i n   C   I n t e r f a c e
+--------------------------------------------------------------------------------*/
+extern CTime gLastWakeupTime;
+
+Ref
+FPowerOff(RefArg rcvr)
+{
+	Ref reason;
+	int wakeReason = SleepUntilNextWakeup();
+#if defined(correct)
+
+	//...zzz...
+
+	FMinimumBatteryCheck(RA(NILREF));
+	if (EQ(GetPreference(SYMA(blessedApp)), SYMA(setup)))
+		LoadInkerCalibration();
+	gLastWakeupTime = GetGlobalTime();
+#endif
+	switch (wakeReason)
+	{
+	case 2:
+		reason = SYMA(serialGPI);
+		break;
+	case 3:
+		reason = SYMA(alarm);
+		break;
+	case 4:
+		reason = SYMA(user);
+		break;
+	case 5:
+		reason = SYMA(cardLock);
+		break;
+	case 7:
+		reason = SYMA(interconnect);
+		break;
+	default:
+		reason = SYMA(because);
+		break;
+	}
+	return reason;
+}
+
+
+Ref
+FMinimumBatteryCheck(RefArg inRcvr)
+{
+	bool  isDead = false;
+#if defined(correct)
+	for ( ; ; )
+	{
+		PowerPlantStatus  pwr;  // size +34
+		if (GetBatteryStatus(0, &pwr, false) == 0)
+		{
+			if (pwr.f18 == 1 || pwr.f08 > pwr.f10)
+				break;
+			isDead = true;
+			SleepUntilNextWakeup();
+		}
+	}
+#endif
+	return MAKEBOOLEAN(isDead);
+}
 
 
 Ref

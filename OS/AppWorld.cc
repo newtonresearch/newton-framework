@@ -25,10 +25,10 @@
 
 CForkWorld::CForkWorld()
 {
-	fIsFirstInstance = YES;
-	fIsTasked = YES;
-	fIsReady = NO;
-	fIsEnabled = NO;
+	fIsFirstInstance = true;
+	fIsTasked = true;
+	fIsReady = false;
+	fIsEnabled = false;
 	fParent = NULL;
 	fStackSize = kSpawnedTaskStackSize;
 	fName = 0;
@@ -73,7 +73,8 @@ CForkWorld::taskConstructor(void)
 		if (fIsFirstInstance)
 		{
 			// this is the first, main instance of the task
-			XFAILNOT(fMutex = new CUMutex, err = MemError();)
+			fMutex = new CUMutex;
+			XFAILIF(fMutex == NULL, err = MemError();)
 			XFAIL(err = fMutex->init())
 			fMutex->f0C++;
 			fMutex->f10++;
@@ -124,7 +125,7 @@ CForkWorld::taskMain(void)
 {
 	if (acquireMutex() == noErr)
 	{
-		fIsReady = YES;
+		fIsReady = true;
 		if (!fIsFirstInstance
 		|| (preMain() == noErr && fIsTasked))
 			theMain();
@@ -144,7 +145,7 @@ CForkWorld::taskMain(void)
 NewtonErr
 CForkWorld::forkInit(CForkWorld * inWorld)
 {
-	fIsFirstInstance = NO;
+	fIsFirstInstance = false;
 	fParent = inWorld;
 	fMutex = inWorld->fMutex;
 	fStackSize = inWorld->fStackSize;
@@ -191,7 +192,7 @@ CForkWorld::mainInit(ULong inName, size_t inStackSize)
 {
 	fName = inName;
 	fStackSize = inStackSize;
-	return startTask(YES, NO, kNoTimeout, fStackSize, fPriority, fName);
+	return startTask(true, false, kNoTimeout, fStackSize, fPriority, fName);
 }
 
 
@@ -210,7 +211,7 @@ CForkWorld::mainInit(ULong inName, size_t inStackSize, ULong inPriority, ObjectI
 	fName = inName;
 	fStackSize = inStackSize;
 	fPriority = inPriority;
-	return startTask(YES, NO, kNoTimeout, fStackSize, fPriority, fName, inEnvironment);
+	return startTask(true, false, kNoTimeout, fStackSize, fPriority, fName, inEnvironment);
 }
 
 
@@ -319,14 +320,14 @@ CForkWorld::fork(CForkWorld * inWorld)
 	{
 		if (fIsEnabled && fIsReady)
 		{
-			XFAIL(inWorld == NULL && fIsTasked == NO)	// not really an error
+			XFAIL(inWorld == NULL && fIsTasked == false)	// not really an error
 
 			CForkWorld * newFork = (inWorld != NULL) ? inWorld : makeFork();
-			XFAILNOT(newFork, err = kOSErrCouldNotCreateObject;)
+			XFAILIF(newFork == NULL, err = kOSErrCouldNotCreateObject;)
 			XFAIL(err = newFork->forkInit(this))
-			XFAIL(err = newFork->startTask(YES, NO, kNoTimeout, fStackSize, fPriority, fName))
+			XFAIL(err = newFork->startTask(true, false, kNoTimeout, fStackSize, fPriority, fName))
 			SetBequeathId(newFork->fChildTask);
-			fIsTasked = NO;
+			fIsTasked = false;
 			delete newFork;
 		}
 	}
@@ -359,7 +360,7 @@ NewtonErr
 CForkWorld::acquireMutex(void)
 {
 	long result = fMutex->acquire(kWaitOnBlock);
-	forkSwitch(YES);
+	forkSwitch(true);
 	return result;
 }
 
@@ -373,7 +374,7 @@ CForkWorld::acquireMutex(void)
 NewtonErr
 CForkWorld::releaseMutex(void)
 {
-	forkSwitch(NO);
+	forkSwitch(false);
 	long result = fMutex->release();
 	if (result == kOSErrSemaphoreWouldCauseBlock)
 		result = noErr;
@@ -390,13 +391,13 @@ CAppWorldState::CAppWorldState()
 {
 	fErr = noErr;
 	fFilter = 0xFFFFFFFF;
-	fIsTokenOnly = NO;
-	fOnMsgAvail = NO;
+	fIsTokenOnly = false;
+	fOnMsgAvail = false;
 	fEventSize = 0;
 	fMsgSize = 256;
 	fMsgToken = NULL;
 	fEvent = (CEvent *)fEventBuf;
-	fDone = NO;
+	fDone = false;
 }
 
 CAppWorldState::~CAppWorldState()
@@ -435,7 +436,7 @@ CAppWorldState::nestedEventLoop(void)
 	}
 	newton_catch_all
 	{
-		fDone = YES;
+		fDone = true;
 	}
 	end_try;
 }
@@ -443,7 +444,7 @@ CAppWorldState::nestedEventLoop(void)
 void
 CAppWorldState::terminateNestedEventLoop(void)
 {
-	fDone = YES;
+	fDone = true;
 }
 
 #pragma mark -
@@ -533,7 +534,8 @@ CAppWorld::forkConstructor(CForkWorld * inWorld)
 	{
 		XFAIL(err = CForkWorld::forkConstructor(inWorld))
 
-		XFAILNOT(fWorldState = new CAppWorldState, err = MemError();)
+		fWorldState = new CAppWorldState;
+		XFAILIF(fWorldState == NULL, err = MemError();)
 		fWorldState->fEvent = (CEvent *)fWorldState->fEventBuf;
 		fWorldState->fMsgToken = &fWorldState->fMsgTokenBuf;
 		fAppState = fWorldState;
@@ -579,7 +581,8 @@ CAppWorld::mainConstructor(void)
 	{
 		XFAIL(err = CForkWorld::mainConstructor())
 
-		XFAILNOT(fWorldState = new CAppWorldState, err = MemError();)
+		fWorldState = new CAppWorldState;
+		XFAILIF(fWorldState == NULL, err = MemError();)
 		fWorldState->fEvent = (CEvent *)fWorldState->fEventBuf;
 		fWorldState->fMsgToken = &fWorldState->fMsgTokenBuf;
 		fAppState = fWorldState;
@@ -588,10 +591,12 @@ CAppWorld::mainConstructor(void)
 		{
 			CUNameServer	ns;
 			MAKE_ID_STR(fPortName,portName);
-			XFAIL(err = ns.registerName(portName, (char *)kUPort, (OpaqueRef)getMyPort(), 0))
+			XFAIL(err = ns.registerName(portName, kUPort, (ObjectId)*getMyPort(), 0))
 		}
-		XFAILNOT(fHandlers = new CSortedList(&fEventCmp), err = MemError();)
-		XFAILNOT(fTimers = new CTimerQueue(), err = MemError();)
+		fHandlers = new CSortedList(&fEventCmp);
+		XFAILIF(fHandlers == NULL, err = MemError();)
+		fTimers = new CTimerQueue();
+		XFAILIF(fTimers == NULL, err = MemError();)
 	}
 	XENDTRY;
 	return err;
@@ -690,6 +695,8 @@ CAppWorld::eventDispatch(ULong inFlags, CUMsgToken * inMsgToken, size_t * outSiz
 {
 	NewtonErr			err = noErr;
 	CEventHandler *	handler;
+
+//printf("CAppWorld::eventDispatch(flags=%08X)  %c%c%c%c\n", inFlags, fName>>24,fName>>16,fName>>8,fName);
 
 	if ((inFlags & 0x03000000) != 0
 	&&  inMsgToken != NULL)
@@ -918,7 +925,7 @@ CAppWorld::eventLoop(CAppWorldState * inState)
 
 		releaseMutex();
 		NewtonErr err = fAppState->waitForEvent(tmOut);
-printf("CAppWorld::eventLoop() : %c%c%c%c waitForEvent(%d) -> %d\n", fName>>24,fName>>16,fName>>8,fName,tmOut,err);
+//printf("CAppWorld::eventLoop() : %c%c%c%c waitForEvent(%d) -> %d\n", fName>>24,fName>>16,fName>>8,fName,tmOut,err);
 		acquireMutex();
 
 		if (err != kOSErrMessageTimedOut)
@@ -935,7 +942,7 @@ printf("CAppWorld::eventLoop() : %c%c%c%c waitForEvent(%d) -> %d\n", fName>>24,f
 		}
 	} while (!fAppState->fDone);
 
-	fAppState->fDone = NO;
+	fAppState->fDone = false;
 	fAppState = saveState;
 }
 
@@ -948,7 +955,7 @@ CAppWorld::eventLoop(CAppWorldState * inState, CUMsgToken * inMsg)
 void
 CAppWorld::eventTerminateLoop(void)
 {
-	fAppState->fDone = YES;
+	fAppState->fDone = true;
 }
 
 #pragma mark -

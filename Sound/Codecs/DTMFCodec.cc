@@ -7,6 +7,7 @@
 */
 
 #include "DTMFCodec.h"
+#include "SoundErrors.h"
 #include <math.h>
 
 #define k2Pi 6.2831853
@@ -95,7 +96,7 @@ CDTMFCodec::reset(CodecBlock * inParms)
 	fLoopCount = 0;
 	fLoopIndex = 0;
 	fNumOfSamplesInSound = 0;
-	fIsCompleted = NO;
+	fIsCompleted = false;
 	fSampleIndex = 0;
 	for (ArrayIndex i = 0; i < kMaxTones; ++i)
 	{
@@ -113,7 +114,7 @@ CDTMFCodec::produce(void * outBuf, size_t * ioBufSize, size_t * outDataSize, Cod
 	NewtonErr err;
 	XTRY
 	{
-		XFAILIF(fComprData == NULL || CANONICAL_SHORT(fComprData->blockType) != 1, err = -30008;)	// no samples
+		XFAILIF(fComprData == NULL || CANONICAL_SHORT(fComprData->blockType) != 1, err = kSndErrNoSamples;)
 
 		float	attackFactor[kMaxTones];	// amplitude increment / sample
 		float	decayFactor[kMaxTones];
@@ -242,7 +243,7 @@ CDTMFCodec::produce(void * outBuf, size_t * ioBufSize, size_t * outDataSize, Cod
 						fSampleIndex = 0;
 					}
 					else
-						fIsCompleted = YES;
+						fIsCompleted = true;
 				}
 				*p++ = sample;
 			}
@@ -323,7 +324,7 @@ CDTMFCodec::produce(void * outBuf, size_t * ioBufSize, size_t * outDataSize, Cod
 						fSampleIndex = 0;
 					}
 					else
-						fIsCompleted = YES;
+						fIsCompleted = true;
 				}
 				*p++ = sample;
 			}
@@ -432,7 +433,7 @@ CDTMFCodec::produce(void * outBuf, size_t * ioBufSize, size_t * outDataSize, Cod
 						fSampleIndex = 0;
 					}
 					else
-						fIsCompleted = YES;
+						fIsCompleted = true;
 				}
 				*p++ = sample;
 			}
@@ -541,7 +542,7 @@ CDTMFCodec::produce(void * outBuf, size_t * ioBufSize, size_t * outDataSize, Cod
 						fSampleIndex = 0;
 					}
 					else
-						fIsCompleted = YES;
+						fIsCompleted = true;
 				}
 				*p++ = sample;
 			}
@@ -679,7 +680,7 @@ CDTMFCodec::produce(void * outBuf, size_t * ioBufSize, size_t * outDataSize, Cod
 						fSampleIndex = 0;
 					}
 					else
-						fIsCompleted = YES;
+						fIsCompleted = true;
 				}
 				*p++ = sample;
 			}
@@ -689,7 +690,7 @@ CDTMFCodec::produce(void * outBuf, size_t * ioBufSize, size_t * outDataSize, Cod
 		*ioBufSize = numOfSamples * sizeof(short);
 		*outDataSize = 0;
 		ioParms->dataType = fDataType;
-		ioParms->comprType = 6;
+		ioParms->comprType = kSampleLinear;
 		ioParms->sampleRate = fSamplesPerSecond;
 		err = noErr;
 	}
@@ -704,7 +705,7 @@ CDTMFCodec::consume(const void * inBuf, size_t * ioBufSize, size_t * outDataSize
 {
 	fComprDataOffset = fComprDataLength;
 	*outDataSize = 0;
-	return -30008;	// no samples
+	return kSndErrNoSamples;
 }
 
 

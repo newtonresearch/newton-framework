@@ -49,8 +49,8 @@ public:
 //	static NewtonErr	register(ULong inName)		{ return checkIn(inName); }	// reserved word name clash
 //	static NewtonErr	deregister(ULong inName)	{ return checkOut(inName); }
 
-	static NewtonErr	setAlarm(ULong inName, CTime inTime, ObjectId inPortId, ObjectId inMsgId, void * inObj, long inObjSize, ULong inType);
-	static NewtonErr	setAlarm(ULong inName, ULong inTime, NewtonInterruptHandler inHandler, void * inObj, ULong inWakeUp = YES, ULong inRelative = NO);
+	static NewtonErr	setAlarm(ULong inName, CTime inTime, ObjectId inPortId, ObjectId inMsgId, void * inObj, size_t inObjSize, ULong inType);
+	static NewtonErr	setAlarm(ULong inName, ULong inTime, NewtonInterruptHandler inHandler, void * inObj, ULong inWakeUp = true, ULong inRelative = false);
 	static bool			primSetAlarm(ULong inTime);
 	static bool			primRawSetAlarm(ULong inTime);
 	static NewtonErr	clearAlarm(ULong inName);

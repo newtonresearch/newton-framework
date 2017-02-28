@@ -8,11 +8,13 @@
 
 #include "Quartz.h"
 #include "QDPatterns.h"
+#include "Geometry.h"
 #include "DrawShape.h"
+#include "ViewFlags.h"
 
 #include "Objects.h"
 #include "Iterators.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "OSErrors.h"
 
 extern "C" OSErr	PtrToHand(const void * srcPtr, Handle * dstHndl, long size);
@@ -24,11 +26,15 @@ extern int gScreenHeight;
 
 extern "C" {
 Ref		FPictureBounds(RefArg inRcvr, RefArg inPicture);
+Ref		FPictToShape(RefArg inRcvr, RefArg inPicture);
 Ref		FCopyBits(RefArg inRcvr, RefArg inImage, RefArg inX, RefArg inY, RefArg inTransferMode);
 Ref		FDrawXBitmap(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3);
 Ref		FGrayShrink(RefArg inRcvr, RefArg inArg1, RefArg inArg2);
 Ref		FDrawIntoBitmap(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3);
 Ref		FViewIntoBitmap(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3);
+Ref		FGetBitmapPixel(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3);
+Ref		FHitShape(RefArg inRcvr, RefArg inShape, RefArg inX, RefArg inY);
+Ref		FPtInPicture(RefArg inRcvr, RefArg inX, RefArg inY, RefArg inPicture);
 }
 
 Rect *	PictureBounds(const unsigned char * inData, Rect * outRect);
@@ -44,27 +50,40 @@ void		DrawPicture(char * inPicture, size_t inPictureSize, const Rect * inRect);
 	Args:		inIcon
 				inFrame
 				inJustify
+				inTransferMode
 	Return:	--
 ------------------------------------------------------------------------------*/
 
 void
-DrawPicture(RefArg inIcon, const Rect * inFrame, ULong inJustify /*, long inTransferMode*/)
+DrawPicture(RefArg inIcon, const Rect * inFrame, ULong inJustify, int inTransferMode)
 {
 	Rect  iconRect;
 
-	if (IsBinary(inIcon) && EQRef(ClassOf(inIcon), RSYMpicture))
+	if (IsBinary(inIcon) && EQ(ClassOf(inIcon), SYMA(picture)))
 	{
 		CDataPtr	iconData(inIcon);
-		DrawPicture(iconData, Length(inIcon), Justify(PictureBounds(iconData, &iconRect), inFrame, inJustify));
+//		DrawPicture(iconData, Length(inIcon), Justify(PictureBounds(iconData, &iconRect), inFrame, inJustify));
 	}
 
-	else if (IsFrame(inIcon) && !IsInstance(inIcon, RSYMbitmap)
+	else if (IsFrame(inIcon) && !IsInstance(inIcon, SYMA(bitmap))
 			&& (FrameHasSlot(inIcon, SYMA(bits)) || FrameHasSlot(inIcon, SYMA(colorData))))
 	{
 		RefVar	iconBounds(GetFrameSlot(inIcon, SYMA(bounds)));
 		if (!FromObject(iconBounds, &iconRect))
 			ThrowMsg("bad pictBounds frame");
-		DrawBitmap(inIcon, Justify(&iconRect, inFrame, inJustify));
+		Justify(&iconRect, inFrame, inJustify);
+		if (inTransferMode == modeMask) {
+			RefVar mask(GetFrameSlot(inIcon, SYMA(mask)));
+			if (NOTNIL(mask)) {
+				DrawBitmap(mask, &iconRect, modeBic);
+			}
+			DrawBitmap(inIcon, &iconRect, modeOr);
+		} else if (inTransferMode < 0) {
+			RefVar mask(GetFrameSlot(inIcon, SYMA(mask)));
+			DrawBitmap(mask, &iconRect, -inTransferMode);
+		} else {
+			DrawBitmap(inIcon, &iconRect, inTransferMode);
+		}
 	}
 
 	else
@@ -74,8 +93,8 @@ DrawPicture(RefArg inIcon, const Rect * inFrame, ULong inJustify /*, long inTran
 		else
 			iconRect = *inFrame;
 		RefVar	style(AllocateFrame());
-	//	RefVar	mode(MAKEINT(inTransferMode));
-	//	SetFrameSlot(style, SYMA(transferMode), mode);
+		RefVar	mode(MAKEINT(inTransferMode));
+		SetFrameSlot(style, SYMA(transferMode), mode);
 		DrawShape(inIcon, style, *(Point *)&iconRect);
 	}
 }
@@ -222,6 +241,30 @@ FPictureBounds(RefArg inRcvr, RefArg inPicture)
 }
 
 
+Ref
+FPictToShape(RefArg inRcvr, RefArg inPicture, RefArg inRect)
+{
+	RefVar shape;
+	CDataPtr pictData(inPicture);
+	PictureShape * pd = (PictureShape *)(char *)pictData;
+	newton_try
+	{
+		Rect rect;
+		if (NOTNIL(inRect))
+			FromObject(inRect, &rect);
+		else
+			memmove(&rect, &pd->bBox, sizeof(Rect));
+//		shape = DrawPicture(&pd, &rect, 1);		// original draws a PictureHandle -- need to rework to use PNG?
+	}
+	cleanup
+	{
+		pictData.~CDataPtr();
+	}
+	end_try;
+	return shape;
+}
+
+
 #pragma mark -
 /*------------------------------------------------------------------------------
 	C P i x e l O b j
@@ -236,7 +279,7 @@ public:
 							~CPixelObj();
 
 	void					init(RefArg inBitmap);
-	void					init(RefArg inBitmap, bool);
+	void					init(RefArg inBitmap, bool inUseMask);
 
 	NativePixelMap *	pixMap(void)	const;
 	NativePixelMap *	mask(void)		const;
@@ -269,7 +312,7 @@ CPixelObj::CPixelObj()
 {
 	fBitDepth = kOneBitDepth;
 	fColorTable = NULL;
-	fIsLocked = NO;
+	fIsLocked = false;
 	fPixPtr = &fPixmap;
 }
 
@@ -288,12 +331,12 @@ CPixelObj::init(RefArg inBitmap)
 {
 	fBitmapRef = inBitmap;
 	// we cannot handle class='picture
-	if (IsInstance(inBitmap, RSYMpicture))
+	if (IsInstance(inBitmap, SYMA(picture)))
 		ThrowErr(exGraf, -8803);
 
 	// get a ref to the bitmap, whatever slot it’s in
 	if (IsFrame(inBitmap)) {
-		if (IsInstance(inBitmap, RSYMbitmap)) {
+		if (IsInstance(inBitmap, SYMA(bitmap))) {
 			RefVar colorData(GetFrameSlot(inBitmap, SYMA(colorData)));
 			if (ISNIL(colorData)) {
 				fBitmapRef = GetFrameSlot(inBitmap, SYMA(data));
@@ -305,43 +348,45 @@ CPixelObj::init(RefArg inBitmap)
 		}
 	}
 
-	// create a PixelMap from the bitmap
 	LockRef(fBitmapRef);
-	fIsLocked = YES;
-	if (IsInstance(fBitmapRef, RSYMpixels)) {
-		fPixPtr = pixMapToPixMap((const PixelMap *)BinaryData(fBitmapRef));
-		fBitDepth = PixelDepth(fPixPtr);
+	fIsLocked = true;
+
+	// create a PixelMap from the bitmap
+	if (IsInstance(fBitmapRef, SYMA(pixels))) {
+		fPixPtr = pixMapToPixMap((const PixelMap *)BinaryData(fBitmapRef));	// originally just points to (PixelMap *)BinaryData() but we need to convert to NativePixelMap
+		fBitDepth = PixelDepth(fPixPtr);		// not original
 	} else {
 		fPixPtr = framBitmapToPixMap((const FramBitmap *)BinaryData(fBitmapRef));
 	}
 
+#if 0
 	// we don’t mask by drawing with srcBic transferMode any more
 	RefVar	theMask = GetFrameSlot(inBitmap, SYMA(mask));
 	if (NOTNIL(theMask)) {
 		CDataPtr  maskData(theMask);
 		fMaskPtr = framMaskToPixMap((const FramBitmap *)(char *)maskData);
-	} else {
-		fMaskPtr = NULL;
-	}
+	} else
+#endif
+	fMaskPtr = NULL;
 }
 
 
 void
-CPixelObj::init(RefArg inBitmap, bool inHuh)
+CPixelObj::init(RefArg inBitmap, bool inUseMask)
 {
 	fMaskPtr = NULL;
 	fBitmapRef = inBitmap;
-	if (IsInstance(inBitmap, RSYMpicture))
+	if (IsInstance(inBitmap, SYMA(picture)))
 		ThrowErr(exGraf, -8803);
 
-	bool isPixelData = NO;
+	bool isPixelData = false;
 	RefVar bits(GetFrameSlot(inBitmap, SYMA(data)));
 	if (NOTNIL(bits)) {
-		isPixelData = IsInstance(bits, RSYMpixels);
+		isPixelData = IsInstance(bits, SYMA(pixels));
 	}
 
 	LockRef(fBitmapRef);
-	fIsLocked = YES;
+	fIsLocked = true;
 	if (isPixelData) {
 		fPixPtr = pixMapToPixMap((const PixelMap *)BinaryData(fBitmapRef));
 	} else {
@@ -350,7 +395,7 @@ CPixelObj::init(RefArg inBitmap, bool inHuh)
 			CDataPtr  obj(bits);
 			fMaskPtr = framBitmapToPixMap((const FramBitmap *)(char *)obj);
 		}
-		if (inHuh || fMaskPtr == NULL) {
+		if (inUseMask || fMaskPtr == NULL) {
 			fPixPtr = framBitmapToPixMap((const FramBitmap *)BinaryData(getFramBitmap()));
 		}
 	}
@@ -408,7 +453,7 @@ CPixelObj::getFramBitmap(void)
 				if (numOfColors > colorTableSize)
 					numOfColors = colorTableSize;
 #if 0
-				Ptr defaultColorPtr = GetPixelMapBits(*GetFgPattern());
+				Ptr defaultColorPtr = PixelMapBits(*GetFgPattern());
 				for (ArrayIndex i = 0; i < colorTableSize; ++i) {
 					fColorTable[i] = *defaultColorPtr;
 				}
@@ -452,14 +497,14 @@ CPixelObj::pixMapToPixMap(const PixelMap * inPixmap)
 	fPixPtr->deviceRes.v = CANONICAL_SHORT(inPixmap->deviceRes.v);
 
 	fPixPtr->grayTable = 0;	//(UChar *)CANONICAL_LONG(inPixmap->grayTable);
-
+printf("CPixelObj::pixMapToPixMap() PixelMap bounds=%d,%d, %d,%d", fPixPtr->bounds.top,fPixPtr->bounds.left, fPixPtr->bounds.bottom,fPixPtr->bounds.right);
 	// our native pixmap baseAddr is ALWAYS a Ptr
 	if ((fPixPtr->pixMapFlags & kPixMapStorage) == kPixMapOffset) {
 		uint32_t offset = CANONICAL_LONG(inPixmap->baseAddr);
 		fPixPtr->baseAddr = (Ptr)inPixmap + offset;
 		fPixPtr->pixMapFlags = (fPixPtr->pixMapFlags & ~kPixMapStorage) | kPixMapPtr;
 	} else {
-printf("GetPixelMapBits() using baseAddr as Ptr!\n");
+printf("PixelMapBits() using baseAddr as Ptr!\n");
 	}
 
 	return fPixPtr;
@@ -529,6 +574,7 @@ CPixelObj::framMaskToPixMap(const FramBitmap * inBitmap)
 	Draw a bitmap.
 	Args:		inBitmap
 				inRect
+				inTransferMode
 	Return:	--
 ------------------------------------------------------------------------------*/
 
@@ -539,7 +585,7 @@ static const unsigned char colorTable4bit[] = { 0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0x
 static const unsigned char * colorTable[5] = { NULL, colorTable1bit, colorTable2bit, NULL, colorTable4bit };
 
 void
-DrawBitmap(RefArg inBitmap, const Rect * inRect)
+DrawBitmap(RefArg inBitmap, const Rect * inRect, int inTransferMode)
 {
 	CPixelObj	pix;
 	newton_try
@@ -559,7 +605,7 @@ DrawBitmap(RefArg inBitmap, const Rect * inRect)
 		CGImageRef			image = NULL;
 		CGColorSpaceRef	baseColorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericGray);
 		CGColorSpaceRef	colorSpace = CGColorSpaceCreateIndexed(baseColorSpace, (1 << pix.bitDepth())-1, colorTable[pix.bitDepth()]);
-		CGDataProviderRef source = CGDataProviderCreateWithData(NULL, GetPixelMapBits(pix.pixMap()), pixmapHeight * pix.pixMap()->rowBytes, NULL);
+		CGDataProviderRef source = CGDataProviderCreateWithData(NULL, PixelMapBits(pix.pixMap()), pixmapHeight * pix.pixMap()->rowBytes, NULL);
 		if (source)
 		{
 			// create entire image
@@ -571,7 +617,7 @@ DrawBitmap(RefArg inBitmap, const Rect * inRect)
 			if (pix.mask() != NULL) {
 				// image is masked
 				CGDataProviderRef maskSource;
-				if ((maskSource = CGDataProviderCreateWithData(NULL, GetPixelMapBits(pix.mask()), pixmapHeight * pix.mask()->rowBytes, NULL)) != NULL) {
+				if ((maskSource = CGDataProviderCreateWithData(NULL, PixelMapBits(pix.mask()), pixmapHeight * pix.mask()->rowBytes, NULL)) != NULL) {
 					CGImageRef	fullImage = image;
 					CGColorSpaceRef maskColorSpace = CGColorSpaceCreateDeviceGray();
 					CGImageRef	mask = CGImageCreate(pixmapWidth, pixmapHeight, 1, 1, pix.mask()->rowBytes,
@@ -621,32 +667,26 @@ DrawBitmap(RefArg inBitmap, const Rect * inRect)
 void
 DrawBits(const char * inBits, unsigned inHeight, unsigned inWidth, unsigned inRowBytes, unsigned inDepth)
 {
-	newton_try
+	CGImageRef			image = NULL;
+	CGColorSpaceRef	baseColorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericGray);
+	CGColorSpaceRef	colorSpace = CGColorSpaceCreateIndexed(baseColorSpace, (1 << inDepth)-1, colorTable[inDepth]);
+	CGDataProviderRef source = CGDataProviderCreateWithData(NULL, inBits, inHeight * inRowBytes, NULL);
+	if (source)
 	{
-		CGImageRef			image = NULL;
-		CGColorSpaceRef	baseColorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericGray);
-		CGColorSpaceRef	colorSpace = CGColorSpaceCreateIndexed(baseColorSpace, (1 << inDepth)-1, colorTable[inDepth]);
-		CGDataProviderRef source = CGDataProviderCreateWithData(NULL, inBits, inHeight * inRowBytes, NULL);
-		if (source)
-		{
-			image = CGImageCreate(inWidth, inHeight, inDepth, inDepth, inRowBytes,
-										colorSpace, kCGImageAlphaNone, source,
-										NULL, false, kCGRenderingIntentDefault);
-			CGDataProviderRelease(source);
-		}
-		CGColorSpaceRelease(colorSpace);
-		CGColorSpaceRelease(baseColorSpace);
-
-		if (image)
-		{
-			CGRect	imageRect = CGRectMake(0.0, 0.0, inWidth, inHeight);
-			CGContextDrawImage(quartz, imageRect, image);
-			CGImageRelease(image);
-		}
+		image = CGImageCreate(inWidth, inHeight, inDepth, inDepth, inRowBytes,
+									colorSpace, kCGImageAlphaNone, source,
+									NULL, false, kCGRenderingIntentDefault);
+		CGDataProviderRelease(source);
 	}
-	newton_catch_all
-	{ }
-	end_try;
+	CGColorSpaceRelease(colorSpace);
+	CGColorSpaceRelease(baseColorSpace);
+
+	if (image)
+	{
+		CGRect	imageRect = CGRectMake(0.0, 0.0, inWidth, inHeight);
+		CGContextDrawImage(quartz, imageRect, image);
+		CGImageRelease(image);
+	}
 }
 
 
@@ -695,9 +735,8 @@ FCopyBits(RefArg inRcvr, RefArg inImage, RefArg inX, RefArg inY, RefArg inTransf
 	bounds.right = bounds.left;
 	bounds.bottom = bounds.top;
 
-	// there’s no transfer mode in Newton 3.0
-
-	DrawPicture(inImage, &bounds, vjLeftH + vjTopV);
+	int mode = ISNIL(inTransferMode) ? modeCopy : RVALUE(inTransferMode);
+	DrawPicture(inImage, &bounds, vjLeftH + vjTopV, mode);
 	return NILREF;
 }
 
@@ -706,4 +745,77 @@ Ref		FDrawXBitmap(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3) { 
 Ref		FGrayShrink(RefArg inRcvr, RefArg inArg1, RefArg inArg2) { return NILREF; }
 Ref		FDrawIntoBitmap(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3) { return NILREF; }
 Ref		FViewIntoBitmap(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3) { return NILREF; }
+
+bool
+HitShape(RefArg inShape, Point inPt, RefArg ioPath)
+{ return false; }
+
+Ref
+FHitShape(RefArg inRcvr, RefArg inShape, RefArg inX, RefArg inY)
+{
+	Point pt;
+	pt.h = RINT(inX);
+	pt.v = RINT(inY);
+	RefVar path(AllocateArray(SYMA(pathExpr), 0));
+	bool isHit = HitShape(inShape, pt, path);
+	ArrayIndex pathLength = Length(path);
+	if (pathLength == 0)
+		return MAKEBOOLEAN(isHit);
+	// reverse path slot order
+	RefVar slot1, slot2;
+	for (ArrayIndex i1 = 0; i1 < pathLength/2; ++i1)
+	{
+		ArrayIndex i2 = (pathLength - 1) - i1;
+		slot1 = GetArraySlot(path, i2);
+		slot2 = GetArraySlot(path, i1);
+		SetArraySlot(path, i2, slot2);
+		SetArraySlot(path, i1, slot1);
+	}
+	return path;
+}
+
+
+Ref
+PtInPicture(RefArg inX, RefArg inY, RefArg inPicture, bool inUseMask)
+{
+	CPixelObj pix;
+	RefVar result;
+	newton_try
+	{
+		pix.init(inPicture, inUseMask);
+		int x = RINT(inX);
+		int y = RINT(inY);
+		if (inUseMask)
+		{
+			if (pix.mask() && PtInMask(pix.mask(), x, y))
+				result = MAKEINT(-1);
+			else
+				result = MAKEINT(PtInCPixelMap(pix.pixMap(), x, y));
+		}
+		else
+		{
+			result = MAKEBOOLEAN(PtInPixelMap(pix.mask()?pix.mask():pix.pixMap(), x, y));
+		}
+	}
+	cleanup
+	{
+		pix.~CPixelObj();
+	}
+	end_try;
+	return result;
+}
+
+
+Ref
+FGetBitmapPixel(RefArg inRcvr, RefArg inX, RefArg inY, RefArg inBitmap)
+{
+	return PtInPicture(inX, inY, inBitmap, true);
+}
+
+
+Ref
+FPtInPicture(RefArg inRcvr, RefArg inX, RefArg inY, RefArg inPicture)
+{
+	return PtInPicture(inX, inY, inPicture, false);
+}
 

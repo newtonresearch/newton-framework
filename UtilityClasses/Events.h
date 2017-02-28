@@ -76,7 +76,7 @@ typedef uint32_t EventType;
 // endpoint event
 #define kEndpointEventId			'endp'
 
-// package manager id
+// package manager event
 #define kPackageEventId			 	'pckm'
 
 
@@ -98,39 +98,60 @@ public:
 	EventId 		fEventId;
 };
 
-inline CEvent::CEvent()  :  fEventClass(kNewtEventClass)
-{ }
-
-inline CEvent::CEvent(EventId inId, EventClass inClass)  :  fEventClass(inClass), fEventId(inId)
-{ }
+inline CEvent::CEvent() : fEventClass(kNewtEventClass) { }
+inline CEvent::CEvent(EventId inId, EventClass inClass) : fEventClass(inClass), fEventId(inId) { }
 
 
 /*--------------------------------------------------------------------------------
-	C S y s t e m E v e n t
+	C E v e n t S y s t e m E v e n t
+	Was TAESystemEvent
 --------------------------------------------------------------------------------*/
 
-class CSystemEvent : public CEvent
+class CEventSystemEvent : public CEvent
 {
 public:
-					CSystemEvent();
-					CSystemEvent(ULong inType);
+					CEventSystemEvent();
+					CEventSystemEvent(EventType inType);
 
-	EventType	fSysEventType;
+	EventType	fEventType;
 };
+
+inline CEventSystemEvent::CEventSystemEvent() : CEvent(kSystemEventId), fEventType(0) { }
+inline CEventSystemEvent::CEventSystemEvent(EventType inType) : CEvent(kSystemEventId), fEventType(inType) { }
 
 
 /*--------------------------------------------------------------------------------
 	C P o w e r E v e n t
 --------------------------------------------------------------------------------*/
 
-class CPowerEvent : public CSystemEvent
+class CPowerEvent : public CEventSystemEvent
 {
 public:
 					CPowerEvent();
-					CPowerEvent(ULong inType, ULong inReason);
+					CPowerEvent(EventType inType, ULong inReason);
 
 	ULong			fReason;
 };
+
+inline CPowerEvent::CPowerEvent() : fReason(0) { }
+inline CPowerEvent::CPowerEvent(EventType inType, ULong inReason) : CEventSystemEvent(inType), fReason(inReason) { }
+
+
+/* -----------------------------------------------------------------------------
+	C I d l e E v e n t
+----------------------------------------------------------------------------- */
+
+class CIdleEvent : public CEvent
+{
+public:
+					CIdleEvent();
+					CIdleEvent(EventType inType);
+
+	EventType	fEventType;
+};
+
+inline CIdleEvent::CIdleEvent() : CEvent(kIdleEventId) { }
+inline CIdleEvent::CIdleEvent(EventType inType) : fEventType(inType) { }
 
 
 /*--------------------------------------------------------------------------------

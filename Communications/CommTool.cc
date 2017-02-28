@@ -9,7 +9,37 @@
 #include "CommTool.h"
 #include "CommManagerInterface.h"
 #include "CMService.h"
+#include "MemObject.h"
 
+
+/* -------------------------------------------------------------------------------
+	CCommToolProtocol stuff.
+	Should maybe have its own file.
+------------------------------------------------------------------------------- */
+
+CCMOIdleTimer::CCMOIdleTimer()
+{}
+
+CCMOListenTimer::CCMOListenTimer()
+{}
+
+CCMOCTConnectInfo::CCMOCTConnectInfo()
+{}
+
+CCMOToolSpecificOptions::CCMOToolSpecificOptions()
+{}
+
+CCMOPassiveClaim::CCMOPassiveClaim()
+{}
+
+CCMOPassiveState::CCMOPassiveState()
+{}
+
+
+#pragma mark -
+/* -------------------------------------------------------------------------------
+	Initialisation.
+------------------------------------------------------------------------------- */
 
 NewtonErr
 StartCommTool(CCommTool * inTool, ULong inId, CServiceInfo * info)
@@ -17,7 +47,7 @@ StartCommTool(CCommTool * inTool, ULong inId, CServiceInfo * info)
 	NewtonErr err;
 	XTRY
 	{
-		XFAIL(err = inTool->startTask(YES, NO, 0, kCommToolStackSize, kCommToolTaskPriority, inId))
+		XFAIL(err = inTool->startTask(true, false, 0, kCommToolStackSize, kCommToolTaskPriority, inId))
 		CUPort port;
 		XFAIL(err = ServiceToPort(inId, &port, inTool->getChildTaskId()))
 		info->setPortId(port);
@@ -34,16 +64,16 @@ OpenCommTool(ULong inId, COptionArray * inOptions, CCMService * inService)
 	NewtonErr err;
 	XTRY
 	{
-		CCommToolOpenRequest * request;
-		CCommToolOpenReply * reply;
-		XFAILNOT(request = new CCommToolOpenRequest, err = kOSErrNoMemory;)
-		XFAILNOT(reply = new CCommToolOpenReply, err = kOSErrNoMemory;)
+		CCommToolOpenRequest * request = new CCommToolOpenRequest;
+		XFAILIF(request == NULL, err = kOSErrNoMemory;)
+		CCommToolOpenReply * reply = new CCommToolOpenReply;
+		XFAILIF(reply == NULL, err = kOSErrNoMemory;)
 		request->fOptions = inOptions;
 		request->fOptionCount = inOptions->count();
-		request->fOutside = NO;
+		request->fOutside = false;
 
-		CAsyncServiceMessage * msg;
-		XFAILNOT(msg = new CAsyncServiceMessage, err = kOSErrNoMemory;)
+		CAsyncServiceMessage * msg = new CAsyncServiceMessage;
+		XFAILIF(msg == NULL, err = kOSErrNoMemory;)
 		XFAIL(err = msg->init(inService))
 
 		CUPort commPort(inId);
@@ -56,14 +86,18 @@ OpenCommTool(ULong inId, COptionArray * inOptions, CCMService * inService)
 	return err;
 }
 
+
 #pragma mark -
+/* -------------------------------------------------------------------------------
+	C C o m m T o o l   E v e n t s
+------------------------------------------------------------------------------- */
 
 CCommToolBindRequest::CCommToolBindRequest()
 {
 	fOpCode = kCommToolBind;
 	fReserved1 = 0;
 	fReserved2 = 0;
-	fOutside = NO;
+	fOutside = false;
 }
 
 
@@ -83,7 +117,7 @@ CCommToolConnectRequest::CCommToolConnectRequest()
 	fOptionCount = 0;
 	fData = NULL;
 	fSequence = 0;
-	fOutside = NO;
+	fOutside = false;
 }
 
 
@@ -99,7 +133,7 @@ CCommToolOpenRequest::CCommToolOpenRequest()
 	fOpCode = kCommToolOpen;
 	fOptions = NULL;
 	fOptionCount = 0;
-	fOutside = NO;
+	fOutside = false;
 }
 
 
@@ -114,9 +148,9 @@ CCommToolPutRequest::CCommToolPutRequest()
 {
 	fData = NULL;
 	fValidCount = 0;
-	fOutside = NO;
-	fFrameData = NO;
-	fEndOfFrame = NO;
+	fOutside = false;
+	fFrameData = false;
+	fEndOfFrame = false;
 }
 
 
@@ -131,16 +165,16 @@ CCommToolGetRequest::CCommToolGetRequest()
 {
 	fData = NULL;
 	fThreshold = 0;
-	fNonBlocking = NO;
-	fFrameData = NO;
-	fOutside = NO;
+	fNonBlocking = false;
+	fFrameData = false;
+	fOutside = false;
 }
 
 
 CCommToolGetReply::CCommToolGetReply()
 {
 	fSize = sizeof(CCommToolGetReply);
-	fEndOfFrame = NO;
+	fEndOfFrame = false;
 	fGetBytesCount = 0;
 }
 
@@ -151,7 +185,7 @@ CCommToolDisconnectRequest::CCommToolDisconnectRequest()
 	fDisconnectData = NULL;
 	fSequence = 0;
 	fReason = 0;
-	fOutside = NO;
+	fOutside = false;
 }
 
 #pragma mark -
@@ -163,8 +197,8 @@ CCommToolOptionMgmtRequest::CCommToolOptionMgmtRequest()
 	fOptions = NULL;
 	fOptionCount = 0;
 	fRequestOpCode = 0;
-	fOutside = NO;
-	fCopyBack = NO;
+	fOutside = false;
+	fCopyBack = false;
 }
 
 
@@ -173,7 +207,7 @@ CCommToolGetProtAddrRequest::CCommToolGetProtAddrRequest()
 	fOpCode = kCommToolGetProtAddr;
 	fBoundAddr = NULL;
 	fPeerAddr = NULL;
-	fOutside = NO;
+	fOutside = false;
 }
 
 
@@ -200,7 +234,7 @@ CCommToolStatusRequest::CCommToolStatusRequest()
 
 CCommToolMsgContainer::CCommToolMsgContainer()
 {
-	fRequestPending = NO;
+	fRequestPending = false;
 	fRequestMsgSize = 0;
 }
 
@@ -214,12 +248,12 @@ CCommToolOptionInfo::CCommToolOptionInfo()
 	fOptionsIterator = NULL;
 }
 
+
 #pragma mark -
 #pragma mark CCommTool
-
-/*--------------------------------------------------------------------------------
+/* -------------------------------------------------------------------------------
 	C C o m m T o o l
---------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------- */
 
 CCommTool::CCommTool(ULong inName)
 {
@@ -248,6 +282,13 @@ CCommTool::~CCommTool()
 }
 
 
+size_t
+CCommTool::getSizeOf(void) const
+{
+	return sizeof(CCommTool);
+}
+
+
 NewtonErr
 CCommTool::taskConstructor(void)
 {
@@ -257,27 +298,27 @@ CCommTool::taskConstructor(void)
 	{
 		// ivar zeroing
 		f208 = (CommToolRequestType)-1;
-		f200 = NO;
-		f201 = NO;
+		fIsClosed = false;
+		f201 = false;
 		fState = 0;
 		f218 = NULL;
 		f21C = NULL;
 
 		f174 = 0;
-		f1D0 = NO;
-		f1D1 = NO;
-		f1D2 = NO;
-		f20C = 0;
-		f210 = 0;
-		f214 = NULL;
+		f1D0 = false;
+		f1D1 = false;
+		f1D2 = false;
+		fOptionRequest = NULL;
+		fOptionMessage = NULL;
+		fOptionReply = NULL;
 
 		fControlOptionInfo.fChannelNum = kCommToolControlChannel;
 		fPutOptionInfo.fChannelNum = kCommToolPutChannel;
 		fGetOptionInfo.fChannelNum = kCommToolGetChannel;
 
 		f13C = NULL;
-		f264 = 0;
-		f268 = 0;
+		fTimeout = kNoTimeout;
+		fTimeoutRemaining = kNoTimeout;
 
 		// create heap
 		fSavedHeap = GetHeap();
@@ -288,10 +329,12 @@ CCommTool::taskConstructor(void)
 		XFAIL(err = createPort(fName, f8C))
 
 		// create buffers
-		XFAILNOT(f218 = new CBufferList, err = MemError();)
-		XFAILNOT(f21C = new CBufferList, err = MemError();)
-		XFAIL(f218->init(NO))
-		XFAIL(f21C->init(NO))
+		f218 = new CBufferList;
+		XFAILIF(f218 == NULL, err = MemError();)
+		f21C = new CBufferList;
+		XFAILIF(f21C == NULL, err = MemError();)
+		XFAIL(f218->init(false))
+		XFAIL(f21C->init(false))
 		f218->insert(&fBufferSegment_1);
 		f21C->insert(&fBufferSegment_2);
 	}
@@ -321,8 +364,85 @@ CCommTool::taskDestructor(void)
 void
 CCommTool::taskMain(void)
 {
+	NewtonErr err;
+	ULong msgType;
+	CUMsgToken msgToken;
+
 	// main event despatch loop
+	while (!fIsClosed)
+	{
+		bool isTimedOut = false;
+		CTime startTime = GetGlobalTime();
+		err = f8C.receive(&f48, &f4C, sizeof(f4C), &msgToken, &msgType, fTimeoutRemaining, f208);
+		if (err == kOSErrMessageTimedOut)
+		{
+			handleTimerTick();
+			fTimeoutRemaining = fTimeout;
+			isTimedOut = true;
+		}
+		else if (err == noErr)
+		{
+			CommToolRequestType reqType = (CommToolRequestType)(msgType & kMsgType_ReservedMask);	// r5
+			if (FLAGTEST(msgType, kMsgType_CollectedSender))
+			{
+				OpaqueRef refCon;
+				if (msgToken.getUserRefCon(&refCon) == noErr)	// ULong -> OpaqueRef?
+					handleReply(refCon, msgType);
+			}
+			else
+			{
+				if (reqType > 0 && reqType <= 0x40)	//kCommToolRequestTypeResArb
+				{
+					ArrayIndex channelNo = requestTypeToChannelNumber(reqType);
+					CCommToolMsgContainer * msg = &f94[channelNo];
+					msg->fRequestMsgSize = f48;
+					msg->fMsgToken = msgToken;
+					msg->fRequestPending = true;
+					setChannelFilter(reqType, false);
+					switch (channelNo)
+					{
+					case kCommToolGetChannel:
+						prepGetRequest();
+						break;
+					case kCommToolPutChannel:
+						prepPutRequest();
+						break;
+					case kCommToolControlChannel:
+						prepControlRequest(reqType);
+						break;
+					case kCommToolGetEventChannel:
+						getCommEvent();
+						break;
+					case kCommToolKillChannel:
+						prepKillRequest();
+						break;
+					case kCommToolStatusChannel:
+						doStatus(((CCommToolControlRequest *)f4C)->fOpCode, reqType);
+						break;
+					case kCommToolResArbChannel:
+						prepResArbRequest();
+						break;
+					}
+				}
+			}
+		}
+		if (fTimeout != kNoTimeout && !isTimedOut)
+		{
+			// update timeout remaining until next timer tick
+			CTime elapsedTime = GetGlobalTime() - startTime;
+			if (fTimeoutRemaining >= elapsedTime)
+				fTimeoutRemaining -= elapsedTime;
+			else
+			{
+				handleTimerTick();
+				fTimeoutRemaining = fTimeout;
+			}
+		}
+		handleInternalEvent();
+	}
+	
 }
+
 
 #pragma mark Port
 
@@ -343,7 +463,7 @@ CCommTool::createPort(ULong inId, CUPort & outPort)
 		CUNameServer ns;
 		XFAIL(err = ns.registerName(name, type, 0, 0))
 
-		f201 = YES;
+		f201 = true;
 	}
 	XENDTRY;
 	return err;
@@ -356,7 +476,7 @@ CCommTool::getToolPort(ULong inId, CUPort & outPort)
 	NewtonErr err;
 	XTRY
 	{
-		ULong thing, spec;
+		OpaqueRef thing, spec;
 		MAKE_ID_STR(inId,type);
 
 		CUNameServer ns;
@@ -382,7 +502,7 @@ CCommTool::unregisterPort(void)
 		CUNameServer ns;
 		ns.unregisterName(name, type);
 
-		f201 = NO;
+		f201 = false;
 	}
 }
 
@@ -410,53 +530,106 @@ CCommTool::requestTypeToChannelNumber(CommToolRequestType inReqType)
 
 #pragma mark Events
 
-void
+NewtonErr
 CCommTool::initAsyncRPCMsg(CUAsyncMessage & ioMsg, ULong inRefCon)
 {
+	NewtonErr err;
 	XTRY
 	{
-		XFAIL(ioMsg.init(YES))
-		XFAIL(ioMsg.setUserRefCon(inRefCon))
-		ioMsg.setCollectorPort(f8C);
+		XFAIL(err = ioMsg.init(true))
+		XFAIL(err = ioMsg.setUserRefCon(inRefCon))
+		err = ioMsg.setCollectorPort(f8C);
 	}
 	XENDTRY;
+	return err;
 }
 
 
 void
 CCommTool::handleInternalEvent(void)
-{ }
+{ /* this really does nothing */ }
 
 
-void
-CCommTool::flushChannel(CommToolRequestType, long)
-{}
-
-
-void
-CCommTool::completeRequest(CUMsgToken&, long)
-{}
-
-
-void
-CCommTool::completeRequest(CUMsgToken&, long, CCommToolReply&)
-{}
-
-
-void
-CCommTool::completeRequest(CommToolChannelNumber, long)
-{}
-
-
-void
-CCommTool::completeRequest(CommToolChannelNumber, long, CCommToolReply&)
-{}
-
-
-void
-CCommTool::handleRequest(CUMsgToken & inMsgToken, ULong inMsgType)
+NewtonErr
+CCommTool::flushChannel(CommToolRequestType inType, NewtonErr inResult)
 {
-	inMsgToken.replyRPC(NULL, 0, kOSErrBadParameters);
+	size_t size;
+	CUMsgToken msg;
+	CCommToolControlRequest request;
+	CCommToolReply reply;
+	reply.fResult = inResult;
+	for ( ; ; )
+	{
+		XFAIL(f8C.receive(&size, &request, sizeof(request), &msg, NULL, kNoTimeout, inType, true))	// okay, not in XTRY/ENDTRY but does the right thing
+		if (msg.getReplyId())
+			msg.replyRPC(&reply, sizeof(reply));
+	}
+	return noErr;
+}
+
+
+void
+CCommTool::completeRequest(CUMsgToken& inMsg, NewtonErr inResult)
+{
+	if (inMsg.getReplyId() != kNoId)
+	{
+		CCommToolReply reply;
+		reply.fResult = inResult;
+		inMsg.replyRPC(&reply, reply.fSize);
+	}
+}
+
+
+void
+CCommTool::completeRequest(CUMsgToken& inMsg, NewtonErr inResult, CCommToolReply& ioReply)
+{
+	if (inMsg.getReplyId() != kNoId)
+	{
+		ioReply.fResult = inResult;
+		inMsg.replyRPC(&ioReply, ioReply.fSize);
+	}
+}
+
+
+void
+CCommTool::completeRequest(CommToolChannelNumber inChannel, NewtonErr inResult)
+{
+	if (f94[inChannel].fRequestPending)
+	{
+		f94[inChannel].fRequestPending = false;
+		setChannelFilter((CommToolRequestType)(1 << inChannel), true);
+		CUMsgToken * msg = &f94[inChannel].fMsgToken;
+		if (msg->getReplyId())
+		{
+			CCommToolReply reply;
+			reply.fResult = inResult;
+			msg->replyRPC(&reply, reply.fSize);
+		}
+	}
+}
+
+
+void
+CCommTool::completeRequest(CommToolChannelNumber inChannel, NewtonErr inResult, CCommToolReply& ioReply)
+{
+	if (f94[inChannel].fRequestPending)
+	{
+		f94[inChannel].fRequestPending = false;
+		setChannelFilter((CommToolRequestType)(1 << inChannel), true);
+		CUMsgToken * msg = &f94[inChannel].fMsgToken;
+		if (msg->getReplyId())
+		{
+			ioReply.fResult = inResult;
+			msg->replyRPC(&ioReply, ioReply.fSize);
+		}
+	}
+}
+
+
+void
+CCommTool::handleRequest(CUMsgToken & inMsg, ULong inMsgType)
+{
+	inMsg.replyRPC(NULL, 0, kOSErrBadParameters);
 }
 
 
@@ -466,20 +639,54 @@ CCommTool::handleReply(ULong inUserRefCon, ULong inMsgType)
 	if (inUserRefCon == kToolMsgForwardOpt)
 	{
 		fControlOptionInfo.fOptionsState &= ~0x0A;
-//		processOptionsComplete(f214->f08, &fControlOptionInfo);
+		processOptionsComplete(fOptionReply->fResult, &fControlOptionInfo);
 	}
 }
 
 
 void
 CCommTool::handleTimerTick(void)
-{ }
+{ /* this really does nothing */ }
 
-//00020810
+
 void
 CCommTool::prepGetRequest(void)
 {
-	;
+	NewtonErr err;
+	XTRY
+	{
+		XFAILNOT(FLAGTEST(fState, kToolStateConnected), err = kCommErrNotConnected;)
+		XFAILIF(FLAGTEST(fState, kToolStateRelease), err = kCommErrReleasingConnection;)
+		CCommToolGetRequest * req = (CCommToolGetRequest *)f4C;
+		if (req->fOutside)
+		{
+			// replace ObjectId with CBufferList
+			ObjectId sharedBufMem = (ObjectId)(long)req->fData;
+			XFAIL(err = fBufferSegment_1.init(sharedBufMem, 0, -1))
+			f218->reset();
+			req->fData = f218;
+		}
+		if (f94[kCommToolGetChannel].fRequestMsgSize == sizeof(CCommToolGetRequest))
+		{
+			fGetOptionInfo.fOptionsState = 0;
+			if (req->fOutside)
+			{
+				fGetOptionInfo.fOptionsState = kOptionsOutside;
+				fGetOptionInfo.fOptionCount = req->fOptionCount;
+			}
+			fGetOptionInfo.fChannelNum = kCommToolGetChannel;
+			fGetOptionInfo.fOptions = req->fOptions;
+		}
+		f1C8 = req->fData;
+		f1C6 = req->fNonBlocking;
+		f1C7 = req->fFrameData;
+		f1CC = req->fThreshold;
+		processOptions(&fGetOptionInfo);
+		return;
+	}
+	XENDTRY;
+	// if we get here there was an error
+	completeRequest(kCommToolGetChannel, err);
 }
 
 
@@ -509,9 +716,53 @@ CCommTool::getBytesImmediate(CBufferList * inQueue, size_t inSize)
 
 
 void
+CCommTool::getComplete(NewtonErr inResult, bool inEndOfFrame, size_t inGetBytesCount)
+{}
+
+
+void
+CCommTool::killGetComplete(NewtonErr inResult)
+{}
+
+
+
+void
 CCommTool::prepPutRequest(void)
 {
-	;
+	NewtonErr err;
+	XTRY
+	{
+		XFAILNOT(FLAGTEST(fState, kToolStateConnected), err = kCommErrNotConnected;)
+		XFAILIF(FLAGTEST(fState, kToolStateRelease), err = kCommErrReleasingConnection;)
+		CCommToolPutRequest * req = (CCommToolPutRequest *)f4C;
+		if (req->fOutside)
+		{
+			// replace ObjectId with CBufferList
+			ObjectId sharedBufMem = (ObjectId)(long)req->fData;
+			XFAIL(err = fBufferSegment_2.init(sharedBufMem, 0, req->fValidCount))
+			f21C->seek(0, kSeekFromBeginning);
+			req->fData = f21C;
+		}
+		if (f94[kCommToolPutChannel].fRequestMsgSize == sizeof(CCommToolPutRequest))
+		{
+			fPutOptionInfo.fOptionsState = 0;
+			if (req->fOutside)
+			{
+				fPutOptionInfo.fOptionsState = kOptionsOutside;
+				fPutOptionInfo.fOptionCount = req->fOptionCount;
+			}
+			fPutOptionInfo.fChannelNum = kCommToolPutChannel;
+			fPutOptionInfo.fOptions = req->fOptions;
+		}
+		f1C0 = req->fData;
+		f1C4 = req->fFrameData;
+		f1C5 = req->fEndOfFrame;
+		processOptions(&fPutOptionInfo);
+		return;
+	}
+	XENDTRY;
+	// if we get here there was an error
+	completeRequest(kCommToolPutChannel, err);
 }
 
 
@@ -532,6 +783,16 @@ CCommTool::putOptionsComplete(NewtonErr inResult)
 
 
 void
+CCommTool::putComplete(NewtonErr inResult, size_t inPutBytesCount)
+{}
+
+
+void
+CCommTool::killPutComplete(NewtonErr inResult)
+{}
+
+
+void
 CCommTool::prepControlRequest(ULong inMsgType)
 {
 	CCommToolControlRequest * request = (CCommToolControlRequest *)f4C;
@@ -542,7 +803,66 @@ CCommTool::prepControlRequest(ULong inMsgType)
 void
 CCommTool::prepKillRequest(void)
 {
-	;
+	NewtonErr err;
+	XTRY
+	{
+		CCommToolKillRequest * req = (CCommToolKillRequest *)f4C;
+		f174 = req->fRequestsToKill;
+		f1FC = noErr;
+
+		if (FLAGTEST(f174, kCommToolRequestTypeGet))
+		{
+			XFAIL(err = flushChannel(kCommToolRequestTypeGet, kCommErrRequestCanceled))
+			if (f94[kCommToolGetChannel].fRequestPending)
+				killGet();
+			else
+				FLAGCLEAR(f174, kCommToolRequestTypeGet);
+		}
+
+		if (FLAGTEST(f174, kCommToolRequestTypePut))
+		{
+			XFAIL(err = flushChannel(kCommToolRequestTypePut, kCommErrRequestCanceled))
+			if (f94[kCommToolPutChannel].fRequestPending)
+				killPut();
+			else
+				FLAGCLEAR(f174, kCommToolRequestTypePut);
+		}
+
+		if (FLAGTEST(f174, kCommToolRequestTypeControl))
+		{
+			XFAIL(err = flushChannel(kCommToolRequestTypeControl, kCommErrRequestCanceled))
+			if (f94[kCommToolControlChannel].fRequestPending)
+			{
+				CUPort * port = forwardOptions();
+				if (port != NULL && FLAGTEST(fControlOptionInfo.fOptionsState, kOptionsInProgress) && FLAGTEST(fControlOptionInfo.fOptionsState, kOptionsForwardReqActive))
+				{
+					size_t size;
+					CCommToolKillRequest request;
+					CCommToolReply reply;
+					request.fRequestsToKill = kCommToolRequestTypeControl;
+					XFAIL(err = port->sendRPC(&size, &request, sizeof(request), &reply, sizeof(reply), kNoTimeout, 16))
+				}
+				doKillControl(kCommToolRequestTypeKill);
+			}
+			else
+				FLAGCLEAR(f174, kCommToolRequestTypeControl);
+		}
+
+		if (FLAGTEST(f174, kCommToolRequestTypeGetEvent))
+		{
+			XFAIL(err = flushChannel(kCommToolRequestTypeGetEvent, kCommErrRequestCanceled))
+			if (f94[kCommToolGetEventChannel].fRequestPending)
+				doKillGetCommEvent();
+			else
+				FLAGCLEAR(f174, kCommToolRequestTypeGetEvent);
+		}
+
+		XFAILIF(f174 == 0, err = noErr;)
+		return;
+	}
+	XENDTRY;
+	// if we get here there was an error
+	completeRequest(kCommToolKillChannel, err);
 }
 
 
@@ -569,6 +889,22 @@ CCommTool::prepResArbRequest(void)
 	else if (request->fOpCode == kCommToolResArbClaimNotification)
 		resArbClaimNotification(request->fResNamePtr, request->fResTypePtr);
 }
+
+void
+CCommTool::resArbRelease(unsigned char*, unsigned char*)
+{}
+
+void
+CCommTool::resArbReleaseStart(unsigned char*, unsigned char*)
+{}
+
+void
+CCommTool::resArbReleaseComplete(NewtonErr)
+{}
+
+void
+CCommTool::resArbClaimNotification(unsigned char*, unsigned char*)
+{}
 
 
 void
@@ -620,7 +956,7 @@ CCommTool::doControl(ULong inOpCode, ULong inMsgType)
 void
 CCommTool::doStatus(ULong inOpCode, ULong inMsgType)
 {
-	completeRequest(kCommToolStatusChannel, (inOpCode == 1) ? getConnectState() : kCommErrBadCommand);
+	completeRequest(kCommToolStatusChannel, (inOpCode == kCommToolGetConnectState) ? getConnectState() : kCommErrBadCommand);
 }
 
 
@@ -738,20 +1074,20 @@ CCommTool::close(void)
 		if (f28 == 0)
 			f28 = 2;
 		startAbort(kCommErrConnectionAborted);
-		return NO;
+		return false;
 	}
 
 	for (int req = kCommToolRequestTypeGet; req <= kCommToolRequestTypeKill; req <<= 1)
 		flushChannel((CommToolRequestType)req, kCommErrToolBusy);
 	closeComplete(noErr);
-	return YES;
+	return true;
 }
 
 
 void
 CCommTool::closeComplete(NewtonErr inResult)
 {
-	f200 = YES;
+	fIsClosed = true;
 	fState &= ~kToolStateClosing;
 	unregisterPort();
 	completeRequest(kCommToolControlChannel, inResult);
@@ -772,9 +1108,10 @@ CCommTool::importConnectPB(CCommToolConnectRequest * inReq)
 	{
 		XTRY
 		{
-			CShadowBufferSegment * buf;
-			XFAILNOT(buf = new CShadowBufferSegment, err = kOSErrNoMemory;)
-			XFAIL(err = buf->init((ObjectId)inReq->fData, 0, -1))
+			CShadowBufferSegment * buf = new CShadowBufferSegment;
+			XFAILIF(buf == NULL, err = kOSErrNoMemory;)
+			ObjectId sharedBufMem = (ObjectId)(long)inReq->fData;
+			XFAIL(err = buf->init(sharedBufMem, 0, -1))
 			f13C = (CBufferSegment *)buf;
 		}
 		XENDTRY;
@@ -801,10 +1138,10 @@ CCommTool::connectCheck(void)
 	{
 		XFAILIF((fState & (kToolStateConnecting | kToolStateConnected)), err = kCommErrAlreadyConnected;)
 		fState |= kToolStateConnecting;
-		f1C = 0;
-		f20 = 0;
+		fTermFlag = 0;
+		fTermPhase = 0;
 		f28 = 0;
-		f2C = 0;
+		fAbortLock = 0;
 		fGetEventReply.fResult = noErr;
 	}
 	XENDTRY;
@@ -878,7 +1215,20 @@ CCommTool::connectComplete(NewtonErr inResult)
 
 NewtonErr
 CCommTool::getConnectState(void)
-{return noErr;}
+{
+	NewtonErr err = noErr;
+	XTRY
+	{
+		CMemObject * mem = new CMemObject;
+		XFAILIF(mem == NULL, err = kOSErrNoMemory;)
+		CCommToolConnectRequest * request = (CCommToolConnectRequest *)f4C;
+		XFAIL(request->fReserved1 == 0)
+		XFAIL(err = mem->make(request->fReserved1))
+		err = mem->copyTo((Ptr)&fState, sizeof(fState));
+	}
+	XENDTRY;
+	return err;
+}
 
 #pragma mark Listen
 
@@ -1124,30 +1474,30 @@ CCommTool::unbindComplete(NewtonErr inResult)
 void
 CCommTool::holdAbort(void)
 {
-	f2C++;
+	++fAbortLock;
 }
 
 void
 CCommTool::allowAbort(void)
 {
-	if ((fState & kToolStateWantAbort) != 0
-	&&  f2C == 1)
+	if (FLAGTEST(fState, kToolStateWantAbort)
+	&&  fAbortLock == 1)
 	{
 		fState |= kToolStateTerminating;
 		terminateConnection();
 	}
-	f2C--;
+	--fAbortLock;
 }
 
 NewtonErr
 CCommTool::startAbort(NewtonErr inReason)
 {
-	if ((fState & kToolStateWantAbort) != 0)
+	if (FLAGTEST(fState, kToolStateWantAbort))
 		return fErrStatus;
 	if ((fState & (kToolStateConnecting | kToolStateConnected)) == 0)
 		return kCommErrNotConnected;
 	holdAbort();
-	fState |= kToolStateWantAbort;
+	FLAGSET(fState, kToolStateWantAbort);
 	fErrStatus = inReason;
 	allowAbort();
 	return noErr;
@@ -1156,41 +1506,122 @@ CCommTool::startAbort(NewtonErr inReason)
 bool
 CCommTool::shouldAbort(ULong inResetFlags, NewtonErr inReason)
 {
-	fState &= ~inResetFlags;
+	FLAGCLEAR(fState, inResetFlags);
 	if (inReason == noErr)
 	{
-		if ((inResetFlags & kToolStateWantAbort) != 0)
-			return YES;
+		if (FLAGTEST(inResetFlags, kToolStateWantAbort) != 0)
+			return true;
 	}
 	else
 	{
 		if (f28 == 0)
 			f28 = 2;
 		startAbort(inReason);
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 void
 CCommTool::terminateConnection(void)
-{}
+{
+	TerminateProcPtr termProc;
+	for (bool isMore = true; isMore; )
+	{
+		getNextTermProc(fTermPhase, fTermFlag, termProc);
+		++fTermPhase;
+		if (fTermFlag == 0)
+		{
+			terminateComplete();
+			return;
+		}
+		if ((fState & fTermFlag) != 0)
+			isMore = termProc((void *)fState);	// sic
+	}
+}
 
 void
 CCommTool::terminateComplete(void)
-{}
+{
+	NewtonErr err = fErrStatus;
+	fErrStatus = noErr;
+	fState &= ~0xC7;
+	if (f94[kCommToolGetChannel].fRequestPending)
+		getComplete(err, 0, 0);
+	if (f94[kCommToolPutChannel].fRequestPending)
+		putComplete(err, 0);
+	if (FLAGTEST(fState, kToolStateClosing))
+		closeComplete(noErr);
+	else if (f94[kCommToolControlChannel].fRequestPending)
+	{
+		switch (f1D4)
+		{
+		case kCommToolConnect:
+			connectComplete(err);
+			break;
+		case kCommToolListen:
+			listenComplete(err);
+			break;
+		case kCommToolAccept:
+			acceptComplete(err);
+			break;
+		case kCommToolDisconnect:
+			disconnectComplete(noErr);
+			break;
+		case kCommToolRelease:
+			releaseComplete(noErr);
+			break;
+//		case kCommToolBind:
+//		case kCommToolUnbind:
+		default:
+			completeRequest(kCommToolControlChannel, err);
+			break;
+		}
+	}
+	killRequestComplete(kCommToolRequestTypeControl, noErr);
+	if (f28 != 2)
+	{
+		fGetEventReply.fEventCode = 2;
+		fGetEventReply.fEventTime = GetGlobalTime();
+		fGetEventReply.fEventData = f28;
+		fGetEventReply.fServiceId = fName;
+		fGetEventReply.fResult = postCommEvent(fGetEventReply, noErr);
+	}
+}
 
 void
-CCommTool::getNextTermProc(ULong inTerminationPhase, ULong& ioTerminationFlag, TerminateProcPtr& inTerminationProc)
-{}
+CCommTool::getNextTermProc(ULong inTerminationPhase, ULong& outTerminationFlag, TerminateProcPtr& outTerminationProc)
+{
+	outTerminationFlag = 0;
+	outTerminationProc = NULL;
+}
+
 
 #pragma mark Options
 
-ULong
+void
+CCommTool::optionMgmt(CCommToolOptionMgmtRequest *)
+{}
+
+void
+CCommTool::optionMgmtComplete(NewtonErr inResult)
+{}
+
+NewtonErr
+CCommTool::addDefaultOptions(COptionArray * inOptions)
+{ return noErr; }	// that’s really all it does
+
+
+NewtonErr
+CCommTool::addCurrentOptions(COptionArray * inOptions)
+{ return noErr; }	// that’s really all it does
+
+
+void
 CCommTool::processOptions(COptionArray * inOptions)
 { }
 
-ULong
+void
 CCommTool::processControlOptions(bool inOutside, COptionArray * inOptions, ArrayIndex inNumOfOptions)
 {
 	fControlOptionInfo.fOptionsState = 0;
@@ -1202,41 +1633,178 @@ CCommTool::processControlOptions(bool inOutside, COptionArray * inOptions, Array
 	fControlOptionInfo.fChannelNum = kCommToolControlChannel;
 }
 
-ULong
+void
 CCommTool::processOptions(CCommToolOptionInfo * info)
 {
 	NewtonErr err = noErr;
 
 	XTRY
 	{
-		if (info->fOptions)
+		// on entry, info->options is an ObjectId of the shared options memory
+		ObjectId sharedOptMem = (ObjectId)(long)info->fOptions;
+		if (sharedOptMem != kNoId)
 		{
-			if (info->fOptionsState & kOptionsOutside)
+			if (FLAGTEST(info->fOptionsState, kOptionsOutside))
 			{
-				XFAILNOT(info->fOptions = new COptionArray, err = kOSErrNoMemory;)
+				// allocate our own mem for it and copy from the shared mem
+				info->fOptions = new COptionArray;
+				XFAILIF(info->fOptions == NULL, err = kOSErrNoMemory;)
 				info->fOptionsState |= kOptionsArrayAllocated;
-				XFAIL(err = info->fOptions->init((ObjectId)info->fOptions, info->fOptionCount))
+				XFAIL(err = info->fOptions->init(sharedOptMem, info->fOptionCount))
 
-				XFAILNOT(info->fOptionsIterator = new COptionIterator(info->fOptions), err = kOSErrNoMemory;)
+				info->fOptionsIterator = new COptionIterator(info->fOptions);
+				XFAILIF(info->fOptionsIterator == NULL, err = kOSErrNoMemory;)
 				info->fOptionsState |= kOptionsInProgress;
-				return processOptionsContinue(info);
+				processOptionsContinue(info);
 			}
 		}
 	}
 	XENDTRY;
 
-	return processOptionsComplete(err, info);
+	processOptionsComplete(err, info);
 }
 
 
-ULong
+void
 CCommTool::processOptionsContinue(CCommToolOptionInfo * info)
-{}
+{
+	for ( ; ; )
+	{
+		info->fCurOptPtr = info->fOptionsIterator->currentOption();
+		if (info->fCurOptPtr == NULL)
+		{
+			// no more options -- we are done
+			processOptionsComplete(noErr, info);
+			return;
+		}
+
+		info->fOptionsIterator->nextOption();
+
+		COption * opt = info->fCurOptPtr;
+		if (!opt->isProcessed() && !opt->isService())
+		{
+			if (opt->label() == kCMOToolSpecificOptions)
+			{
+				if (((COptionExtended *)opt)->serviceLabel() == fName)
+					opt->setProcessed();
+				else
+				{
+					if (info->fOptionsIterator->more())
+					{
+						info->fOptionsState |= kOptionsNotProcessed;
+						processOptionsComplete(noErr, info);
+					}
+					return;
+				}
+			}
+			else
+			{
+				int opcode = opt->getOpCode();
+				int result = opSuccess;
+				if (opt->isServiceSpecific() && ((COptionExtended *)opt)->serviceLabel() != fName)
+					result = opNotFound;
+				if (!(opcode == opSetNegotiate || opcode == opSetRequired || opcode == opGetDefault || opcode == opGetCurrent))
+					result = opBadOpCode;
+				if (result == opSuccess)
+				{
+					if (info->fChannelNum == kCommToolGetChannel)
+						result = processGetBytesOptionStart(opt, fName, opcode);
+					else if (info->fChannelNum == kCommToolPutChannel)
+						result = processPutBytesOptionStart(opt, fName, opcode);
+					else if (info->fChannelNum == kCommToolControlChannel)
+						result = processOptionStart(opt, fName, opcode);
+				}
+				if (result == opInProgress)
+					return;
+				else if (result == opNotFound)
+				{
+					info->fOptionsState |= kOptionsNotProcessed;
+					info->fCurOptPtr->setOpCodeResult(opNotSupported);
+				}
+				else
+				{
+					info->fCurOptPtr->setOpCodeResult(result);
+					info->fCurOptPtr->setProcessed();
+				}
+			}
+		}
+	}
+}
 
 
-ULong
-CCommTool::processOptionsComplete(NewtonErr inResult, CCommToolOptionInfo * info)
-{}
+void
+CCommTool::processOptionsComplete(NewtonErr inErr, CCommToolOptionInfo * info)
+{
+	NewtonErr err = inErr;
+	CUPort * port;
+	bool isForwarding = false;
+	if (err)
+	{
+		processOptionsCleanUp(err, info);
+	}
+	else if (FLAGTEST(info->fOptionsState, kToolStateConnected) && info->fChannelNum == kCommToolControlChannel && f1D4 != kCommToolOpen && (port = forwardOptions()) != NULL)
+	{
+		XTRY
+		{
+			if (!FLAGTEST(info->fOptionsState, kOptionsForwardMsgAllocated))
+			{
+				fOptionRequest = new CCommToolOptionMgmtRequest;
+				XFAILIF(fOptionRequest == NULL, err = kOSErrNoMemory;)
+				fOptionReply = new CCommToolReply;
+				XFAILIF(fOptionReply == NULL, err = kOSErrNoMemory;)
+				fOptionMessage = new CUAsyncMessage;
+				XFAILIF(fOptionMessage == NULL, err = kOSErrNoMemory;)
+				XFAIL(err = initAsyncRPCMsg(*fOptionMessage, 20000))
+				fOptionRequest->fOptions = info->fOptions;
+				fOptionRequest->fOutside = false;
+				fOptionRequest->fRequestOpCode = opProcess;
+				info->fOptionsState |= kOptionsForwardMsgAllocated;
+			}
+			XFAIL(err = port->sendRPC(fOptionMessage, fOptionRequest, sizeof(fOptionRequest), fOptionReply, sizeof(fOptionReply), kNoTimeout, NULL, 4))
+			info->fOptionsState |= kOptionsForwardReqActive;
+			isForwarding = true;
+		}
+		XENDTRY;
+		XDOFAIL(err)
+		{
+			processOptionsComplete(err, info);
+			return;
+		}
+		XENDFAIL;
+	}
+
+	if (!isForwarding)
+	{
+		if (info->fChannelNum == kCommToolGetChannel)
+			getOptionsComplete(err);
+		else if (info->fChannelNum == kCommToolPutChannel)
+			putOptionsComplete(err);
+		else if (info->fChannelNum == kCommToolControlChannel)
+		{
+			switch (f1D4)
+			{
+			case kCommToolOpen:
+				openOptionsComplete(err);
+				break;
+			case kCommToolConnect:
+				connectOptionsComplete(err);
+				break;
+			case kCommToolListen:
+				listenOptionsComplete(err);
+				break;
+			case kCommToolAccept:
+				acceptComplete(err);
+				break;
+			case kCommToolBind:
+				bindOptionsComplete(noErr);
+				break;
+			case kCommToolOptionMgmt:
+				optionMgmtComplete(noErr);
+				break;
+			}
+		}
+	}
+}
 
 
 NewtonErr
@@ -1266,12 +1834,12 @@ CCommTool::processOptionsCleanUp(NewtonErr inErr, CCommToolOptionInfo * info)
 
 	if (info->fChannelNum == kCommToolControlChannel)
 	{
-		if (f20C)
-			delete f20C, f20C = NULL;
-		if (f210)
-			delete f210, f210 = NULL;
-		if (f214)
-			delete f214, f214 = NULL;
+		if (fOptionRequest)
+			delete fOptionRequest, fOptionRequest = NULL;
+		if (fOptionMessage)
+			delete fOptionMessage, fOptionMessage = NULL;
+		if (fOptionReply)
+			delete fOptionReply, fOptionReply = NULL;
 	}
 
 	return err;
@@ -1357,7 +1925,7 @@ CCommTool::processCommOptionComplete(ULong inStatus, CCommToolOptionInfo * info)
 {
 	if (inStatus == opNotFound)
 	{
-		info->fOptionsState |= 0x02;
+		info->fOptionsState |= kOptionsNotProcessed;
 		info->fCurOptPtr->setOpCodeResult(opNotSupported);
 	}
 	else
@@ -1375,25 +1943,15 @@ CCommTool::processOption(COption * inOption, ULong inLabel, ULong inOpcode)
 }
 
 
-NewtonErr
+CUPort *
 CCommTool::forwardOptions(void)
-{ return noErr; }	// that’s really all it does
+{ return NULL; }	// that’s really all it does
 
 
 NewtonErr
-CCommTool::addDefaultOptions(COptionArray * inOptions)
-{ return noErr; }	// that’s really all it does
-
-
-NewtonErr
-CCommTool::addCurrentOptions(COptionArray * inOptions)
-{ return noErr; }	// that’s really all it does
-
-
-void
 CCommTool::processPutBytesOptionStart(COption * inOption, ULong inLabel, ULong inOpcode)
 {
-	processOptionStart(inOption, inLabel, inOpcode);
+	return processOptionStart(inOption, inLabel, inOpcode);
 }
 
 
@@ -1403,10 +1961,10 @@ CCommTool::processPutBytesOptionComplete(ULong inStatus)
 	processCommOptionComplete(inStatus, &fPutOptionInfo);
 }
 
-void
+NewtonErr
 CCommTool::processGetBytesOptionStart(COption* inOption, ULong inLabel, ULong inOpcode)
 {
-	processOptionStart(inOption, inLabel, inOpcode);
+	return processOptionStart(inOption, inLabel, inOpcode);
 }
 
 void

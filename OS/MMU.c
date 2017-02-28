@@ -11,10 +11,10 @@ typedef char bool;
 #include "SWI.h"
 #include "OSErrors.h"
 
-#undef YES
-#define YES 1
-#undef NO
-#define NO 0
+#undef true
+#define true 1
+#undef false
+#define false 0
 
 extern NewtonErr	GenericSWI(int inSelector, ...);
 
@@ -153,7 +153,7 @@ LoadFromPhysAddress(PAddr inAddr)
 void
 StoreToPhysAddress(PAddr inAddr, ULong inData)
 {
-// inAddr is a physical Newton address: don’t use it, bad tghings will happen
+// inAddr is a physical Newton address: don’t use it, bad things will happen
 #if defined(correct)
 	*(ULong*)inAddr = inData;
 #endif
@@ -163,7 +163,7 @@ StoreToPhysAddress(PAddr inAddr, ULong inData)
 
 /*------------------------------------------------------------------------------
 	Initialize the MMU’s Level One Descriptor table.
-	Args:		YES, NO, descriptorDefs, persistenGlobals
+	Args:		true, false, descriptorDefs, persistenGlobals
 	Return:  --
 ------------------------------------------------------------------------------*/
 
@@ -180,8 +180,8 @@ InitTheMMUTables(bool inAll, bool inMMUOn, PAddr inPrimaryDef, SGlobalsThatLiveA
 	Map kSectionSize (MByte) blocks virtual -> physical addresses.
 	Args:		inPrimaryDef		definition of Level One Descriptor table
 				ioDescriptors		physical address of Level One Descriptor table
-				inFill				YES -> fill unused sections with kInvalidDescriptorType
-				inMMUOn				YES -> MMU is on
+				inFill				true -> fill unused sections with kInvalidDescriptorType
+				inMMUOn				true -> MMU is on
 				info					persistent globals
 	Return:  physical address of Level One Descriptor table
 ------------------------------------------------------------------------------*/
@@ -251,9 +251,9 @@ MakePrimaryMMUTable(PAddr inPrimaryDef, PAddr ioDescriptors, bool inFill, bool i
 			def = info->fPhysRExPtr[i]
 	// INCOMPLETE
 			if (inMMUOn)
-				AddNewSecPNJT(r5, def, 0, kReadOnly, YES); // (ULong, ULong, ULong, Perm, bool)
+				AddNewSecPNJT(r5, def, 0, kReadOnly, true); // (ULong, ULong, ULong, Perm, bool)
 			else
-				AddNewSecPNJTMMUWithOff(r5, def, 0, kReadOnly, YES, info);
+				AddNewSecPNJTMMUWithOff(r5, def, 0, kReadOnly, true, info);
 		}
 	}
 #endif
@@ -564,7 +564,7 @@ TransformBigPageToPages(VAddr inVAddr)
 
 bool
 CanUseBigPage(VAddr inVAddr)
-{ return NO; }
+{ return false; }
 
 
 /*------------------------------------------------------------------------------
@@ -1049,7 +1049,7 @@ AddBigPgP(VAddr inVAddr, PAddr inPhysAddr, bool inCacheable)
 	descriptorPtr = gPrimaryTable + (inVAddr / kSectionSize) * sizeof(MMUDescriptor);
 	level1Descriptor = LoadFromPhysAddress(descriptorPtr);
 	descriptorPtr = (level1Descriptor & kPageTableBaseMask) + (((inVAddr & kLargePageBaseMask) / kPageSize) & 0xFF) * sizeof(MMUDescriptor);
-	isFirstTime = YES;
+	isFirstTime = true;
 	// there are 16 big pages to a section
 	for (i = 0; i < 16; ++i, ++descriptorPtr)
 	{
@@ -1058,7 +1058,7 @@ AddBigPgP(VAddr inVAddr, PAddr inPhysAddr, bool inCacheable)
 		&& (level2Descriptor & kLargePageBaseMask) != inPhysAddr)
 		{
 			FlushDCache();
-			isFirstTime = NO;
+			isFirstTime = false;
 		}
 		StoreToPhysAddress(descriptorPtr,  (level2Descriptor & kPermissionMask)
 													| (inPhysAddr & kLargePageBaseMask)

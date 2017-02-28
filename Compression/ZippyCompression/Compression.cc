@@ -209,12 +209,12 @@ CZippyDecompressor::expandValue(unsigned char ** ioSrc, ArrayIndex * ioBitIndex,
 	{
 		ArrayIndex bitIndex = *ioBitIndex;
 		if (bitIndex == 7)
-			return NO;
+			return false;
 		if (src > inSrcLimit && bitIndex == 0)
-			return NO;
+			return false;
 		selector = (*src << bitIndex) & 0xC0;
 		if (selector == 0xC0)
-			return NO;
+			return false;
 #if defined(hasByteSwapping)
 		bits.uc[3] = src[0];
 #else
@@ -368,7 +368,7 @@ CZippyDecompressor::expandValue(unsigned char ** ioSrc, ArrayIndex * ioBitIndex,
 		break;
 	}
 
-	return YES;
+	return true;
 }
 
 

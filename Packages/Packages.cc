@@ -7,13 +7,14 @@
 */
 
 #include "Objects.h"
+#include "ROMResources.h"
+#include "PackageTypes.h"
 #include "PackageParts.h"
 #include "LargeBinaries.h"
 #include "NewtonScript.h"
 #include "MemoryPipe.h"
 #include "EndpointPipe.h"
 #include "EndpointClient.h"
-#include "ROMResources.h"
 
 
 /* -----------------------------------------------------------------------------
@@ -48,37 +49,37 @@ FIsValid(RefArg inRcvr, RefArg inPkg)
 	Determine whether block of data is a package header.
 	Args:		inData		pointer to data
 				inSize		size of data
-	Return:	YES => is a package header
+	Return:	true => is a package header
 ----------------------------------------------------------------------------- */
 
 bool
 IsPackageHeader(Ptr inData, size_t inSize)
 {
-	bool isOK = NO;
+	bool isOK = false;
 	if (inSize >= sizeof(PackageDirectory))
 	{
 		PackageDirectory *	directory = (PackageDirectory *)inData;
 		newton_try
 		{
 			ArrayIndex	i;
-			for (i = 0, isOK = YES; i < 7 && isOK; ++i)
+			for (i = 0, isOK = true; i < kPackageMagicLen && isOK; ++i)
 			{
 				if (directory->signature[i] != kPackageMagicNumber[i])
-					isOK = NO;
+					isOK = false;
 			}
 			if (isOK)
 			{
-				for (isOK = NO; i < 7+2 && !isOK; ++i)
+				for (isOK = false; i < kPackageMagicLen+kPackageMagicVersionCount && !isOK; ++i)
 				{
-					if (directory->signature[7] == kPackageMagicNumber[i])
-						isOK = YES;
+					if (directory->signature[kPackageMagicLen] == kPackageMagicNumber[i])
+						isOK = true;
 				}
 			}
 		}
 		newton_catch(exBusError)
-			isOK = NO;
+			isOK = false;
 		newton_catch(exPermissionViolation)
-			isOK = NO;
+			isOK = false;
 		end_try;
 	}
 	return isOK;
@@ -131,12 +132,12 @@ AllocatePackage(CPipe * inPipe, RefArg inStore, RefArg inParms)
 	RefVar	cbFrame;
 	Ref		cbFreq;
 	size_t	freq = 4*KByte;
-	bool		doActivate = YES;
+	bool		doActivate = true;
 	if (NOTNIL(inParms))
 	{
 		// create AllocatePackage args from parms frame
 		cbFrame = GetFrameSlot(inParms, SYMA(callback));
-		doActivate = ISNIL(GetFrameSlot(inParms, SYMA(dontActivate)));
+		doActivate = ISNIL(GetFrameSlot(inParms, SYMA(don_27tActivate)));
 		cbFreq = GetFrameSlot(inParms, SYMA(callbackFreq));
 		if (NOTNIL(cbFreq))
 			freq = RINT(cbFreq);
@@ -162,11 +163,11 @@ NewPackage(CPipe * inPipe, RefArg inStore, RefArg inCallback, size_t inFreq)
 	RefVar pkg;
 	newton_try
 	{
-		pkg = AllocatePackage(inPipe, inStore, inCallback, inFreq, YES);
+		pkg = AllocatePackage(inPipe, inStore, inCallback, inFreq, true);
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;;
+		err = (NewtonErr)(long)CurrentException()->data;;
 	}
 	end_try;
 	return err;
@@ -231,7 +232,7 @@ StoreSuckPackageFromBinary(RefArg inRcvr, RefArg inBinary, RefArg inParms)
 	buf->init((char *)binData, binSize);
 
 	CMemoryPipe pipe;
-	pipe.init(buf, NULL, NO);
+	pipe.init(buf, NULL, false);
 
 	pkg = SuckPackageThruPipe(&pipe, inRcvr, inParms);
 
@@ -261,12 +262,12 @@ StoreSuckPackageFromEndpoint(RefArg inRcvr, RefArg inEndpoint, RefArg inParms)
 		CEndpointPipe epp;
 		newton_try
 		{
-			epp.init(ep, 2*KByte, 0, 0, NO, NULL);
+			epp.init(ep, 2*KByte, 0, 0, false, NULL);
 			pkg = AllocatePackage(&epp, inRcvr, inParms);
 		}
 		newton_catch_all
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()data;
 		}
 		end_try;
 	}

@@ -10,7 +10,7 @@
 #include "TestAgent.h"
 #include "RecStroke.h"
 #include "Funcs.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 
 extern NewtonErr	StartBypassTablet(void);
 extern NewtonErr	StopBypassTablet(void);
@@ -95,9 +95,11 @@ FJournalStartRecord(RefArg inRcvr, RefArg inMsg, RefArg inSampleType)
 		gJournalRecordStuff->receiver = NULL;	// not in the original
 		gJournalRecordStuff->message = NULL;
 		gJournalRecordStuff->numOfStrokes = 0;
-		XFAILNOT(gJournalRecordStuff->receiver = new RefStruct, err = MemError();)
+		gJournalRecordStuff->receiver = new RefStruct;
+		XFAILIF(gJournalRecordStuff->receiver == NULL, err = MemError();)
 		*gJournalRecordStuff->receiver = inRcvr;
-		XFAILNOT(gJournalRecordStuff->message = new RefStruct, err = MemError();)
+		gJournalRecordStuff->message = new RefStruct;
+		XFAILIF(gJournalRecordStuff->message == NULL, err = MemError();)
 		*gJournalRecordStuff->message = inMsg;
 		gJournalRecordStuff->sampleType = RINT(inSampleType);
 		gJournallingState = kJournalRecording;
@@ -153,7 +155,8 @@ FJournalReplayStrokes(RefArg inRcvr, RefArg inData, RefArg inOriginX, RefArg inO
 	XTRY
 	{
 		XFAILIF(gJournallingState != kJournalIdle, err = -1;)
-		XFAILNOT(gJournalPlayer = new CJournalReplayHandler, err = MemError();)
+		gJournalPlayer = new CJournalReplayHandler;
+		XFAILIF(gJournalPlayer == NULL, err = MemError();)
 		gJournallingState = kJournalReplaying;
 
 		CDataPtr data(inData);
@@ -189,7 +192,8 @@ FJournalReplayAStroke(RefArg inRcvr, RefArg inData, RefArg inOriginX, RefArg inO
 	XTRY
 	{
 		XFAILIF(gJournallingState != kJournalIdle, err = -1;)
-		XFAILNOT(gJournalPlayer = new CJournalReplayHandler, err = MemError();)
+		gJournalPlayer = new CJournalReplayHandler;
+		XFAILIF(gJournalPlayer == NULL, err = MemError();)
 		gJournallingState = kJournalReplaying;
 
 		gJournalPlayer->fNumOfStrokesToPlay = gJournalPlayer->fNumOfStrokes = 1;
@@ -197,7 +201,7 @@ FJournalReplayAStroke(RefArg inRcvr, RefArg inData, RefArg inOriginX, RefArg inO
 		gJournalPlayer->fSampleType = RINT(inSampleType);
 		gJournalPlayer->f1A = RINT(inArg5);
 		gJournalPlayer->f1C = RINT(inArg6);
-		err = gJournalPlayer->playAStroke((JournalStroke *)BinaryData(inData), RINT(inOriginX), RINT(inOriginY), NO);
+		err = gJournalPlayer->playAStroke((JournalStroke *)BinaryData(inData), RINT(inOriginX), RINT(inOriginY), false);
 
 		gTestReporterForNewt->agentReportStatus(13, NULL);
 	}
@@ -229,14 +233,14 @@ FJournalReplayALine(RefArg inRcvr, RefArg inStartX, RefArg inStartY, RefArg inEn
 	XTRY
 	{
 		XFAILIF(gJournallingState != kJournalIdle, err = -1;)
-		if (gJournalPlayer == NULL)
-			XFAILNOT(gJournalPlayer = new CJournalReplayHandler, err = MemError();)
-		else
-		{
+		if (gJournalPlayer == NULL) {
+			gJournalPlayer = new CJournalReplayHandler;
+			XFAILIF(gJournalPlayer == NULL, err = MemError();)
+		} else {
 			gJournalPlayer->fSampleData = NULL;
 			gJournalPlayer->fStrokeIndex = 0;
-			gJournalPlayer->fIsStrokeAvailable = NO;
-			gJournalPlayer->fIsReplaying = YES;
+			gJournalPlayer->fIsStrokeAvailable = false;
+			gJournalPlayer->fIsReplaying = true;
 		}
 		gJournallingState = kJournalReplaying;
 
@@ -249,14 +253,14 @@ FJournalReplayALine(RefArg inRcvr, RefArg inStartX, RefArg inStartY, RefArg inEn
 		delta.x = (startPt.x >= endPt.x) ? startPt.x - endPt.x : endPt.x - startPt.x;
 		delta.y = (startPt.y >= endPt.y) ? startPt.y - endPt.y : endPt.y - startPt.y;
 
-		bool isDoubleTap = NO;			// sp08
-		bool isSelection = NO;			// r10
+		bool isDoubleTap = false;			// sp08
+		bool isSelection = false;			// r10
 		if (NOTNIL(inIsSelection))
 		{
 			if (delta.x < 4 && delta.y < 4)
-				isDoubleTap = YES;
+				isDoubleTap = true;
 			else
-				isSelection = YES;
+				isSelection = true;
 		}
 
 		long r4 = (delta.x > delta.y) ? delta.x / 2 : delta.y / 2;
@@ -355,7 +359,7 @@ FJournalReplayALine(RefArg inRcvr, RefArg inStartX, RefArg inStartY, RefArg inEn
 		gJournalPlayer->f1A = sp04;
 		gJournalPlayer->f1C = sp00;
 		gJournalPlayer->fStrokeIndex = 1;
-		err = gJournalPlayer->playAStroke(theStroke, 0, 0, YES);
+		err = gJournalPlayer->playAStroke(theStroke, 0, 0, true);
 		// who FreePtr()s theStroke?
 
 		gTestReporterForNewt->agentReportStatus(13, NULL);
@@ -507,8 +511,8 @@ CJournalReplayHandler::CJournalReplayHandler()
 {
 	fSampleData = NULL;		// not in the original
 	fStrokeIndex = 0;
-	fIsStrokeAvailable = NO;
-	fIsReplaying = YES;
+	fIsStrokeAvailable = false;
+	fIsReplaying = true;
 }
 
 
@@ -532,7 +536,7 @@ CJournalReplayHandler::initStroke(ULong inOriginX, ULong inOriginY)
 	fNumOfPoints = fSampleData->count;
 	fPointIndex = 0;
 	fStrokeStartTime = fTimebase + fSampleData->startTime;
-	f3C = NO;
+	f3C = false;
 	if (fNumOfPoints > 60)
 	{
 		f3C = ((fNumOfPoints * 60) / fStrokeDuration) < (f1A - 8);
@@ -588,26 +592,26 @@ bool
 CJournalReplayHandler::getNextTabletSample(ULong * outSample)
 {
 	ULong now = GetTicks();
-	bool isSampleValid = NO;
+	bool isSampleValid = false;
 	if (fSampleData == NULL)
 	{
 		if (fIsStrokeAvailable)
 		{
 			JournalStroke * stroke;
 			if ((stroke = getNextStroke()))
-				playAStroke(stroke, fOrigin.x, fOrigin.y, NO);	// sets fSampleData as a side effect
+				playAStroke(stroke, fOrigin.x, fOrigin.y, false);	// sets fSampleData as a side effect
 			else
-				fIsStrokeAvailable = NO;
+				fIsStrokeAvailable = false;
 		}
 	}
 	if (fSampleData == NULL)
 	{
-		fIsReplaying = NO;
-		return NO;
+		fIsReplaying = false;
+		return false;
 	}
 
 	if (fStrokeStartTime > now)
-		return NO;
+		return false;
 
 	if (f38 <= fPointIndex && fStrokeStartTime <= now)
 	{
@@ -637,7 +641,7 @@ CJournalReplayHandler::getNextTabletSample(ULong * outSample)
 		fPointIndex++;
 		if (f3C && fPointIndex == 59)
 			f30 = now;
-		isSampleValid = YES;
+		isSampleValid = true;
 	}
 
 	if (fPointIndex >= fNumOfPoints)	// was fSampleData->count
@@ -655,7 +659,7 @@ void
 CJournalReplayHandler::parseStrokeFileHeader(void)
 {
 	StrokeHeader * strokeInfo = (StrokeHeader *)(char *)fStrokeData;
-	fIsStrokeAvailable = YES;
+	fIsStrokeAvailable = true;
 
 	fNumOfStrokesToPlay = fNumOfStrokes = strokeInfo->x04;
 	fStrokeIndex = 0;

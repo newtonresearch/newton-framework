@@ -20,8 +20,8 @@ CBufferList::CBufferList()
 	fLoBound = kIndexNotFound;
 	fCurrentIndex = kIndexNotFound;
 	fHiBound = kIndexNotFound;
-	fBuffersAreOurs = NO;
-	fListIsOurs = NO;
+	fBuffersAreOurs = false;
+	fListIsOurs = false;
 }
 
 
@@ -54,9 +54,11 @@ CBufferList::init(bool inDeleteSegments)
 	XTRY
 	{
 		fBuffersAreOurs = inDeleteSegments;
-		fListIsOurs = YES;
-		XFAILNOT(fList = new CList, err = MemError();)
-		XFAILNOT(fIter = new CListIterator(fList), err = MemError();)
+		fListIsOurs = true;
+		fList = new CList;
+		XFAILIF(fList == NULL, err = MemError();)
+		fIter = new CListIterator(fList);
+		XFAILIF(fIter == NULL, err = MemError();)
 		resetMark();	// original doesn’t do this
 	}
 	XENDTRY;
@@ -73,9 +75,10 @@ CBufferList::init(CList * bufList, bool inDeleteSegments)
 	XTRY
 	{
 		fBuffersAreOurs = inDeleteSegments;
-		fListIsOurs = NO;
+		fListIsOurs = false;
 		fList = bufList;
-		XFAILNOT(fIter = new CListIterator(fList), err = MemError();)
+		fIter = new CListIterator(fList);
+		XFAILIF(fIter == NULL, err = MemError();)
 		resetMark();
 	}
 	XENDTRY;
@@ -243,7 +246,7 @@ bool
 CBufferList::atEOF(void)
 {
 	if (fCurrentIndex != fHiBound)
-		return NO;
+		return false;
 	return fBuffer->atEOF();
 }
 
@@ -633,8 +636,8 @@ CBufferList::nextSegment(void)
 	if (index < fHiBound)
 	{
 		selectSegment(++index);
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 

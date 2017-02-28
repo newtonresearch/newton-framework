@@ -101,9 +101,9 @@ CProtocol::startMonitor(size_t inStackSize, ObjectId inEnvironmentId, ULong inNa
 	NewtonErr err;
 #if !defined(forFramework)
 	CUMonitor monitor;
-	if ((err = monitor.init((MonitorProcPtr)classInfo()->entryProc(), inStackSize, this, inEnvironmentId, NO, inName, inRebootProtected)) == noErr)
+	if ((err = monitor.init((MonitorProcPtr)classInfo()->entryProc(), inStackSize, this, inEnvironmentId, false, inName, inRebootProtected)) == noErr)
 	{
-		monitor.setDestroyKernelObject(NO);
+		monitor.setDestroyKernelObject(false);
 		fMonitorId = monitor;
 	}
 #else
@@ -120,7 +120,7 @@ CProtocol::destroyMonitor(void)
 	CUMonitor * monitor = new CUMonitor(fMonitorId);
 	if (monitor == NULL)
 		return MemError();
-	monitor->setDestroyKernelObject(YES);
+	monitor->setDestroyKernelObject(true);
 	delete monitor;
 #endif
 	FreePtr((Ptr)this);
@@ -173,20 +173,20 @@ struct ProtocolEntry
 				inHasImpl
 				inImplHash
 				inVersion
-	Return:	YES => this protocol has the right hashes
+	Return:	true => this protocol has the right hashes
 ------------------------------------------------------------------------------*/
 
 bool
 ProtocolEntry::satisfiesHash(bool inHasIntf, const UShort inIntfHash, bool inHasImpl, const UShort inImplHash, const ULong inVersion)
 {
 	if (!inHasIntf)
-		return YES;
+		return true;
 	if (intfHash != inIntfHash)
-		return NO;
+		return false;
 	if (!inHasImpl)
-		return YES;
+		return true;
 	if (implHash != inImplHash)
-		return NO;
+		return false;
 	return (version >= inVersion);
 }
 
@@ -195,21 +195,21 @@ ProtocolEntry::satisfiesHash(bool inHasIntf, const UShort inIntfHash, bool inHas
 	Check whether this protocol matches the given capabilities.
 	Args:		inKey
 				inKeyValue
-	Return:	YES => this protocol has the right capabilities
+	Return:	true => this protocol has the right capabilities
 ------------------------------------------------------------------------------*/
 
 bool
 ProtocolEntry::satisfiesCapabilities(const char * inKey, const char * inKeyValue)
 {
 	if (inKey == NULL)
-		return YES;
+		return true;
 	const char * value = classInfo->getCapability(inKey);
 	if (value)
 	{
 		if (inKeyValue == NULL || strcmp(inKeyValue, value) == 0)
-			return YES;
+			return true;
 	}
-	return NO;
+	return false;
 }
 
 #pragma mark -
@@ -220,7 +220,7 @@ ProtocolEntry::satisfiesCapabilities(const char * inKey, const char * inKeyValue
 				inIntf
 				inImpl
 				inVersion
-	Return:	YES => this metadata has the right interface
+	Return:	true => this metadata has the right interface
 ------------------------------------------------------------------------------*/
 
 bool
@@ -236,7 +236,7 @@ Satisfies(const CClassInfo * inClass, const char * inIntf, const char * inImpl, 
 	}
 	newton_catch(exBusError)
 	{
-		isSatisfied = NO;
+		isSatisfied = false;
 	}
 	end_try;
 	return isSatisfied;
@@ -306,8 +306,8 @@ public:
 	void				destroy(void);			// was Delete()
 
 	NewtonErr		registerProtocol(const CClassInfo * inClass, ULong refCon = 0);
-	NewtonErr		deregisterProtocol(const CClassInfo * inClass, bool specific = NO);
-	bool				isProtocolRegistered(const CClassInfo * inClass, bool specific = NO) const;
+	NewtonErr		deregisterProtocol(const CClassInfo * inClass, bool specific = false);
+	bool				isProtocolRegistered(const CClassInfo * inClass, bool specific = false) const;
 
 	const CClassInfo *	satisfy(const char * intf, const char * impl, ULong version) const;
 	const CClassInfo *	satisfy(const char * intf, const char * impl, const char * capability) const;
@@ -412,7 +412,7 @@ CClassInfoRegistryImpl::make(void)
 {
 	fCmp = new CClassInfoComparator;
 	fProtocols = new NSortedArray;
-	fProtocols->init(fCmp, sizeof(ProtocolEntry)/*element size*/, 8*sizeof(ProtocolEntry)/*chunk size*/, 104/*initial count*/, NO/*don’t shrink*/);
+	fProtocols->init(fCmp, sizeof(ProtocolEntry)/*element size*/, 8*sizeof(ProtocolEntry)/*chunk size*/, 104/*initial count*/, false/*don’t shrink*/);
 	fSeed = 1;
 	invalidateSatisfyCache();
 	return this;
@@ -536,7 +536,7 @@ CClassInfoRegistryImpl::satisfy(const CClassInfo * inClass) const
 		reqdProtocol.implHash = hashString(implementationName);
 		reqdProtocol.version = kAnyVersion;
 
-		for (ArrayIndex count = fProtocols->where(&reqdProtocol), i = count - 1; ((entry = (ProtocolEntry *)fProtocols->at(i)) != NULL) && entry->satisfiesHash(YES, reqdProtocol.intfHash, YES, reqdProtocol.implHash, version); --i)
+		for (ArrayIndex count = fProtocols->where(&reqdProtocol), i = count - 1; ((entry = (ProtocolEntry *)fProtocols->at(i)) != NULL) && entry->satisfiesHash(true, reqdProtocol.intfHash, true, reqdProtocol.implHash, version); --i)
 		{
 			if (Satisfies(entry->classInfo, interfaceName, implementationName, version))
 			{
@@ -733,7 +733,7 @@ CClassInfo::registerProtocol(void) const
 NewtonErr
 CClassInfo::deregisterProtocol(void) const
 {
-	return gProtocolRegistry->deregisterProtocol(this, YES);
+	return gProtocolRegistry->deregisterProtocol(this, true);
 }
 
 //typedef void (CProtocol::*NewProcPtr)(void);
@@ -824,9 +824,9 @@ CClassInfo::hasInstances(ArrayIndex * outCount) const
 	{
 		*outCount = gProtocolRegistry->getInstanceCount(this);
 		if (*outCount != 0)
-			return YES;
+			return true;
 	}
-	return NO;
+	return false;
 }
 
 const char *

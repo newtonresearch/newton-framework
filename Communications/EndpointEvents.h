@@ -22,8 +22,8 @@ public:
 
 	NewtonErr	f08;
 	VAddr			f0C;	// CEndpointEventHandler * ?
-	long			f10;
-	long			f14;
+	int			f10;
+	int			f14;
 	CTime			f18;
 };
 
@@ -44,7 +44,7 @@ public:
 
 	char *	f20;
 	char *	f24;
-	long		f28;
+	int		f28;
 	COptionArray *	f2C;
 };
 
@@ -54,9 +54,9 @@ class CRcvCompleteEvent : public CEndpointEvent
 public:
 				CRcvCompleteEvent();
 
-	long		f20;
-	long		f24;
-	long		f28;
+	int		f20;
+	int		f24;
+	int		f28;
 	ULong		f2C;
 	COptionArray *	f30;
 };
@@ -66,7 +66,7 @@ class CBindCompleteEvent : public CEndpointEvent
 {
 public:
 				CBindCompleteEvent();
-				CBindCompleteEvent(long, ULong, long);
+				CBindCompleteEvent(int, ULong, int);
 
 	COptionArray *	f20;
 };
@@ -76,21 +76,21 @@ class CDisconnectEvent : public CEndpointEvent
 {
 public:
 				CDisconnectEvent();
-				CDisconnectEvent(long, ULong);
+				CDisconnectEvent(int, ULong);
 
 	COptionArray *	f20;
-	long		f24;
-	long		f28;
+	int		f24;
+	int		f28;
 };
 
 
 class CGetProtAddrCompleteEvent : public CEndpointEvent
 {
 public:
-				CGetProtAddrCompleteEvent(long, ULong);
+				CGetProtAddrCompleteEvent(int, ULong);
 
 	COptionArray *	f20;
-	long		f24;
+	int		f24;
 };
 
 
@@ -98,7 +98,7 @@ class COptMgmtCompleteEvent : public CEndpointEvent
 {
 public:
 				COptMgmtCompleteEvent();
-				COptMgmtCompleteEvent(long, ULong);
+				COptMgmtCompleteEvent(int, ULong);
 
 	COptionArray *	f20;
 };
@@ -108,12 +108,12 @@ class CConnectCompleteEvent : public CEndpointEvent
 {
 public:
 				CConnectCompleteEvent();
-				CConnectCompleteEvent(long, ULong, long);
+				CConnectCompleteEvent(int, ULong, int);
 
 	COptionArray *	f20;
 	COptionArray *	f24;
-	long		f28;
-	long		f2C;
+	int		f28;
+	int		f2C;
 };
 
 
@@ -150,7 +150,7 @@ public:
 					CEndpointEventHandler(CEndpoint * inEndpoint, bool);
 	virtual		~CEndpointEventHandler();
 
-	NewtonErr	init(ObjectId inId, EventId inEventId, EventClass inEventClass);
+	NewtonErr	init(ObjectId inPortId, EventId inEventId, EventClass inEventClass = kNewtEventClass);
 
 	NewtonErr	addToAppWorld(void);
 	NewtonErr	removeFromAppWorld(void);
@@ -162,9 +162,9 @@ public:
 	bool			useForks(bool);
 	NewtonErr	block(ULong);
 	void			unblock(void);
-	NewtonErr	callService(ULong inMsgType, CUAsyncMessage * ioMessage, CEvent * inRequest, size_t inReqSize, CEvent * inReply, size_t inReplySize, Timeout inTimeout = kNoTimeout, ULong inTimerName = 0, bool inSync = NO);
-	NewtonErr	callServiceNoForks(ULong inMsgType, CUAsyncMessage * ioMessage, CEvent * inRequest, size_t inReqSize, CEvent * inReply, size_t inReplySize, Timeout inTimeout = kNoTimeout, ULong inTimerName = 0, bool inSync = NO);
-	void			callService(ULong inMsgType, CUAsyncMessage * ioMessage, CEvent * inRequest, size_t inReqSize, CEvent * inReply, size_t inReplySize, unsigned long, bool inSync = NO);
+	NewtonErr	callService(ULong inMsgType, CUAsyncMessage * ioMessage, CEvent * inRequest, size_t inReqSize, CEvent * inReply, size_t inReplySize, Timeout inTimeout = kNoTimeout, ULong inTimerName = 0, bool inSync = false);
+	NewtonErr	callServiceNoForks(ULong inMsgType, CUAsyncMessage * ioMessage, CEvent * inRequest, size_t inReqSize, CEvent * inReply, size_t inReplySize, Timeout inTimeout = kNoTimeout, ULong inTimerName = 0, bool inSync = false);
+	void			callService(ULong inMsgType, CUAsyncMessage * ioMessage, CEvent * inRequest, size_t inReqSize, CEvent * inReply, size_t inReplySize, unsigned long, bool inSync = false);
 	void			callServiceBlocking(ULong inMsgType, CEvent * inRequest, size_t inReqSize, CEvent * inReply, size_t inReplySize, unsigned long);
 
 	void			doEventLoop(unsigned long);

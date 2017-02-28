@@ -39,7 +39,7 @@ public:
 	void			start(ZAddr inAddr, IterFilterType inFilter);
 	void			start(CFlashTracker * inTracker);
 
-	NewtonErr	lookup(PSSId, int, long*);
+	NewtonErr	lookup(PSSId, int, int*);
 	SDirEnt		getDirEnt(ZAddr);
 	SDirEnt		readDirBucket(ZAddr);
 	ArrayIndex	countUnusedDirEnt(void);

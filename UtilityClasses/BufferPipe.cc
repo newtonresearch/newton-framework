@@ -18,8 +18,8 @@ CBufferPipe::CBufferPipe()
 {
 	fGetBuf = NULL;
 	fPutBuf = NULL;
-	fBufsAreOurs = NO;
-	f0D = NO;
+	fBufsAreOurs = false;
+	f0D = false;
 }
 
 
@@ -42,20 +42,22 @@ CBufferPipe::init(size_t inGetBufSize, size_t inPutBufSize)
 {
 	NewtonErr err = noErr;
 
-	fBufsAreOurs = YES;
-	f0D = NO;
+	fBufsAreOurs = true;
+	f0D = false;
 
 	XTRY
 	{
 		if (inGetBufSize > 0)
 		{
-			XFAILNOT(fGetBuf = CBufferSegment::make(), err = MemError();)
+			fGetBuf = CBufferSegment::make();
+			XFAILIF(fGetBuf == NULL, err = MemError();)
 			XFAIL(err = fGetBuf->init(inGetBufSize))
 			fGetBuf->seek(0, kSeekFromEnd);
 		}
 		if (inPutBufSize > 0)
 		{
-			XFAILNOT(fPutBuf = CBufferSegment::make(), err = MemError();)
+			fPutBuf = CBufferSegment::make();
+			XFAILIF(fPutBuf == NULL, err = MemError();)
 			XFAIL(err = fPutBuf->init(inPutBufSize))
 		}
 	}
@@ -130,7 +132,7 @@ CBufferPipe::readChunk(void * outBuf, size_t & ioSize, bool & outEOF)
 	int result;
 	size_t amtRemaining = ioSize;
 	bool isEOF = fGetBuf->atEOF();
-	outEOF = NO;
+	outEOF = false;
 	if (ioSize > 0 && !f0D)
 	{
 		result = fGetBuf->copyOut((UByte *)outBuf, amtRemaining);
@@ -141,7 +143,7 @@ CBufferPipe::readChunk(void * outBuf, size_t & ioSize, bool & outEOF)
 		while (amtRemaining > 0 && !f0D)
 		{
 			underflow(amtRemaining, f0D);
-			isEOF = NO;
+			isEOF = false;
 			result = fGetBuf->copyOut((UByte *)outBuf + ioSize - amtRemaining, amtRemaining);
 			if (result == -1)
 				isEOF = 1;
@@ -153,8 +155,8 @@ CBufferPipe::readChunk(void * outBuf, size_t & ioSize, bool & outEOF)
 	{
 		if (isEOF)
 		{
-			f0D = NO;
-			outEOF = YES;
+			f0D = false;
+			outEOF = true;
 		}
 		else
 		{
@@ -163,8 +165,8 @@ CBufferPipe::readChunk(void * outBuf, size_t & ioSize, bool & outEOF)
 				result = fGetBuf->copyOut((UByte *)outBuf, amtRemaining);
 				if (result == -1)
 				{
-					f0D = NO;
-					outEOF = YES;
+					f0D = false;
+					outEOF = true;
 				}
 				else if (result != 0)
 					ThrowErr(exPipe, result);
@@ -212,7 +214,7 @@ CBufferPipe::reset(void)
 void
 CBufferPipe::resetRead()
 {
-	f0D = NO;
+	f0D = false;
 	if (fGetBuf)
 	{
 		fGetBuf->reset();
@@ -257,7 +259,7 @@ CBufferPipe::next(void)
 	if (dataChar == -1)
 	{
 		if (f0D)
-			f0D = NO;
+			f0D = false;
 		else
 		{
 			underflow(1, f0D);
@@ -278,7 +280,7 @@ CBufferPipe::skip(void)
 	if (dataChar == -1)
 	{
 		if (f0D)
-			f0D = NO;
+			f0D = false;
 		else
 		{
 			underflow(1, f0D);
@@ -299,7 +301,7 @@ CBufferPipe::get(void)
 	if (dataChar == -1)
 	{
 		if (f0D)
-			f0D = NO;
+			f0D = false;
 		else
 		{
 			underflow(1, f0D);

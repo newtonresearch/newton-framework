@@ -86,7 +86,7 @@ public:
 							size_t		inStackSize,
 							ObjectId		inEnvironmentId = 0,
 							ULong			inName = 'mntr',
-							bool			inRebootProtected = NO);
+							bool			inRebootProtected = false);
 
 	NewtonErr	destroyMonitor();							// destroy the monitor
 
@@ -271,8 +271,8 @@ public:
 	void			destroy(void);											// was Delete()
 
 	NewtonErr	registerProtocol(const CClassInfo *, ULong refCon = 0);
-	NewtonErr	deregisterProtocol(const CClassInfo *, bool specific = NO);
-	bool			isProtocolRegistered(const CClassInfo *, bool specific = NO) const;
+	NewtonErr	deregisterProtocol(const CClassInfo *, bool specific = false);
+	bool			isProtocolRegistered(const CClassInfo *, bool specific = false) const;
 #if defined(correct)
 	int						seed() const;
 	const CClassInfo *	first(int seed, ULong * pRefCon=0) const;

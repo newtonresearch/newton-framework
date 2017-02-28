@@ -25,7 +25,7 @@ class CDeclawingRange;
 class CObjectHeap
 {
 public:
-					CObjectHeap(size_t inSize, bool allocateInTempMemory = YES);
+					CObjectHeap(size_t inSize, bool allocateInTempMemory = true);
 					~CObjectHeap();
 
 	ObjHeader *	allocateBlock(size_t inSize, unsigned char flags);
@@ -71,10 +71,9 @@ public:
 	void			heapBounds(Ptr * outStart, Ptr * outLimit);
 	void			heapStatistics(size_t * outFree, size_t * outLargest);
 	void			uriah(void);
-	void			uriahBinaryObjects(bool doFile = NO);
+	void			uriahBinaryObjects(bool doFile = false);
 
 private:
-friend void				FixStartupHeap(void);
 
 #define kNumOfHandlesInBlock 256
 #define kIncrHandlesInBlock   32
@@ -101,7 +100,6 @@ friend void				FixStartupHeap(void);
 
 
 extern CObjectHeap *	gHeap;
-extern int				gCurrentStackPos;
 
 
 #endif	/* __OBJECTHEAP__ */

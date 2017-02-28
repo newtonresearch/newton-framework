@@ -26,6 +26,9 @@ extern "C" {
 Ref	FDefineGlobalConstant(RefArg inRcvr, RefArg inTag, RefArg inObj);
 Ref	FUnDefineGlobalConstant(RefArg inRcvr, RefArg inTag);
 #endif
+#if defined(hasPureFunctionSupport)
+Ref	FDefPureFn(RefArg inRcvr, RefArg inTag, RefArg inFn);
+#endif
 Ref	FDefGlobalFn(RefArg inRcvr, RefArg inTag, RefArg inObj);
 Ref	FGetPath(RefArg inRcvr, RefArg inObj, RefArg inTag);
 Ref	FGetSlot(RefArg inRcvr, RefArg inObj, RefArg inTag);
@@ -52,14 +55,14 @@ static bool SlowFrameHasSlot(Ref context, Ref tag);
 static Ref  SlowGetFrameSlot(Ref context, Ref tag);
 
 static ArrayIndex	ConvertToSortedMap(Ref context, ArrayIndex index);
-static ArrayIndex	SearchSortedMap(ArrayObject * map, ArrayIndex length, Ref tag);
+static ArrayIndex	SearchSortedMap(FrameMapObject * map, ArrayIndex length, Ref tag);
 
 
 /*----------------------------------------------------------------------
 	F u n c t i o n s
 ----------------------------------------------------------------------*/
 #if defined(hasGlobalConstantFunctions)
-extern Ref *		RSgConstantsFrame;
+extern Ref * RSgConstantsFrame;
 
 Ref
 FDefineGlobalConstant(RefArg inRcvr, RefArg inTag, RefArg inObj)
@@ -76,6 +79,16 @@ FUnDefineGlobalConstant(RefArg inRcvr, RefArg inTag)
 {
 	RemoveSlot(RA(gConstantsFrame), inTag);
 	return NILREF;
+}
+#endif
+
+#if defined(hasPureFunctionSupport)
+extern Ref * RSgConstFuncFrame;
+Ref
+FDefPureFn(RefArg inRcvr, RefArg inTag, RefArg inFn)
+{
+	SetFrameSlot(RA(gConstFuncFrame), EnsureInternal(inTag), inFn);
+	return inTag;
 }
 #endif
 
@@ -126,7 +139,7 @@ GlobalFunctionLookup(Ref fnSym)
 #endif
 
 	gFunctionFrame = fns;
-	return GetFrameSlotRef(gConstNSData->internalFunctions, fnSym);
+	return GetFrameSlotRef(RA(builtinFunctions), fnSym);	//gConstNSData->internalFunctions
 }
 
 #pragma mark -
@@ -134,7 +147,7 @@ GlobalFunctionLookup(Ref fnSym)
 /*----------------------------------------------------------------------
 	Determine whether an object could be a path expression.
 	Args:		inObj		an object
-	Return:	YES|NO
+	Return:	true|false
 ----------------------------------------------------------------------*/
 
 bool
@@ -142,7 +155,7 @@ IsPathExpr(RefArg inObj)
 {
 	return ISINT(inObj)
 	|| IsSymbol(inObj)
-	|| (IsArray(inObj) && EQRef(((ArrayObject *)ObjectPtr(inObj))->objClass, RSYMpathExpr));
+	|| (IsArray(inObj) && EQ(((ArrayObject *)ObjectPtr(inObj))->objClass, SYMA(pathExpr)));
 }
 
 
@@ -162,7 +175,7 @@ FrameHasPath(RefArg context, RefArg path)
 	{
 		if (IsSymbol(path))
 		{
-			bool	varExists = NO;
+			bool	varExists = false;
 			if (context == gFunctionFrame)
 				return NOTNIL(GlobalFunctionLookup(path));
 			else if (IsFrame(context))
@@ -176,7 +189,7 @@ FrameHasPath(RefArg context, RefArg path)
 		}
 		else if (IsArray(path))
 		{
-			if (EQRef(ClassOf(path), RSYMpathExpr))
+			if (EQ(ClassOf(path), SYMA(pathExpr)))
 			{
 				Ref	current;
 				Ref	pathElement;
@@ -194,7 +207,7 @@ FrameHasPath(RefArg context, RefArg path)
 						if (IsArray(current) && pathIndex < ARRAYLENGTH(ObjectPtr(current)))
 							current = ((ArrayObject *)ObjectPtr(current))->slot[pathIndex];
 						else
-							return NO;
+							return false;
 					}
 					else if (IsSymbol(pathElement))
 					{
@@ -204,29 +217,29 @@ FrameHasPath(RefArg context, RefArg path)
 							{
 								current = GlobalFunctionLookup(pathElement);
 								if (ISNIL(current))
-									return NO;
+									return false;
 							}
 							else
 							{
-								bool varExists = NO;
+								bool varExists = false;
 								current = GetProtoVariable(context, pathElement, &varExists);
 								if (!varExists)
-									return NO;
+									return false;
 							}
 						}
 						else
-							return NO;
+							return false;
 					}
 					else
 						ThrowExFramesWithBadValue(kNSErrBadSegmentInPath, path);
 				}
-				return YES;
+				return true;
 			}
 		}
 		else
 			ThrowBadTypeWithFrameData(kNSErrNotAPathExpr, path);
 	}
-	return NO;
+	return false;
 }
 
 
@@ -260,14 +273,14 @@ FrameSlotPosition(Ref context, Ref tag)
 ----------------------------------------------------------------------*/
 
 static ArrayIndex
-SearchSortedMap(ArrayObject * map, ArrayIndex length, Ref tag)
+SearchSortedMap(FrameMapObject * map, ArrayIndex length, Ref tag)
 {
 	int	first = 0;
 	int	last = length - 1;
 	while (first <= last)
 	{
 		ArrayIndex i = (first + last) / 2;
-		int	cmp = SymbolCompare(map->slot[1 + i], tag);
+		int	cmp = SymbolCompare(map->slot[i], tag);
 		if (cmp == 0)
 			return i;
 		else if (cmp < 0)
@@ -310,7 +323,7 @@ FindOffsetCacheClear(void)
 	Determine the offset (index) of the named slot within a frame.
 	Searches supermaps too, so returns the actual map in which the slot
 	was found.
-	Args:		context	a frame
+	Args:		inMap		a frame map
 				tag		a slot symbol
 				outMap	pointer to map Ref in which slot actually exists
 	Return:	long		index
@@ -318,17 +331,17 @@ FindOffsetCacheClear(void)
 ----------------------------------------------------------------------*/
 
 static ArrayIndex
-FindOffset1(Ref context, Ref tag, Ref * outMap)
+FindOffset1(Ref inMap, Ref tag, Ref * outMap)
 {
-	ArrayObject *	stack[kMaxDepth];
-	ArrayObject *	map;
+	FrameMapObject *	stack[kMaxDepth];
+	FrameMapObject * map;
 	int		depth = 0;
 	long		offset = 0;
 	ULong		hash = ((SymbolObject *)PTR(tag))->hash;
 
-	for (map = (ArrayObject *)ObjectPtr(context);
-		  NOTNIL(map->slot[0]);
-		  map = (ArrayObject *)ObjectPtr(map->slot[0]))
+	for (map = (FrameMapObject *)ObjectPtr(inMap);
+		  NOTNIL(map->supermap);
+		  map = (FrameMapObject *)ObjectPtr(map->supermap))
 	{
 		stack[depth++] = map;
 		if (depth == kMaxDepth)
@@ -345,7 +358,7 @@ FindOffset1(Ref context, Ref tag, Ref * outMap)
 	{
 		ArrayIndex	len = ARRAYLENGTH(map) - 1;
 
-		if (map->objClass & kMapSorted)
+		if (FLAGTEST(map->objClass, kMapSorted))
 		{
 			ArrayIndex mapOffset = SearchSortedMap(map, len, tag);
 			if (mapOffset == kIndexNotFound)
@@ -361,7 +374,7 @@ FindOffset1(Ref context, Ref tag, Ref * outMap)
 		else
 		{
 			Ref	slotSym;
-			Ref *	slotPtr = &map->slot[1];
+			Ref *	slotPtr = map->slot;
 			while (len-- != 0)
 			{
 				slotSym = *slotPtr++;
@@ -385,7 +398,7 @@ FindOffset1(Ref context, Ref tag, Ref * outMap)
 
 /*----------------------------------------------------------------------
 	Determine the offset (index) of the named slot within a frame.
-	Args:		fr			a frame
+	Args:		fr			a frame map
 				tag		a slot symbol
 	Return:	long		index
 							-1 => slot doesn’t exist
@@ -393,16 +406,16 @@ FindOffset1(Ref context, Ref tag, Ref * outMap)
 ----------------------------------------------------------------------*/
 
 ArrayIndex
-FindOffset(Ref context, Ref tag)
+FindOffset(Ref map, Ref tag)
 {
 	SymbolObject *	sym = (SymbolObject *)PTR(tag);
 	if (!(ISREALPTR(tag) && sym->objClass == kSymbolClass))
 		ThrowBadTypeWithFrameData(kNSErrNotASymbol, tag);
 
-	ArrayIndex cacheIndex = ((context + sym->hash) >> kOffsetCacheShift) & kOffsetCacheSizeMask;
+	ArrayIndex cacheIndex = ((map + sym->hash) >> kOffsetCacheShift) & kOffsetCacheSizeMask;
 	OffsetCacheItem *	cachePtr = gCached.offset;
 	ArrayIndex	offset;
-	if (context == cachePtr->context
+	if (map == cachePtr->context
 	 && tag == cachePtr->slot)
 	{
 		offset = cachePtr->offset;
@@ -410,7 +423,7 @@ FindOffset(Ref context, Ref tag)
 	else
 	{
 		cachePtr = &offsetCache[cacheIndex];
-		if (context == cachePtr->context
+		if (map == cachePtr->context
 		 && tag == cachePtr->slot)
 		{
 			offset = cachePtr->offset;
@@ -424,18 +437,18 @@ FindOffset(Ref context, Ref tag)
 	if (offset != kIndexNotFound)
 		return offset;
 
-	if ((tag == RSYM_proto || UnsafeSymbolEqual(tag, RSYM_proto, k_protoHash))
-	&&  (((ArrayObject *)ObjectPtr(context))->objClass & kMapProto) == 0)
+	if ((tag == SYMA(_proto) || UnsafeSymbolEqual(tag, SYMA(_proto), k_protoHash))
+	&&  (((FrameMapObject *)ObjectPtr(map))->objClass & kMapProto) == 0)
 		;	// we’re looking for a _proto slot but there’s no proto chain
 	else
 	{
 		Ref	implMap;
-		offset = FindOffset1(context, tag, &implMap);
+		offset = FindOffset1(map, tag, &implMap);
 		if (ISNIL(implMap))
 			offset = kIndexNotFound;
 	}
 	cachePtr = &offsetCache[cacheIndex];
-	cachePtr->context = context;
+	cachePtr->context = map;
 	cachePtr->slot = tag;
 	cachePtr->offset = offset;
 	gCached.offset = cachePtr;
@@ -448,48 +461,48 @@ FindOffset(Ref context, Ref tag)
 
 /*----------------------------------------------------------------------
 	Determine whether the named slot exists in the given frame.
-	Args:		context	a frame
+	Args:		rcvr		a frame
 				tag		a slot symbol
 	Return:	bool		exists
-	Throw:	BadType	if context is not a frame
+	Throw:	BadType	if rcvr is not a frame
 ----------------------------------------------------------------------*/
 
 bool
-FrameHasSlot(RefArg context, RefArg tag)
+FrameHasSlot(RefArg rcvr, RefArg tag)
 {
-	return FrameHasSlotRef(context, tag);
+	return FrameHasSlotRef(rcvr, tag);
 }
 
 
 bool
-FrameHasSlotRef(Ref context, Ref tag)
+FrameHasSlotRef(Ref rcvr, Ref tag)
 {
-	if (context == gFunctionFrame)
+	if (rcvr == gFunctionFrame)
 		return NOTNIL(GlobalFunctionLookup(tag));
 
-	FrameObject * fr = (FrameObject *)FaultCheckObjectPtr(context);
+	FrameObject * fr = (FrameObject *)FaultCheckObjectPtr(rcvr);
 	if (fr == NULL)
 	{
 		if (InHeap(tag))
-			return SlowFrameHasSlot(context, tag);
-		fr = (FrameObject *)ObjectPtr(context);
+			return SlowFrameHasSlot(rcvr, tag);
+		fr = (FrameObject *)ObjectPtr(rcvr);
 	}
 	if (NOTFRAME(fr))
-		ThrowBadTypeWithFrameData(kNSErrNotAFrame, context);
+		ThrowBadTypeWithFrameData(kNSErrNotAFrame, rcvr);
 
 	return (FindOffset(fr->map, tag) != kIndexNotFound);
 }
 
 
 static bool
-SlowFrameHasSlot(Ref context, Ref tag)
+SlowFrameHasSlot(Ref rcvr, Ref tag)
 {
-	bool	hasSlot = NO;
+	bool	hasSlot = false;
 	
 	LockRef(tag);
 	unwind_protect
 	{
-		hasSlot = FrameHasSlotRef(MAKEPTR(ObjectPtr(context)), tag);
+		hasSlot = FrameHasSlotRef(MAKEPTR(ObjectPtr(rcvr)), tag);
 	}
 	on_unwind
 		UnlockRef(tag);
@@ -501,7 +514,7 @@ SlowFrameHasSlot(Ref context, Ref tag)
 
 /*----------------------------------------------------------------------
 	Return the value of the path.
-	Args:		context	a frame
+	Args:		rcvr		a frame
 				path		the path
 	Return:	Ref		the slot value
 	Throw:	BadType	if path is not a symbol, int or pathExpr array
@@ -509,25 +522,25 @@ SlowFrameHasSlot(Ref context, Ref tag)
 ----------------------------------------------------------------------*/
 
 Ref
-GetFramePath(RefArg context, RefArg path)
+GetFramePath(RefArg rcvr, RefArg path)
 {
-	if (NOTNIL(context))
+	if (NOTNIL(rcvr))
 	{
 		if (IsSymbol(path))
 		{
-			if (context == gFunctionFrame)
+			if (rcvr == gFunctionFrame)
 				return GlobalFunctionLookup(path);
 			else
-				return GetProtoVariable(context, path);
+				return GetProtoVariable(rcvr, path);
 		}
 
 		else if (ISINT(path))
 		{
-			if (IsArray(context))
+			if (IsArray(rcvr))
 			{
 				ArrayIndex	i = RVALUE(path);
-				if (i < ARRAYLENGTH(ObjectPtr(context)))
-					return ((FrameObject *)ObjectPtr(context))->slot[i];
+				if (i < ARRAYLENGTH(ObjectPtr(rcvr)))
+					return ((FrameObject *)ObjectPtr(rcvr))->slot[i];
 				else
 					return NILREF;
 			}
@@ -535,7 +548,7 @@ GetFramePath(RefArg context, RefArg path)
 
 		else if (IsArray(path))
 		{
-			if (EQRef(ClassOf(path), RSYMpathExpr))
+			if (EQ(ClassOf(path), SYMA(pathExpr)))
 			{
 				Ref	current;
 				Ref	pathElement;
@@ -543,7 +556,7 @@ GetFramePath(RefArg context, RefArg path)
 				if (pathLen < 1)
 					ThrowErr(exFrames, kNSErrEmptyPath);
 
-				current = context;
+				current = rcvr;
 				for (i = 0; i < pathLen && NOTNIL(current); ++i)
 				{
 					pathElement = ((ArrayObject *)ObjectPtr(path))->slot[i];
@@ -579,34 +592,34 @@ GetFramePath(RefArg context, RefArg path)
 
 /*----------------------------------------------------------------------
 	Return the value of the named slot.
-	Args:		context	a frame
+	Args:		rcvr		a frame
 				slot		a slot symbol
 	Return:	Ref		the slot value
-	Throw:	BadType	if context is not a frame
+	Throw:	BadType	if rcvr is not a frame
 ----------------------------------------------------------------------*/
 
 Ref
-GetFrameSlot(RefArg context, RefArg slot)
+GetFrameSlot(RefArg rcvr, RefArg slot)
 {
-	return GetFrameSlotRef(context, slot);
+	return GetFrameSlotRef(rcvr, slot);
 }
 
 
 Ref
-GetFrameSlotRef(Ref context, Ref slot)
+GetFrameSlotRef(Ref rcvr, Ref slot)
 {
-	if (context == gFunctionFrame)
+	if (rcvr == gFunctionFrame)
 		return GlobalFunctionLookup(slot);
 
-	FrameObject * fr = (FrameObject *)FaultCheckObjectPtr(context);
+	FrameObject * fr = (FrameObject *)FaultCheckObjectPtr(rcvr);
 	if (fr == NULL)
 	{
 		if (InHeap(slot))
-			return SlowGetFrameSlot(context, slot);
-		fr = (FrameObject *)ObjectPtr(context);
+			return SlowGetFrameSlot(rcvr, slot);
+		fr = (FrameObject *)ObjectPtr(rcvr);
 	}
 	if (NOTFRAME(fr))
-		ThrowBadTypeWithFrameData(kNSErrNotAFrame, context);
+		ThrowBadTypeWithFrameData(kNSErrNotAFrame, rcvr);
 
 	ArrayIndex offset = FindOffset(fr->map, slot);
 	return (offset == kIndexNotFound) ? NILREF : fr->slot[offset];
@@ -614,39 +627,39 @@ GetFrameSlotRef(Ref context, Ref slot)
 
 
 Ref
-UnsafeGetFrameSlot(Ref context, Ref slot, bool * exists)
+UnsafeGetFrameSlot(Ref rcvr, Ref slot, bool * exists)
 {
-	if (context == gFunctionFrame)
+	if (rcvr == gFunctionFrame)
 	{
 		Ref	result = GlobalFunctionLookup(slot);
 		*exists = NOTNIL(result);
 		return result;
 	}
 	
-	FrameObject * fr = (FrameObject *)ObjectPtr(context);
+	FrameObject * fr = (FrameObject *)ObjectPtr(rcvr);
 	ArrayIndex offset = FindOffset(fr->map, slot);
 	if (offset == kIndexNotFound)
 	{
-		*exists = NO;
+		*exists = false;
 		return NILREF;
 	}
 	else
 	{
-		*exists = YES;
+		*exists = true;
 		return fr->slot[offset];
 	}
 }
 
 
 static Ref
-SlowGetFrameSlot(Ref context, Ref slot)
+SlowGetFrameSlot(Ref rcvr, Ref slot)
 {
 	Ref	theSlot = NILREF;
 
 	LockRef(slot);
 	unwind_protect
 	{
-		theSlot = GetFrameSlotRef(MAKEPTR(ObjectPtr(context)), slot);
+		theSlot = GetFrameSlotRef(MAKEPTR(ObjectPtr(rcvr)), slot);
 	}
 	on_unwind
 		UnlockRef(slot);
@@ -658,16 +671,16 @@ SlowGetFrameSlot(Ref context, Ref slot)
 
 /*----------------------------------------------------------------------
 	Return the symbol of the indexed slot.
-	Args:		context	a frame map
+	Args:		inMap		a frame map
 				index		a slot index
 				mapIndex	slot index within submap
 	Return:	Ref		the slot symbol
 ----------------------------------------------------------------------*/
 
 Ref
-GetTag(Ref context, ArrayIndex index, ArrayIndex * mapIndex)
+GetTag(Ref inMap, ArrayIndex index, ArrayIndex * mapIndex)
 {
-	if (ISNIL(context))
+	if (ISNIL(inMap))
 	{
 		if (mapIndex)
 			*mapIndex = 0;
@@ -675,7 +688,7 @@ GetTag(Ref context, ArrayIndex index, ArrayIndex * mapIndex)
 	}
 
 	ArrayIndex x = 0;
-	FrameMapObject * map = (FrameMapObject *)ObjectPtr(context);
+	FrameMapObject * map = (FrameMapObject *)ObjectPtr(inMap);
 	Ref tag = GetTag(map->supermap, index, &x);	// recurse thru supermaps
 	if (x == kIndexNotFound)
 	{
@@ -684,12 +697,12 @@ GetTag(Ref context, ArrayIndex index, ArrayIndex * mapIndex)
 		return tag;
 	}
 
-	ArrayIndex mapLength = Length(context) - 1 + x;
+	ArrayIndex mapLength = Length(inMap) - 1 + x;
 	if (mapLength > index)
 	{
 		if (mapIndex)
 			*mapIndex = kIndexNotFound;
-		return GetArraySlotRef(context, index - x + 1);
+		return GetArraySlotRef(inMap, index - x + 1);
 	}
 	else
 	{
@@ -713,7 +726,7 @@ GetMapTags(Ref inMap, SortedMapTag * outTags)
 	}
 
 	Ref *	slotPtr = &map->slot[0];
-	for (ArrayIndex i = 0, count = (map->size - SIZEOF_FRAMEMAPOBJECT) / sizeof(Ref); i < count; ++i, ++outTags)
+	for (ArrayIndex i = 0, count = (map->size - SIZEOF_FRAMEMAPOBJECT(0)) / sizeof(Ref); i < count; ++i, ++outTags)
 	{
 		outTags->ref = *slotPtr++;
 		outTags->index = numOfTags++;
@@ -885,7 +898,7 @@ AddSlot(RefArg context, RefArg tag)
 
 	RefVar map(((FrameObject *)ObjectPtr(context))->map);
 	FrameMapObject * mapPtr = (FrameMapObject *)ObjectPtr(map);
-	if ((mapPtr->objClass & kMapShared) || (mapPtr->flags & kObjReadOnly))
+	if (FLAGTEST(mapPtr->objClass, kMapShared) || FLAGTEST(mapPtr->flags, kObjReadOnly))
 	{
 		map = ExtendSharedMap(map, 1);
 		((FrameObject *)ObjectPtr(context))->map = map;
@@ -922,7 +935,7 @@ AddSlot(RefArg context, RefArg tag)
 	ICacheClearSymbol(tag, SymbolHash(tag));
 
 	if (EQ(tag, SYMA(_proto)))
-		((ArrayObject *)ObjectPtr(map))->objClass |= kMapProto;
+		((FrameMapObject *)ObjectPtr(map))->objClass |= kMapProto;
 
 	SymbolObject * sym = (SymbolObject *)PTR(tag);
 	ArrayIndex cacheIndex = ((context + sym->hash) >> kOffsetCacheShift) & kOffsetCacheSizeMask;
@@ -982,11 +995,11 @@ RemoveSlot(RefArg ioContext, RefArg tag)
 			else
 			{
 				// slot is in a supermap somewhere
-				bool	wasMapUnlinked = NO;
+				bool	wasMapUnlinked = false;
 				RefVar	map(frMap);
 				FrameMapObject * mapPtr = (FrameMapObject *)ObjectPtr(map);
 				// look for the map whose supermap contains the slot
-				while (!EQRef(mapPtr->supermap, implMap))
+				while (!EQ(mapPtr->supermap, implMap))
 				{
 					map = mapPtr->supermap;
 					mapPtr = (FrameMapObject *)ObjectPtr(map);
@@ -995,12 +1008,12 @@ RemoveSlot(RefArg ioContext, RefArg tag)
 				{
 					// we can safely modify it
 					mapPtr->supermap = frMapPtr->supermap;
-					if (SymbolCompare(tag, RSYM_proto) == 0)
+					if (SymbolCompare(tag, SYMA(_proto)) == 0)
 					{
 					// we’re removing the _proto slot so clear the flag
 						mapPtr->objClass &= ~kMapProto;
 					}
-					wasMapUnlinked = YES;
+					wasMapUnlinked = true;
 				}
 				if (wasMapUnlinked)
 					goto tagDone;
@@ -1013,7 +1026,7 @@ RemoveSlot(RefArg ioContext, RefArg tag)
 		{
 			// map is shared or read-only so we need to create a new one
 			RefVar	newMap = ShrinkSharedMap(frMap, implMap, index);
-			if (SymbolCompare(tag, RSYM_proto) != 0 && (ObjectFlags(newMap) & kObjReadOnly) == 0)
+			if (SymbolCompare(tag, SYMA(_proto)) != 0 && (ObjectFlags(newMap) & kObjReadOnly) == 0)
 			{
 				// we weren’t removing the _proto slot so copy kMapProto flag from original map
 				((FrameMapObject *)ObjectPtr(newMap))->objClass |= (((FrameMapObject *)ObjectPtr(frMap))->objClass & kMapProto);
@@ -1026,7 +1039,7 @@ RemoveSlot(RefArg ioContext, RefArg tag)
 			Ref	superMap = ((FrameMapObject *)ObjectPtr(frMap))->supermap;
 			ArrayIndex	superSize = ISNIL(superMap) ? 0 : ComputeMapSize(superMap);
 			ShrinkArray(frMap, 1 + index - superSize);
-			if (SymbolCompare(tag, RSYM_proto) == 0)
+			if (SymbolCompare(tag, SYMA(_proto)) == 0)
 			{
 			// we’re removing the _proto slot so clear the flag
 				frMapPtr->objClass &= ~kMapProto;
@@ -1070,7 +1083,7 @@ SetFramePath(RefArg context, RefArg path, RefArg value)
 		SetArraySlot(context, RVALUE(path), value);
 	}
 
-	else if (IsArray(path) && EQRef(ClassOf(path), RSYMpathExpr))
+	else if (IsArray(path) && EQ(ClassOf(path), SYMA(pathExpr)))
 	{
 		ArrayIndex pathLen = ARRAYLENGTH(ObjectPtr(path));
 		if (pathLen < 1)
@@ -1175,7 +1188,7 @@ SetFrameSlot(RefArg context, RefArg tag, RefArg value)
 	ULong hash = SymbolHash(tag);
 	if (hash == k_parentHash || hash == k_protoHash)
 	{
-		if (SymbolCompare(tag, RSYM_parent) == 0 || SymbolCompare(tag, RSYM_proto) == 0)
+		if (SymbolCompare(tag, SYMA(_parent)) == 0 || SymbolCompare(tag, SYMA(_proto)) == 0)
 			ICacheClear();
 	}
 }
@@ -1234,7 +1247,7 @@ FHasSlot(RefArg inRcvr, RefArg inObj, RefArg inTag)
 Ref
 FHasVar(RefArg inRcvr, RefArg inTag)
 {
-	bool  exists = NO;
+	bool  exists = false;
 	if (NOTNIL(inRcvr))
 		GetVariable(inRcvr, inTag, &exists, kNoLookup);
 	if (!exists)

@@ -1,0 +1,1250 @@
+
+-o
+output file name
+-aif
+output file name
+-dump
+dump file name
+-p
+-copyright
+copyright string
+-c
+output file creator
+-packageid
+package id
+
+$package id “%s” must be 4 bytes long
+-copyprotected
+-invisible
+-dispatchonly
+-nocompression
+-base
+base address
+-version
+version number
+
+part file name
+-aif
+part file name
+
+-compressed
+compression type
+-compressed specified twice for one part:  “%s” and “%s”
+
+-index
+part index
+-index specified twice for one part:  “%s” and “%s”
+
+-copyflags
+-copyflags specified twice
+
+-notify
+part type
+-notify specified twice for one part
+
+part type “%s” must be 4 bytes long
+part info
+
+-aif
+“-aif” can only appear immeadiately after “-o”, “-protocol”, “-frames” or “-raw”
+package name specified twice:  “%s” and “%s”
+“%s” is not an option
+offset %lu is too large
+can't allocate %lu bytes for Unicode string
+can’t dispose the part buffer
+can’t open input part file “%P”
+can’t seek to position %lu of part file “%P”
+can’t allocate the part buffer
+can’t lock the part buffer
+can’t read %lu bytes for part %d from part file “%P”
+can’t close input part file
+frames relocating “%P” to 0x%08lx == 0x%08lx - 0x%08lx
+can’t write part data to output file “P”
+can’t dispose part buffer
+### %s: Ouch!
+
+\$%02x
+can’t open package file “%P”
+can’t read %lu bytes for package header package file “%P”
+
+package0
+ # package is version 0
+
+package1
+# package is version 1
+
+file “%P” does not seem to be a package file
+can’t read %lu bytes for part directory header package file “%P”
+can’t allocate %lu bytes for directory entries
+can’t read %lu bytes for part directory entries from package file “%P”
+can’t allocate %lu bytes for string table
+can’t read %lu bytes for string table from “%P”
+can’t read %lu bytes for relocation header from “%P”
+
+ -p
+
+	%s%s -o "%P" -packageID '%s' -version %lu ∂
+
+		"%s"
+ -copyprotected
+ -dispatchonly
+ -nocompression
+ -invisible
+ -copyright "%s"
+s ∂
+# package flags are 0x%08lx ∂
+# package has %lu bytes of relocation info starting at file offset 0x%08lx ∂
+# total size is %lu, %lu part%s: ∂
+%s "Part %d" 
+-notify '%s' 
+# file offset = 0x%08lx, size = 0x%08lx, partflags = 0x%08lx 
+∂
+-autoLoad 
+-autoRemove 
+-autoCopy 
+-compressed "%s" 
+can’t close input package file “%P”
+
+can’t open input package file “%P”
+can’t read package file “%P”
+package0package1
+file “%P” does not seem to be a package file
+package file “%P” has relocations:  Packer cannot yet get parts from package files with relocations
+can’t read package file “%P”
+can’t allocate %lu bytes for directory entries
+can’t read package file “%P”
+can’t allocate %lu bytes for string table
+can’t read string table from “%P”
+part %d, “%P” input offset = 0x%08lx = 0x%08lx + 0x%08lx; logical start address = 0x%08lx
+can’t close input package file “%P”
+
+can’t open input AIF part file “%P”
+can’t read AIF header of part file “%P”
+part file “%P” does not seem to be in AIF format
+Bad AIF part file with unaligned image base 0x%08lx
+Bad AIF part file with unaligned read-only size 0x%08lx
+Bad AIF part file with unaligned read-write size 0x%08lx
+part file “%P” seems to have %lu bytes of initialized data
+part file “%P” seems to have %lu bytes of zero-initialized data
+an executable
+a non-executable
+“%P” is %s AIF file
+part file “%P” is relocatable, executable AIF format -- I can’t handle it unless it is '-aif -bin -reloc', sorry
+can’t seek to position %lu of AIF part file “%P”
+can’t read AIF relocation count of part file “%P”
+AIF part file “%P” has %lu relocation%s
+can’t allocate %lu bytes for AIF relocations
+can’t read AIF relocations of part file “%P”
+I can’t yet handle AIF part files with relocations that have been linked with -data
+can’t close input AIF part file “%P”
+
+package0
+copyright string is “%s”
+no copyright string
+package name is “%s”
+can’t find package name
+can’t allocate %lu bytes for directory entries
+can’t allocate %lu bytes for file infos
+ran off end of partEntries
+expecting “-protocol”, “-frames”, “-raw”, or “-package”, but found “%s”
+sorry, '-package -aif' is not implemented yet
+-aif
+-aif
+part file name is “%P”
+-index
+Part “%P” ‘-index’ option ignored for non-package part
+-copyflags
+Part “%P” ‘-copyflags’ option ignored for non-package part
+-compressed
+Part “%P” ‘-compressed’ option ignored for pre-built package
+-notify
+Part “%P” ‘-notify’ option ignored for pre-built package
+Part “%P” ‘%s’ option ignored for pre-built package
+I didn’t expect to see “%s”
+can’t get info on “%P”
+can’t read frame part data from “%P”
+
+s
+%lu relocation%s kept for part
+“%P” part length is %lu bytes
+can’t create output file “%P”
+can’t open output file “%P”
+can’t truncate output file “%P”
+package1
+package size %lu, is not long aligned
+package contains %lu parts, package size is %lu bytes
+writing AIF header
+can’t write AIF header to output file “P”
+writing package header
+can’t write package header to to output file “P”
+writing package directory, size = %lu bytes
+can’t write package directory header to output file “P”
+can’t write package directory entries to output file “P”
+writing string table, size = %lu bytes, padded to %lu bytes
+can’t write %lu bytes of string table to output file “P”
+writing relocations = %lu bytes, %lu bytes used
+can’t write %lu bytes of relocations to output file “P”
+can’t copy part file “%P”
+can’t close ouput file
+deleting output file “%P”
+can’t delete output file “%P”
+finished without error
+terminated by error
+
+-autocopy
+-autoremove
+-autoload
+-package
+-raw
+-frames
+-protocol
+!Pkg DOCK 
+Packer.out
+
+(-package packageFile [-index number] [-copyflags])
+#	<partspec>		:: ([(-protocol | -frames | -raw) [-aif] partFile [-autoLoad] [-autoRemove] [-autoCopy] [-compressed compressor] [-notify partType info] ]) |
+#	<miscpackageflags>	:: [-invisible] [-copyprotected] [-dispatchonly] [-nocompression] [-base <address>]
+
+# Usage:   %s [-p] ([-o [-aif] outputFile] packageName [-packageID id] [-version vers] [-c outputCreator] [-copyright string] <miscpackageflags> <partspec>…) | -dump dumpFile)
+
+
+
+# .
+
+### %s - 
+%s - 
+.
+
+*error
+error
+warning
+warning
+internal error
+bad usage
+error
+# %s
+
+no %s follows “%s”
+can’t write %lu bytes of padding to output file “P”
+can’t write %lu bytes of padding to output file “P”
+0
+<unknown>
+can't allocate %ld bytes, err = %d
+StringTable.c
+error disposing handle %p, err = %d
+StringTable.c
+no error while writing but, %ld bytes requested, %ld bytes written
+StringTable.c
+offset %ld, is larger than size %d
+StringTable.c
+can't grow handle %p to %ld bytes, err = %d
+StringTable.c
+offset %ld + size, is larger than size %d
+StringTable.c
+Assertion failed
+
+%s -- File "%s"-- Line %d
+
+didn’t find C relocation at %lu
+inconsistent image size for file %lu:  0x%08lx != 0x%08lx
+relocating “%P” from 0x%08lx to 0x%08lx
+relocation (%lu) beyond image size (%lu)
+two calls to TRelocationChunk::Allocate
+can’t allocate %lu bytes for TCompressedRelocation[%u] in TRelocationChunk::Allocate
+TRelocationChunk::Append called before TRelocationChunk::Allocate
+too many calls to TRelocationChunk::Append
+found unaligned relocation 0x%08lx
+can’t write %lu bytes of reloc chunk header to output file “P”
+can’t write %lu bytes of reloc chunk relocations to output file “P”
+can’t allocate %lu bytes for TFileRelocations[%lu] in TRelocationCollector::TRelocationCollector
+relocations already computed
+too many calls to TRelocationCollector::AddRelocations
+relocations already computed
+can’t allocate %lu bytes for TRelocationChunk[%lu] in TRelocationCollector::Compute
+found %lu empty relocation chunks
+oops, accessing relocation chunk (%lu) beyond limit (%lu)
+oops, nil relocation chunk
+oops, nil relocation chunk
+oops, accessing relocation chunk (%lu) beyond limit (%lu)
+oops, nil relocation chunk
+relocations info became to big %lu < %lu
+
+
+relocations not yet computedrelocations not yet computedrelocations not yet computed
+can’t write %lu bytes of reloc part header to output file “P”
+relocations not yet computed
+file number out-of-range to TRelocationCollector::Relocate %lu <= %lu
+
+Command
+:MPW:
+SysErrs.Err
+ShellDirectory
+%_Static_Constructor_Destructor_Pointers
+%_Static_Constructor_Destructor_Pointers
+
+OS error 
+Error 
+(Error message file is corrupted)
+(Error message file has bad block)
+Too many files open
+(Error message text not available)
+(Error message file not available)
+
+dev:console
+
+
+int
+main(int argc, const char * argv[])
+
+    1A1E: 4E56 FD8A      'NV..'  main     LINK    A6,#-$276
+    1A22: 48E7 1F18      'H...'           MOVEM.L D3-D7/A3-A4,-(A7)
+    1A26: 4879 0000 003A 'Hy...:'         PEA     $3A
+    1A2C: 4EB9 0000 49B4 10049DC          JSR     atexit
+    1A32: 4879 0000 0042 'Hy...B'         PEA     $42
+    1A38: 7002           'p.'             MOVEQ   #2,D0
+    1A3A: 2F00           '/.'             PUSH.L  D0
+    1A3C: 4EB9 0000 01F2 700080C          JSR     signal
+    1A42: 7000           'p.'             MOVEQ   #0,D0
+    1A44: 2F00           '/.'             PUSH.L  D0
+    1A46: 4EB9 0000 5CE8 1005D10          JSR     proc135
+    1A4C: 206E 000C      200000C          MOVEA.L funRslt(A6),A0
+    1A50: 23D0 FFFF E7D6  -$182A          MOVE.L  (A0),glob175
+
+    1A56: 206E 000C      200000C          MOVEA.L funRslt(A6),A0
+    1A5A: 47E8 0004      'G...'           LEA     4(A0),A3
+    1A5E: 202E 0008      2000008          MOVE.L  param1(A6),D0
+    1A62: E580           '..'             ASL.L   #2,D0
+    1A64: 4870 0800      'Hp..'           PEA     0(A0,D0.L)
+    1A68: 2F0B           '/.'             PUSH.L  A3
+    1A6A: 4EB9 0000 003A 1000BD0          JSR     myexit__Fv
+    1A70: 2D40 FFC6      200FFC6          MOVE.L  D0,vaq_40(A6)
+    1A74: 4AB9 FFFF E4C6  -$1B3A          TST.L   glob152
+    1A7A: 4FEF 0014      'O...'           LEA     20(A7),A7
+    1A7E: 6714           1001A94          BEQ.S   laq_1
+    1A80: 2F39 FFFF E4C6  -$1B3A          PUSH.L  glob152
+    1A86: 4EB9 0000 0E0C 1000E34          JSR     DumpPackageInfo__FPCUc
+    1A8C: 7000           'p.'             MOVEQ   #0,D0
+    1A8E: 584F           'XO'             ADDQ    #4,A7
+    1A90: 6000 0D16      10027A8          BRA     laq_57
+
+    1A94: 422E FFCB      200FFCB laq_1    CLR.B   vaq_41(A6)
+    1A98: 7008           'p.'             MOVEQ   #8,D0
+    1A9A: 2F00           '/.'             PUSH.L  D0
+    1A9C: 4879 FFFF DC76  -$238A          PEA     glob88
+    1AA2: 486E FFCC      200FFCC          PEA     vaq_42(A6)
+    1AA6: 4EB9 0000 02DA 9000720          JSR     memcpy
+    1AAC: 7000           'p.'             MOVEQ   #0,D0
+    1AAE: 2D40 FFEC      200FFEC          MOVE.L  D0,vaq_49(A6)
+    1AB2: 2D40 FFF0      200FFF0          MOVE.L  D0,vaq_50(A6)
+    1AB6: 2D40 FFE8      200FFE8          MOVE.L  D0,vaq_48(A6)
+    1ABA: 2D40 FFD4      200FFD4          MOVE.L  D0,vaq_43(A6)
+    1ABE: 4A39 FFFF E4DA  -$1B26          TST.B   glob154
+    1AC4: 4FEF 000C      'O...'           LEA     12(A7),A7
+    1AC8: 6600 0088      1001B52          BNE     laq_5
+    1ACC: 4AB9 FFFF E4DE  -$1B22          TST.L   glob156
+    1AD2: 6728           1001AFC          BEQ.S   laq_2
+    1AD4: 2F39 FFFF E4DE  -$1B22          PUSH.L  glob156
+    1ADA: 4879 FFFF DC80  -$2380          PEA     glob89
+    1AE0: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    1AE6: 2F39 FFFF E4DE  -$1B22          PUSH.L  glob156
+    1AEC: 4EB9 0000 07AC 10007D4          JSR     AddUnicodeString__FPCc
+    1AF2: 2D40 FFE0      200FFE0          MOVE.L  D0,vaq_46(A6)
+    1AF6: 4FEF 000C      'O...'           LEA     12(A7),A7
+    1AFA: 6012           1001B0E          BRA.S   laq_3
+    1AFC: 4879 FFFF DC9A  -$2366 laq_2    PEA     glob90
+    1B02: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    1B08: 42AE FFE0      200FFE0          CLR.L   vaq_46(A6)
+    1B0C: 584F           'XO'             ADDQ    #4,A7
+    1B0E: 4AB9 FFFF E4E2  -$1B1E laq_3    TST.L   glob157
+    1B14: 6728           1001B3E          BEQ.S   laq_4
+    1B16: 2F39 FFFF E4E2  -$1B1E          PUSH.L  glob157
+    1B1C: 4879 FFFF DCAE  -$2352          PEA     glob91
+    1B22: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    1B28: 2F39 FFFF E4E2  -$1B1E          PUSH.L  glob157
+    1B2E: 4EB9 0000 07AC 10007D4          JSR     AddUnicodeString__FPCc
+    1B34: 2D40 FFE4      200FFE4          MOVE.L  D0,vaq_47(A6)
+    1B38: 4FEF 000C      'O...'           LEA     12(A7),A7
+    1B3C: 6014           1001B52          BRA.S   laq_5
+    1B3E: 4879 FFFF DCC4  -$233C laq_4    PEA     glob92
+    1B44: 4879 FFFF E4E6  -$1B1A          PEA     glob158
+    1B4A: 4EB9 0000 2A14 1002A3C          JSR     usage_error_message__FPCPCcCPCce
+    1B50: 504F           'PO'             ADDQ    #8,A7
+    1B52: 2D79 FFFF E4AA 200FFD4 laq_5    MOVE.L  glob147,vaq_43(A6)
+    1B5A: 2D79 FFFF E4A6 200FFDC          MOVE.L  glob146,vaq_45(A6)
+    1B62: 2D79 FFFF E4A2 200FFD8          MOVE.L  glob145,vaq_44(A6)
+    1B6A: 2039 FFFF E4BA  -$1B46          MOVE.L  glob149,D0
+    1B70: EB80           '..'             ASL.L   #5,D0
+    1B72: 2D40 FFAE      200FFAE          MOVE.L  D0,vaq_34(A6)
+    1B76: 4879 FFFF DCDC  -$2324          PEA     glob93
+    1B7C: 7020           'p '             MOVEQ   #32,D0
+    1B7E: 2F00           '/.'             PUSH.L  D0
+    1B80: 2F39 FFFF E4BA  -$1B46          PUSH.L  glob149
+    1B86: 4EB9 0000 2BBA 1002BE2          JSR     calloc_or_exit__FUiT1PCc
+    1B8C: 2D40 FFB2      200FFB2          MOVE.L  D0,vaq_35(A6)
+    1B90: 2D40 FFB6      200FFB6          MOVE.L  D0,vaq_36(A6)
+    1B94: 4879 FFFF DD0C  -$22F4          PEA     glob94
+    1B9A: 2239 FFFF E4BA  -$1B46          MOVE.L  glob149,D1
+    1BA0: 2001           ' .'             MOVE.L  D1,D0
+    1BA2: C2FC 001E      '....'           MULU    #30,D1
+    1BA6: 4840           'H@'             SWAP    D0
+    1BA8: C0FC 001E      '....'           MULU    #30,D0
+    1BAC: 4840           'H@'             SWAP    D0
+    1BAE: 4240           'B@'             CLR     D0
+    1BB0: D280           '..'             ADD.L   D0,D1
+    1BB2: 2F01           '/.'             PUSH.L  D1
+    1BB4: 4EB9 0000 2C10 1002C38          JSR     malloc_or_exit__FUiPCc
+    1BBA: 2D40 FFBA      200FFBA          MOVE.L  D0,vaq_37(A6)
+    1BBE: 2D40 FFBE      200FFBE          MOVE.L  D0,vaq_38(A6)
+    1BC2: 7000           'p.'             MOVEQ   #0,D0
+    1BC4: 2D40 FFC2      200FFC2          MOVE.L  D0,vaq_39(A6)
+    1BC8: 2F39 FFFF E4BA  -$1B46          PUSH.L  glob149
+    1BCE: 486E FF76      200FF76          PEA     vaq_30(A6)
+    1BD2: 4EB9 0000 3B60 1003B88          JSR     TRelocationCollector::__ctorFUl
+    1BD8: 4FEF 001C      'O...'           LEA     28(A7),A7
+    1BDC: 6000 0508      10020E6          BRA     laq_35
+-->
+    1BE0: 4879 FFFF DD34  -$22CC laq_6    PEA     glob95
+    1BE6: 206E FFB2      200FFB2          MOVEA.L vaq_35(A6),A0
+    1BEA: 2039 FFFF E4BA  -$1B46          MOVE.L  glob149,D0
+    1BF0: EB80           '..'             ASL.L   #5,D0
+    1BF2: D1C0           '..'             ADDA.L  D0,A0
+    1BF4: B1EE FFB6      200FFB6          CMPA.L  vaq_36(A6),A0
+    1BF8: 53C3           'S.'             SLS     D3
+    1BFA: 4403           'D.'             NEG.B   D3
+    1BFC: 4883           'H.'             EXT     D3
+    1BFE: 48C3           'H.'             EXT.L   D3
+    1C00: 2F03           '/.'             PUSH.L  D3
+    1C02: 4EB9 0000 29BA 10029E2          JSR     internal_error_if__FiCPCce
+    1C08: 422E FF19      200FF19          CLR.B   vaq_18(A6)
+    1C0C: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1C10: 4228 0004      'B(..'           CLR.B   4(A0)
+    1C14: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1C18: 7000           'p.'             MOVEQ   #0,D0
+    1C1A: 2140 0006      '!@..'           MOVE.L  D0,6(A0)
+    1C1E: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1C22: 2140 000A      '!@..'           MOVE.L  D0,10(A0)
+    1C26: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1C2A: 72FF           'r.'             MOVEQ   #-1,D1
+    1C2C: 2141 000E      '!A..'           MOVE.L  D1,14(A0)
+    1C30: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1C34: 2140 0012      '!@..'           MOVE.L  D0,18(A0)
+    1C38: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1C3C: 2140 0016      '!@..'           MOVE.L  D0,22(A0)
+    1C40: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1C44: 2140 001A      '!@..'           MOVE.L  D0,26(A0)
+    1C48: 4879 FFFF E468  -$1B98          PEA     glob143
+    1C4E: 2F1B           '/.'             PUSH.L  (A3)+
+    1C50: 4EB9 0000 2D12 1002D3A          JSR     StringTableMatch__FCPCcPCPCc
+    1C56: 2E00           '..'             MOVE.L  D0,D7
+    1C58: 5280           'R.'             ADDQ.L  #1,D0
+    1C5A: 4FEF 0010      'O...'           LEA     16(A7),A7
+    1C5E: 6706           1001C66          BEQ.S   laq_7
+    1C60: 5980           'Y.'             SUBQ.L  #4,D0
+    1C62: 6712           1001C76          BEQ.S   laq_8
+    1C64: 6046           1001CAC          BRA.S   laq_9
+    1C66: 2F23           '/#'    laq_7    PUSH.L  -(A3)
+    1C68: 4879 FFFF DD50  -$22B0          PEA     glob96
+    1C6E: 4EB9 0000 2886 10028AE          JSR     error_message__FCPCce
+    1C74: 504F           'PO'             ADDQ    #8,A7
+    1C76: 206E FFBE      200FFBE laq_8    MOVEA.L vaq_38(A6),A0
+    1C7A: 7000           'p.'             MOVEQ   #0,D0
+    1C7C: 2140 000E      '!@..'           MOVE.L  D0,14(A0)
+    1C80: 4879 FFFF DD98  -$2268          PEA     glob97
+    1C86: 4879 FFFF DDC6  -$223A          PEA     glob98
+    1C8C: 2F13           '/.'             PUSH.L  (A3)
+    1C8E: 4EB9 0000 2CB4 1002CDC          JSR     hcistrcmp__FPCcT1
+    1C94: 4A80           'J.'             TST.L   D0
+    1C96: 57C3           'W.'             SEQ     D3
+    1C98: 4403           'D.'             NEG.B   D3
+    1C9A: 4883           'H.'             EXT     D3
+    1C9C: 48C3           'H.'             EXT.L   D3
+    1C9E: 508F           'P.'             ADDQ.L  #8,A7
+    1CA0: 2F03           '/.'             PUSH.L  D3
+    1CA2: 4EB9 0000 28D0 10028F8          JSR     error_message_if__FiCPCce
+    1CA8: 504F           'PO'             ADDQ    #8,A7
+    1CAA: 6032           1001CDE          BRA.S   laq_10
+    1CAC: 206E FFB6      200FFB6 laq_9    MOVEA.L vaq_36(A6),A0
+    1CB0: 2147 0014      '!G..'           MOVE.L  D7,20(A0)
+    1CB4: 4879 FFFF DDCC  -$2234          PEA     glob99
+    1CBA: 2F13           '/.'             PUSH.L  (A3)
+    1CBC: 4EB9 0000 2CB4 1002CDC          JSR     hcistrcmp__FPCcT1
+    1CC2: 4A80           'J.'             TST.L   D0
+    1CC4: 57C3           'W.'             SEQ     D3
+    1CC6: 4403           'D.'             NEG.B   D3
+    1CC8: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1CCC: 1143 0004      '.C..'           MOVE.B  D3,4(A0)
+    1CD0: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1CD4: 4A28 0004      'J(..'           TST.B   4(A0)
+    1CD8: 504F           'PO'             ADDQ    #8,A7
+    1CDA: 6702           1001CDE          BEQ.S   laq_10
+    1CDC: 584B           'XK'             ADDQ    #4,A3
+    1CDE: 2F1B           '/.'    laq_10   PUSH.L  (A3)+
+    1CE0: 4EB9 0000 554E 1005576          JSR     c2pstr
+    1CE6: 2D40 FF1A      200FF1A          MOVE.L  D0,vaq_19(A6)
+    1CEA: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1CEE: 20AE FF1A      200FF1A          MOVE.L  vaq_19(A6),(A0)
+    1CF2: 2F2E FF1A      200FF1A          PUSH.L  vaq_19(A6)
+    1CF6: 4879 FFFF DDD2  -$222E          PEA     glob100
+    1CFC: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    1D02: 4FEF 000C      'O...'           LEA     12(A7),A7
+    1D06: 6000 0226      1001F2E          BRA     laq_24
+->
+    1D0A: 4879 FFFF E468  -$1B98 laq_11   PEA     glob143
+    1D10: 2F13           '/.'             PUSH.L  (A3)
+    1D12: 4EB9 0000 2D12 1002D3A          JSR     StringTableMatch__FCPCcPCPCc
+    1D18: 72FF           'r.'             MOVEQ   #-1,D1
+    1D1A: B280           '..'             CMP.L   D0,D1
+    1D1C: 504F           'PO'             ADDQ    #8,A7
+    1D1E: 6600 0216      1001F36          BNE     laq_25
+
+    1D22: 2853           '(S'             MOVEA.L (A3),A4
+    1D24: 4879 FFFF DDEA  -$2216          PEA     glob101
+    1D2A: 2F0C           '/.'             PUSH.L  A4
+    1D2C: 4EB9 0000 2CB4 1002CDC          JSR     hcistrcmp__FPCcT1
+    1D32: 4A80           'J.'             TST.L   D0
+    1D34: 504F           'PO'             ADDQ    #8,A7
+    1D36: 6636           1001D6E          BNE.S   laq_13
+    1D38: 7003           'p.'             MOVEQ   #3,D0
+    1D3A: B087           '..'             CMP.L   D7,D0
+    1D3C: 6618           1001D56          BNE.S   laq_12
+    1D3E: 584B           'XK'             ADDQ    #4,A3
+    1D40: 2F13           '/.'             PUSH.L  (A3)
+    1D42: 4EB9 0000 0292 9000028          JSR     atoi
+    1D48: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    1D4C: 2140 000E      '!@..'           MOVE.L  D0,14(A0)
+    1D50: 584F           'XO'             ADDQ    #4,A7
+    1D52: 6000 01D8      1001F2C          BRA     laq_23
+    1D56: 2F2E FF1A      200FF1A laq_12   PUSH.L  vaq_19(A6)
+    1D5A: 4879 FFFF DDF2  -$220E          PEA     glob102
+    1D60: 4EB9 0000 2928 1002950          JSR     warning_message__FCPCce
+    1D66: 584B           'XK'             ADDQ    #4,A3
+    1D68: 504F           'PO'             ADDQ    #8,A7
+    1D6A: 6000 01C0      1001F2C          BRA     laq_23
+
+    1D6E: 4879 FFFF DE2A  -$21D6 laq_13   PEA     glob103
+    1D74: 2F0C           '/.'             PUSH.L  A4
+    1D76: 4EB9 0000 2CB4 1002CDC          JSR     hcistrcmp__FPCcT1
+    1D7C: 4A80           'J.'             TST.L   D0
+    1D7E: 504F           'PO'             ADDQ    #8,A7
+    1D80: 6626           1001DA8          BNE.S   laq_15
+    1D82: 7003           'p.'             MOVEQ   #3,D0
+    1D84: B087           '..'             CMP.L   D7,D0
+    1D86: 660A           1001D92          BNE.S   laq_14
+    1D88: 1D7C 0001 FF19 200FF19          MOVE.B  #1,vaq_18(A6)
+    1D8E: 6000 019C      1001F2C          BRA     laq_23
+    1D92: 2F2E FF1A      200FF1A laq_14   PUSH.L  vaq_19(A6)
+    1D96: 4879 FFFF DE36  -$21CA          PEA     glob104
+    1D9C: 4EB9 0000 2928 1002950          JSR     warning_message__FCPCce
+    1DA2: 504F           'PO'             ADDQ    #8,A7
+    1DA4: 6000 0186      1001F2C          BRA     laq_23
+
+    1DA8: 4879 FFFF DE72  -$218E laq_15   PEA     glob105
+    1DAE: 2F0C           '/.'             PUSH.L  A4
+    1DB0: 4EB9 0000 2CB4 1002CDC          JSR     hcistrcmp__FPCcT1
+    1DB6: 4A80           'J.'             TST.L   D0
+    1DB8: 504F           'PO'             ADDQ    #8,A7
+    1DBA: 6642           1001DFE          BNE.S   laq_17
+    1DBC: 7003           'p.'             MOVEQ   #3,D0
+    1DBE: B087           '..'             CMP.L   D7,D0
+    1DC0: 6618           1001DDA          BNE.S   laq_16
+    1DC2: 2F2E FF1A      200FF1A          PUSH.L  vaq_19(A6)
+    1DC6: 4879 FFFF DE7E  -$2182          PEA     glob106
+    1DCC: 4EB9 0000 2928 1002950          JSR     warning_message__FCPCce
+    1DD2: 584B           'XK'             ADDQ    #4,A3
+    1DD4: 504F           'PO'             ADDQ    #8,A7
+    1DD6: 6000 0154      1001F2C          BRA     laq_23
+    1DDA: 206E FFB6      200FFB6 laq_16   MOVEA.L vaq_36(A6),A0
+    1DDE: 00A8 0000 0040 '.....@'         ORI.L   #$40,20(A0)
+    1DE6: 584B           'XK'             ADDQ    #4,A3
+    1DE8: 2F13           '/.'             PUSH.L  (A3)
+    1DEA: 4EB9 0000 076A 1000792          JSR     AddString__FCPCc
+    1DF0: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    1DF4: 2140 001C      '!@..'           MOVE.L  D0,28(A0)
+    1DF8: 584F           'XO'             ADDQ    #4,A7
+    1DFA: 6000 0130      1001F2C          BRA     laq_23
+
+    1DFE: 4879 FFFF DEBC  -$2144 laq_17   PEA     glob107
+    1E04: 2F0C           '/.'             PUSH.L  A4
+    1E06: 4EB9 0000 2CB4 1002CDC          JSR     hcistrcmp__FPCcT1
+    1E0C: 4A80           'J.'             TST.L   D0
+    1E0E: 504F           'PO'             ADDQ    #8,A7
+    1E10: 6600 00B2      1001EC4          BNE     laq_20
+    1E14: 7003           'p.'             MOVEQ   #3,D0
+    1E16: B087           '..'             CMP.L   D7,D0
+    1E18: 6618           1001E32          BNE.S   laq_18
+    1E1A: 2F2E FF1A      200FF1A          PUSH.L  vaq_19(A6)
+    1E1E: 4879 FFFF DEC4  -$213C          PEA     glob108
+    1E24: 4EB9 0000 2928 1002950          JSR     warning_message__FCPCce
+    1E2A: 508B           'P.'             ADDQ.L  #8,A3
+    1E2C: 504F           'PO'             ADDQ    #8,A7
+    1E2E: 6000 00FC      1001F2C          BRA     laq_23
+
+    1E32: 206E FFB6      200FFB6 laq_18   MOVEA.L vaq_36(A6),A0
+    1E36: 00A8 0000 0080 '......'         ORI.L   #$80,20(A0)
+    1E3E: 584B           'XK'             ADDQ    #4,A3
+    1E40: 2853           '(S'             MOVEA.L (A3),A4
+    1E42: 1014           '..'             MOVE.B  (A4),D0
+    1E44: 4880           'H.'             EXT     D0
+    1E46: 48C0           'H.'             EXT.L   D0
+    1E48: E148           '.H'             LSL     #8,D0
+    1E4A: 4840           'H@'             SWAP    D0
+    1E4C: 4240           'B@'             CLR     D0
+    1E4E: 122C 0001      '.,..'           MOVE.B  1(A4),D1
+    1E52: 4881           'H.'             EXT     D1
+    1E54: 48C1           'H.'             EXT.L   D1
+    1E56: 4841           'HA'             SWAP    D1
+    1E58: 4241           'BA'             CLR     D1
+    1E5A: 8280           '..'             OR.L    D0,D1
+    1E5C: 102C 0002      '.,..'           MOVE.B  2(A4),D0
+    1E60: 4880           'H.'             EXT     D0
+    1E62: 48C0           'H.'             EXT.L   D0
+    1E64: E188           '..'             LSL.L   #8,D0
+    1E66: 8081           '..'             OR.L    D1,D0
+    1E68: 122C 0003      '.,..'           MOVE.B  3(A4),D1
+    1E6C: 4881           'H.'             EXT     D1
+    1E6E: 48C1           'H.'             EXT.L   D1
+    1E70: 8280           '..'             OR.L    D0,D1
+    1E72: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    1E76: 2141 000C      '!A..'           MOVE.L  D1,12(A0)
+    1E7A: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    1E7E: 0CA8 7074 6368 '..ptch'         CMPI.L  #'ptch',12(A0)
+    1E86: 660A           1001E92          BNE.S   laq_19
+    1E88: 23FC 5074 6368  -$1B42          MOVE.L  #'Ptch',glob150
+    1E92: 584B           'XK'    laq_19   ADDQ    #4,A3
+    1E94: 2F13           '/.'             PUSH.L  (A3)
+    1E96: 4878 0100      'Hx..'           PEA     $100
+    1E9A: 486E FD8E      200FD8E          PEA     vaq_3(A6)
+    1E9E: 4EB9 0000 0C2E 1000C56          JSR     ConvertInfoString__FPviPCc
+    1EA4: 2A00           '*.'             MOVE.L  D0,D5
+    1EA6: 7000           'p.'             MOVEQ   #0,D0
+    1EA8: 3005           '0.'             MOVE    D5,D0
+    1EAA: 2F00           '/.'             PUSH.L  D0
+    1EAC: 486E FD8E      200FD8E          PEA     vaq_3(A6)
+    1EB0: 4EB9 0000 0714 100073C          JSR     AddBytes__FCPCvCUs
+    1EB6: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    1EBA: 2140 0018      '!@..'           MOVE.L  D0,24(A0)
+    1EBE: 4FEF 0014      'O...'           LEA     20(A7),A7
+    1EC2: 6068           1001F2C          BRA.S   laq_23
+
+    1EC4: 4879 FFFF E42C  -$1BD4 laq_20   PEA     glob142
+    1ECA: 2F0C           '/.'             PUSH.L  A4
+    1ECC: 4EB9 0000 2D12 1002D3A          JSR     StringTableMatch__FCPCcPCPCc
+    1ED2: 2C00           ',.'             MOVE.L  D0,D6
+    1ED4: 70FF           'p.'             MOVEQ   #-1,D0
+    1ED6: B086           '..'             CMP.L   D6,D0
+    1ED8: 504F           'PO'             ADDQ    #8,A7
+    1EDA: 673A           1001F16          BEQ.S   laq_22
+    1EDC: 7003           'p.'             MOVEQ   #3,D0
+    1EDE: B087           '..'             CMP.L   D7,D0
+    1EE0: 6618           1001EFA          BNE.S   laq_21
+    1EE2: 2F0C           '/.'             PUSH.L  A4
+    1EE4: 2F2E FF1A      200FF1A          PUSH.L  vaq_19(A6)
+    1EE8: 4879 FFFF DEFE  -$2102          PEA     glob109
+    1EEE: 4EB9 0000 2928 1002950          JSR     warning_message__FCPCce
+    1EF4: 4FEF 000C      'O...'           LEA     12(A7),A7
+    1EF8: 6032           1001F2C          BRA.S   laq_23
+    1EFA: 206E FFB6      200FFB6 laq_21   MOVEA.L vaq_36(A6),A0
+    1EFE: 2D48 FD8A      200FD8A          MOVE.L  A0,vaq_2(A6)
+    1F02: 2F06           '/.'             PUSH.L  D6
+    1F04: 4EB9 0000 0000 'N.....'         JSR     glob1
+    1F0A: 206E FD8A      200FD8A          MOVEA.L vaq_2(A6),A0
+    1F0E: 81A8 0014      '....'           OR.L    D0,20(A0)
+    1F12: 584F           'XO'             ADDQ    #4,A7
+    1F14: 6016           1001F2C          BRA.S   laq_23
+    1F16: 2F0C           '/.'    laq_22   PUSH.L  A4
+    1F18: 4879 FFFF DF32  -$20CE          PEA     glob110
+    1F1E: 7001           'p.'             MOVEQ   #1,D0
+    1F20: 2F00           '/.'             PUSH.L  D0
+    1F22: 4EB9 0000 29BA 10029E2          JSR     internal_error_if__FiCPCce
+    1F28: 4FEF 000C      'O...'           LEA     12(A7),A7
+    1F2C: 584B           'XK'    laq_23   ADDQ    #4,A3
+    1F2E: B7EE FFC6      200FFC6 laq_24   CMPA.L  vaq_40(A6),A3
+    1F32: 6500 FDD6      1001D0A          BLO     laq_11
+<-
+    1F36: 2D6E FF1A FF30 200FF30 laq_25   MOVE.L  vaq_19(A6),vaq_21(A6)
+    1F3C: 426E FF34      200FF34          CLR     vaq_22(A6)
+    1F40: 422E FF38      200FF38          CLR.B   vaq_23(A6)
+    1F44: 426E FF3A      200FF3A          CLR     vaq_24(A6)
+    1F48: 2F2E FF1A      200FF1A          PUSH.L  vaq_19(A6)
+    1F4C: 4879 FFFF DF4E  -$20B2          PEA     glob111
+    1F52: 43EE FF1E      200FF1E          LEA     vaq_20(A6),A1
+    1F56: 2049           ' I'             MOVEA.L A1,A0
+    1F58: A00C           '..'             _GetFileInfo ; (A0|IOPB:ParamBlockRec):D0\OSErr 
+    1F5A: 48C0           'H.'             EXT.L   D0
+    1F5C: 2F00           '/.'             PUSH.L  D0
+    1F5E: 4EB9 0000 2B62 1002B8A          JSR     exit_if_OSErr__FCsCPCce
+    1F64: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    1F68: 20AE FFC2      200FFC2          MOVE.L  vaq_39(A6),(A0)
+    1F6C: 7000           'p.'             MOVEQ   #0,D0
+    1F6E: 2D40 FF6E      200FF6E          MOVE.L  D0,vaq_28(A6)
+    1F72: 2D40 FF72      200FF72          MOVE.L  D0,vaq_29(A6)
+    1F76: 7203           'r.'             MOVEQ   #3,D1
+    1F78: B287           '..'             CMP.L   D7,D1
+    1F7A: 4FEF 000C      'O...'           LEA     12(A7),A7
+    1F7E: 661E           1001F9E          BNE.S   laq_26
+    1F80: 486E FFCC      200FFCC          PEA     vaq_42(A6)
+    1F84: 2F2E FFB6      200FFB6          PUSH.L  vaq_36(A6)
+    1F88: 2F2E FFBE      200FFBE          PUSH.L  vaq_38(A6)
+    1F8C: 2F2E FF1A      200FF1A          PUSH.L  vaq_19(A6)
+    1F90: 4EB9 0000 135C 1001384          JSR     PrepPackagePartFile__FPCUcCP12PartFileInfoCP9PartEntryCP7Package
+    1F96: 2800           '(.'             MOVE.L  D0,D4
+    1F98: 4FEF 0010      'O...'           LEA     16(A7),A7
+    1F9C: 6020           1001FBE          BRA.S   laq_28
+    1F9E: 206E FFBE      200FFBE laq_26   MOVEA.L vaq_38(A6),A0
+    1FA2: 4A28 0004      'J(..'           TST.B   4(A0)
+    1FA6: 6712           1001FBA          BEQ.S   laq_27
+    1FA8: 2F08           '/.'             PUSH.L  A0
+    1FAA: 2F2E FF1A      200FF1A          PUSH.L  vaq_19(A6)
+    1FAE: 4EB9 0000 16E2 100170A          JSR     PrepAIFFile__FPCUcCP12PartFileInfo
+    1FB4: 2800           '(.'             MOVE.L  D0,D4
+    1FB6: 504F           'PO'             ADDQ    #8,A7
+    1FB8: 6004           1001FBE          BRA.S   laq_28
+    1FBA: 282E FF54      200FF54 laq_27   MOVE.L  vaq_25(A6),D4
+    1FBE: 7600           'v.'    laq_28   MOVEQ   #0,D3
+    1FC0: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    1FC4: 7001           'p.'             MOVEQ   #1,D0
+    1FC6: C0A8 0014      '....'           AND.L   20(A0),D0
+    1FCA: 670A           1001FD6          BEQ.S   laq_29
+    1FCC: 7040           'p@'             MOVEQ   #64,D0
+    1FCE: C0A8 0014      '....'           AND.L   20(A0),D0
+    1FD2: 6602           1001FD6          BNE.S   laq_29
+    1FD4: 7601           'v.'             MOVEQ   #1,D3
+    1FD6: 1D43 FF0F      200FF0F laq_29   MOVE.B  D3,vaq_15(A6)
+    1FDA: 7000           'p.'             MOVEQ   #0,D0
+    1FDC: 2D40 FF10      200FF10          MOVE.L  D0,vaq_16(A6)
+    1FE0: 4A2E FF0F      200FF0F          TST.B   vaq_15(A6)
+    1FE4: 672C           1002012          BEQ.S   laq_30
+    1FE6: 2F2E FF1A      200FF1A          PUSH.L  vaq_19(A6)
+    1FEA: 4879 FFFF DF66  -$209A          PEA     glob112
+    1FF0: 486E FF10      200FF10          PEA     vaq_16(A6)
+    1FF4: 2F04           '/.'             PUSH.L  D4
+    1FF6: 2F2E FFBE      200FFBE          PUSH.L  vaq_38(A6)
+    1FFA: 4EB9 0000 08FC 1000924          JSR     ReadPartData__FCPC12PartFileInfoCUlPPv
+    2000: 48C0           'H.'             EXT.L   D0
+    2002: 4FEF 000C      'O...'           LEA     12(A7),A7
+    2006: 2F00           '/.'             PUSH.L  D0
+    2008: 4EB9 0000 2B62 1002B8A          JSR     exit_if_OSErr__FCsCPCce
+    200E: 4FEF 000C      'O...'           LEA     12(A7),A7
+    2012: 2F2E FF1A      200FF1A laq_30   PUSH.L  vaq_19(A6)
+    2016: 2F2E FF10      200FF10          PUSH.L  vaq_16(A6)
+    201A: 7000           'p.'             MOVEQ   #0,D0
+    201C: 102E FF0F      200FF0F          MOVE.B  vaq_15(A6),D0
+    2020: 2F00           '/.'             PUSH.L  D0
+    2022: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    2026: 2F28 0006      '/(..'           PUSH.L  6(A0)
+    202A: 2F28 000A      '/(..'           PUSH.L  10(A0)
+    202E: 2F04           '/.'             PUSH.L  D4
+    2030: 2F28 0012      '/(..'           PUSH.L  18(A0)
+    2034: 486E FF76      200FF76          PEA     vaq_30(A6)
+    2038: 4EB9 0000 3CAE 1003CD6          JSR     TRelocationCollector::AddRelocationsorFUlN21PUlUcPvPCUc
+    203E: 2D40 FF14      200FF14          MOVE.L  D0,vaq_17(A6)
+    2042: 4A2E FF0F      200FF0F          TST.B   vaq_15(A6)
+    2046: 4FEF 0020      'O.. '           LEA     32(A7),A7
+    204A: 6706           1002052          BEQ.S   laq_31
+    204C: 4EB9 0000 08AE 10008D6          JSR     DisposePartData__Fv
+    2052: 206E FFBE      200FFBE laq_31   MOVEA.L vaq_38(A6),A0
+    2056: 4AA8 000A      'J...'           TST.L   10(A0)
+    205A: 6334           1002090          BLS.S   laq_34
+    205C: 7001           'p.'             MOVEQ   #1,D0
+    205E: B0AE FF14      200FF14          CMP.L   vaq_17(A6),D0
+    2062: 57C3           'W.'             SEQ     D3
+    2064: 4403           'D.'             NEG.B   D3
+    2066: 670A           1002072          BEQ.S   laq_32
+    2068: 41F9 FFFF DF8C  -$2074          LEA     glob113,A0
+    206E: 2008           ' .'             MOVE.L  A0,D0
+    2070: 6008           100207A          BRA.S   laq_33
+    2072: 41F9 FFFF DF8E  -$2072 laq_32   LEA     glob114,A0
+    2078: 2008           ' .'             MOVE.L  A0,D0
+    207A: 2F00           '/.'    laq_33   PUSH.L  D0
+    207C: 2F2E FF14      200FF14          PUSH.L  vaq_17(A6)
+    2080: 4879 FFFF DF90  -$2070          PEA     glob115
+    2086: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    208C: 4FEF 000C      'O...'           LEA     12(A7),A7
+    2090: 2F04           '/.'    laq_34   PUSH.L  D4
+    2092: 2F2E FF1A      200FF1A          PUSH.L  vaq_19(A6)
+    2096: 4879 FFFF DFB0  -$2050          PEA     glob116
+    209C: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    20A2: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    20A6: 2144 0008      '!D..'           MOVE.L  D4,8(A0)
+    20AA: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    20AE: 2144 0004      '!D..'           MOVE.L  D4,4(A0)
+    20B2: D9AE FFE8      200FFE8          ADD.L   D4,vaq_48(A6)
+    20B6: D9AE FFC2      200FFC2          ADD.L   D4,vaq_39(A6)
+    20BA: 202E FFE8      200FFE8          MOVE.L  vaq_48(A6),D0
+    20BE: 5680           'V.'             ADDQ.L  #3,D0
+    20C0: 72FC           'r.'             MOVEQ   #-4,D1
+    20C2: C280           '..'             AND.L   D0,D1
+    20C4: 2D41 FFE8      200FFE8          MOVE.L  D1,vaq_48(A6)
+    20C8: 202E FFC2      200FFC2          MOVE.L  vaq_39(A6),D0
+    20CC: 5680           'V.'             ADDQ.L  #3,D0
+    20CE: 72FC           'r.'             MOVEQ   #-4,D1
+    20D0: C280           '..'             AND.L   D0,D1
+    20D2: 2D41 FFC2      200FFC2          MOVE.L  D1,vaq_39(A6)
+    20D6: 4FEF 000C      'O...'           LEA     12(A7),A7
+    20DA: 7020           'p '             MOVEQ   #32,D0
+    20DC: D1AE FFB6      200FFB6          ADD.L   D0,vaq_36(A6)
+    20E0: 701E           'p.'             MOVEQ   #30,D0
+    20E2: D1AE FFBE      200FFBE          ADD.L   D0,vaq_38(A6)
+    20E6: B7EE FFC6      200FFC6 laq_35   CMPA.L  vaq_40(A6),A3
+    20EA: 6500 FAF4      1001BE0          BLO     laq_6
+<--
+    20EE: 41F9 FFFF E4AE  -$1B52          LEA     glob148,A0
+    20F4: 2D48 FF72      200FF72          MOVE.L  A0,vaq_29(A6)
+    20F8: 2010           ' .'             MOVE.L  (A0),D0
+    20FA: 2D40 FF66      200FF66          MOVE.L  D0,vaq_26(A6)
+    20FE: 5680           'V.'             ADDQ.L  #3,D0
+    2100: 72FC           'r.'             MOVEQ   #-4,D1
+    2102: C280           '..'             AND.L   D0,D1
+    2104: 2D41 FF6A      200FF6A          MOVE.L  D1,vaq_27(A6)
+    2108: 202E FFAE      200FFAE          MOVE.L  vaq_34(A6),D0
+    210C: 7234           'r4'             MOVEQ   #52,D1
+    210E: D081           '..'             ADD.L   D1,D0
+    2110: 242E FF6A      200FF6A          MOVE.L  vaq_27(A6),D2
+    2114: D480           '..'             ADD.L   D0,D2
+    2116: 2D42 FF6E      200FF6E          MOVE.L  D2,vaq_28(A6)
+    211A: 2F02           '/.'             PUSH.L  D2
+    211C: 2F39 FFFF E49E  -$1B62          PUSH.L  glob144
+    2122: 486E FF76      200FF76          PEA     vaq_30(A6)
+    2126: 4EB9 0000 3D7C 1003DA4          JSR     TRelocationCollector::ComputeorFUlT1
+    212C: 486E FF76      200FF76          PEA     vaq_30(A6)
+    2130: 4EB9 0000 41D6 10041FE          JSR     FileSize__20TRelocationCollectorCFv
+    2136: 2D40 FF14      200FF14          MOVE.L  D0,vaq_17(A6)
+    213A: 486E FF76      200FF76          PEA     vaq_30(A6)
+    213E: 4EB9 0000 41D6 10041FE          JSR     FileSize__20TRelocationCollectorCFv
+    2144: D1AE FFE8      200FFE8          ADD.L   D0,vaq_48(A6)
+    2148: 558F           'U.'             SUBQ.L  #2,A7
+    214A: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    2150: 7000           'p.'             MOVEQ   #0,D0
+    2152: 3F00           '?.'             PUSH    D0
+    2154: 2F39 FFFF E4C2  -$1B3E          PUSH.L  glob151
+    215A: 2F39 FFFF E4BE  -$1B42          PUSH.L  glob150
+    2160: 4EB9 0000 4E72 1004E9A          JSR     proc96
+    2166: 3D5F FFAA      200FFAA          POP     vaq_32(A6)
+    216A: 70D0           'p.'             MOVEQ   #-48,D0
+    216C: B06E FFAA      200FFAA          CMP.W   vaq_32(A6),D0
+    2170: 4FEF 0014      'O...'           LEA     20(A7),A7
+    2174: 671E           1002194          BEQ.S   laq_36
+    2176: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    217C: 4879 FFFF DFCE  -$2032          PEA     glob117
+    2182: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    2186: 48C0           'H.'             EXT.L   D0
+    2188: 2F00           '/.'             PUSH.L  D0
+    218A: 4EB9 0000 2B62 1002B8A          JSR     exit_if_OSErr__FCsCPCce
+    2190: 4FEF 000C      'O...'           LEA     12(A7),A7
+    2194: 558F           'U.'    laq_36   SUBQ.L  #2,A7
+    2196: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    219C: 7000           'p.'             MOVEQ   #0,D0
+    219E: 3F00           '?.'             PUSH    D0
+    21A0: 486E FFAC      200FFAC          PEA     vaq_33(A6)
+    21A4: 4EB9 0000 4DD0 1004DF8          JSR     proc92
+    21AA: 3D5F FFAA      200FFAA          POP     vaq_32(A6)
+    21AE: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    21B4: 4879 FFFF DFEC  -$2014          PEA     glob118
+    21BA: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    21BE: 48C0           'H.'             EXT.L   D0
+    21C0: 2F00           '/.'             PUSH.L  D0
+    21C2: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    21C8: 4A00           'J.'             TST.B   D0
+    21CA: 4FEF 000C      'O...'           LEA     12(A7),A7
+    21CE: 6714           10021E4          BEQ.S   laq_37
+    21D0: 7002           'p.'             MOVEQ   #2,D0
+    21D2: 2F00           '/.'             PUSH.L  D0
+    21D4: 486E FF76      200FF76          PEA     vaq_30(A6)
+    21D8: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    21DE: 504F           'PO'             ADDQ    #8,A7
+    21E0: 6000 0536      1002718          BRA     laq_54
+    21E4: 558F           'U.'    laq_37   SUBQ.L  #2,A7
+    21E6: 3F2E FFAC      200FFAC          PUSH    vaq_33(A6)
+    21EA: 7000           'p.'             MOVEQ   #0,D0
+    21EC: 2F00           '/.'             PUSH.L  D0
+    21EE: 4EB9 0000 4F00 1004F28          JSR     proc99
+    21F4: 3D5F FFAA      200FFAA          POP     vaq_32(A6)
+    21F8: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    21FE: 4879 FFFF E008  -$1FF8          PEA     glob119
+    2204: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    2208: 48C0           'H.'             EXT.L   D0
+    220A: 2F00           '/.'             PUSH.L  D0
+    220C: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    2212: 4A00           'J.'             TST.B   D0
+    2214: 4FEF 000C      'O...'           LEA     12(A7),A7
+    2218: 6714           100222E          BEQ.S   laq_38
+    221A: 7002           'p.'             MOVEQ   #2,D0
+    221C: 2F00           '/.'             PUSH.L  D0
+    221E: 486E FF76      200FF76          PEA     vaq_30(A6)
+    2222: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    2228: 504F           'PO'             ADDQ    #8,A7
+    222A: 6000 04BA      10026E6          BRA     laq_53
+    222E: 4AAE FF76      200FF76 laq_38   TST.L   vaq_30(A6)
+    2232: 6320           1002254          BLS.S   laq_39
+    2234: 00AE 0400 0000 200FFD8          ORI.L   #$4000000,vaq_44(A6)
+    223C: 7008           'p.'             MOVEQ   #8,D0
+    223E: 2F00           '/.'             PUSH.L  D0
+    2240: 4879 FFFF E028  -$1FD8          PEA     glob120
+    2246: 486E FFCC      200FFCC          PEA     vaq_42(A6)
+    224A: 4EB9 0000 02DA 9000720          JSR     memcpy
+    2250: 4FEF 000C      'O...'           LEA     12(A7),A7
+    2254: 202E FF6E      200FF6E laq_39   MOVE.L  vaq_28(A6),D0
+    2258: D1AE FFE8      200FFE8          ADD.L   D0,vaq_48(A6)
+    225C: 2F2E FFE8      200FFE8          PUSH.L  vaq_48(A6)
+    2260: 4879 FFFF E032  -$1FCE          PEA     glob121
+    2266: 202E FFE8      200FFE8          MOVE.L  vaq_48(A6),D0
+    226A: 5680           'V.'             ADDQ.L  #3,D0
+    226C: 72FC           'r.'             MOVEQ   #-4,D1
+    226E: C280           '..'             AND.L   D0,D1
+    2270: B2AE FFE8      200FFE8          CMP.L   vaq_48(A6),D1
+    2274: 56C3           'V.'             SNE     D3
+    2276: 4403           'D.'             NEG.B   D3
+    2278: 4883           'H.'             EXT     D3
+    227A: 48C3           'H.'             EXT.L   D3
+    227C: 2F03           '/.'             PUSH.L  D3
+    227E: 4EB9 0000 29BA 10029E2          JSR     internal_error_if__FiCPCce
+    2284: 2F2E FFE8      200FFE8          PUSH.L  vaq_48(A6)
+    2288: 2F39 FFFF E4BA  -$1B46          PUSH.L  glob149
+    228E: 4879 FFFF E058  -$1FA8          PEA     glob122
+    2294: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    229A: 4A39 FFFF E4DC  -$1B24          TST.B   glob155
+    22A0: 4FEF 0018      'O...'           LEA     24(A7),A7
+    22A4: 6700 00A2      1002348          BEQ     laq_40
+    22A8: 4878 0080      'Hx..'           PEA     $80
+    22AC: 7000           'p.'             MOVEQ   #0,D0
+    22AE: 2F00           '/.'             PUSH.L  D0
+    22B0: 486E FE8E      200FE8E          PEA     vaq_7(A6)
+    22B4: 4EB9 0000 02E2 9000776          JSR     memset
+    22BA: 2D79 FFFF E49E 200FE9A          MOVE.L  glob144,vaq_8(A6)
+    22C2: 2D7C EF00 0011 200FE9E          MOVE.L  #$EF000011,vaq_9(A6)
+    22CA: 2D6E FFE8 FEA2 200FEA2          MOVE.L  vaq_48(A6),vaq_10(A6)
+    22D0: 2D79 FFFF E49E 200FEB6          MOVE.L  glob144,vaq_11(A6)
+    22D8: 7020           'p '             MOVEQ   #32,D0
+    22DA: 2D40 FEBE      200FEBE          MOVE.L  D0,vaq_12(A6)
+    22DE: 2D7C EF04 1D41 200FECE          MOVE.L  #$EF041D41,vaq_13(A6)
+    22E6: 4879 FFFF E08E  -$1F72          PEA     glob123
+    22EC: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    22F2: 2D7C 0000 0080 200FE8A          MOVE.L  #$80,vaq_6(A6)
+    22FA: 558F           'U.'             SUBQ.L  #2,A7
+    22FC: 3F2E FFAC      200FFAC          PUSH    vaq_33(A6)
+    2300: 486E FE8A      200FE8A          PEA     vaq_6(A6)
+    2304: 486E FE8E      200FE8E          PEA     vaq_7(A6)
+    2308: 4EB9 0000 4E2E 1004E56          JSR     proc95
+    230E: 3D5F FFAA      200FFAA          POP     vaq_32(A6)
+    2312: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    2318: 4879 FFFF E0A2  -$1F5E          PEA     glob124
+    231E: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    2322: 48C0           'H.'             EXT.L   D0
+    2324: 2F00           '/.'             PUSH.L  D0
+    2326: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    232C: 4A00           'J.'             TST.B   D0
+    232E: 4FEF 001C      'O...'           LEA     28(A7),A7
+    2332: 6714           1002348          BEQ.S   laq_40
+    2334: 7002           'p.'             MOVEQ   #2,D0
+    2336: 2F00           '/.'             PUSH.L  D0
+    2338: 486E FF76      200FF76          PEA     vaq_30(A6)
+    233C: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    2342: 504F           'PO'             ADDQ    #8,A7
+    2344: 6000 03A0      10026E6          BRA     laq_53
+    2348: 4879 FFFF E0CC  -$1F34 laq_40   PEA     glob125
+    234E: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    2354: 7028           'p('             MOVEQ   #40,D0
+    2356: 2D40 FF0A      200FF0A          MOVE.L  D0,vaq_14(A6)
+    235A: 558F           'U.'             SUBQ.L  #2,A7
+    235C: 3F2E FFAC      200FFAC          PUSH    vaq_33(A6)
+    2360: 486E FF0A      200FF0A          PEA     vaq_14(A6)
+    2364: 486E FFCC      200FFCC          PEA     vaq_42(A6)
+    2368: 4EB9 0000 4E2E 1004E56          JSR     proc95
+    236E: 3D5F FFAA      200FFAA          POP     vaq_32(A6)
+    2372: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    2378: 4879 FFFF E0E4  -$1F1C          PEA     glob126
+    237E: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    2382: 48C0           'H.'             EXT.L   D0
+    2384: 2F00           '/.'             PUSH.L  D0
+    2386: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    238C: 4A00           'J.'             TST.B   D0
+    238E: 4FEF 0010      'O...'           LEA     16(A7),A7
+    2392: 6714           10023A8          BEQ.S   laq_41
+    2394: 7002           'p.'             MOVEQ   #2,D0
+    2396: 2F00           '/.'             PUSH.L  D0
+    2398: 486E FF76      200FF76          PEA     vaq_30(A6)
+    239C: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    23A2: 504F           'PO'             ADDQ    #8,A7
+    23A4: 6000 0340      10026E6          BRA     laq_53
+    23A8: 42AE FFF4      200FFF4 laq_41   CLR.L   vaq_51(A6)
+    23AC: 2D6E FF6E FFF8 200FFF8          MOVE.L  vaq_28(A6),vaq_52(A6)
+    23B2: 2D79 FFFF E4BA 200FFFC          MOVE.L  glob149,vaq_53(A6)
+    23BA: 202E FFAE      200FFAE          MOVE.L  vaq_34(A6),D0
+    23BE: 720C           'r.'             MOVEQ   #12,D1
+    23C0: D081           '..'             ADD.L   D1,D0
+    23C2: 2F00           '/.'             PUSH.L  D0
+    23C4: 4879 FFFF E116  -$1EEA          PEA     glob127
+    23CA: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    23D0: 700C           'p.'             MOVEQ   #12,D0
+    23D2: 2D40 FF0A      200FF0A          MOVE.L  D0,vaq_14(A6)
+    23D6: 558F           'U.'             SUBQ.L  #2,A7
+    23D8: 3F2E FFAC      200FFAC          PUSH    vaq_33(A6)
+    23DC: 486E FF0A      200FF0A          PEA     vaq_14(A6)
+    23E0: 486E FFF4      200FFF4          PEA     vaq_51(A6)
+    23E4: 4EB9 0000 4E2E 1004E56          JSR     proc95
+    23EA: 3D5F FFAA      200FFAA          POP     vaq_32(A6)
+    23EE: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    23F4: 4879 FFFF E142  -$1EBE          PEA     glob128
+    23FA: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    23FE: 48C0           'H.'             EXT.L   D0
+    2400: 2F00           '/.'             PUSH.L  D0
+    2402: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    2408: 4A00           'J.'             TST.B   D0
+    240A: 4FEF 0014      'O...'           LEA     20(A7),A7
+    240E: 6714           1002424          BEQ.S   laq_42
+    2410: 7002           'p.'             MOVEQ   #2,D0
+    2412: 2F00           '/.'             PUSH.L  D0
+    2414: 486E FF76      200FF76          PEA     vaq_30(A6)
+    2418: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    241E: 504F           'PO'             ADDQ    #8,A7
+    2420: 6000 02C4      10026E6          BRA     laq_53
+    2424: 2D6E FFAE FF0A 200FF0A laq_42   MOVE.L  vaq_34(A6),vaq_14(A6)
+    242A: 558F           'U.'             SUBQ.L  #2,A7
+    242C: 3F2E FFAC      200FFAC          PUSH    vaq_33(A6)
+    2430: 486E FF0A      200FF0A          PEA     vaq_14(A6)
+    2434: 2F2E FFB2      200FFB2          PUSH.L  vaq_35(A6)
+    2438: 4EB9 0000 4E2E 1004E56          JSR     proc95
+    243E: 3D5F FFAA      200FFAA          POP     vaq_32(A6)
+    2442: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    2448: 4879 FFFF E17A  -$1E86          PEA     glob129
+    244E: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    2452: 48C0           'H.'             EXT.L   D0
+    2454: 2F00           '/.'             PUSH.L  D0
+    2456: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    245C: 4A00           'J.'             TST.B   D0
+    245E: 4FEF 000C      'O...'           LEA     12(A7),A7
+    2462: 6714           1002478          BEQ.S   laq_43
+    2464: 7002           'p.'             MOVEQ   #2,D0
+    2466: 2F00           '/.'             PUSH.L  D0
+    2468: 486E FF76      200FF76          PEA     vaq_30(A6)
+    246C: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    2472: 504F           'PO'             ADDQ    #8,A7
+    2474: 6000 0270      10026E6          BRA     laq_53
+    2478: 2F2E FF6A      200FF6A laq_43   PUSH.L  vaq_27(A6)
+    247C: 2F2E FF66      200FF66          PUSH.L  vaq_26(A6)
+    2480: 4879 FFFF E1B4  -$1E4C          PEA     glob130
+    2486: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    248C: 302E FFAC      200FFAC          MOVE    vaq_33(A6),D0
+    2490: 48C0           'H.'             EXT.L   D0
+    2492: 2F00           '/.'             PUSH.L  D0
+    2494: 4879 FFFF E4AE  -$1B52          PEA     glob148
+    249A: 4EB9 0000 307C 10030A4          JSR     TStringTable::WriteleFs
+    24A0: 3D40 FFAA      200FFAA          MOVE    D0,vaq_32(A6)
+    24A4: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    24AA: 2F2E FF66      200FF66          PUSH.L  vaq_26(A6)
+    24AE: 4879 FFFF E1F0  -$1E10          PEA     glob131
+    24B4: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    24B8: 48C0           'H.'             EXT.L   D0
+    24BA: 2F00           '/.'             PUSH.L  D0
+    24BC: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    24C2: 4A00           'J.'             TST.B   D0
+    24C4: 4FEF 0024      'O..$'           LEA     36(A7),A7
+    24C8: 6714           10024DE          BEQ.S   laq_44
+    24CA: 7002           'p.'             MOVEQ   #2,D0
+    24CC: 2F00           '/.'             PUSH.L  D0
+    24CE: 486E FF76      200FF76          PEA     vaq_30(A6)
+    24D2: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    24D8: 504F           'PO'             ADDQ    #8,A7
+    24DA: 6000 020A      10026E6          BRA     laq_53
+    24DE: 2F39 FFFF E4CA  -$1B36 laq_44   PUSH.L  glob153
+    24E4: 2F2E FF66      200FF66          PUSH.L  vaq_26(A6)
+    24E8: 302E FFAC      200FFAC          MOVE    vaq_33(A6),D0
+    24EC: 48C0           'H.'             EXT.L   D0
+    24EE: 2F00           '/.'             PUSH.L  D0
+    24F0: 4EB9 0000 2D72 1002D9A          JSR     PadFileToLongAlignment__FCsCUlPCUc
+    24F6: 3D40 FFAA      200FFAA          MOVE    D0,vaq_32(A6)
+    24FA: 4FEF 000C      'O...'           LEA     12(A7),A7
+    24FE: 6714           1002514          BEQ.S   laq_45
+    2500: 7002           'p.'             MOVEQ   #2,D0
+    2502: 2F00           '/.'             PUSH.L  D0
+    2504: 486E FF76      200FF76          PEA     vaq_30(A6)
+    2508: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    250E: 504F           'PO'             ADDQ    #8,A7
+    2510: 6000 01D4      10026E6          BRA     laq_53
+    2514: 4AAE FF76      200FF76 laq_45   TST.L   vaq_30(A6)
+    2518: 6374           100258E          BLS.S   laq_46
+    251A: 486E FF76      200FF76          PEA     vaq_30(A6)
+    251E: 4EB9 0000 4232 100425A          JSR     SizeUsed__20TRelocationCollectorCFv
+    2524: 588F           'X.'             ADDQ.L  #4,A7
+    2526: 2F00           '/.'             PUSH.L  D0
+    2528: 2F2E FF14      200FF14          PUSH.L  vaq_17(A6)
+    252C: 4879 FFFF E22A  -$1DD6          PEA     glob132
+    2532: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    2538: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    253E: 302E FFAC      200FFAC          MOVE    vaq_33(A6),D0
+    2542: 48C0           'H.'             EXT.L   D0
+    2544: 2F00           '/.'             PUSH.L  D0
+    2546: 486E FF76      200FF76          PEA     vaq_30(A6)
+    254A: 4EB9 0000 428E 10042B6          JSR     Write__20TRelocationCollectorCFsPCUc
+    2550: 3D40 FFAA      200FFAA          MOVE    D0,vaq_32(A6)
+    2554: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    255A: 2F2E FF14      200FF14          PUSH.L  vaq_17(A6)
+    255E: 4879 FFFF E25A  -$1DA6          PEA     glob133
+    2564: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    2568: 48C0           'H.'             EXT.L   D0
+    256A: 2F00           '/.'             PUSH.L  D0
+    256C: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    2572: 4A00           'J.'             TST.B   D0
+    2574: 4FEF 0028      'O..('           LEA     40(A7),A7
+    2578: 6714           100258E          BEQ.S   laq_46
+    257A: 7002           'p.'             MOVEQ   #2,D0
+    257C: 2F00           '/.'             PUSH.L  D0
+    257E: 486E FF76      200FF76          PEA     vaq_30(A6)
+    2582: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    2588: 504F           'PO'             ADDQ    #8,A7
+    258A: 6000 015A      10026E6          BRA     laq_53
+    258E: 2D6E FFB2 FFB6 200FFB6 laq_46   MOVE.L  vaq_35(A6),vaq_36(A6)
+    2594: 2D6E FFBA FFBE 200FFBE          MOVE.L  vaq_37(A6),vaq_38(A6)
+    259A: 202E FFF8      200FFF8          MOVE.L  vaq_52(A6),D0
+    259E: D0B9 FFFF E49E  -$1B62          ADD.L   glob144,D0
+    25A4: 222E FF14      200FF14          MOVE.L  vaq_17(A6),D1
+    25A8: D280           '..'             ADD.L   D0,D1
+    25AA: 2D41 FE82      200FE82          MOVE.L  D1,vaq_4(A6)
+    25AE: 206E FFBA      200FFBA          MOVEA.L vaq_37(A6),A0
+    25B2: 2039 FFFF E4BA  -$1B46          MOVE.L  glob149,D0
+    25B8: 2200           '".'             MOVE.L  D0,D1
+    25BA: C0FC 001E      '....'           MULU    #30,D0
+    25BE: 4841           'HA'             SWAP    D1
+    25C0: C2FC 001E      '....'           MULU    #30,D1
+    25C4: 4841           'HA'             SWAP    D1
+    25C6: 4241           'BA'             CLR     D1
+    25C8: D081           '..'             ADD.L   D1,D0
+    25CA: D1C0           '..'             ADDA.L  D0,A0
+    25CC: 2D48 FE86      200FE86          MOVE.L  A0,vaq_5(A6)
+    25D0: 7000           'p.'             MOVEQ   #0,D0
+    25D2: 2D40 FE8A      200FE8A          MOVE.L  D0,vaq_6(A6)
+    25D6: 6000 00EC      10026C4          BRA     laq_52
+    25DA: 486E FF76      200FF76 laq_47   PEA     vaq_30(A6)
+    25DE: 7600           'v.'             MOVEQ   #0,D3
+    25E0: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    25E4: 7001           'p.'             MOVEQ   #1,D0
+    25E6: C0A8 0014      '....'           AND.L   20(A0),D0
+    25EA: 670A           10025F6          BEQ.S   laq_48
+    25EC: 7040           'p@'             MOVEQ   #64,D0
+    25EE: C0A8 0014      '....'           AND.L   20(A0),D0
+    25F2: 6602           10025F6          BNE.S   laq_48
+    25F4: 7601           'v.'             MOVEQ   #1,D3
+    25F6: 4883           'H.'    laq_48   EXT     D3
+    25F8: 48C3           'H.'             EXT.L   D3
+    25FA: 2F03           '/.'             PUSH.L  D3
+    25FC: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    2600: 2010           ' .'             MOVE.L  (A0),D0
+    2602: D0AE FE82      200FE82          ADD.L   vaq_4(A6),D0
+    2606: 2F00           '/.'             PUSH.L  D0
+    2608: 2F2E FE8A      200FE8A          PUSH.L  vaq_6(A6)
+    260C: 2F28 0004      '/(..'           PUSH.L  4(A0)
+    2610: 2F2E FFBE      200FFBE          PUSH.L  vaq_38(A6)
+    2614: 302E FFAC      200FFAC          MOVE    vaq_33(A6),D0
+    2618: 48C0           'H.'             EXT.L   D0
+    261A: 2F00           '/.'             PUSH.L  D0
+    261C: 4EB9 0000 0A9A 1000AC2          JSR     copyFileTo__FCsCPC12PartFileInfoCUlN23CUcPC20TRelocationCollector
+    2622: 3D40 FFAA      200FFAA          MOVE    D0,vaq_32(A6)
+    2626: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    262A: 2F10           '/.'             PUSH.L  (A0)
+    262C: 4879 FFFF E292  -$1D6E          PEA     glob134
+    2632: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    2636: 48C0           'H.'             EXT.L   D0
+    2638: 2F00           '/.'             PUSH.L  D0
+    263A: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    2640: 4A00           'J.'             TST.B   D0
+    2642: 4FEF 0028      'O..('           LEA     40(A7),A7
+    2646: 6714           100265C          BEQ.S   laq_49
+    2648: 7002           'p.'             MOVEQ   #2,D0
+    264A: 2F00           '/.'             PUSH.L  D0
+    264C: 486E FF76      200FF76          PEA     vaq_30(A6)
+    2650: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    2656: 504F           'PO'             ADDQ    #8,A7
+    2658: 6000 008C      10026E6          BRA     laq_53
+    265C: 2F39 FFFF E4CA  -$1B36 laq_49   PUSH.L  glob153
+    2662: 206E FFB6      200FFB6          MOVEA.L vaq_36(A6),A0
+    2666: 2F28 0004      '/(..'           PUSH.L  4(A0)
+    266A: 302E FFAC      200FFAC          MOVE    vaq_33(A6),D0
+    266E: 48C0           'H.'             EXT.L   D0
+    2670: 2F00           '/.'             PUSH.L  D0
+    2672: 4EB9 0000 2D72 1002D9A          JSR     PadFileToLongAlignment__FCsCUlPCUc
+    2678: 3D40 FFAA      200FFAA          MOVE    D0,vaq_32(A6)
+    267C: 4FEF 000C      'O...'           LEA     12(A7),A7
+    2680: 6712           1002694          BEQ.S   laq_50
+    2682: 7002           'p.'             MOVEQ   #2,D0
+    2684: 2F00           '/.'             PUSH.L  D0
+    2686: 486E FF76      200FF76          PEA     vaq_30(A6)
+    268A: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    2690: 504F           'PO'             ADDQ    #8,A7
+    2692: 6052           10026E6          BRA.S   laq_53
+    2694: 206E FFBE      200FFBE laq_50   MOVEA.L vaq_38(A6),A0
+    2698: 4AA8 0006      'J...'           TST.L   6(A0)
+    269C: 6716           10026B4          BEQ.S   laq_51
+    269E: 2F28 0006      '/(..'           PUSH.L  6(A0)
+    26A2: 4EB9 0000 02C2 900058C          JSR     free
+    26A8: 206E FFBE      200FFBE          MOVEA.L vaq_38(A6),A0
+    26AC: 7000           'p.'             MOVEQ   #0,D0
+    26AE: 2140 0006      '!@..'           MOVE.L  D0,6(A0)
+    26B2: 584F           'XO'             ADDQ    #4,A7
+    26B4: 7020           'p '    laq_51   MOVEQ   #32,D0
+    26B6: D1AE FFB6      200FFB6          ADD.L   D0,vaq_36(A6)
+    26BA: 701E           'p.'             MOVEQ   #30,D0
+    26BC: D1AE FFBE      200FFBE          ADD.L   D0,vaq_38(A6)
+    26C0: 52AE FE8A      200FE8A          ADDQ.L  #1,vaq_6(A6)
+    26C4: 202E FFBE      200FFBE laq_52   MOVE.L  vaq_38(A6),D0
+    26C8: B0AE FE86      200FE86          CMP.L   vaq_5(A6),D0
+    26CC: 6500 FF0C      10025DA          BLO     laq_47
+    26D0: 7002           'p.'             MOVEQ   #2,D0
+    26D2: 2F00           '/.'             PUSH.L  D0
+    26D4: 486E FF76      200FF76          PEA     vaq_30(A6)
+    26D8: 4EB9 0000 3C30 1003C58          JSR     TRelocationCollector::__dtorFv
+    26DE: 1D7C 0001 FFCB 200FFCB          MOVE.B  #1,vaq_41(A6)
+    26E4: 504F           'PO'             ADDQ    #8,A7
+    26E6: 558F           'U.'    laq_53   SUBQ.L  #2,A7
+    26E8: 3F2E FFAC      200FFAC          PUSH    vaq_33(A6)
+    26EC: 4EB9 0000 4E10 1004E38          JSR     proc93
+    26F2: 3D5F FFA8      200FFA8          POP     vaq_31(A6)
+    26F6: 4879 FFFF E2AC  -$1D54          PEA     glob135
+    26FC: 302E FFA8      200FFA8          MOVE    vaq_31(A6),D0
+    2700: 48C0           'H.'             EXT.L   D0
+    2702: 2F00           '/.'             PUSH.L  D0
+    2704: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    270A: 4A6E FFAA      200FFAA          TST     vaq_32(A6)
+    270E: 504F           'PO'             ADDQ    #8,A7
+    2710: 6606           1002718          BNE.S   laq_54
+    2712: 3D6E FFA8 FFAA 200FFAA          MOVE    vaq_31(A6),vaq_32(A6)
+    2718: 4A6E FFAA      200FFAA laq_54   TST     vaq_32(A6)
+    271C: 6746           1002764          BEQ.S   laq_55
+    271E: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    2724: 4879 FFFF E2C4  -$1D3C          PEA     glob136
+    272A: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    2730: 558F           'U.'             SUBQ.L  #2,A7
+    2732: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    2738: 7000           'p.'             MOVEQ   #0,D0
+    273A: 3F00           '?.'             PUSH    D0
+    273C: 4EB9 0000 4EB0 1004ED8          JSR     proc97
+    2742: 3D5F FFAA      200FFAA          POP     vaq_32(A6)
+    2746: 2F39 FFFF E4CA  -$1B36          PUSH.L  glob153
+    274C: 4879 FFFF E2DE  -$1D22          PEA     glob137
+    2752: 302E FFAA      200FFAA          MOVE    vaq_32(A6),D0
+    2756: 48C0           'H.'             EXT.L   D0
+    2758: 2F00           '/.'             PUSH.L  D0
+    275A: 4EB9 0000 2B10 1002B38          JSR     ReportOSErr__FCsCPCce
+    2760: 4FEF 0014      'O...'           LEA     20(A7),A7
+    2764: 2F2E FFBA      200FFBA laq_55   PUSH.L  vaq_37(A6)
+    2768: 4EB9 0000 02C2 900058C          JSR     free
+    276E: 2F2E FFB2      200FFB2          PUSH.L  vaq_35(A6)
+    2772: 4EB9 0000 02C2 900058C          JSR     free
+    2778: 4A2E FFCB      200FFCB          TST.B   vaq_41(A6)
+    277C: 504F           'PO'             ADDQ    #8,A7
+    277E: 6718           1002798          BEQ.S   laq_56
+    2780: 4A6E FFAA      200FFAA          TST     vaq_32(A6)
+    2784: 6612           1002798          BNE.S   laq_56
+    2786: 4879 FFFF E2FC  -$1D04          PEA     glob138
+    278C: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    2792: 7000           'p.'             MOVEQ   #0,D0
+    2794: 584F           'XO'             ADDQ    #4,A7
+    2796: 6010           10027A8          BRA.S   laq_57
+    2798: 4879 FFFF E314  -$1CEC laq_56   PEA     glob139
+    279E: 4EB9 0000 2792 10027BA          JSR     progress__FCPCce
+    27A4: 7001           'p.'             MOVEQ   #1,D0
+    27A6: 584F           'XO'             ADDQ    #4,A7
+    27A8: 4CEE 18F8 FD6E 200FD6E laq_57   MOVEM.L vaq_1(A6),D3-D7/A3-A4
+    27AE: 4E5E           'N^'             UNLK    A6
+    27B0: 4E75           'Nu'             RTS     
+
+

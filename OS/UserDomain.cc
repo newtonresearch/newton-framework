@@ -144,7 +144,7 @@ CUDomainManager::faultMonProc(int inSelector, void * inData)
 	{
 		NewtonErr		err;
 		ProcessorState	state;
-		f20 = NO;
+		f20 = false;
 		GetFaultState(&state);
 		f24 = state.f54;
 		err = fault(&state);		// vt00
@@ -179,8 +179,8 @@ CUDomainManager::addDomain(ObjectId & outDomainId, VAddr inRangeStart, size_t in
 
 	XTRY
 	{
-		CUDomain * domain;
-		XFAILNOT(domain = new CUDomain, err = kOSErrCouldNotCreateObject;)
+		CUDomain * domain = new CUDomain;
+		XFAILIF(domain == NULL, err = kOSErrCouldNotCreateObject;)
 		XFAIL(err = domain->init(fFaultMonitor, inRangeStart, inRangeLength))
 		XFAILNOT(fDomains.insertUnique(domain), err = kOSErrDuplicateObject;)
 		outDomainId = *domain;

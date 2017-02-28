@@ -139,7 +139,7 @@ CPolygonView::points(void)
 
 
 void
-CPolygonView::realDraw(Rect * inBounds)
+CPolygonView::realDraw(Rect& inRect)
 {
 	CDataPtr data(points());
 	drawData((char *)data, NULL, NULL);
@@ -176,7 +176,7 @@ CPolygonView::drawData(PolygonShape * inData, TPoint * inPt1, TPoint * inPt2)
 		}
 		else
 		{
-			bool r5 = NO;
+			bool r5 = false;
 			//sp-08
 			GrafPtr thePort;		// sp00
 			GetPort(&thePort);

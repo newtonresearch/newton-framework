@@ -142,7 +142,7 @@ CMemArchManager::removeEnvironment(CEnvironment * inEnv)
 				prevEnvironment->fNextEnvironment = environment->fNextEnvironment;
 			else
 				fEnvironmentList = environment->fNextEnvironment;
-			environment->f24 = YES;
+			environment->f24 = true;
 			environment->fNextEnvironment = NULL;
 		}
 	}
@@ -217,7 +217,7 @@ CMemArchManager::removeDomain(CDomain * inDomain)
 	Determine whether a range of addresses is in any domain.
 	Args:		inRangeStart		the start address
 				inRangeEnd			the end address
-	Return:	YES/NO
+	Return:	true/false
 ------------------------------------------------------------------------------*/
 
 bool
@@ -227,8 +227,8 @@ CMemArchManager::domainRangeIsFree(VAddr inRangeStart, VAddr inRangeEnd)
 	for (domain = fDomainList; domain != NULL; domain = domain->fNextDomain)
 	{
 		if (domain->intersects(inRangeStart, inRangeEnd))
-			return NO;
+			return false;
 	}
-	return YES;
+	return true;
 }
 

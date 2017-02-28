@@ -11,6 +11,9 @@
 #include <math.h>
 
 
+FPoint	gZeroFPoint = { 0.0, 0.0 };
+
+
 #pragma mark Conversion
 /* -----------------------------------------------------------------------------
 	Convert Rect to FRect.
@@ -102,7 +105,7 @@ SetRectangleEdges(FRect * ioRect, float inLeft, float inTop, float inRight, floa
 /* -----------------------------------------------------------------------------
 	Determine whether an FRect is empty.
 	Args:		inRect		the FRect to test
-	Return:	YES => is empty
+	Return:	true => is empty
 ----------------------------------------------------------------------------- */
 
 bool
@@ -133,7 +136,7 @@ InsetRectangle(FRect * ioRect, float dx, float dy)
 	Determine whether an FPoint is enclosed by an FRect.
 	Args:		inPt			the FPoint
 				inRect		the FRect
-	Return:	YES => point lies within the rectangle
+	Return:	true => point lies within the rectangle
 ----------------------------------------------------------------------------- */
 
 bool
@@ -148,7 +151,7 @@ PointInRectangle(FPoint * inPt, FRect * inRect)
 	Calculate the intersection of two FRects.
 	Args:		ioutRect					the intersection
 				inRect1, inRect2		the FRects
-	Return:	YES => the resulting FRect is non-empty
+	Return:	true => the resulting FRect is non-empty
 ----------------------------------------------------------------------------- */
 
 bool
@@ -171,11 +174,11 @@ SectRectangle(FRect * outRect, FRect * inRect1, FRect * inRect2)
 		if (t < b  && l < r)
 		{
 			SetRectangleEdges(outRect, l, t, r, b);
-			return YES;
+			return true;
 		}
 	}
 	SetRectangleEmpty(outRect);
-	return NO;
+	return false;
 }
 
 
@@ -213,7 +216,7 @@ GetMidPoint(FPoint * inPt1, FPoint * inPt2, FPoint * outMidPt)
 	Calculate the union of two FRects.
 	Args:		inRect		source FRect
 				ioBox			target FRect
-				inDoReplace	YES => replace the target instead of creating a union
+				inDoReplace	true => replace the target instead of creating a union
 	Return:	--
 ----------------------------------------------------------------------------- */
 
@@ -240,7 +243,7 @@ AddRect(FRect * inRect, FRect * ioBox, bool inDoReplace)
 	Calculate the union of a FPoint and an FRect.
 	Args:		inPt			source FPoint
 				ioRect		target FRect
-				inDoReset	YES => replace the target instead of creating a union
+				inDoReset	true => replace the target instead of creating a union
 	Return:	--
 ----------------------------------------------------------------------------- */
 

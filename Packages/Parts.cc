@@ -29,14 +29,14 @@ InstallPart(RefArg inPartType, RefArg inPartFrame, const PartId & inPartId, Sour
 		if (inSource.format == kFixedMemory)
 		{
 			if (inSource.deviceKind == kNoDevice)
-				pkgStyleSym = RSYMhighROM;
+				pkgStyleSym = SYMA(highROM);
 		}
 		else if (inSource.format == kRemovableMemory)
 		{
 			if (inSource.deviceKind == kStoreDevice)
-				pkgStyleSym = RSYM1_2Ex;
+				pkgStyleSym = SYMA(1_2EX);
 			if (inSource.deviceKind == kStoreDeviceV2)
-				pkgStyleSym = RSYMvbo;
+				pkgStyleSym = SYMA(vbo);
 		}
 		RefVar installInfo(Clone(RA(canonicalFramePartInstallInfo)));
 		SetFrameSlot(installInfo, SYMA(partType), inPartType);

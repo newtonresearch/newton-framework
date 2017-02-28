@@ -260,9 +260,9 @@ CDoubleQContainer::removeFromQueue(void * inItem)
 		qItem->fNext =
 		qItem->fPrev = NULL;
 		qItem->fContainer = NULL;
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -273,7 +273,7 @@ CDoubleQContainer::deleteFromQueue(void * inItem)
 	{
 		if (fDestructor)
 			fDestructor(fDestructorInstance, inItem);
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }

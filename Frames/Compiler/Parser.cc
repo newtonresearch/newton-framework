@@ -43,7 +43,7 @@
 	simple-literal:
 		{ string | integer | real | character | true | nil }
 	object:
-		{ simple-literal | path-expression | array | frame }
+		{ simple-literal | symbol | path-expression | array | frame }		// the grammar does not specify symbol!
 	path-expression:
 		symbol [ . symbol ]+
 	array:
@@ -159,6 +159,8 @@
 #include "Unicode.h"
 #include "UStringUtils.h"
 
+extern int wordcmp(const char * s1, const char * s2);
+
 
 #define TRY
 #define ENDTRY  						epicfail:
@@ -166,6 +168,13 @@
 #define FAIL(expr)					if ((expr) != 0) goto epicfail;
 #define FAILIF(expr, action)		if ((expr) != 0) { { action } goto epicfail; }
 #define FAILNOT(expr, action)		if ((expr) == 0) { { action } goto epicfail; }
+
+enum
+{
+	kTypeSpecNone,
+	kTypeSpecInt,
+	kTypeSpecArray
+};
 
 
 #pragma mark parsers
@@ -176,16 +185,17 @@
 		{ expression | global-declaration }
 ----------------------------------------------------------------------------- */
 
-void
+ExprAST *
 CCompiler::parse(void)
 {
 	// prime the input stream
+	// remember the last n lines for error reporting?
 	lineNumber = 1; colmNumber = 0;
 	consumeChar();
 	consumeToken();
 
 	ExprAST * ast;
-	for (bool isEOF = NO; !isEOF; )
+	for (bool isEOF = false; !isEOF; )
 	{
 		switch (theToken.id)
 		{
@@ -196,17 +206,13 @@ CCompiler::parse(void)
 
 		case TOKENglobal:
 		case TOKENfunc:
-			parseGlobalDecl(); break;
+			parseGlobalDecl(); break;	// we shouldn’t allow globals
 
 		default:
-			ast = parseExpression(); break;
+			ast = parseExpression(); if (ast == NULL) isEOF = true; break;
 		}
 	}
-	if (ast)
-		ast->dump();	// FOR DEBUG
-	// walk the AST
-	// delete the AST to free all its mem
-	delete ast;
+	return ast;
 }
 
 
@@ -222,7 +228,9 @@ CCompiler::parseExpression(void)
 {
 	ExprAST * lhs;
 	if ((lhs = parseUnary()))
+	{
 		return parseOperRHS(0, lhs);
+	}
 	return NULL;
 }
 
@@ -402,9 +410,6 @@ CCompiler::parseOperRHS(int inPrecedence, ExprAST * ioLHS)
 			{
 			case '.':	// -> { symbol | ( expression ) } => frame-accessor
 				{
-					if (inPrecedence > PRECEDENCEFrameAccessor)
-						return ioLHS;	// frame-accessor does not bind as tightly as previous operator
-
 					consumeToken();	// .
 
 					ExprAST * axsr = NULL;
@@ -415,23 +420,15 @@ CCompiler::parseOperRHS(int inPrecedence, ExprAST * ioLHS)
 					}
 					else if (theToken.id == '(')
 					{
+						consumeToken();	// (
 						axsr = parseExpression();
 						FAILNOT(axsr, error("expected an expression");)
-
 						FAILNOT(theToken.id == ')', error("expected )");)
 						consumeToken();	// )
 					}
 					FAILNOT(axsr, error("expected frame accessor");)
 
-					ExprAST * rhs = new FrameAccessExprAST(ioLHS, axsr);
-
-					if (theToken.precedence() > PRECEDENCEFrameAccessor)
-					{
-						// next operator binds more tightly
-						rhs = parseOperRHS(PRECEDENCEFrameAccessor+1, rhs);
-						FAIL(rhs == NULL)
-					}
-					ioLHS = rhs;
+					ioLHS = new FrameAccessExprAST(ioLHS, axsr);
 				}
 				break;
 
@@ -509,9 +506,6 @@ CCompiler::parseOperRHS(int inPrecedence, ExprAST * ioLHS)
 
 			case TOKENexists:		// => exists-expression <LHS must be { symbol | frame-accessor | func-accessor }>
 				{
-					if (inPrecedence > PRECEDENCEExists)
-						return ioLHS;	// array-accessor does not bind as tightly as previous operator
-
 					consumeToken();	// exists
 
 					FAILNOT(dynamic_cast<SymbolAST*>(ioLHS) || dynamic_cast<FrameAccessExprAST*>(ioLHS) || dynamic_cast<FuncAccessExprAST*>(ioLHS), error("destination of 'exists' must be a slot");)
@@ -584,9 +578,6 @@ DoBinaryOp:
 
 			case TOKENassign:		// -> expression <LHS must be lvalue = { symbol | frame-accessor | array-accessor }>
 				{
-					if (inPrecedence > PRECEDENCEAssign)
-						return ioLHS;	// array-accessor does not bind as tightly as previous operator
-
 					consumeToken();	// :=
 
 					FAILNOT(dynamic_cast<SymbolAST*>(ioLHS) || dynamic_cast<FrameAccessExprAST*>(ioLHS) || dynamic_cast<ArrayAccessExprAST*>(ioLHS), error("destination of := must be a variable");)
@@ -594,10 +585,10 @@ DoBinaryOp:
 					ExprAST * rhs = parseUnary();
 					FAIL(rhs == NULL)
 
-					if (theToken.precedence() > PRECEDENCEAssign)
+					if (theToken.precedence() >= PRECEDENCEAssign)
 					{
-						// next operator binds more tightly
-						rhs = parseOperRHS(PRECEDENCEAssign+1, rhs);
+						// next operator binds as tightly
+						rhs = parseOperRHS(PRECEDENCEAssign, rhs);
 						FAIL(rhs == NULL)
 					}
 					ioLHS = new AssignExprAST(ioLHS, rhs);
@@ -627,6 +618,7 @@ CCompiler::parseExpression1(void)
 	case '(':
 		return parseParenExpression();
 	case TOKENself:
+		consumeToken();	//	self
 		return new ReceiverExprAST(kReceiverSelf);
 
 //	compound-expression
@@ -727,7 +719,14 @@ CCompiler::parseCompoundExpression(void)
 		consumeToken();	//	begin
 
 		ExprAST * body = parseExpressionSequence(TOKENend);
-		FAIL(body == NULL)
+		if (body == NULL)		// should accept begin end -> body = nil value
+		{
+			Token nilToken;
+			nilToken.value.type = TYPEnone;
+			nilToken.value.ref = NILREF;
+			nilToken.id = TOKENconst;
+			body = new ConstExprAST(nilToken);
+		}
 
 		FAILNOT(theToken.id == TOKENend, error("expected end");)
 		consumeToken();	// end
@@ -746,19 +745,14 @@ CCompiler::parseExpressionSequence(int inUntilToken)
 	TRY
 	{
 		std::vector<ExprAST*> seq;
-		if (theToken.id != inUntilToken)
+		while (theToken.id != inUntilToken)
 		{
-			while (1)
-			{
-				ExprAST * expr = parseExpression();
-				FAIL(expr == NULL)
+			ExprAST * expr = parseExpression();
+			if (expr)					// should accept no-expression ;
 				seq.push_back(expr);
 
-				if (theToken.id == ';')
-					consumeToken();	// ;
-				if (theToken.id == inUntilToken)
-					break;	//	no more expressions
-			}
+			if (theToken.id == ';')
+				consumeToken();	// ;
 		}
 		// caller must consume until-token
 
@@ -777,7 +771,7 @@ CCompiler::parseExpressionSequence(int inUntilToken)
 	simple-literal:
 		{ string | integer | real | character | true | nil }
 	object:
-		{ simple-literal | path-expression | array | frame }
+		{ simple-literal | symbol | path-expression | array | frame }		// the grammar does not specify symbol!
 	path-expression:
 		symbol [ . symbol ]+
 	array:
@@ -823,13 +817,17 @@ CCompiler::parseObjectExpr(void)
 			return constant;
 			}
 
-		// path-expression
+		// symbol
 		case TOKENsymbol:
 			{
-			std::vector<std::string> elements;
-			elements.push_back(SymbolName(theToken.value.ref));
-			consumeToken();	//	symbol
+			std::string symbol = SymbolName(theToken.value.ref);
+			consumeToken();	// symbol
+			if (theToken.id != '.')
+				return new SymbolAST(symbol);
 
+		// path-expression
+			std::vector<std::string> elements;
+			elements.push_back(symbol);
 			while (theToken.id == '.')
 			{
 				consumeToken();	// .
@@ -946,20 +944,18 @@ CCompiler::parseArrayConstructor(void)
 		std::vector<ExprAST*> elements;
 		if (theToken.id == TOKENsymbol)
 		{
+			// it MIGHT be a class name
+			// (or the symbol might be part of a frame accessor, or a function call, or a message)
 			className = SymbolName(theToken.value.ref);
-			consumeToken();	// symbol
-
-			if (theToken.id == ':')
+			int nextToken = peekToken();
+			if (nextToken == ':')
 			{
+				// NewtonScript Language D7 (Phrasal Grammar) says always interpret class name, not message send
+				consumeToken();	// symbol
 				consumeToken();	// :
 			}
 			else
-			{
-				elements.push_back(new SymbolAST(className));		// it wasn’t actually a class name
-				className.clear();
-				if (theToken.id == ',')
-					consumeToken();	// ,
-			}
+				className.clear();	// wasn’t a class name after all
 		}
 
 		if (theToken.id != ']')
@@ -1113,19 +1109,19 @@ CCompiler::parseFormalArgumentList(std::vector<std::pair<int,std::string> > & ar
 int
 CCompiler::parseType(void)
 {
-	int typeSpec = 0;		// should enum this somewhere
+	int typeSpec = kTypeSpecNone;
 	if (theToken.id == TOKENsymbol)
 	{
 		const char * typeSym = SymbolName(theToken.value.ref);
-		if (strcmp(typeSym, "int") == 0)				// int is not a reserved word
+		if (wordcmp(typeSym, "int") == 0)			// int is not a reserved word
 		{
 			consumeToken();	//	int
-			typeSpec = 1;
+			typeSpec = kTypeSpecInt;
 		}
-		else if (strcmp(typeSym, "array") == 0)	// array is not a reserved word
+		else if (wordcmp(typeSym, "array") == 0)	// array is not a reserved word
 		{
 			consumeToken();	//	array
-			typeSpec = 2;
+			typeSpec = kTypeSpecArray;
 		}
 	}
 	return typeSpec;
@@ -1244,16 +1240,24 @@ CCompiler::parseIfExpr(void)
 		consumeToken();	//	then
 
 		ExprAST * ifBody = parseExpression();
+		ExprAST * elseBody = NULL;
 		FAIL(ifBody == NULL)
 
+		// here it gets messy because of the optional trailing ;
 		if (theToken.id == ';')
-			consumeToken();	//	;	ignore trailing ;
+		{
+			int nextToken = peekToken();
+			if (nextToken == TOKENelse)
+			{
+				consumeToken();	//	;	ignore ; after then-expression
+			}
+		}
 
-		ExprAST * elseBody = NULL;
 		if (theToken.id == TOKENelse)
 		{
 			consumeToken();	//	else
-			FAIL((elseBody = parseExpression()) == NULL)
+			elseBody = parseExpression();
+			FAIL(elseBody == NULL)
 		}
 
 		return new IfExprAST(condition, ifBody, elseBody);
@@ -1353,7 +1357,7 @@ CCompiler::parseForeachExpr(void)
 		std::string forVar = SymbolName(theToken.value.ref);
 		consumeToken();	//	symbol
 
-		std::string indexVar = NULL;
+		std::string indexVar = "";
 		if (theToken.id == ',')
 		{
 			consumeToken();	//	,
@@ -1609,7 +1613,9 @@ CCompiler::parseLocalDecl(void)
 			FAIL(!parseInitClause(decl))
 			declarations.push_back(std::make_pair(symbol, decl));
 
-			if (theToken.id != ',')
+			if (theToken.id == ',')
+				consumeToken();	// ,
+			else
 				break;	//	no more initialization-clauses
 		}
 
@@ -1671,7 +1677,9 @@ CCompiler::parseConstantDecl(void)
 
 			declarations.push_back(std::make_pair(tag,value));
 
-			if (theToken.id != ',')
+			if (theToken.id == ',')
+				consumeToken();	// ,
+			else
 				break;	//	no more constant-init-clauses
 		}
 

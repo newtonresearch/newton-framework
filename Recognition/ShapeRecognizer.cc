@@ -72,9 +72,9 @@ PtsOnCircle(CArray * inPts, FPoint * inCentre, float inRadius, ULong * outArg4)
 	}
 	float circularity = (float)numOfPtsOnCircle / (float)numOfPts;
 	if (circularity <= 0.92)
-		return NO;
+		return false;
 	*outArg4 = (1.0 - circularity) * 5000/3 + 0.5;
-	return YES;
+	return true;
 }
 
 
@@ -99,12 +99,12 @@ PtsOnEllipse(CArray * inPts, FPoint * inCentre1, FPoint * inCentre2, float inRad
 		r4++;
 	float circularity = numOfPtsOnEllipse / r4;
 	if (circularity <= 0.57)
-		return NO;
+		return false;
 	float r1 = numOfPtsOnEllipse * 1.5;
 	if (r1 > r4)
 		r1 = r4;
 	*outScore = (1.0 - r1/r4) * 1500 + 0.5;
-	return YES;
+	return true;
 }
 
 
@@ -135,25 +135,25 @@ IsNextQuad(ULong inThisQuad, ULong inNextQuad, int * ioDirection)
 		if (inNextQuad == nextCCW)
 		{
 			*ioDirection = 1;
-			return YES;
+			return true;
 		}
 		else if (inNextQuad == nextCW)
 		{
 			*ioDirection = -1;
-			return YES;
+			return true;
 		}
 	}
 	else if (*ioDirection == -1)
 	{
 		if (inNextQuad == nextCW)
-			return YES;
+			return true;
 	}
 	else // (*ioDirection == 1)
 	{
 		if (inNextQuad == nextCCW)
-			return YES;
+			return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -176,9 +176,9 @@ TraceContour(CArray * inPts, FPoint * inCentre)
 			runLen = 1;
 		}
 		else
-			return NO;
+			return false;
 	}
-	return YES;
+	return true;
 }
 
 
@@ -338,10 +338,10 @@ GDisposeShape(CDArray * inShape)
 CGeneralShapeUnit *
 CGeneralShapeUnit::make(CRecDomain * inDomain, ULong inUnitType, CArray * inAreas)
 {
-	CGeneralShapeUnit * unit;
+	CGeneralShapeUnit * unit = new CGeneralShapeUnit;
 	XTRY
 	{
-		XFAIL((unit = new CGeneralShapeUnit) == NULL)
+		XFAIL(unit == NULL)
 		XFAILIF(unit->iGeneralShapeUnit(inDomain, inUnitType, inAreas) != noErr, unit->release(); unit = NULL;)
 	}
 	XENDTRY;
@@ -760,7 +760,7 @@ CheckScreenGlobals(void)
 
 bool
 CheckClosed(CStrokeUnit * inUnit)
-{return NO;}
+{return false;}
 
 
 FPoint g0C107010, g0C107018;
@@ -801,16 +801,16 @@ ExtractEnds(CStrokeUnit * inStroke, CGeneralShapeUnit * inShape, FPoint ** outEn
 
 bool
 CheckConnect(long inArg1, FPoint ** outArg2, CGeneralShapeUnit * inShape1, CGeneralShapeUnit * inShape2)
-{return NO;}
+{return false;}
 
 
 CGeneralShapeDomain *
 CGeneralShapeDomain::make(CController * inController)
 {
-	CGeneralShapeDomain * domain;
+	CGeneralShapeDomain * domain = new CGeneralShapeDomain;
 	XTRY
 	{
-		XFAIL((domain = new CGeneralShapeDomain) == NULL)
+		XFAIL(domain == NULL)
 		XFAILIF(domain->iGeneralShapeDomain(inController) != noErr, domain->release(); domain = NULL;)
 	}
 	XENDTRY;
@@ -849,7 +849,7 @@ CGeneralShapeDomain::preGroup(CRecUnit * inUnit)
 		if (shapeUnits->count() > 0)
 		{
 			FPoint * sp00;
-			bool r5 = NO;
+			bool r5 = false;
 			CGeneralShapeUnit * r6 = (CGeneralShapeUnit *)shapeUnits->getUnit(0);
 			if (!isClosed)
 			{
@@ -879,7 +879,7 @@ CGeneralShapeDomain::preGroup(CRecUnit * inUnit)
 bool
 CGeneralShapeDomain::group(CRecUnit * inUnit, RecDomainInfo * info)
 {
-	bool isGrouped = NO;
+	bool isGrouped = false;
 #if 0
 	r4 = 0;
 	r5 = 0;

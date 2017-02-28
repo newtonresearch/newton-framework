@@ -30,7 +30,7 @@ CEndpointEvent::CEndpointEvent()
 }
 
 
-CEndpointEvent::CEndpointEvent(long inArg1, VAddr inArg2, long inArg3)
+CEndpointEvent::CEndpointEvent(int inArg1, VAddr inArg2, int inArg3)
 {
 	fEventId = kEndpointEventId;
 	f08 = inArg1;
@@ -56,7 +56,7 @@ CBindCompleteEvent::CBindCompleteEvent()
 	f20 = 0;
 }
 
-CBindCompleteEvent::CBindCompleteEvent(long inArg1, VAddr inArg2, long inArg3)
+CBindCompleteEvent::CBindCompleteEvent(int inArg1, VAddr inArg2, int inArg3)
 	:	CEndpointEvent(inArg1, inArg2, inArg3)
 {
 	f20 = 0;
@@ -71,7 +71,7 @@ CConnectCompleteEvent::CConnectCompleteEvent()
 	f2C = 0;
 }
 
-CConnectCompleteEvent::CConnectCompleteEvent(long inArg1, VAddr inArg2, long inArg3)
+CConnectCompleteEvent::CConnectCompleteEvent(int inArg1, VAddr inArg2, int inArg3)
 	:	CEndpointEvent(inArg1, inArg2, inArg3)
 {
 	f20 = 0;
@@ -81,7 +81,7 @@ CConnectCompleteEvent::CConnectCompleteEvent(long inArg1, VAddr inArg2, long inA
 }
 
 
-CGetProtAddrCompleteEvent::CGetProtAddrCompleteEvent(long inArg1, VAddr inArg2)
+CGetProtAddrCompleteEvent::CGetProtAddrCompleteEvent(int inArg1, VAddr inArg2)
 	:	CEndpointEvent(inArg1, inArg2, -3)
 {
 	f20 = 0;
@@ -94,7 +94,7 @@ COptMgmtCompleteEvent::COptMgmtCompleteEvent()
 	f20 = 0;
 }
 
-COptMgmtCompleteEvent::COptMgmtCompleteEvent(long inArg1, VAddr inArg2)
+COptMgmtCompleteEvent::COptMgmtCompleteEvent(int inArg1, VAddr inArg2)
 	:	CEndpointEvent(inArg1, inArg2, -4)
 {
 	f20 = 0;
@@ -127,7 +127,7 @@ CDisconnectEvent::CDisconnectEvent()
 	f28 = 0;
 }
 
-CDisconnectEvent::CDisconnectEvent(long inArg1, VAddr inArg2)
+CDisconnectEvent::CDisconnectEvent(int inArg1, VAddr inArg2)
 	:	CEndpointEvent(inArg1, inArg2, 2)
 {
 	f20 = 0;
@@ -165,8 +165,8 @@ CEndpointEventHandler::CEndpointEventHandler(CEndpoint * inEndpoint, bool inArg2
 	:	CEventHandler()
 {
 	f14 = inEndpoint;
-	f28 = NO;
-	f29 = NO;
+	f28 = false;
+	f29 = false;
 	f2A = inArg2;
 }
 
@@ -176,13 +176,13 @@ CEndpointEventHandler::~CEndpointEventHandler()
 
 
 NewtonErr
-CEndpointEventHandler::init(ObjectId inId, EventId inEventId, EventClass inEventClass)
+CEndpointEventHandler::init(ObjectId inPortId, EventId inEventId, EventClass inEventClass)
 {
 	NewtonErr err;
 	XTRY
 	{
 		XFAIL(err = CEventHandler::init(inEventId, inEventClass))
-		f18 = inId;
+		f18 = inPortId;
 		err = f20.init();
 	}
 	XENDTRY;
@@ -213,8 +213,8 @@ CEndpointEventHandler::addTimer(Timeout inDelta, ULong inRefCon)
 	{
 		if (inDelta)
 		{
-			CEndpointTimer * timer;
-			XFAILNOT(timer = new CEndpointTimer(this, gCommWorld->fTimers, inRefCon), err = MemError();)
+			CEndpointTimer * timer = new CEndpointTimer(this, gCommWorld->fTimers, inRefCon);
+			XFAILIF(timer == NULL, err = MemError();)
 			XFAILNOT(timer->prime(inDelta), delete timer;)
 		}
 	}
@@ -245,7 +245,7 @@ bool
 CEndpointEventHandler::useForks(bool inDoIt)
 {
 	// we always use forks
-	return YES;
+	return true;
 }
 
 
@@ -255,9 +255,9 @@ CEndpointEventHandler::block(ULong inArg)
 	NewtonErr err;
 	if (f28)
 		return TALRDYSYNC;
-	f28 = YES;
+	f28 = true;
 	err = f20.block(inArg);
-	f28 = NO;
+	f28 = false;
 	if (err == noErr)
 	{
 		if (f29)
@@ -299,7 +299,7 @@ CEndpointEventHandler::callService(ULong inMsgType, CUAsyncMessage * ioMessage, 
 		{
 			XFAIL(err = ioMessage->setCollectorPort((ObjectId)*gCommWorld->getMyPort()))
 			XFAIL(err = addTimer(inTimeout, inTimerName))
-			XFAILIF(err = SendRPC(this, &f18, ioMessage, inRequest, inReqSize, inReply, inReplySize, 0, NULL, inMsgType, NO), killTimer(inTimerName);)
+			XFAILIF(err = SendRPC(this, &f18, ioMessage, inRequest, inReqSize, inReply, inReplySize, 0, NULL, inMsgType, false), killTimer(inTimerName);)
 		}
 	}
 	XENDTRY;
@@ -328,7 +328,7 @@ CEndpointEventHandler::callServiceNoForks(ULong inMsgType, CUAsyncMessage * ioMe
 		{
 			XFAIL(err = ioMessage->setCollectorPort((ObjectId)*gCommWorld->getMyPort()))
 			XFAIL(err = addTimer(inTimeout, inTimerName))
-			XFAILIF(err = SendRPC(this, &f18, ioMessage, inRequest, inReqSize, inReply, inReplySize, 0, NULL, inMsgType, NO), killTimer(inTimerName);)
+			XFAILIF(err = SendRPC(this, &f18, ioMessage, inRequest, inReqSize, inReply, inReplySize, 0, NULL, inMsgType, false), killTimer(inTimerName);)
 		}
 	}
 	XENDTRY;
@@ -365,12 +365,12 @@ CEndpointEventHandler::handleAborts(bool)
 void
 CEndpointEventHandler::abort(void)
 {
-	f29 = YES;
+	f29 = true;
 	f14->abort();
 	if (f28)
 	{
 		f20.unblock();
-		f28 = NO;
+		f28 = false;
 	}
 }
 

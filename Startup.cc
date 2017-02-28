@@ -53,7 +53,7 @@ public:
 ----------------------------------------------------------------------------- */
 
 CErasePersistentDataAlert gPersistentDataAlert;	// 0C1010E8.x00
-int gIsPersistentDataAlertInited = NO;	// 0C1010E8.x64 = 0C10114C
+int gIsPersistentDataAlertInited = false;	// 0C1010E8.x64 = 0C10114C
 
 CStartupDriver * gStartupDriver;			// 0C1010E8.x68 = 0C101150
 
@@ -82,7 +82,7 @@ void
 ZapInternalStoreCheck(void)
 {
 #if defined(correct)
-	if ((gNewtConfig & 0x00040000) != 0)
+	if (FLAGTEST(gNewtConfig, 0x00040000))
 		ClobberInternalFlash();
 	if (UserWantsColdBoot())
 	{
@@ -94,7 +94,7 @@ ZapInternalStoreCheck(void)
 		if (!gIsPersistentDataAlertInited)
 		{
 			ULong sp00;
-			gIsPersistentDataAlertInited = YES;
+			gIsPersistentDataAlertInited = true;
 			new (&gPersistentDataAlert) CErasePersistentDataAlert;
 			gPersistentDataAlert.init((UniChar *)BinaryData(RA(uErasePersistentDataAlertText)),	// "Do you want to erase data completely?"
 											  (UniChar *)BinaryData(RA(uErasePersistentDataButton0Str)),	// "No"
@@ -120,10 +120,10 @@ ZapInternalStoreCheck(void)
 					gPersistentDataAlert.displayAlert();
 					ClobberInternalFlash();
 					gPersistentDataAlert.removeAlert();
-					Reboot(noErr, kRebootMagicNumber, NO);	// cold boot
+					Reboot(noErr, kRebootMagicNumber, false);	// cold boot
 				}
 			}
-			Reboot(noErr, 0, NO);	//warm boot
+			Reboot(noErr, 0, false);	// warm boot
 		}
 	}
 #endif

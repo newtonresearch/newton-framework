@@ -15,13 +15,13 @@
 
 CBufferSegment::CBufferSegment()
 {
-	fBufferIsOurs = NO;
+	fBufferIsOurs = false;
 	fBuffer = NULL;
 	fBufferLimit = NULL;
 	fBufSize = 0;
 	fLoBound = fHiBound = NULL;
 	fBufPtr = NULL;
-	fSharedBufIsInitialized = NO;
+	fSharedBufIsInitialized = false;
 //	fSharedBuf = 0;		// don’t think they really mean this
 }
 
@@ -48,7 +48,7 @@ CBufferSegment::init(size_t inSize)
 	fLoBound = fBuffer;
 	fHiBound = fBufferLimit;
 	fBufPtr = fBuffer;
-	fBufferIsOurs = YES;
+	fBufferIsOurs = true;
 
 	return restoreShared(kSMemReadWrite);
 }
@@ -92,7 +92,7 @@ CBufferSegment::makeShared(ULong inPermissions)
 		{
 			XFAIL(err = fSharedBuf.init())
 			XFAIL(err = fSharedBuf.setBuffer(fBuffer, fBufSize, inPermissions + kSMemNoSizeChangeOnCopyTo))
-			fSharedBufIsInitialized = YES;
+			fSharedBufIsInitialized = true;
 		}
 		XENDTRY;
 	}
@@ -118,7 +118,7 @@ CBufferSegment::unshare(void)
 	if (fSharedBufIsInitialized)
 	{
 		fSharedBuf.destroyObject();
-		fSharedBufIsInitialized = NO;
+		fSharedBufIsInitialized = false;
 	}
 	return noErr;
 }

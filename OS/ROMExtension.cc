@@ -16,9 +16,9 @@
 #include <CoreFoundation/CoreFoundation.h>
 
 #if defined(forFramework)
-#define kBundleId CFSTR("com.newton.objects")
+#define kBundleId CFSTR("org.newton.objects")
 #else
-#define kBundleId CFSTR("com.newton.messagepad")
+#define kBundleId CFSTR("org.newton.messagepad")
 #endif
 
 
@@ -70,9 +70,10 @@ void		RegisterPendingImport(RExImport * inImport, Ref * inArg2, char * inArg3, i
 RExHeader *
 TestForREx(Ptr inPtr)
 {
-	return (((RExHeader *)inPtr)->signatureA == kRExSignatureA
-		  && ((RExHeader *)inPtr)->signatureB == kRExSignatureB
-		  && ((RExHeader *)inPtr)->id < kMaxROMExtensions) ? (RExHeader *)inPtr : NULL;
+	RExHeader * rexPtr = (RExHeader *)inPtr;
+	return (rexPtr->signatureA == kRExSignatureA
+		  && rexPtr->signatureB == kRExSignatureB
+		  && rexPtr->id < kMaxROMExtensions) ? rexPtr : NULL;
 }
 
 
@@ -171,10 +172,32 @@ RExScanner(SGlobalsThatLiveAcrossReboot *	info)
 			}
 			fclose(rexFile);
 #if defined(hasByteSwapping)
-			// treat file as array of longs and swap ’em all
-			int32_t * p = (int32_t *)gREx;
-			for (ArrayIndex i = 0; i < hdrLen; i += 4, p++)
+			// byte-swap the directory
+			ULong * p = (ULong *)gREx;
+			for (ArrayIndex i = 0; i < sizeof(RExHeader)/sizeof(ULong); ++i, ++p) {
 				*p = BYTE_SWAP_LONG(*p);
+			}
+			// including config directory entries
+			ConfigEntry * entry = ((RExHeader *)gREx)->table;
+			for (ArrayIndex i = 0; i < ((RExHeader *)gREx)->count; ++i, ++entry) {
+				// byte swap directory entry
+				entry->tag = BYTE_SWAP_LONG(entry->tag);
+				entry->offset = BYTE_SWAP_LONG(entry->offset);
+				entry->length = BYTE_SWAP_LONG(entry->length);
+				// byte swap data -- we could switch on entry->tag
+				if (entry->tag == kRAMAllocationTag)
+				{
+					RAMAllocTable * table = (RAMAllocTable *)(gREx + entry->offset);
+					table->version = BYTE_SWAP_LONG(table->version);
+					table->count = BYTE_SWAP_LONG(table->count);
+					RAMAllocEntry * entry = table->table;
+					for (ArrayIndex i = 0; i < table->count; ++i, ++entry) {
+						entry->min = BYTE_SWAP_LONG(entry->min);
+						entry->max = BYTE_SWAP_LONG(entry->max);
+						entry->pct = BYTE_SWAP_LONG(entry->pct);
+					}
+				}
+			}
 #endif
 		}
 	}
@@ -214,7 +237,7 @@ GetRExConfigEntry(ULong inId, ULong inTag, size_t * outSize)
 	return GenericWithReturnSWI(kGetRExConfigEntry, inId, inTag, 0, outSize, NULL, NULL);
 #else
 	VAddr theEntry;
-	GenericWithReturnSWI(kGetRExConfigEntry, inTag, 0, 0, (OpaqueRef *)&theEntry, (OpaqueRef *)outSize, NULL);
+	GenericWithReturnSWI(kGetRExConfigEntry, inId, inTag, 0, (OpaqueRef *)&theEntry, (OpaqueRef *)outSize, NULL);
 	return theEntry;
 #endif
 }
@@ -420,7 +443,7 @@ void
 RegisterPendingImport(RExImport * inImport, Ref * inMembers, char * inName, int inMajorVersion, int inMinorVersion)
 {
 	RExPendingImport *	pending = new RExPendingImport;
-	if (inImport == NULL)
+	if (pending == NULL)
 		OutOfMemory();
 
 	pending->f08 = 1;

@@ -6,10 +6,9 @@
 	Written by:	Newton Research Group.
 */
 
-//#include "MacMemory.h"
-
 #include "Objects.h"
 #include "Globals.h"
+#include "ROMResources.h"
 #include "Arrays.h"
 #include "NewtonTime.h"
 #include "Locales.h"
@@ -214,7 +213,7 @@ void
 UpdateStroke(CRecUnit * inStrokeUnit)
 {
 	CUnit unit(inStrokeUnit, 0);
-	unit.stroke()->inkOff(YES);
+	unit.stroke()->inkOff(true);
 	gRootView->update();
 }
 
@@ -380,9 +379,9 @@ OtherViewInUse(CView * inView)
 		AreaCacheEntry * entry = (AreaCacheEntry *)gAreaCache->getEntry(i);
 		CRecArea * area = entry->area;
 		if (area->viewId() != viewId  &&  area->isRetained())
-			return YES;
+			return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -433,7 +432,7 @@ FindMatchingArea(CView * inView, ULong inMask)
 bool
 TryGetAreasHit(CRecUnit * inUnit, CArray * inAreas)
 {
-	bool isNewArea = NO;
+	bool isNewArea = false;
 
 	CUnit unit(inUnit, 0);
 	CView * view = unit.findView(unit.requiredMask());
@@ -443,8 +442,8 @@ TryGetAreasHit(CRecUnit * inUnit, CArray * inAreas)
 		if (unit.getType() == 'CLIK')
 		{
 			if (gRootView->getPopup() != NULL)
-				gRootView->setPopup(NULL, YES);
-			gInhibitPopup = YES;
+				gRootView->setPopup(NULL, true);
+			gInhibitPopup = false;
 		}
 		unit.cleanUp();
 	}
@@ -458,7 +457,7 @@ TryGetAreasHit(CRecUnit * inUnit, CArray * inAreas)
 			if (areas->count() > 0)
 			{
 				areas = CAreaList::make();
-				isNewArea = YES;
+				isNewArea = true;
 			}
 			CRecArea * area = FindMatchingArea(view, mask);
 			if (area)
@@ -478,7 +477,7 @@ TryGetAreasHit(CRecUnit * inUnit, CArray * inAreas)
 bool
 GetAreasHit(CRecUnit * inUnit, CArray * inAreas)
 {
-	bool isNewArea = NO;
+	bool isNewArea = false;
 	newton_try
 	{
 		isNewArea = TryGetAreasHit(inUnit, inAreas);
@@ -554,9 +553,9 @@ IdleStrokes(void)
 		StrokeTime();	// does nothing
 	else
 	{
-		gStrokeWorld.f38 = YES;
+		gStrokeWorld.f38 = true;
 		gStrokeWorld.idleStrokes();
-		gStrokeWorld.f38 = NO;
+		gStrokeWorld.f38 = false;
 	}
 }
 
@@ -568,7 +567,7 @@ PostAndDoCommand(ULong inCmd, CUnit * inUnit, ULong inFlags)
 	CView * target = inUnit->findView(inFlags);	// r6
 	if (target)
 	{
-		bool isPopupDismissed = NO;
+		bool isPopupDismissed = false;
 		if (inCmd == aeClick)
 		{
 			CView * popup = gRootView->getPopup();	// r2
@@ -581,8 +580,8 @@ PostAndDoCommand(ULong inCmd, CUnit * inUnit, ULong inFlags)
 				if (parent == gRootView)
 				{
 					// user tapped ouside the popup, so dismiss it
-					gRootView->setPopup(NULL, YES);
-					isPopupDismissed = YES;
+					gRootView->setPopup(NULL, true);
+					isPopupDismissed = true;
 					gRecognitionManager.saveClickView(NULL);
 				}
 			}
@@ -591,7 +590,7 @@ PostAndDoCommand(ULong inCmd, CUnit * inUnit, ULong inFlags)
 			err = 1;
 		else
 		{
-			RefVar cmd(MakeCommand(inCmd, target, (long)inUnit));
+			RefVar cmd(MakeCommand(inCmd, target, (OpaqueRef)inUnit));
 			if (inCmd == aeInk)
 				CommandSetFrameParameter(cmd, inUnit->strokes());
 			if (inCmd == aeInk || inCmd == aeInkText)
@@ -603,7 +602,7 @@ PostAndDoCommand(ULong inCmd, CUnit * inUnit, ULong inFlags)
 			err = gApplication->dispatchCommand(cmd);
 		}
 	}
-	gInhibitPopup = NO;
+	gInhibitPopup = false;
 	return err;
 }
 
@@ -613,7 +612,7 @@ HandleUnitList(CArray * inRecUnits)
 {
 	ULong result = 0;
 
-	gRecognitionManager.setx38(NO);
+	gRecognitionManager.setx38(false);
 
 // sp24 = gRootView
 // sp20 = &sp-A8
@@ -638,7 +637,7 @@ HandleUnitList(CArray * inRecUnits)
 			CRecStroke * strok = unit->getStroke(0);
 			if (strok->startTime() < (strok->f40Time() + 30)
 			&&  ClicksOnlyArea(unit))
-				gRecognitionManager.setx38(YES);
+				gRecognitionManager.setx38(true);
 		}
 //sp-40
 		CUnit pubUnit(unit, 0);	// sp04
@@ -650,7 +649,7 @@ HandleUnitList(CArray * inRecUnits)
 		||  (cmd == aeClick && gRootView->doCaretClick(&pubUnit)))
 		{
 			cmd = 0;
-			gRecognitionManager.setx38(YES);
+			gRecognitionManager.setx38(true);
 		}
 		if (gStrokeWorld.beforeLastFlush(startTime))
 			cmd = 0;
@@ -665,13 +664,13 @@ HandleUnitList(CArray * inRecUnits)
 				SafeExceptionNotify(CurrentException());
 			}
 			end_try;
-//			gApplication->fNewUndo = YES;
+//			gApplication->fNewUndo = true;
 		}
 		if (gRecognitionManager.getx3C() == unit)
 		{
 			bool r8 = (cmd == aeClick) && (gStrokeWorld.currentStroke() == NULL);
 			if ((cmd == aeClick) && !r8 && ClicksOnlyArea(unit))
-				gRecognitionManager.setx38(YES);
+				gRecognitionManager.setx38(true);
 
 			if (err || cmd == aeTap || gRecognitionManager.getx38())
 			{
@@ -697,7 +696,7 @@ HandleUnitList(CArray * inRecUnits)
 		gRecognitionManager.setx3C(NULL);
 	}
 
-	gInhibitPopup = NO;
+	gInhibitPopup = false;
 	return result;
 }
 
@@ -712,7 +711,7 @@ HandleReplayUnit(CArray * inRecUnits)
 		WriteTapStats(inRecUnits);
 		StdIOOff();
 #endif
-		gArbiter->setf20(YES);
+		gArbiter->setf20(true);
 	}
 	return 1;
 }
@@ -806,10 +805,10 @@ CRecognitionManager::initRecognizers(void)
 RecognitionState *
 CRecognitionManager::saveRecognitionState(bool * outFail)
 {
-	*outFail = NO;
+	*outFail = false;
 	RecognitionState * theState = new RecognitionState;
 	if (theState == NULL)
-		*outFail = YES;
+		*outFail = true;
 	else
 	{
 #if 0
@@ -822,7 +821,7 @@ CRecognitionManager::saveRecognitionState(bool * outFail)
 		theState->x0C = gStrokeWorld.saveRecognitionState(&sp04);
 		theState->x10 = SaveRecognitionState(gController, &sp00);
 		if (sp04 || sp00)
-			*outFail = YES;
+			*outFail = true;
 #endif
 		x18 = 0;
 		x1C = 0;
@@ -882,14 +881,14 @@ bool
 CRecognitionManager::modalRecognitionOK(Rect * inRect)
 {
 	if (fModalBounds == NULL)
-		return YES;
+		return true;
 
 	Point	center = MidPoint(inRect);
 	bool	isInBounds = PtInRect(center, fModalBounds);
 	if (!isInBounds)
 	{
 		if (gRootView->getPopup() != NULL)
-			gRootView->setPopup(NULL, YES);
+			gRootView->setPopup(NULL, true);
 	}
 	return isInBounds;
 }
@@ -930,14 +929,19 @@ CRecognitionManager::nextIdle(void)
 	Timeout	when = kDistantFuture;	// in ms
 	if (fCapability >= 1)
 	{
-		theTime = fStrokeCentral->f2C;		// stroke expiry time
-		when = gController->nextIdleTime();	// in ms
-		if (when == kDistantFuture)
-			return theTime;
+		theTime = fStrokeCentral->f2C;		// stroke expiry time or CTime(0)
+		when = gController->nextIdleTime();	// in ms or kDistantFuture
+//		if (when == kDistantFuture)
+//			return theTime;
+	}
+	if (when == kDistantFuture) {				// this was above, but that doesnÕt make real sense
+printf("CRecognitionManager::nextIdle -> %lld\n", (int64_t)theTime);
+		return theTime;
 	}
 	CTime	wuTime(TimeFromNow(when*kMilliseconds));
 	if (theTime == CTime(0) || wuTime < theTime)
-		return wuTime;
+		theTime = wuTime;
+printf("CRecognitionManager::nextIdle -> %lld\n", (int64_t)theTime);
 	return theTime;
 }
 
@@ -984,12 +988,12 @@ CRecognitionManager::update(Rect * inRect)
 	{
 		int penSize = RINT(GetPreference(SYMA(userPenSize)));
 		SetLineWidth(penSize);	// was PenSize(penSize, penSize);
-		FRect	invalBounds = updateBounds;
-		fController->updateInk(&invalBounds);
-		if (!EmptyRectangle(&invalBounds))
+		FRect	inkBounds = updateBounds;
+		fController->updateInk(&inkBounds);
+		if (!EmptyRectangle(&inkBounds))
 		{
-			Rect	inkRect;
-			UnfixRect(&invalBounds, &inkRect);
+			Rect inkRect;
+			UnfixRect(&inkBounds, &inkRect);
 			AdjustForInk(&inkRect);
 			gRootView->smartInvalidate(&inkRect);
 		}
@@ -1006,7 +1010,7 @@ CRecognitionManager::update(Rect * inRect)
 
 CStrokeCentral::CStrokeCentral()
 {
-//	initFields();		// gStrokeCentral instance is created at startup before environment is ready
+//	initFields();		// gStrokeWorld instance is created at startup before environment is ready
 }
 
 
@@ -1020,7 +1024,7 @@ void
 CStrokeCentral::init(void)
 {
 	initFields();
-//	SetUpPB();		this really only returns YES
+//	SetUpPB();		this really only returns true
 //	StrokeInit();  this really does nothing
 //	TabOn();			activate tablet -- legacy?
 }
@@ -1029,7 +1033,7 @@ CStrokeCentral::init(void)
 void
 CStrokeCentral::initFields(void)
 {
-	fIsValidStroke = NO;
+	fIsValidStroke = false;
 	fCurrentStroke = NULL;
 	fCurrentUnit = NULL;
 	f0C = 0;
@@ -1041,7 +1045,7 @@ CStrokeCentral::initFields(void)
 	f28 = CRecUnitList::make();
 	f2C = CTime(0);
 	f34 = NULL;
-	f20 = new RefStruct;		// canÕt make these members because of gStrokeCentral instance
+	f20 = new RefStruct;		// canÕt make these members because of gStrokeWorld instance
 	*f20 = MakeArray(0);
 	f3C = NULL;
 	f40 = new RefStruct;
@@ -1052,7 +1056,7 @@ void
 CStrokeCentral::doneFields(void)
 {
 	if (f28)
-		f28->release(), f28 = nil;
+		f28->release(), f28 = NULL;
 	if (f20)
 		delete f20, f20 = NULL;
 	if (f40)
@@ -1063,7 +1067,7 @@ CStrokeCentral::doneFields(void)
 void
 CStrokeCentral::startNewStroke(CRecStroke * ioStroke)
 {
-	fIsValidStroke = YES;
+	fIsValidStroke = true;
 	fCurrentStroke = ioStroke;
 	ioStroke->f3C = f0C;
 	ioStroke->f40 = f10;
@@ -1092,7 +1096,7 @@ CStrokeCentral::addDeferredStroke(RefArg inArg1, long inArg2, long inArg3)
 void
 CStrokeCentral::invalidateCurrentStroke(void)
 {
-	fIsValidStroke = NO;
+	fIsValidStroke = false;
 }
 
 
@@ -1101,7 +1105,7 @@ CStrokeCentral::doneCurrentStroke(void)
 {
 	f0C = fCurrentStroke->fStartTime;
 	f10 = fCurrentStroke->fEndTime;
-	fIsValidStroke = NO;
+	fIsValidStroke = false;
 	fCurrentStroke = NULL;
 
 	fCurrentUnit->unsetFlags(kBusyUnit);
@@ -1128,17 +1132,17 @@ CStrokeCentral::unblockStrokes(void)
 bool
 CStrokeCentral::flushStrokes(void)
 {
-	bool isAnythingFlushed = NO;
+	bool isAnythingFlushed = false;
 	CRecStroke * strok;
 	while ((strok = StrokeGet()) != NULL)
 	{
 		CClickUnit * clikUnit;
 		XFAIL((clikUnit = CClickUnit::make(gRootDomain, 1, strok, NULL)) == NULL)
 		clikUnit->setFlags(0x04000000);
-		isAnythingFlushed = YES;
+		isAnythingFlushed = true;
 
 		CUnit unit(clikUnit, 0);
-		unit.stroke()->inkOff(YES);
+		unit.stroke()->inkOff(true);
 		unit.invalidate();
 
 		if (!strok->isDone())
@@ -1157,7 +1161,7 @@ bool
 CStrokeCentral::beforeLastFlush(long inArg1)
 {
 	if (f1C == 0)
-		return NO;
+		return false;
 
 	long  delay = f1C - inArg1;
 	if (delay < 0)
@@ -1165,7 +1169,7 @@ CStrokeCentral::beforeLastFlush(long inArg1)
 	if (delay > 600)	//10*seconds?
 	{
 		f1C = 0;
-		return NO;
+		return false;
 	}
 	return f1C > inArg1;
 }
@@ -1175,7 +1179,7 @@ void
 CStrokeCentral::addExpiredStroke(CStrokeUnit * inStroke)
 {
 	inStroke->retain();
-	IGGroupAndCompressStrokes((VAddr)this, inStroke, gRecognitionLetterSpacing, NO, &f34);
+	IGGroupAndCompressStrokes((VAddr)this, inStroke, gRecognitionLetterSpacing, false, &f34);
 	f2C = TimeFromNow(500*kMilliseconds);
 }
 
@@ -1300,10 +1304,10 @@ CStrokeCentral::expireGroup(CUnit ** inGroup)
 
 	if (f3C == NULL)
 	{
-//		gApplication->fNewUndo = YES;
+//		gApplication->fNewUndo = true;
 		gRootView->update();
 	}
-	gRecognitionManager.x1C = YES;
+	gRecognitionManager.x1C = true;
 }
 
 
@@ -1311,8 +1315,8 @@ void
 CStrokeCentral::compressGroup(void)
 {
 	ArrayIndex i;
-	CUnit ** group;	// r7
-	if ((group = new CUnit*[f24 + 1]) == NULL)
+	CUnit ** group = new CUnit*[f24 + 1];	// r7
+	if (group == NULL)
 		OutOfMemory();
 	for (i = 0; i < f24; ++i)
 		group[i] = NULL;
@@ -1322,8 +1326,9 @@ CStrokeCentral::compressGroup(void)
 		CUnit * unit;
 		for (i = 0; i < f24; ++i)
 		{
-			XFAILNOT(unit = new CUnit(f28->getUnit(i), 0), OutOfMemory();)
-			unit->stroke()->inkOff(NO);
+			unit = new CUnit(f28->getUnit(i), 0);
+			XFAILIF(unit == NULL, OutOfMemory();)
+			unit->stroke()->inkOff(false);
 			group[i] = unit;
 		}
 		group[i] = NULL;
@@ -1362,7 +1367,7 @@ CStrokeCentral::idleCompress(void)
 {
 	if (gStrokeWorld.currentStroke() == NULL)
 	{
-		if (f2C != CTime(0)  &&  f2C < GetGlobalTime())
+		if (f2C != CTime(0) && f2C <= GetGlobalTime())
 			expireAll();
 	}
 }
@@ -1464,7 +1469,7 @@ void
 CStrokeCentral::expireAll(void)
 {
 	if (f34)
-		IGGroupAndCompressStrokes((VAddr)this, NULL, gRecognitionLetterSpacing, YES, &f34);
+		IGGroupAndCompressStrokes((VAddr)this, NULL, gRecognitionLetterSpacing, true, &f34);
 	if (f28->isEmpty())
 		f2C = CTime(0);
 }
@@ -1473,7 +1478,7 @@ CStrokeCentral::expireAll(void)
 OpaqueRef
 CStrokeCentral::saveRecognitionState(bool * outErr)
 {
-	*outErr = NO;
+	*outErr = false;
 	RecognitionState *  recState = new RecognitionState;
 	if (recState != NULL)
 	{
@@ -1493,7 +1498,7 @@ CStrokeCentral::saveRecognitionState(bool * outErr)
 		initFields();
 	}
 	else
-		*outErr = YES;
+		*outErr = true;
 	return (OpaqueRef) recState;
 }
 
@@ -1607,20 +1612,20 @@ BuildInputMask(RefArg inConfig, ULong inFlags, bool inAllowAnything)
 	{
 		if (NOTNIL(GetVariable(inConfig, SYMA(doTextRecognition))))
 		{
-			bool isCursive = NO;
+			bool isCursive = false;
 			if (NOTNIL(GetVariable(inConfig, SYMA(wordsCursiveOption))))
 			{
-				isCursive = YES;
+				isCursive = true;
 				inFlags |= 0x00001000;
 			}
 			if (NOTNIL(GetVariable(inConfig, SYMA(lettersCursiveOption))))
 			{
-				isCursive = YES;
+				isCursive = true;
 				inFlags |= 0x00006000;
 			}
 			if (NOTNIL(GetVariable(inConfig, SYMA(numbersCursiveOption))))
 			{
-				isCursive = YES;
+				isCursive = true;
 				inFlags |= 0x001C2000;
 			}
 			if (isCursive && NOTNIL(GetVariable(inConfig, SYMA(punctuationCursiveOption))))
@@ -1643,13 +1648,13 @@ BuildRCProto(CView * inView, RefArg inConfig)
 {
 	RefVar recConfig(PrepRecConfig(inView, inConfig));
 	RefVar inputMask(GetProtoVariable(recConfig, SYMA(inputMask)));
-	if (ISNIL(inputMask) || NOTNIL(GetProtoVariable(recConfig, SYMA(buildInputMask))))
+	if (ISNIL(inputMask) || NOTNIL(GetProtoVariable(recConfig, SYMA(BuildInputMask))))
 	{
 		ULong maskBits = 0x0A00;
 		RefVar baseInputMask(GetProtoVariable(recConfig, SYMA(baseInputMask)));
 		if (NOTNIL(baseInputMask))
 			maskBits = RINT(baseInputMask);
-		inputMask = MAKEINT(BuildInputMask(recConfig, maskBits, NO));
+		inputMask = MAKEINT(BuildInputMask(recConfig, maskBits, false));
 	}
 	SetFrameSlot(recConfig, SYMA(inputMask), inputMask);
 	return recConfig;
@@ -1662,7 +1667,7 @@ BuildRCView(CView * inView, ULong inFlags)
 	bool isAnythingAllowed = (inFlags & vAnythingAllowed) == vAnythingAllowed;
 	RefVar recConfig(PrepRecConfig(inView, isAnythingAllowed ? RA(rcPrefsConfig) : RA(rcNoRecog)));
 	if (isAnythingAllowed)
-		inFlags = BuildInputMask(recConfig, 0x0A00, YES);
+		inFlags = BuildInputMask(recConfig, 0x0A00, true);
 	SetFrameSlot(recConfig, SYMA(inputMask), MAKEINT(inFlags));
 
 	RefVar dictionaries;

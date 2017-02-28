@@ -13,7 +13,7 @@
 
 #include "UStringUtils.h"
 #include "ROMResources.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 
 #include "Recognition.h"
 #include "StrokeRecognizer.h"
@@ -23,7 +23,6 @@
 extern void					AdjustForInk(Rect * ioBounds);
 extern PolygonShape *	AsPolygon(CRecStroke * inStroke);
 extern Ref					ToObject(const Rect * inBounds);
-
 
 
 // should probably think about giving these uniquer names
@@ -56,7 +55,7 @@ CUnit::CUnit(CRecUnit * inUnit, ULong inContextId)
 	f14 = NULL;
 	f18 = NULL;
 	f1C = NULL;
-	f34 = 0;
+	fViewHit = NULL;
 	f04 = NULL;
 //	f30 = NILREF;	// redundant
 	f28.left = f28.right = -32768;
@@ -93,8 +92,8 @@ CUnit::bounds(Rect * outRect)
 		XFAIL(recognizer == NULL)
 		if (recognizer->testFlags(8))
 		{
-			CStroke * strok;
-			XFAIL((strok = stroke()) == NULL)
+			CStroke * strok = stroke();
+			XFAIL(strok == NULL)
 			strok->bounds(outRect);
 		}
 		else
@@ -115,7 +114,7 @@ CUnit::cleanUp(void)
 {
 	if (getType() == 'CLIK')
 	{
-		stroke()->inkOff(YES);
+		stroke()->inkOff(true);
 		gStrokeWorld.invalidateCurrentStroke();
 	}
 }
@@ -177,15 +176,25 @@ CUnit::gestureAngle(void)
 }
 
 
-Point
-CUnit::gesturePoint(long inArg)
+ArrayIndex
+CUnit::countGesturePoints(void)
 {
-	TabPt sp00;
-//	memcpy(&sp00, f00->f3C->vf1C(inArg), sizeof(TabPt));
+//	return f00->f3C->count();
+	return 0;
+}
+
+
+Point
+CUnit::gesturePoint(ArrayIndex index)
+{
+	TabPt tabPt;
+//	memcpy(&tabPt, f00->f3C->getEntry(index), sizeof(tabPt));
+// or can you say:
+// tabPt = f00->f3C->getEntry(index);
 
 	Point thePt;
-	thePt.h = sp00.x + 0.5;
-	thePt.v = sp00.y + 0.5;
+	thePt.h = tabPt.x + 0.5;
+	thePt.v = tabPt.y + 0.5;
 	return thePt;
 }
 
@@ -255,11 +264,12 @@ CUnit::shapeType(void)
 CStroke *
 CUnit::stroke(void)
 {
-	CRecStroke * strok;
-	if (f1C == NULL
-	&&  (strok = f00->getStroke(0)) != NULL)
-		f1C = CStroke::make(strok, NO);
-
+	if (f1C == NULL)
+	{
+		CRecStroke * strok = f00->getStroke(0);
+		if (strok != NULL)
+			f1C = CStroke::make(strok, false);
+	}
 	return f1C;
 }
 
@@ -314,7 +324,8 @@ CUnit::makeWordList(bool inArg1, bool inArg2)
 	XTRY
 	{
 		XFAIL(getType() != gWordId)
-		XFAIL((wordList = new CWordList) == NULL)
+		wordList = new CWordList;
+		XFAIL(wordList == NULL)
 		ArrayIndex i, count = f00->interpretationCount();
 #if 0
 		r6 = 0; r8 = 0;
@@ -330,7 +341,7 @@ CWordList *
 CUnit::extractWords(void)
 {
 	if (f04 == NULL)
-		f04 = makeWordList(NO, NO);
+		f04 = makeWordList(false, false);
 	return f04;
 }
 
@@ -403,17 +414,17 @@ CUnit::requiredMask(void)
 void
 CUnit::setViewHit(CView * inView, ULong inFlags)
 {
-	f34 = inView;
-	f38 = inFlags;
+	fViewHit = inView;
+	fViewHitFlags = inFlags;
 }
 
 
 CView *
 CUnit::findView(ULong inFlags)
 {
-	if (f34 != NULL
-	&&  f38 == inFlags)
-		return f34;
+	if (fViewHit != NULL
+	&&  fViewHitFlags == inFlags)
+		return fViewHit;
 
 	CView * theView;
 	if (gArbiter->getf21())
@@ -493,6 +504,8 @@ Ref		FGetUnitUpTime(RefArg inRcvr, RefArg inUnit);
 
 Ref		FStrokeBounds(RefArg inRcvr, RefArg inUnit);
 Ref		FStrokeDone(RefArg inRcvr, RefArg inUnit);
+Ref		FStrokeInPicture(RefArg inRcvr, RefArg inUnit, RefArg inPicture);
+Ref		FPtInPicture(RefArg inRcvr, RefArg inX, RefArg inY, RefArg inPicture);	// imported
 
 Ref		FGetPoint(RefArg inRcvr, RefArg inSelector, RefArg inUnit);
 Ref		FGetPointsArray(RefArg inRcvr, RefArg inUnit);
@@ -534,7 +547,7 @@ Ref
 FInkOff(RefArg inRcvr, RefArg inUnit)
 {
 	CStroke * strok = StrokeFromRef(inUnit);
-	strok->inkOff(YES);
+	strok->inkOff(true);
 	return TRUEREF;
 }
 
@@ -543,7 +556,7 @@ Ref
 FInkOffUnHobbled(RefArg inRcvr, RefArg inUnit)
 {
 	CStroke * strok = StrokeFromRef(inUnit);
-	strok->inkOff(YES, NO);
+	strok->inkOff(true, false);
 	return TRUEREF;
 }
 
@@ -608,6 +621,32 @@ FStrokeDone(RefArg inRcvr, RefArg inUnit)
 
 
 Ref
+FStrokeInPicture(RefArg inRcvr, RefArg inUnit, RefArg inPicture)
+{
+	CView * view = GetView(inRcvr);
+	if (view)
+	{
+		CStroke * strok = StrokeFromRef(inUnit);
+		Point pt = strok->finalPoint();
+		pt.v -= view->viewBounds.top;
+		pt.h -= view->viewBounds.left;
+		return FPtInPicture(inRcvr, MAKEINT(pt.h), MAKEINT(pt.v), inPicture);
+	}
+	return NILREF;
+}
+
+
+Ref
+MakePoint(Point inPt)
+{
+	RefVar thePt(Clone(RA(canonicalPoint)));
+	SetFrameSlot(thePt, SYMA(x), MAKEINT(inPt.h));
+	SetFrameSlot(thePt, SYMA(y), MAKEINT(inPt.v));
+	return thePt;
+}
+
+
+Ref
 FGetPoint(RefArg inRcvr, RefArg inSelector, RefArg inUnit)
 {
 	CStroke * strok = StrokeFromRef(inUnit);
@@ -632,21 +671,11 @@ FGetPoint(RefArg inRcvr, RefArg inSelector, RefArg inUnit)
 		break;
 
 	case firstXY:
-		{
-			Point pt = strok->firstPoint();
-			thePt = Clone(RA(canonicalPoint));
-			SetFrameSlot(thePt, SYMA(x), pt.h);
-			SetFrameSlot(thePt, SYMA(y), pt.v);
-		}
+		thePt = MakePoint(strok->firstPoint());
 		break;
 //	case lastXY:
 	case finalXY:
-		{
-			Point pt = strok->finalPoint();
-			thePt = Clone(RA(canonicalPoint));
-			SetFrameSlot(thePt, SYMA(x), pt.h);
-			SetFrameSlot(thePt, SYMA(y), pt.v);
-		}
+		thePt = MakePoint(strok->finalPoint());
 		break;
 	}
 	if (ISNIL(thePt))
@@ -691,8 +720,7 @@ Ref
 FCountGesturePoints(RefArg inRcvr, RefArg inUnit)
 {
 	CUnit * unit = UnitFromRef(inUnit);
-//	return MAKEINT(unit->countGesturePoints());
-	return MAKEINT(0);
+	return MAKEINT(unit->countGesturePoints());
 }
 
 
@@ -700,8 +728,12 @@ Ref
 FGesturePoint(RefArg inRcvr, RefArg index, RefArg inUnit)
 {
 	CUnit * unit = UnitFromRef(inUnit);
-	//INCOMPLETE
-	return NILREF;
+	Point pt = unit->gesturePoint(RINT(index));
+	RefVar thePoint(Clone(RA(canonicalGesturePoint)));
+	SetFrameSlot(thePoint, SYMA(x), MAKEINT(pt.h));
+	SetFrameSlot(thePoint, SYMA(y), MAKEINT(pt.v));
+	SetFrameSlot(thePoint, SYMA(line), MAKEINT(unit->gestureAngle()));
+	return thePoint;
 }
 
 
@@ -757,5 +789,6 @@ FGetPolygons(RefArg inRcvr, RefArg inUnit)
 
 
 Ref
-FDrawPolygons(RefArg inRcvr, RefArg inPen) { return NILREF; }
+FDrawPolygons(RefArg inRcvr, RefArg inPen)
+{ return NILREF; }
 

@@ -203,8 +203,8 @@ LOTransactionHandler::endIndexTableTransaction(bool inArg1, CStore * inStore, PS
 
 	XTRY
 	{
-		CCachedReadStore * cachedStore;
-		XFAILNOT(cachedStore = new CCachedReadStore(inStore, inTableId, kUseObjectSize), err = kOSErrNoMemory;)
+		CCachedReadStore * cachedStore = new CCachedReadStore(inStore, inTableId, kUseObjectSize);
+		XFAILIF(cachedStore == NULL, err = kOSErrNoMemory;)
 		PSSId *	objId;
 		for (ArrayIndex i = 0, count = cachedStore->getDataSize() / sizeof(PSSId); i < count; ++i)
 		{
@@ -1188,7 +1188,7 @@ CROMDomainManager1K::addPackage(CStore * inStore, PSSId inObjId, bool inReadOnly
 	}
 	XENDFAIL;
 #if 0
-	GenericSWI(71);
+	GenericSWI(71);	// --> CleanDCandFlushICSWIGlue()
 #endif
 
 	return err;

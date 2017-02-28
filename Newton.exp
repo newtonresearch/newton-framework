@@ -4,6 +4,9 @@ plainC
 ;    e.g. “ Call myModuleName.aFunction with (...) ” 
 ; Below, add one line per function naming each of your plain C NewtonScript interface functions.
 ;
+; NOTE
+; Not all these declarations have code behind them! Check for NULL function pointers where appropriate.
+;
 ; freq-func math operators
 FAdd 2
 FSubtract 2
@@ -37,13 +40,13 @@ FNewIterator 2
 ;FlocalVar 1
 ;
 ; Object System
-;FObjectPid 1
-;FPidToPkgRef 1
-;FPssidToPkgRef 2
-;FPssidToPid 2
-;FGetPkgInfoFromPssid 2
-;FPidToPackage 1
-;FPidToPackageLite 1
+FObjectPid 1
+FPidToPkgRef 1
+FPSSidToPkgRef 2
+FPSSidToPid 2
+FGetPkgInfoFromPSSid 2
+FPidToPackage 1
+FPidToPackageLite 1
 ;
 ; Display
 FGetLCDContrast 0
@@ -51,6 +54,11 @@ FSetLCDContrast 1
 ;
 FGetOrientation 0
 FSetOrientation 1
+;
+; Event System
+FPostAndDo 1
+FPostCommand 2
+FPostCommandParam 3
 ;
 ; References to Views
 FChildViewFramesX 0
@@ -145,12 +153,12 @@ FFormatVertical 2
 FGetFlags 1
 FGetTextFlags 1
 ;
-;FPackRGB 3
-;FGetRed 1
-;FGetGreen 1
-;FGetBlue 1
-;FGetTone 1
-;FIsEqualTone 2
+FPackRGB 3
+FGetRed 1
+FGetGreen 1
+FGetBlue 1
+FGetTone 1
+FIsEqualTone 2
 ;
 FGetPopup 0
 FSetPopup 0
@@ -161,29 +169,29 @@ FDismissPopup 0
 FSetupIdleX 1
 ;
 ; Text and Ink Input and Display
-;FIsInkChar 1
-;FTextBounds 3
+FIsInkChar 1
+FTextBounds 3
 ;
 ; Determining View Ink Types
-;FAddInk 2
-;FViewAllowsInk 1
-;FViewAllowsInkWords 1
+FAddInk 2
+FViewAllowsInk 1
+FViewAllowsInkWords 1
 ;
 ; Font Attributes
-;FFontAscent 1
-;FFontDescent 1
-;FFontHeight 1
-;FFontLeading 1
-;FGetDefaultFont 1
-;FGetFontFace 1
-;FGetFontFamilyNum 1
-;FGetFontFamilySym 1
-;FGetFontSize 1
-;FMakeCompactFont 3
-;FSetFontFace 2
-;FSetFontFamily 2
-;FSetFontParms 2
-;FSetFontSize 2
+FFontAscent 1
+FFontDescent 1
+FFontHeight 1
+FFontLeading 1
+FGetDefaultFont 1
+FGetFontFace 1
+FGetFontFamilyNum 1
+FGetFontFamilySym 1
+FGetFontSize 1
+FMakeCompactFont 3
+FSetFontFace 2
+FSetFontFamily 2
+FSetFontParms 2
+FSetFontSize 2
 ;
 ; Paragraph Views
 FExtractTextRange 2
@@ -196,16 +204,16 @@ FPointToCharOffset 2
 FPointToWord 2
 ;
 ; Rich Strings
-;FDecodeRichString 2
+FDecodeRichString 2
 FIsRichString 1
-;FMakeRichString 2
-;FStripInk 2
+FMakeRichString 2
+FStripInk 2
 ;
 ; Accessing Ink in Views
-;FGetInkAt 2
-;FNextInkIndex 2
-;FParaContainsInk 1
-;FPolyContainsInk 1
+FGetInkAt 2
+FNextInkIndex 2
+FParaContainsInk 1
+FPolyContainsInk 1
 FHandleInsertItems 1
 FHandleInkWord 1
 FHandleRawInk 1
@@ -256,15 +264,15 @@ FViewContainsCaretView 1
 FGetInkWordInfo 1
 ;
 ; Dictionary
-;FAddDictionary 2
-;FGetDictionary 1
-;FGetDictionaryData 1
-;FSetDictionaryData 2
-;FConvertDictionaryData 1
+FAddDictionary 2
+FGetDictionary 1
+FGetDictionaryData 1
+FSetDictionaryData 2
+FConvertDictionaryData 1
 FGetRandomWord 2
-;FGetRandomDictionaryWord 2
-;FGetDictItem 1
-;FDumpDict 0
+FGetRandomDictionaryWord 2
+FGetDictItem 1
+FDumpDict 0
 ;
 FAirusResult 0
 FAirusNew 2
@@ -300,40 +308,40 @@ FCountGesturePoints 1
 FGesturePoint 2
 FGestureType 1
 ;
-;FConvertForMP 2
-;FConvertFromMP 2
-;FGetLetterWeights 0
-;FSetLetterWeights 1
-;FResetLetterDefaults 0
+FConvertForMP 2
+FConvertFromMP 2
+FGetLetterWeights 0
+FSetLetterWeights 1
+FResetLetterDefaults 0
 ;
-;FRosettaExtension 2
-;FUseWRec 1
-;FWRecIsBeingUsed 0
-;FReadCursiveOptions 0
-;FReadDomainOptions 0
-;FGetTrainingData 1
-;FUseTrainingDataForRecognition 1
-;FDisposeTrainingData 1
-;FGetLearningData 0
-;FSetLearningData 1
-;FDoCursiveTraining 2
-;FRecSettingsChanged 0
-;FTriggerWordRecognition 0
+FRosettaExtension 2
+FUseWRec 1
+FWRecIsBeingUsed 0
+FReadCursiveOptions 0
+FReadDomainOptions 0
+FGetTrainingData 1
+FUseTrainingDataForRecognition 1
+FDisposeTrainingData 1
+FGetLearningData 0
+FSetLearningData 1
+FDoCursiveTraining 2
+FRecSettingsChanged 0
+FTriggerWordRecognition 0
 FModalRecognitionOn 1
 FModalRecognitionOff 0
-;FFinishRecognizing 0
+FFinishRecognizing 0
 ;
 FPenPos 0
-;FCorrectWord 2
+FCorrectWord 2
 ;
 ; Deferred Recognition
-;FRecognize 3
-;FRecognizeInkWord 1
-;FRecognizePara 5
-;FRecognizePoly 3
+FRecognize 3
+FRecognizeInkWord 1
+FRecognizePara 5
+FRecognizePoly 3
 ;
 ; CorrectInfo
-;FGetCorrectionWordInfo 1
+FGetCorrectionWordInfo 1
 ;
 ; Tablet
 FIsTabletCalibrationNeeded 0
@@ -355,32 +363,32 @@ FSetInkerPenSize 1
 ; Strokes
 FGetPolygons 1
 FDrawPolygons 1
-;FBlockStrokes 0
-;FUnblockStrokes 0
-;FCompressStrokes 1
-;FCompressStrokesToInk 1
-;FCountPoints 1
-;FCountStrokes 1
-;FCountUnitStrokes 1
-;FExpandInk 2
-;FExpandUnit 1
-;FFlushStrokes 0
+FBlockStrokes 0
+FUnblockStrokes 0
+FCompressStrokes 1
+FCompressStrokesToInk 1
+FCountPoints 1
+FCountStrokes 1
+FCountUnitStrokes 1
+FExpandInk 2
+FExpandUnit 1
+FFlushStrokes 0
 FGetPoint 2
 FGetPointsArray 1
 FGetPointsArrayXY 1
-;FGetStroke 2
-;FGetStrokeBounds 1
-;FGetStrokePoint 4
-;FGetStrokePointsArray 2
-;FInkConvert 2
-;FMakeStrokeBundle 2
-;FMergeInk 2
-;FMergeStrokes 2
-;FPointsArrayToStroke 2
-;FSplitInkAt 3
-;FStrokeBundleToInkWord 1
-;FStrokesAfterUnit 2
-;FAnimateSimpleStroke 3
+FGetStroke 2
+FGetStrokeBounds 1
+FGetStrokePoint 4
+FGetStrokePointsArray 2
+FInkConvert 2
+FMakeStrokeBundle 2
+FMergeInk 2
+FMergeStrokes 2
+FPointsArrayToStroke 2
+FSplitInkAt 3
+FStrokeBundleToInkWord 1
+FStrokesAfterUnit 2
+FAnimateSimpleStroke 3
 ;
 ; Package Stores
 FGetPackageStore 1
@@ -397,12 +405,13 @@ FObjectPkgRef 1
 ;
 ; PC cards
 FGetCardInfo 0
-;FGetCardTypes 0
-;FGetCardSlotStores 1
-;FUnmountCard 2
+FGetCardTypes 0
+FGetCardSlotStores 1
+FUnmountCard 2
 ;
 ; Stores
 FGetStores 0
+StoreErase 1
 StoreAbort 0
 StoreLock 0
 StoreUnlock 0
@@ -432,7 +441,8 @@ StoreCheckUnion 0
 StoreGetSoupNames 0
 StoreHasSoup 1
 StoreGetSoup 1
-StoreNewObject 0
+StoreNewObject 1
+StoreDeleteObject 1
 StoreNewVBO 1
 StoreNewCompressedVBO 3
 StoreReadObject 2
@@ -546,70 +556,70 @@ FResolveEntryAlias 1
 FIsSameEntry 2
 ;
 ; VBOs
-;FVBOUndoChanges 1
-;FClearVBOCache 1
+FVBOUndoChanges 1
+FClearVBOCache 1
 FIsVBO 1
-;FGetVBOStore 1
-;FGetVBOCompander 1
-;FGetVBOCompanderData 1
-;FGetVBOStoredSize 1
+FGetVBOStore 1
+FGetVBOCompander 1
+FGetVBOCompanderData 1
+FGetVBOStoredSize 1
 ;
 ; Drawing and Graphics
 FMakeBitmap 3
 FDrawIntoBitmap 3
 FViewIntoBitmap 3
-;FMungeBitmap 3
-;FGetBitmapInfo 1
-;FGetBitmapPixel 3
+FMungeBitmap 3
+FGetBitmapInfo 1
+FGetBitmapPixel 3
 ;
 ; Hit Testing
-;FHitShape 3
-;FPtInPicture 3
-;FStrokeInPicture 2
+FHitShape 3
+FPtInPicture 3
+FStrokeInPicture 2
 ;
 ; Shape Creation
-;FMakeInk 5
+FMakeInk 5
 FMakeLine 4
 FMakeRect 4
-;FMakeRoundRect 5
-;FMakeOval 4
-;FMakeWedge 6
-;FMakePolygon 1
+FMakeRoundRect 5
+FMakeOval 4
+FMakeWedge 6
+FMakePolygon 1
 FMakeShape 1
-;FMakeRegion 1
-;FMakePict 2
+FMakeRegion 1
+FMakePict 2
 FMakeText 5
 FMakeTextLines 4
 FMakeTextBox 5
-;FTextBox 3
+FTextBox 3
 ;
 ; Shape Operations
-;FFindShape 4
-;FGetShapeInfo 1
+FIsPrimShape 1
+FFindShape 4
+FGetShapeInfo 1
 FDrawShape 2
-;FDrawStringShapes 2
-;FMungeShape 3
+FDrawStringShapes 2
+FMungeShape 3
 FOffsetShape 3
-;FScaleShape 3
+FScaleShape 3
 FShapeBounds 1
 FInsetRect 3
-;FIsPtInRect 3
+FIsPtInRect 3
 FOffsetRect 3
-;FRectsOverlap 2
-;FSectRect 2
-;FUnionPoint 3
-;FUnionRect 2
+FRectsOverlap 2
+FSectRect 2
+FUnionRect 2
+FUnionPoint 3
 ;
-;FPictToShape 2
+FPictToShape 2
 FPictureBounds 1
 ;
 ; Drawing Utilities
 FCopyBits 4
 FDrawXBitmap 4
-;FIsPrimShape 1
 FLockScreen 1
-;FPointsToArray 1
-;FArrayToPoints 1
+FPointsToArray 1
+FArrayToPoints 1
 ;
 ; Sound
 FVolumeToDecibels 1
@@ -636,7 +646,7 @@ FAddUndoAction 2
 FClearUndoStacks 0
 FGetUndoState 0
 ;
-;FSetSysAlarm 3
+FSetSysAlarm 3
 ;
 ; Forking (Progress Dialog)
 FForkScript 2
@@ -653,17 +663,17 @@ FEnablePowerStats 1
 FGetPowerStats 0
 FResetPowerStats 0
 ;
-;FClassInfoByName 3
-;FClassInfoRegistrySeed 0
-;FClassInfoRegistryNext 2
-;FNewByName 3
+FClassInfoByName 3
+FClassInfoRegistrySeed 0
+FClassInfoRegistryNext 2
+FNewByName 3
 ;
-;FGetExportTableClients 1
-;FCurrentExports 0
-;FCurrentImports 0
-;FFlushImports 0
-;FFulfillImportTable 1
-;FPendingImports 0
+FGetExportTableClients 1
+FCurrentExports 0
+FCurrentImports 0
+FFlushImports 0
+FFulfillImportTable 1
+FPendingImports 0
 ;
 ; Intelligent Assistant
 FRegTaskTemplate 1
@@ -677,55 +687,56 @@ FSplitString 1
 FGlueStrings 1
 FStringAssoc 2
 ;
-;DSAddLexiconFrame 1
-;DSConstructSubjectLine 1
-;DSFilterStrings 2
-;DSFilterStringsAux 2
-;DSFindPossibleName 2
-;DSFindPossiblePhone 1
-;DSFindPossibleLocation 2
-;FFavorAction 1
-;FFavorObject 1
+DSAddLexiconFrame 1
+DSConstructSubjectLine 1
+DSFilterStrings 2
+DSFilterStringsAux 2
+DSFindPossibleName 2
+DSFindPossiblePhone 1
+DSFindPossibleLocation 2
+FFavorAction 1
+FFavorObject 1
 FGenFullCommands 0
-;FGeneratePhrases 1
-;FGenerateSubstrings 1
+FGeneratePhrases 1
+FGenerateSubstrings 1
 DSGetMatchedEntries 2
-;FUnmatchedWords 0
+FUnmatchedWords 0
 FPhraseFilter 1
 FGuessAddressee 1
 DSScanForWackyName 2
-;FLexDateLookup 1
-;FLexTimeLookup 1
-;FLexPhoneLookup 1
-;DSPrevSubStr 2
-;DSTagString 3
-;DSResolveString 2
+FLexDateLookup 1
+FLexTimeLookup 1
+FLexPhoneLookup 1
+DSPrevSubStr 2
+DSTagString 3
+DSResolveString 2
 ;
 ; Built-in Applications
-;FCircleDistance 5
+FCircleDistance 5
 ;
-;FDESCreatePasswordKey 1
+FDESCreatePasswordKey 1
 ;
-;FSpellDocBegin 0
-;FSpellDocEnd 1
-;FSpellSkip 2
-;FSpellCheck 2
-;FSpellCorrect 2
+FSpellDocBegin 0
+FSpellDocEnd 1
+FSpellSkip 2
+FSpellCheck 2
+FSpellCorrect 2
 ;
-;FGetAllMeetings 4
-;FGetAllMeetingsUnique 4
-;FGetMeetingIcon 1
-;FGetMeetingTypeInfo 1
-;FGetNextMeetingTime 2
-;FNextMeeting 2
-;FPrevMeeting 2
-;FLayoutMeeting 4
-;FDrawMeetingGrid 1
-;FWeekNumber 2
+FGetAllMeetings 4
+FGetAllMeetingsUnique 4
+FGetMeetingIcon 1
+FGetMeetingTypeInfo 1
+FGetNextMeetingTime 2
+FNextMeeting 2
+FPrevMeeting 2
+FLayoutMeeting 4
+FDrawMeetingGrid 1
+FWeekNumber 2
 ;
 ; Localization
 FGetLocale 0
 FSetLocale 1
+FTicks 0
 FTime 0
 FTimeInSeconds 0
 FSetTime 1
@@ -746,11 +757,11 @@ FDateFromSeconds 1
 FTotalMinutes 1
 FIsValidDate 1
 ;
-;FPositionToTime 2
-;FTimeToPosition 2
+FPositionToTime 2
+FTimeToPosition 2
 ;
 ; Endpoints
-;FTranslate 4
+FTranslate 4
 ;
 ; AppleTalk
 ;FOpenAppleTalk 0
@@ -778,20 +789,20 @@ FIsValidDate 1
 ;FCloseRemoteControl 1
 ;
 ; Desktop Connection
-;FGetOnlineEndpoint 0
-;FLoadOnlinePackage 0
-;FSendOnline 1
-;FSendAbort 0
-;FCallOnlineService 1
-;FCancelOnlineService 0
-;FSetOnlineDisconnect 1
-;FDisconnectOnlineService 0
-;FConnBuildStoreFrame 2
-;FConnEntriesEqual 1
-;FConnectPassthruKeyboard 1
+FGetOnlineEndpoint 0
+FLoadOnlinePackage 0
+FSendOnline 1
+FSendAbort 0
+FCallOnlineService 1
+FCancelOnlineService 0
+FSetOnlineDisconnect 1
+FDisconnectOnlineService 0
+FConnBuildStoreFrame 2
+FConnEntriesEqual 1
+FConnectPassthruKeyboard 1
 ;
-;FOtherViewInUse 1
-;FViewWorksWithCombCorrector 1
+FOtherViewInUse 1
+FViewWorksWithCombCorrector 1
 ;
 ;
 ; Utilities - Object System
@@ -853,10 +864,10 @@ FFindStringInFrame 3
 FFormattedNumberStr 2
 FIsAlphaNumeric 1
 FIsWhiteSpace 1
-;FCoordinateToLatitude 2
-;FCoordinateToLongitude 2
-;FLatitudeToCoordinate 2
-;FLongitudeToCoordinate 2
+FCoordinateToLatitude 2
+FCoordinateToLongitude 2
+FLatitudeToCoordinate 2
+FLongitudeToCoordinate 2
 FGetRichString 0
 FNumberStr 1
 FParamStr 2
@@ -864,36 +875,36 @@ FParamStr 2
 ;FSmartStart 1		deprecated in 2.0
 ;FSmartStop 2		deprecated in 2.0
 FSPrintObject 1
-;FStrCompare 2
+FStrCompare 2
 FStrConcat 2
 FStrEqual 2
-;FStrExactCompare 2
+FStrExactCompare 2
 FStrFilled 1
-;FStrFontWidth 2
+FStrFontWidth 2
 FStringer 1
-;FStringFilter 3
-;FStringToNumber 1
-;FStripDiacriticals 1
+FStringFilter 3
+FStringToNumber 1
+FStripDiacriticals 1
 FStrLen 1
 FStrMunger 6
 FStrPos 3
 FStrReplace 4
 ;FStrTruncate 2	deprecated in 2.0
 ;FStrWidth 1		deprecated in 2.0
-;FStyledStrTruncate 3
-;FSubstituteChars 3
+FStyledStrTruncate 3
+FSubstituteChars 3
 FSubStr 3
 FTrimString 1
 FUpcase 1
 ;
-;FScanWordStart 3
-;FScanWordEnd 3
-;FScanPrevWordEnd 3
-;FScanNextWord 3
+FScanWordStart 3
+FScanWordEnd 3
+FScanPrevWordEnd 3
+FScanNextWord 3
 ;
 FCHR 1
 FORD 1
-;FLower 1
+FLower 1
 ;
 ; Utilities - Bitwise
 FBitAnd 2
@@ -908,7 +919,6 @@ FArrayInsert 3
 FArrayMunger 6
 ;FArrayPos 4	deprecated in 2.0
 FArrayRemoveCount 3
-FInsertionSort 3
 FLFetch 5
 FLSearch 5
 FNewWeakArray 1
@@ -920,7 +930,10 @@ FSetLength 2
 FSetOverlaps 2
 FSetUnion 3
 FSort 3
+FInsertionSort 3
 FStableSort 3
+FShellSort 3
+FQuickSort 3
 ;
 ; Utilities - Sorted Array
 FBDelete 5
@@ -937,94 +950,94 @@ FBSearchLeft 4
 FBSearchRight 4
 ;
 ; Utilities - Integer Math
-;Fabs 1
-;Fceiling 1
-;Ffloor 1
+Fabs 1
+Fceiling 1
+Ffloor 1
 FMax 2
 FMin 2
 FLShift 2
 FRShift 2
-;FReal 1
-;FRandom 2
-;FSetRandomSeed 1
-;FSetRandomState 1
-;FGetRandomState 0
+FReal 1
+FRandom 2
+FSetRandomSeed 1
+FSetRandomState 1
+FGetRandomState 0
 ;
 ; Utilities - Floating Point Math
-;Facos 1
-;Facosh 1
-;Fasin 1
-;Fasinh 1
-;Fatan 1
-;Fatan2 2
-;Fatanh 1
-;Fcopysign 2
-;Fcos 1
-;Fcosh 1
-;Ferf 1
-;Ferfc 1
-;Fexp 1
-;Fexpm1 1
-;Ffabs 1
-;Ffdim 2
-;Ffmax 2
-;Ffmin 2
-;Ffmod 2
-;Fgamma 1
-;Fhypot 2
-;Fisfinite 1
+Facos 1
+Facosh 1
+Fasin 1
+Fasinh 1
+Fatan 1
+Fatan2 2
+Fatanh 1
+Fcopysign 2
+Fcos 1
+Fcosh 1
+Ferf 1
+Ferfc 1
+Fexp 1
+Fexpm1 1
+Ffabs 1
+Ffdim 2
+Ffmax 2
+Ffmin 2
+Ffmod 2
+Fgamma 1
+Fhypot 2
+Fisfinite 1
 FIsFiniteNumber 1
-;Fisnan 1
-;Fisnormal 1
-;FLessEqualOrGreater 2
-;FLessOrGreater 2
-;Fldexp 2
-;Flgamma 1
-;Flog 1	undocumented
-;Flogb 1
-;Flog1p 1
-;Flog10 1
-;Fnearbyint 1
-;Fnextafterd 2
-;Fpow 2
-;Frandomx 1
-;Fremainder 2
-;Fremquo 2
-;Frint 1
-;Frinttol 1
-;Fround 1
-;Fscalb 2
-;Fsignbit 1
-;Fsignum 1
-;Fsin 1
-;Fsinh 1
-;Fsqrt 1
-;Ftan 1
-;Ftanh 1
-;Ftrunc 1
-;FUnordered 2
-;FUnorderedGreaterOrEqual 2
-;FUnorderedOrEqual 2
-;FUnorderedOrGreater 2
-;FUnorderedOrLess 2
+Fisnan 1
+Fisnormal 1
+FLessEqualOrGreater 2
+FLessOrGreater 2
+Fldexp 2
+Flgamma 1
+Flog 1
+Flogb 1
+Flog1p 1
+Flog10 1
+Fnearbyint 1
+Fnextafterd 2
+Fpow 2
+Frandomx 1
+Fremainder 2
+Fremquo 2
+Frint 1
+Frinttol 1
+Fround 1
+Fscalb 2
+Fsignbit 1
+Fsignum 1
+Fsin 1
+Fsinh 1
+Fsqrt 1
+Ftan 1
+Ftanh 1
+Ftrunc 1
+FUnordered 2
+FUnorderedGreaterOrEqual 2
+FUnorderedOrEqual 2
+FUnorderedOrGreater 2
+FUnorderedOrLess 2
 ;
 ; Utilities - Floating Point Environment
-;Ffeclearexcept 1
-;Ffegetenv 0
-;Ffegetexcept 1
-;Ffeholdexcept 1
-;Fferaiseexcept 1
-;Ffesetenv 1
-;Ffesetexcept 2
-;Ffetestexcept 1
-;Ffeupdateenv 1
+Ffeclearexcept 1
+Ffegetenv 0
+Ffegetexcept 1
+Ffeholdexcept 1
+Fferaiseexcept 1
+Ffesetenv 1
+Ffesetexcept 2
+Ffetestexcept 1
+Ffeupdateenv 1
 ;
-;Ffegetround 0
-;Ffesetround 1
+Ffegetround 0
+Ffesetround 1
 ;
 ; Utilities - Financial
-;Fannuity 2
-;Fcompound 2
+Fannuity 2
+Fcompound 2
 ;
 ; Utilities - Exceptions
 FThrow 2
@@ -1084,7 +1097,7 @@ FDV 1
 FGC 0
 FStackTrace 0
 FStats 0
-;FGetHeapStats 1
+FGetHeapStats 1
 FStrHexDump 2
 FGetFrameStuff 2
 FUriah 0
@@ -1107,26 +1120,26 @@ FSetDebugMode 1
 FDebug 1
 FDebugMemoryStats 0
 FDebugRunUntilIdle 0
-;FPreInitSerialDebugging 3
-;FInitSerialDebugging 2
+FPreInitSerialDebugging 3
+FInitSerialDebugging 2
 ;
-;FActivateTestAgent 2
-;FDeactivateTestAgent 0
+FActivateTestAgent 2
+FDeactivateTestAgent 0
 ;
-;FTestMStartTestCase 1
-;FTestMStartTestFrame 2
-;FTestMSetParameterString 3
-;FTestMGetReportMsg 0
-;FTestMDropConnection 0
-;FTestReadDataFile 3
-;FTestReadTextFile 3
-;FTestReportError 1
-;FTestReportMessage 1
-;FTestFlushReportQueue 0
-;FTestGetParameterArray 0
-;FTestGetParameterString 0
-;FTestExit 0
-;FTestWillCallExit 0
+FTestMStartTestCase 1
+FTestMStartTestFrame 2
+FTestMSetParameterString 3
+FTestMGetReportMsg 0
+FTestMDropConnection 0
+FTestReadDataFile 3
+FTestReadTextFile 3
+FTestReportError 1
+FTestReportMessage 1
+FTestFlushReportQueue 0
+FTestGetParameterArray 0
+FTestGetParameterString 0
+FTestExit 0
+FTestWillCallExit 0
 ;
 FntpTetheredListener 3
 FntpDownloadPackage 2
@@ -1138,9 +1151,11 @@ FNTKAlive 0
 ;FStdioOn 0
 ;FStdioOff 0
 ;
+FPowerOff 0
+;
 ; Utilities - Miscellaneous
-;FBackLight 1
-;FBackLightStatus 0
+FBackLight 1
+FBackLightStatus 0
 FBinEqual 2
 FBinaryMunger 6
 FBusyBoxControl 1
@@ -1151,16 +1166,14 @@ FRegisterGestalt 4
 FReplaceGestalt 4
 FGetSerialNumber 0
 ;
-;FGenPhoneTypes 1
-;FPhoneIndexToValue 2
-;FPhoneStringToValue 2
-;FPhoneSymToIndex 2
-;FPhoneSymToString 1
+FGenPhoneTypes 1
+FPhoneIndexToValue 2
+FPhoneStringToValue 2
+FPhoneSymToIndex 2
+FPhoneSymToString 1
 ;
-;FPowerOff 0
-;
-;FBookAvailable 2
-;FBookRemoved 1
+FBookAvailable 2
+FBookRemoved 1
 ;
 FSleep 1
 FTableLookup 2
@@ -1173,115 +1186,109 @@ FSetSortId 1
 ; Undocumented, uncategorized
 ;
 FLoadFontCache 0
-;FMatchedChar 2
-;FPathToRoot 1
-;FUniqueAppend 2
-;FDisplay 1
-;FExtractRichStringFromParaSlots 4
-;FSetRamParaData 2
-;FComputeParagraphHeight 3
-;FAddHist 1
-;FHist 1
-;FShellSort 3
-;FQuickLookDone 1
-;FGetHiliteIndex 0
-;FSetHiliteIndex 1
-;FGetHilitedTextItems 0
-;FGetLetterHilite 0
-;FSetLetterHilite 1
-;FReFlow 4
-;FReflowPreflight 1
-;FStringAnnotate 2
-;FMashLists 2
-;FStringShorten 1
-;FMapSymToFrame 1
-;FStringToFrame 1
-;FQuickSort 3
-;FLookupCompletions 3
-;FRestorePatchPackage 1
-;FGetChar 2
-;FAddAutoAdd 1
-;FRemoveAutoAdd 1
-;FCompositeClass 1
-;FBackupPatchPackage 0
-;FMakeLexEntry 1
-;FBubbleArraySlot 3
-;FAppendList 2
-;FSmartCFQuery 1
-;FLookupWord 1
-;FDrawDateLabels 2
-;FDrawLetterScript 0
-;FGetInsertionStyle 0
+FMatchedChar 2
+FPathToRoot 1
+FUniqueAppend 2
+FDisplay 1
+FExtractRichStringFromParaSlots 4
+FSetRamParaData 2
+FComputeParagraphHeight 3
+FAddHist 1
+FHist 1
+FQuickLookDone 1
+FGetHiliteIndex 0
+FSetHiliteIndex 1
+FGetHilitedTextItems 0
+FGetLetterHilite 0
+FSetLetterHilite 1
+FReFlow 4
+FReflowPreflight 1
+FStringAnnotate 2
+FMashLists 2
+FStringShorten 1
+FMapSymToFrame 1
+FStringToFrame 1
+FLookupCompletions 3
+FRestorePatchPackage 1
+FGetChar 2
+FAddAutoAdd 1
+FRemoveAutoAdd 1
+FCompositeClass 1
+FBackupPatchPackage 0
+FMakeLexEntry 1
+FBubbleArraySlot 3
+FAppendList 2
+FSmartCFQuery 1
+FLookupWord 1
+FDrawDateLabels 2
+FDrawLetterScript 0
+FGetInsertionStyle 0
 ;
 FSetClipboard 1
 FGetClipboard 0
 FGetClipboardIcon 0
 FClipboardCommand 1
 ;
-;FPostAndDo 1
-;FPostCommand 2
-;FPostCommandParam 3
-;FGetSortID 1
-;FIsProtocolPartInUse 1
-;FCalcInkBounds 1
-;FMoveCorrectionInfo 3
-;FRecognizeTextInStyles 2
-;FStyleArrayContainsInk 1
-;FGetRelevantTemplates 1
-;FGetDynamicValue 3
-;FCorrectSelect 2
-;FConstructSubjectLine 1
-;FValidateWord 2
-;FStripRecognitionWordDiacritsOK 1
-;FFastStrLookup 1
-;FGetRangeText 3
-;FNumInkWordsInRange 3
-;FRepeatInfoToText 3
-;FWordUnitToWordInfo 1
-;FStringFormat 1
-;FAddTryString 1
-;FClearTryString 0
-;FInTryString 1
-;FTryStringLength 0
-;FStripRecognitionWord 1
-;FInsertStyledText 5
-;FgetIndexChar 1
-;FgetLetterIndex 1
-;FGetSelectionStack 0
-;FDrawOriginal 2
-;FSetChar 3
-;FMapCursor 2
-;FGetRamParaData 1
-;FSubsume 2
-;FCalcBundleBounds 1
-;FIntersect 2
-;FGetEditArray 1
-;FMapRect 3
-;FClickLetterScript 1
-;FCommonAncestors 2
-;FMeasuredNumberStr 3
-;FAppend 2
-;FMapPtX 3
-;FMapPtY 3
-;FCountLetters 0
-;FReBoot 0
-;FBootSucceeded 1
-;FRunInitScripts 0
-;FLoad 1
+FIsProtocolPartInUse 1
+FCalcInkBounds 1
+FMoveCorrectionInfo 3
+FRecognizeTextInStyles 2
+FStyleArrayContainsInk 1
+FGetRelevantTemplates 1
+FGetDynamicValue 3
+FCorrectSelect 2
+FConstructSubjectLine 1
+FValidateWord 2
+FStripRecognitionWordDiacritsOK 1
+FFastStrLookup 1
+FGetRangeText 3
+FNumInkWordsInRange 3
+FRepeatInfoToText 3
+FWordUnitToWordInfo 1
+FStringFormat 1
+FAddTryString 1
+FClearTryString 0
+FInTryString 1
+FTryStringLength 0
+FStripRecognitionWord 1
+FInsertStyledText 5
+FGetIndexChar 1
+FGetLetterIndex 1
+FGetSelectionStack 0
+FDrawOriginal 2
+FSetChar 3
+FMapCursor 2
+FGetRamParaData 1
+FSubsume 2
+FCalcBundleBounds 1
+FIntersect 2
+FGetEditArray 1
+FMapRect 3
+FClickLetterScript 1
+FCommonAncestors 2
+FMeasuredNumberStr 3
+FAppend 2
+FMapPtX 3
+FMapPtY 3
+FCountLetters 0
+FReBoot 0
+FBootSucceeded 1
+FRunInitScripts 0
+FLoad 1
 ;
 ;
 ; Dickens
-;FRefreshTopics
-;FTopicByName
-;FScrollPage(1)
-;FPageCThumbnail(1)
-;FBookTitle(0)
-;FPrepBookX(1)
-;FPageContents(1)
-;FUpdateBookmarks(1)
-;FInkMarks(1)
-;FAddBookmark(1)
-;FPreviousPage(0)
-;FBookmarks(0)
-;FBookClosed(0)
-;FAddInkMarks(2)
+FRefreshTopics 2
+FTopicByName 1
+FScrollPage 1
+FPageCThumbnail 1
+FBookTitle 0
+FPrepBookX 1
+FPageContents 1
+FUpdateBookmarks 1
+FInkMarks 1
+FAddBookmark 1
+FPreviousPage 0
+FBookmarks 0
+FBookClosed 0
+FAddInkMarks 2

@@ -7,7 +7,7 @@
 */
 #undef forDebug
 //#define forDebug 1
-#define debugLevel 2
+//#define debugLevel 2
 
 #include "LargeObjects.h"
 #include "LargeObjectStore.h"
@@ -23,11 +23,11 @@ extern CROMDomainManager1K * gROMStoreDomainManager;
 extern size_t	InternalStoreInfo(int inSelector);
 
 
-// these need initializing
-size_t			g0C100DD4;
-size_t			gInternalBlockSize;			// 0C100DD8
-size_t			gMutableBlockSize;			// 0C100DDC
-size_t			gInternalFlashStoreSlop;	// 0C100DE0
+// don’t know the official initial values - we’ve picked something reasonable-looking
+size_t			g0C100DD4 = 0;
+size_t			gInternalBlockSize = 16*KByte;		// 0C100DD8
+size_t			gMutableBlockSize = 16*KByte;			// 0C100DDC
+size_t			gInternalFlashStoreSlop = 8*KByte;	// 0C100DE0
 
 SCompactState	g0C106324;		// can do this because they have no ctors
 CStoreDriver	g0C106358;
@@ -252,10 +252,10 @@ CFlashStore::destroy(void)
 	or Internal Flash.
 	Args:		inStoreAddr
 				inStoreSize
-				inArg3
+				inArg3				unused
 				inSocketNumber
 				inFlags
-					0x01 =>	store is removable
+					0x01 => store is removable
 					0x08 => use RAM as additional store
 					0x10 => new internal flash
 				inPSSInfo
@@ -300,17 +300,17 @@ CFlashStore::init(void * inStoreAddr, size_t inStoreSize, ULong inArg3, ArrayInd
 	fCache = NULL;
 	f38 = 0;
 	fAvEraseCount = 0;
-	fIsErasing = NO;
+	fIsErasing = false;
 	fEraseBlockAddr = 0;
 	fLockCount = 0;
 	fObjListTail = NULL;
 	fObjListHead = NULL;
-	fIsInTransaction = NO;
-	f17 = NO;
-	fIsFormatReqd = NO;
-	f92 = NO;
-	fIsFormatting = NO;
-	f96 = NO;
+	fIsInTransaction = false;
+	f17 = false;
+	fIsFormatReqd = false;
+	f92 = false;
+	fIsFormatting = false;
+	f96 = false;
 	fLockROCount = 0;
 	fFlash = flashMem;
 	fCardHandler = storeInfo ? storeInfo->f28 : NULL;
@@ -320,7 +320,7 @@ CFlashStore::init(void * inStoreAddr, size_t inStoreSize, ULong inArg3, ArrayInd
 	fUseRAM = inFlags == 0x08;
 	fIsROM = storeInfo && storeInfo->f30 == 'rom ';
 	fStoreAddr = (char *)inStoreAddr;
-	fIsMounted = NO;
+	fIsMounted = false;
 	fDirtyBits = ~kVirginBits;
 	fVirginBits = kVirginBits;
 	fBlockSize = flashMem ? flashMem->getEraseRegionSize() : (fUseRAM ? gInternalBlockSize : gMutableBlockSize);
@@ -354,7 +354,7 @@ CFlashStore::init(void * inStoreAddr, size_t inStoreSize, ULong inArg3, ArrayInd
 				newton_try
 				{
 					fStoreDriver->init(fStoreAddr, inStoreSize, NULL, 0);
-					isWP = NO;
+					isWP = false;
 				}
 				newton_catch(exAbort)
 				{
@@ -395,7 +395,8 @@ We create an array of physical block objects and point each logical block object
 
 		fCache = new CFlashStoreLookupCache(64);
 
-		XFAILNOT(fTracker = new CFlashTracker(128), err = MemError();)
+		fTracker = new CFlashTracker(128);
+		XFAILIF(fTracker == NULL, err = MemError();)
 
 		if (!f92)
 		{
@@ -410,7 +411,7 @@ We create an array of physical block objects and point each logical block object
 				}
 
 				if (err == noErr)
-					err = recoveryCheck(NO);
+					err = recoveryCheck(false);
 				if (err == kStoreErrNeedsFormat)
 				{
 					fIsFormatReqd = true;
@@ -426,9 +427,9 @@ We create an array of physical block objects and point each logical block object
 
 		if (fIsStoreRemovable)
 		{
-			fE5 = NO;
+			fE5 = false;
 			fD8 = (long)storeInfo->f10;
-			fE4 = NO;
+			fE4 = false;
 			fE8 = fSocketNo;
 		}
 	}
@@ -449,7 +450,7 @@ We create an array of physical block objects and point each logical block object
 NewtonErr
 CFlashStore::needsFormat(bool * outNeedsFormat)
 {
-	bool isFormatReqd = NO;
+	bool isFormatReqd = false;
 	if (!f17)
 	{
 		if (fIsFormatReqd
@@ -517,7 +518,7 @@ CFlashStore::format(void)
 						size_t replySize;
 
 						CUNameServer ns;
-						ULong thing, spec;
+						OpaqueRef thing, spec;
 
 						ns.lookup("cdsv", kUPort, &thing, &spec);
 						cardServer = (ObjectId)thing;
@@ -566,7 +567,7 @@ CFlashStore::format(void)
 			{
 				XFAIL(err = basicRead(logEntryAddr, &logEntry, sizeof(SReservedBlockLogEntry)))
 				if ((logEntry.f28 & 0x01) != 0)
-					zapIt = NO;	// it’s reserved
+					zapIt = false;	// it’s reserved
 			}
 			if (zapIt)
 				XFAIL(zapLogEntry(logEntryAddr))
@@ -612,21 +613,21 @@ CFlashStore::format(void)
 		// create store’s root object
 		CStoreObjRef obj(fVirginBits, this);
 		add(obj);
-		err = blockForAddr(BLOCK(0))->addObject(kRootId, fIsSRAM ? 4 : 11, 0, obj, NO, NO);
+		err = blockForAddr(BLOCK(0))->addObject(kRootId, fIsSRAM ? 4 : 11, 0, obj, false, false);
 		remove(obj);
 		XFAIL(err)
 
 		// reset flags
-		fIsInTransaction = NO;
-		f17 = NO;
-		f92 = NO;
+		fIsInTransaction = false;
+		f17 = false;
+		f92 = false;
 		fTracker->reset();
 		fWorkingBlock = NULL;
-		fIsFormatReqd = NO;
+		fIsFormatReqd = false;
 	}
 	XENDTRY;
 
-	fIsFormatting = NO;
+	fIsFormatting = false;
 	fLockCount = 0;
 	vppOff();
 
@@ -1343,7 +1344,7 @@ CFlashStore::abort(void)
 
 		newton_try
 		{
-			err = doAbort(NO);
+			err = doAbort(false);
 		}
 		newton_catch(exAbort)
 		{
@@ -1471,14 +1472,14 @@ CFlashStore::isSameStore(void * inAlienStoreData, size_t inAlienStoreSize)
 				&& (signature = block->validity()) != 0
 				&&  signature != (logEntry->fRandom ^ logEntry->fCreationTime))
 				{
-					isTheSame = NO;
+					isTheSame = false;
 					break;
 				}
 			}
 		}
 		newton_catch(exAbort)
 		{
-			isTheSame = NO;
+			isTheSame = false;
 		}
 		end_try;
 	}
@@ -1541,7 +1542,7 @@ CFlashStore::sleep(void)
 NewtonErr
 CFlashStore::newWithinTransaction(PSSId * outObjectId, size_t inSize)
 {
-	return newWithinTransaction(outObjectId, inSize, NO);
+	return newWithinTransaction(outObjectId, inSize, false);
 }
 
 
@@ -1560,7 +1561,7 @@ CFlashStore::startTransactionAgainst(PSSId inObjectId)
 
 		XTRY
 		{
-			XFAIL(err = setupForModify(inObjectId, obj1, NO, NO))
+			XFAIL(err = setupForModify(inObjectId, obj1, false, false))
 			XFAIL(obj1.fObj.x2 == 2)
 			fTracker->lock();
 			XTRY
@@ -1626,7 +1627,7 @@ CFlashStore::separatelyAbort(PSSId inObjectId)
 
 		XTRY
 		{
-			err = setupForModify(inObjectId, obj2, NO, NO);
+			err = setupForModify(inObjectId, obj2, false, false);
 			if (err == kStoreErrObjectNotFound)
 				err = lookup(inObjectId, fIsSRAM ? 7 : 14, obj2);
 			XFAIL(err)
@@ -1653,14 +1654,14 @@ CFlashStore::separatelyAbort(PSSId inObjectId)
 			case 13:
 				XFAIL(err = obj2.findSuperceeded(obj1))
 				XFAIL(err = obj2.dlete())
-				XFAIL(err = obj1.clone(fIsSRAM ? 1 : 8, obj0, NO))
+				XFAIL(err = obj1.clone(fIsSRAM ? 1 : 8, obj0, false))
 				XFAIL(err = obj0.setState(fIsSRAM ? 4 : 11))
 				XFAIL(err = obj1.dlete())
 				break;
 
 			case 14:
 				XFAIL(err = obj2.clearSeparateTransaction())
-				XFAIL(err = obj2.clone(fIsSRAM ? 1 : 8, obj1, NO))
+				XFAIL(err = obj2.clone(fIsSRAM ? 1 : 8, obj1, false))
 				XFAIL(err = obj1.setState(fIsSRAM ? 4 : 11))
 				XFAIL(err = obj2.dlete())
 				break;
@@ -1766,7 +1767,7 @@ CFlashStore::addToCurrentTransaction(PSSId inObjectId)
 bool
 CFlashStore::inSeparateTransaction(PSSId inObjectId)
 {
-	bool yehuhuh = NO;
+	bool yehuhuh = false;
 	vppOn();
 	newton_try
 	{
@@ -1877,7 +1878,7 @@ ENTER_FUNC
 			fTracker->lock();
 			XTRY
 			{
-				XFAIL(err = addObject(kNoPSSId, fIsSRAM ? 3 : 10, inSize, obj, NO, NO))
+				XFAIL(err = addObject(kNoPSSId, fIsSRAM ? 3 : 10, inSize, obj, false, false))
 				if (inData != NULL)
 					XFAIL(err = obj.write(inData, 0, inSize))
 				*outObjectId = obj.fObj.id;
@@ -2410,7 +2411,7 @@ CFlashStore::recoveryCheck(bool inArg)
 		int state;
 		XFAIL(err = transactionState(&state))
 		if (state == 0 && !f96)
-			f17 = NO;
+			f17 = false;
 		else
 		{
 			f17 = true;
@@ -2548,6 +2549,8 @@ ENTER_FUNC
 		XFAILIF(err = nextLogEntry(logEntryAddr, &logEntryAddr, kFlashBlockLogEntryType, NULL), if (err == kStoreErrNoMoreObjects) err = noErr;)	// loop exit
 		SFlashBlockLogEntry logEntry;
 		basicRead(logEntryAddr, &logEntry, sizeof(SFlashBlockLogEntry));
+PRINTF(("log entry = { signature:%c%c%c%c, type:%c%c%c%c, ", logEntry.fNewtSig>>24, logEntry.fNewtSig>>16, logEntry.fNewtSig>>8, logEntry.fNewtSig, logEntry.fType>>24, logEntry.fType>>16, logEntry.fType>>8, logEntry.fType));
+PRINTF(("size:%lu, LSN:%d, address:%d, logical:%d, directory:%d, erased:%d }\n", logEntry.fSize, logEntry.fLSN, logEntry.fPhysicalAddr, logEntry.fLogicalAddr, logEntry.fDirectoryAddr, logEntry.fEraseCount));
 		// validate
 		XFAILIF(BLOCK_NUMBER(logEntry.fLogicalAddr) >= fNumOfBlocks, err = kStoreErrNeedsFormat;)
 		// ensure our LSN is valid
@@ -3345,7 +3348,7 @@ EXIT_FUNC
 	}
 
 	// look up in the block
-	long sp00;
+	int sp00;
 	err = block->lookup(inObjectId, inState, ioObj, &sp00);
 
 	if (err == kStoreErrObjectNotFound)

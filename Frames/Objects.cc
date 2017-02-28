@@ -6,7 +6,7 @@
 	Written by:	Newton Research Group.
 */
 
-#include <ctype.h>	// toupper
+#include <ctype.h>	// tolower
 
 #include "Objects.h"
 #include "ObjHeader.h"
@@ -133,42 +133,42 @@ ClassOf(Ref r)
 	int tag = RTAG(r);
 
 	if (tag == kTagInteger)
-		return RSYMint;
+		return SYMA(int);
 
 	if (tag == kTagImmed)
 	{
 		if (RIMMEDTAG(r) == kImmedChar)
-			return RSYMchar;
+			return SYMA(char);
 		else if (RIMMEDTAG(r) == kImmedBoolean)
-			return RSYMboolean;
-		return RSYMweird_immediate;
+			return SYMA(boolean);
+		return SYMA(weird_immediate);
 	}
 
 	if (tag & kTagPointer)
 	{
 		unsigned flags = ObjectFlags(r);
-		if (flags & kObjSlotted)
+		if (FLAGTEST(flags, kObjSlotted))
 		{
-			if (flags & kObjFrame)
+			if (FLAGTEST(flags, kObjFrame))
 			{
 				Ref theClass = GetProtoVariable(r, SYMA(class));
 				if (NOTNIL(theClass))
 				{
 					if (theClass == kPlainFuncClass)
-						return RSYM_function;
+						return SYMA(_function);
 					else if (theClass == kPlainCFunctionClass
 							|| theClass == kBinCFunctionClass)
-						return RSYM_function_2Enative;
+						return SYMA(_function_2Enative);
 					return theClass;
 				}
-				return RSYMframe;
+				return SYMA(frame);
 			}
 			return ((ArrayObject *)ObjectPtr(r))->objClass;
 		}
 		else if (((BinaryObject *)ObjectPtr(r))->objClass == kWeakArrayClass)
-			return RSYM_weakArray;
+			return SYMA(_weakarray);
 		else if (IsSymbol(r))
-			return RSYMsymbol;
+			return SYMA(symbol);
 		return ((BinaryObject *)ObjectPtr(r))->objClass;
 	}
 
@@ -215,7 +215,7 @@ IsFrame(Ref r)
 bool
 IsFunction(Ref r)
 {
-	bool isFunction = NO;
+	bool isFunction = false;
 
 	if (ISPTR(r)
 	&& ObjectFlags(r) & kObjSlotted
@@ -225,9 +225,9 @@ IsFunction(Ref r)
 		if (theClass == kPlainFuncClass
 		 || theClass == kPlainCFunctionClass
 		 || theClass == kBinCFunctionClass
-		 || EQRef(theClass, RSYMCodeBlock)
-		 || EQRef(theClass, RSYMBinCFunction))
-			isFunction = YES;
+		 || EQ(theClass, SYMA(CodeBlock))
+		 || EQ(theClass, SYMA(binCFunction)))
+			isFunction = true;
 	}
 	return isFunction;	
 }
@@ -237,8 +237,8 @@ bool
 IsNativeFunction(Ref r)
 {
 	Ref fnClass = ClassOf(r);
-	return EQRef(fnClass, RSYM_function_2Enative)
-		 || EQRef(fnClass, RSYMBinCFunction);
+	return EQ(fnClass, SYMA(_function_2Enative))
+		 || EQ(fnClass, SYMA(binCFunction));
 }
 
 
@@ -254,7 +254,7 @@ bool
 IsPackage(RefArg r)
 {
 	return IsLargeBinary(r)
-	&& EQRef(ClassOf(r), RSYMpackage)
+	&& EQ(ClassOf(r), SYMA(package))
 	&& IsPackageHeader(BinaryData(r), Length(r))
 /*	&& IsOnStoreAsPackage(BinaryData(r)) */ ;
 }
@@ -273,7 +273,7 @@ IsReal(Ref r)		// called ISREAL in Newton
 	return ISPTR(r)
 	&& !IsFaultBlock(r)
 	&& !(ObjectFlags(r) & kObjSlotted)
-	&& EQRef(ClassOf(r), RSYMreal);
+	&& EQ(ClassOf(r), SYMA(real));
 }
 
 
@@ -283,7 +283,7 @@ IsString(Ref r)
 	return ISPTR(r)
 	&& !IsFaultBlock(r)
 	&& !(ObjectFlags(r) & kObjSlotted)
-	&& IsInstance(r, RSYMstring);
+	&& IsInstance(r, SYMA(string));
 }
 
 
@@ -342,22 +342,22 @@ IsSubclass(Ref obj, Ref super)
 		return EQRef(obj, super);
 
 	if (EQRef(obj, super))
-		return YES;
+		return true;
 
 	const char * superName, * subName;
 	char * dot;
 
 	superName = SymbolName(super);
 	if (*superName == 0)
-		return NO;
+		return false;
 	subName = SymbolName(obj);
 	dot = strchr(subName, '.');
 	if (dot)
 	{
 		for ( ; *subName && *superName; subName++, superName++)
 		{
-			if (toupper(*subName) != toupper(*superName))
-				return NO;
+			if (tolower(*subName) != tolower(*superName))
+				return false;
 		}
 		return (*superName == 0 && (*subName == 0 || *subName == '.'));
 	}
@@ -365,10 +365,10 @@ IsSubclass(Ref obj, Ref super)
 	while (!EQRef(obj, super))
 	{
 		if (ISNIL(obj = GetFrameSlot(gInheritanceFrame, obj)))
-			return NO;
+			return false;
 	}
 
-	return YES;
+	return true;
 }
 
 #pragma mark -
@@ -389,13 +389,13 @@ FPrimClassOf(RefArg inRcvr, RefArg inObj)
 	{
 		unsigned flags = ObjectFlags(inObj);
 		if ((flags & kObjSlotted) == 0)
-			return RSYMbinary;
+			return SYMA(binary);
 		else if ((flags & kObjFrame) == 0)
-			return RSYMarray;
+			return SYMA(array);
 		else
-			return RSYMframe;
+			return SYMA(frame);
 	}
-	return RSYMimmediate;
+	return SYMA(immediate);
 }
 
 Ref	FIsSubclass(RefArg inRcvr, RefArg inObj, RefArg inSuper) { return MAKEBOOLEAN(IsSubclass(inObj, inSuper)); }
@@ -422,8 +422,8 @@ Ref	IsRichString
 Ref	IsValidString
 */
 
-#pragma mark -
 
+#pragma mark -
 /*------------------------------------------------------------------------------
 	N u m e r i c   C o n v e r s i o n   F u n c t i o n s
 ------------------------------------------------------------------------------*/
@@ -459,11 +459,35 @@ CoerceToDouble(Ref r)
 double
 CDouble(Ref r)
 {
-	if (EQRef(ClassOf(r), RSYMreal))
+	if (EQ(ClassOf(r), SYMA(real)))
 		return *(double *)BinaryData(r);
 
 	ThrowBadTypeWithFrameData(kNSErrNotANumber, r);
 	return 0.0;
 }
 
+
+#pragma mark -
+/*------------------------------------------------------------------------------
+	O b j e c t   C o n v e r s i o n   F u n c t i o n s
+------------------------------------------------------------------------------*/
+
+Ref
+ToObject(RefArg inClass, const char * inData, size_t inSize)
+{
+	RefVar theObject(AllocateBinary(inClass, inSize));
+	CDataPtr objData(theObject);
+	memcpy((char *)objData, inData, inSize);
+	return theObject;
+}
+
+
+bool
+FromObject(RefArg inObj, char * outData, size_t& outSize, size_t inBufferSize)
+{
+	outSize = Length(inObj);
+	CDataPtr objData(inObj);
+	memcpy(outData, (char *)objData, MIN(inBufferSize, outSize));
+	return true;
+}
 

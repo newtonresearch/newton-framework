@@ -99,9 +99,9 @@ CUSemaphoreOpList::init(ArrayIndex inNumOfOps, ...)
 	{
 		XFAILIF(inNumOfOps == 0, err = kOSErrBadParameters;)
 
-		ObjectMessage *	msg;
 		size_t				msgSize = MSG_SIZE(1 + inNumOfOps);
-		XFAILNOT(msg = (ObjectMessage *)NewPtr(msgSize), err = kOSErrCouldNotCreateObject;)
+		ObjectMessage *	msg = (ObjectMessage *)NewPtr(msgSize);
+		XFAILIF(msg == NULL, err = kOSErrCouldNotCreateObject;)
 
 		va_list	args;
 		va_start(args, inNumOfOps);
@@ -217,7 +217,8 @@ CULockingSemaphore::init(void)
 	NewtonErr err;
 	XTRY
 	{
-		XFAILNOT(fRefCon = (ULong *)NewPtr(sizeof(ULong)), err = kOSErrNoMemory;)
+		fRefCon = (ULong *)NewPtr(sizeof(ULong));
+		XFAILIF(fRefCon == NULL, err = kOSErrNoMemory;)
 		*fRefCon = 0;
 		XFAILIF(err = CUSemaphoreGroup::init(1), FreePtr((Ptr)fRefCon); fRefCon = NULL;)
 		setRefCon(fRefCon);
@@ -243,11 +244,11 @@ NewtonErr
 CULockingSemaphore::acquire(SemFlags inBlocking)
 {
 	NewtonErr	err = noErr;
-	bool	wasBlocked = NO;
+	bool	wasBlocked = false;
 /*
 	while (Swap(fRefCon, gCurrentTaskId) != 0)
 	{
-		wasBlocked = YES;
+		wasBlocked = true;
 		if ((err = semOp(fReleaseOp, inBlocking)) != 0)
 			break;
 	}

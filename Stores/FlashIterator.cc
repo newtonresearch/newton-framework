@@ -99,7 +99,7 @@ CFlashIterator::start(CFlashTracker * inTracker)
 ------------------------------------------------------------------------------*/
 
 NewtonErr
-CFlashIterator::lookup(PSSId inObjectId, int inState, long * outArg3)
+CFlashIterator::lookup(PSSId inObjectId, int inState, int * outArg3)
 {
 // r4: r7 r6 r5
 PRINTF(("CFlashIterator::lookup(id=%d, state=%d)\n", inObjectId, inState));
@@ -107,22 +107,22 @@ ENTER_FUNC
 
 	int sp00 = 0;
 	ZAddr dirEntAddr = fRootDirEntAddr;	// r8
-	long r10;
+	ArrayIndex objNo;
 	if (outArg3 != NULL)
 	{
 		*outArg3 = -1;
-		r10 = fStore->objectNumberFor(inObjectId);
+		objNo = fStore->objectNumberFor(inObjectId);
 	}
 	for ( ; ; )
 	{
 		dirEntAddr += sizeof(SDirEnt);
 		SDirEnt dirEnt = getDirEnt(dirEntAddr);
 		if (ISVIRGINDIRENT(&dirEnt))
-{
+		{
 PRINTF((" -> kStoreErrObjectNotFound\n"));
 EXIT_FUNC
 			return kStoreErrObjectNotFound;
-}
+		}
 		if (dirEnt.isValid(fStore))
 		{
 			if (ISDIRTYBIT(dirEnt.x6))
@@ -133,8 +133,8 @@ EXIT_FUNC
 				{
 					int sp00, sp04;
 					dirEnt.getMigratedObjectInfo(&sp04, &sp00);
-					if (r10 == sp04)
-						*outArg3 =sp00;
+					if (objNo == sp04)
+						*outArg3 = sp00;
 				}
 			}
 			else
@@ -440,20 +440,20 @@ CFlashIterator::next(void)
 /*------------------------------------------------------------------------------
 	Is the iterator done?
 	Args:		--
-	Return:	YES => no more objects in the iterator
+	Return:	true => no more objects in the iterator
 ------------------------------------------------------------------------------*/
 
 bool
 CFlashIterator::done(void)
 {
-	bool isDone = NO;
+	bool isDone = false;
 	switch (fState)
 	{
 	case 0:
 		f30 = fStore->fA0;
 		probe();
 		if (fState == 3)
-			isDone = YES;
+			isDone = true;
 		else
 			fState = 1;
 		break;
@@ -463,13 +463,13 @@ CFlashIterator::done(void)
 			fState = 0;
 		probe();
 		if (fState == 3)
-			isDone = YES;
+			isDone = true;
 		else
 			fState = 1;
 		break;
 
 	case 3:
-		isDone = YES;
+		isDone = true;
 		break;
 	}
 	return isDone;

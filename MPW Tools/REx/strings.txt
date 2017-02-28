@@ -1,0 +1,193 @@
+out of memory
+out of memory
+rb
+couldn't open "%s"
+couldn't read "%s"
+*
+couldn't Get resource type = 0x%8X in "%s"
+couldn't get size of resource in "%s"
+### 
+ 
+expected a value
+option "%s" must be between %ld and %ld
+option "%s" must be an integer
+missing required option "%s"
+, 
+
+could not allocate gGelatoPageTable
+multiple extension ID's
+extension ID must be between 0 and %ld
+multiple start addresses
+multiple manufacturer id's
+multiple versions
+"%s" is not a package file
+multiple diagnostics
+diagnostics align size “%04X” unknown (!= 4K/1K)
+expected filename or raw data block
+expected filename or raw data block
+expected filename
+expected resource filename 
+resource filename is too long 
+couldn't open resource fork of "%s"
+‘-ALL’ option found zero resources within "%s"
+
+start
+length
+# Unrecognized options: 
+bad option list
+
+start
+length
+tag
+lanesize
+lanecount
+# Unrecognized options: 
+bad option list
+
+manufacturer
+devicecode
+internaldevicecode
+needsvpp
+size
+blocksize
+start
+# Unrecognized options: 
+bad option list
+
+min
+max
+percent
+# Unrecognized options: 
+bad option list
+
+multiple patch table addresses
+multiple physical start addresses
+
+<int> : extension id
+id
+<int> : virtual start address
+start
+<int> : physical start address
+physstart
+<int> : manufacturer id
+manufacturer
+<int> : version
+version
+<pkgfile> [<ptfile>] : add a package
+package
+<file> [<int>]: diagnostics file [alignsize]
+diagnostics
+{ start <int> length <int> } : ROM config
+ROM
+{ start <int> length <int> tag <int> lanesize <int> lanecount <int> } : RAM config
+RAM
+{ manufacturer <0-255> devicecode <0-255> internaldevicecode <0-255> needsvpp <0-1> size <int> blocksize <int> start <int> } : Flash config
+flash
+{ min 0 max 0 percent 0 } : RAM allocation
+ramallocation
+<tag> { <file> | <raw> } [<ptfile>] : arbitrary config block
+block
+<tag> <file> : arbitrary config block from resource (resType= tag; resID= 0)
+resource
+<int> : virtual patch table start address
+patchtableaddr
+
+&:§!
+"; Line 
+!
+<unknown>
+File " <-150A>
+bad string escape '\%c'
+end of file in string
+more than four characters in char constant
+end of file in char constant
+hex group doesn't end at a byte boundary
+bad character '%c' in raw data
+bad character '%c'
+expected %s
+end of file inside comment
+bad character '/'
+
+ˇˇÏfˇˇÏ^ˇˇÏVˇˇÏFˇˇÏBˇˇÏ>ˇˇÏ:ˇˇÏ6ˇˇÏ2
+'='
+'}'
+'{'
+EOF
+???
+raw data block
+string
+integer
+identifier
+
+name
+major
+minor
+objects
+name
+major
+minor
+objects
+
+_ExportTable
+
+
+_ImportTable_ExportTable
+:out of memory
+could not allocate gGelatoPageTable
+ˇˇÌ
+ˇˇÌ&q
+∫
+
+
+Internal error: not a pointer: %lX
+Internal error: not a symbol: %lX
+Internal error: not a frame: %lX
+Internal error: not an array: %lX
+Internal error: index out of bounds: %ld
+
+package file corrupted
+package file corrupted
+Internal error: BeginRedirectionSetup twice
+Internal error: BeginRedirectionSetup not called
+Internal error: redirecting part data array
+Internal error: redirecting a safe object
+Internal error: BeginRedirectionSetup not called
+
+package file corrupted
+package file corrupted
+must specify extension ID
+must specify start address
+
+package0package1
+Two entries with same PT offset %08lX
+bad patch table file
+can't open "%s"
+%ld
+%lX %lX
+%ld
+%lX %lX
+no physical start address specified
+Internal error: can't find block for PT reloc
+Internal error: instr at offset 0x%lX isn't a branch to offset 0x%lX
+# patch table relocation too large at offset 0x%lX (vaddr 0x%lX): target was 0x%lX, now want entry %ld at 0x%lX
+
+%ld patch table relocation errors...can't proceed
+unrecognized section name "%s"
+expected identifier
+# Error: -0E4A
+# Error: 
+# Warning: -0E3C
+### 
+### Config file clauses:
+###     -o <output-file>  set output file name
+###     -help             print this message
+ [-help] [-o <output-file>] [<config-file>]
+### Usage: 
+help -0D72
+o -0D6C
+expected filename with
+already have an input file (%s)--what's
+can't open "%s"
+<stdin>
+can't open "%s"
+<stdout>

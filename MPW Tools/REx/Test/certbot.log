@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/usr/local/bin/certbot", line 11, in <module>
+    load_entry_point('certbot==0.11.1', 'console_scripts', 'certbot')()
+  File "/usr/local/Cellar/certbot/0.11.1/libexec/lib/python2.7/site-packages/certbot/main.py", line 869, in main
+    setup_logging(config)
+  File "/usr/local/Cellar/certbot/0.11.1/libexec/lib/python2.7/site-packages/certbot/main.py", line 733, in setup_logging
+    config, logfile=logfile, fmt=file_fmt)
+  File "/usr/local/Cellar/certbot/0.11.1/libexec/lib/python2.7/site-packages/certbot/main.py", line 700, in setup_log_file_handler
+    raise errors.Error(_PERM_ERR_FMT.format(error))
+Error: The following error was encountered:
+[Errno 13] Permission denied: '/var/log/letsencrypt/letsencrypt.log'
+If running as non-root, set --config-dir, --work-dir, and --logs-dir to writeable paths.

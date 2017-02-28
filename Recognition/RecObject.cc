@@ -15,8 +15,8 @@ extern void		uitoa(ULong inNum, unsigned char * ioStr);	// Locales.cc
 	D a t a
 ------------------------------------------------------------------------------ */
 
-bool gVerbose = YES;		// 0C101160
-bool gFileOut = NO;		// 0C104D38	dump-to-file
+bool gVerbose = true;		// 0C101160
+bool gFileOut = false;		// 0C104D38	dump-to-file
 
 
 #pragma mark CMsg
@@ -111,17 +111,17 @@ CMsg::msgHex(ULong inHex, int inWidth)
 	if (inWidth < 0)
 	{
 		inWidth = 8;
-		suppressZeros = YES;
+		suppressZeros = true;
 	}
 	else
-		suppressZeros = NO;
+		suppressZeros = false;
 
 	for (int shift = inWidth * 4; shift >= 0; shift -=4)
 	{
 		UChar	nibl = (inHex >> shift) & 0x0F;
 		if (!(nibl == 0 && suppressZeros))
 		{
-			suppressZeros = NO;
+			suppressZeros = false;
 			if (nibl > 9)
 				nibl += 7;
 			msgChar('0' + nibl);

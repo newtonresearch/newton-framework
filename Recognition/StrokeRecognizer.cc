@@ -30,10 +30,10 @@ extern bool		TraceContour(CArray * inPts, FPoint * inCentre);
 CStrokeDomain *
 CStrokeDomain::make(CController * inController)
 {
-	CStrokeDomain * domain;
+	CStrokeDomain * domain = new CStrokeDomain;
 	XTRY
 	{
-		XFAIL((domain = new CStrokeDomain) == NULL)
+		XFAIL(domain == NULL)
 		XFAILIF(domain->iStrokeDomain(inController) != noErr, domain->release(); domain = NULL;)
 	}
 	XENDTRY;
@@ -62,7 +62,7 @@ CStrokeDomain::iStrokeDomain(CController * inController)
 bool
 CStrokeDomain::group(CRecUnit * inPiece, RecDomainInfo * info)
 {
-	bool isGrouped = NO;
+	bool isGrouped = false;
 	XTRY
 	{
 		CRecStroke * stroke = ((CClickUnit *)inPiece)->clikStroke();
@@ -85,7 +85,7 @@ CStrokeDomain::group(CRecUnit * inPiece, RecDomainInfo * info)
 			fController->newGroup(newUnit);
 
 			UnbufferStroke(stroke);
-			isGrouped = YES;
+			isGrouped = true;
 		}
 	}
 	XENDTRY;
@@ -117,10 +117,10 @@ CStrokeDomain::classify(CRecUnit * inUnit)
 CStrokeUnit *
 CStrokeUnit::make(CRecDomain * inDomain, ULong inId, CRecStroke * inStroke, CArray * inAreas)
 {
-	CStrokeUnit * strokeUnit;
+	CStrokeUnit * strokeUnit = new CStrokeUnit;
 	XTRY
 	{
-		XFAIL((strokeUnit = new CStrokeUnit) == NULL)
+		XFAIL(strokeUnit == NULL)
 		XFAILIF(strokeUnit->iStrokeUnit(inDomain, inId, inStroke, inAreas) != noErr, strokeUnit->release(); strokeUnit = NULL;)
 	}
 	XENDTRY;
@@ -198,7 +198,7 @@ CStrokeUnit::countStrokes(void)
 bool
 CStrokeUnit::ownsStroke(void)
 {
-	return YES;
+	return true;
 }
 
 
@@ -244,7 +244,7 @@ CStrokeUnit::getPts(void)
 bool
 CStrokeUnit::isCircle(FPoint * inCentre, float * inArg2, ULong * inArg3)
 {
-	bool itsACircle = NO;
+	bool itsACircle = false;
 	XTRY
 	{
 		FRect box;
@@ -257,7 +257,7 @@ CStrokeUnit::isCircle(FPoint * inCentre, float * inArg2, ULong * inArg3)
 		if (aspectRatio <= 1.375
 		&&  PtsOnCircle(pts, inCentre, *inArg2, inArg3)
 		&&  TraceContour(pts, inCentre))
-			itsACircle = YES;
+			itsACircle = true;
 		pts->release();
 	}
 	XENDTRY;
@@ -271,7 +271,7 @@ SetupEllipseSystem(CArray * inPts, float, float, float, float, float*, float*)
 
 bool
 MakeEllipseTemplate(FRect*, long*, FPoint * inCentre, FPoint * outCentre1, FPoint * outCentre2, long*, long*, long*, long*)
-{return YES;}
+{return true;}
 
 extern bool		PtsOnEllipse(CArray * inPts, FPoint * inCentre1, FPoint * inCentre2, float inRadius, ULong * outScore);
 
@@ -287,7 +287,7 @@ Solve(int, int, float *, float *, float *)
 bool
 CStrokeUnit::isEllipse(FPoint * inCentre, long * inArg2, long * inArg3, long * inArg4, ULong * outScore)
 {
-	bool itsAnEllipse = NO;
+	bool itsAnEllipse = false;
 	XTRY
 	{
 		FRect box;	// sp90
@@ -313,7 +313,7 @@ CStrokeUnit::isEllipse(FPoint * inCentre, long * inArg2, long * inArg3, long * i
 		if (MakeEllipseTemplate(&box, &sp18, inCentre, &centre1, &centre2, inArg2, inArg3, &radius, inArg4)
 		&&  PtsOnEllipse(pts, &centre1, &centre2, radius, outScore)
 		&&  TraceContour(pts, inCentre))
-			itsAnEllipse = YES;
+			itsAnEllipse = true;
 */
 		pts->release();
 	}

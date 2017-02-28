@@ -4,52 +4,9 @@ ntkC
 ;    e.g. “ Call myModuleName.aFunction with (...) ”
 ; Below, add one line per function naming each of your plain C NewtonScript interface functions.
 ;
-; functions
-FDefineGlobalConstant 2
-FUnDefineGlobalConstant 1
-FStuffHex 2
-ReadStreamFile 1
-;
-; protoProtoEditor
-Selection 0
-SelectionOffset 0
-SelectionLength 0
-SetSelection 2
-ReplaceSelection 1
-;
-TextString 0
-TextLength 0
-;
-FindLine 1
-LineStart 1
-NumberOfLines 0
-LineTop 1
-LineBottom 1
-LineBaseline 1
-LeftEdge 1
-RightEdge 1
-;
-PointToOffset 2
-;
-MapChars 3
-SearchChars 3
-Peek 1
-SetKeyHandler 2
-GetKeyHandler 1
-;
-SetMetaBit 0
-QuoteCharacter 0
-CharacterClass 1
-SetCharacterClass 2
-;
-TokenStart 1
-TokenEnd 1
-;
-TellUser 1
-;
-VisibleTop 0
-VisibleLeft 0
-VisibleHeight 0
-VisibleWidth 0
-SetVisibleTop 1
-SetVisibleLeft 1
+DefineGlobalConstant _FDefineGlobalConstant 2
+UnDefineGlobalConstant _FUnDefineGlobalConstant 1
+DefPureFn _FDefPureFn 2
+StuffHex _FStuffHex 2
+ReadStreamFile _FReadStreamFile 1
+LoadDataFile _FLoadDataFile 2

@@ -60,5 +60,5 @@ CMemoryPipe::overflow(void)
 void
 CMemoryPipe::underflow(long inArg1, bool & ioArg2)
 {
-	ioArg2 = NO;
+	ioArg2 = false;
 }

@@ -155,13 +155,13 @@ CStoreCompanderWrapper::write(size_t inOffset, char * inBuf, size_t inBufLen, VA
 NewtonErr
 CStoreCompanderWrapper::doTransactionAgainst(int inArg1, ULong inArg2)
 {
-	return LODefaultDoTransaction(fStore, fRootId, fChunksId, inArg1, NO);
+	return LODefaultDoTransaction(fStore, fRootId, fChunksId, inArg1, false);
 }
 
 
 bool
 CStoreCompanderWrapper::isReadOnly(void)
 {
-	return YES;
+	return true;
 }
 

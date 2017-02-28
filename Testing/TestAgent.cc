@@ -32,14 +32,14 @@
 0c1017f8	gReceiveDebugFrameLastError
 ----------------------------------------------------------------------------- */
 
-ULong					gDebuggerBits = 0;			// 000013F4
-														// 0x00000001 => debugger is present
-														// 0x00000008 => use ARMistice card as tablet
-														// 0x00000020 => use external serial debug
-														// 0x00000040 => use GeoPort debug
+ULong					gDebuggerBits = 8;			// 000013F4
+															// 0x00000001 => debugger is present
+															// 0x00000008 => use ARMistice card as tablet
+															// 0x00000020 => use external serial debug
+															// 0x00000040 => use GeoPort debug
 ULong					gNewtTests = 0;				// 000013F8
 
-bool					gWantSerialDebugging = false;		//	0C1017C4
+bool					gWantSerialDebugging = false;	//	0C1017C4
 
 CAgentReporter *	gTestReporterForNewt;		// 0C104D48
 Ref					gTestMgrAppContext;			// 0C104D50
@@ -190,6 +190,22 @@ IsDebuggerPresent(void)
 		 || gWantSerialDebugging;
 }
 
+void
+SRegisterPackageWithDebugger(void * inAddr, ULong inPkgId)
+{}
+
+void
+SRegisterLoadedCodeWithDebugger(void * inAddr, const char * infoStr, ULong inId)
+{}
+
+void
+SDeregisterLoadedCodeWithDebugger(ULong inId)
+{}
+
+void
+SInformDebuggerMemoryReloaded(void * inAddr, ULong inSize)
+{}
+
 
 NewtonErr
 InitTestAgent(void)
@@ -199,11 +215,11 @@ InitTestAgent(void)
 	XTRY
 	{
 		CUNameServer ns;	// sp08
-		ULong thing, spec;
+		OpaqueRef thing, spec;
 		XFAIL((err = ns.lookup("tagt", kUPort, &thing, &spec)) == noErr)	// haha!
 		//sp-178
 		CTestAgent testAgent;
-		XFAILIF(err = testAgent.init('tagt', YES, kSpawnedTaskStackSize), printf("Could not init CTestAgent\n"))
+		XFAILIF(err = testAgent.init('tagt', true, kSpawnedTaskStackSize), printf("Could not init CTestAgent\n"))
 	}
 	XENDTRY;
 	return err;

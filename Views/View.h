@@ -10,6 +10,7 @@
 #define __VIEW_H 1
 
 #include "Quartz.h"
+#include "Regions.h"
 
 #include "Responder.h"
 #include "NewtGlobals.h"
@@ -21,24 +22,6 @@
 
 class CUnit;
 class CStroke;
-
-
-/* -------------------------------------------------------------------------------
-	C R e g i o n
-	Stubs.
-	We don’t use regions, quartz doesn’t do them so let’s just ignore them.
-------------------------------------------------------------------------------- */
-class CBaseRegion
-{ };
-
-class CRegionVar : public CBaseRegion
-{ };
-
-class CRectangularRegion : public CBaseRegion
-{
-public:
-		CRectangularRegion(const Rect * inRect) { };
-};
 
 
 /*------------------------------------------------------------------------------
@@ -129,11 +112,11 @@ public:
 				Point		localOrigin(void);
 				Point		contentsOrigin(void);
 				Point		childOrigin(void);
-//				CRegion	setupVisRgn(void);
+				CRegion	setupVisRgn(void);
 				bool		hasVisRgn(void);
 				bool		visibleDeep(void);
-//				CRegion	getFrontMask(void);
-//				CClipper * clipper(void);
+				CRegion	getFrontMask(void);
+				CClipper * clipper(void);
 	virtual	void		dirty(const Rect * inBounds = NULL);
 				void		show(void);
 	virtual	void		hide(void);
@@ -214,11 +197,11 @@ public:
 
 // Gestures
 	virtual	ULong		clickOptions(void);
-	virtual	void		handleScrub(const Rect * inArg1, long inArg2, CUnit * unit, bool inArg4);
+	virtual	int		handleScrub(const Rect * inScrubbedRect, int inArg2, CUnit * unit, bool inArg4);
 
 // Input
 	virtual	void		setCaretOffset(int * ioX, int * ioY);
-	virtual	void		offsetToCaret(long inArg1, Rect * inArg2);
+	virtual	void		offsetToCaret(int inArg1, Rect * outArg2);
 	virtual	void		pointToCaret(Point inPt, Rect * inArg2, Rect * inArg3);
 	virtual	ULong		textFlags(void) const;
 
@@ -241,43 +224,43 @@ public:
 				void		soundEffect(RefArg inArg);
 
 // Drawing
-				void		update(const CBaseRegion inRgn, CView * inView);
-				void		draw(const Rect * inBounds, bool inArg2);
-				void		draw(CBaseRegion inRgn, bool inArg2);
-				void		drawChildren(const Rect * inBounds, CView * inView);
-				void		drawChildren(CBaseRegion inRgn, CView * inView);
-	virtual	void		preDraw(Rect * inBounds);
-	virtual	void		realDraw(Rect * inBounds);
-	virtual	void		postDraw(Rect * inBounds);
+				void		update(CBaseRegion& inRgn, CView * inView);
+				void		draw(Rect& inRect, bool inForPrint=false);
+				void		draw(CBaseRegion& inRgn, bool inForPrint=false);
+				void		drawChildren(Rect& inRect, CView * inView);
+				void		drawChildren(CBaseRegion& inRgn, CView * inView);
+	virtual	void		preDraw(Rect& inRect);
+	virtual	void		realDraw(Rect& inRect);
+	virtual	void		postDraw(Rect& inRect);
 	virtual	void		drawScaledData(const Rect * inSrcBounds, const Rect * inDstBounds, Rect * ioBounds);
 
 // Drag and drop
 	virtual	bool		addDragInfo(CDragInfo * info);
 	virtual	int		dragAndDrop(CStroke * stroke, const Rect * inBounds, const Rect * inArg3, const Rect * inArg4, bool inArg5, const CDragInfo * info, const Rect * inArg7);
 				void		drag(CStroke * stroke, const Rect * inBounds);
-				void		drag(const CDragInfo * info, CStroke * stroke, const Rect * inArg3, const Rect * inArg4, const Rect* inArg5, bool inArg6, Point * inArg7, Point * inArg8, bool * inArg9, bool * inArg10);
+				int		drag(const CDragInfo * info, CStroke * stroke, const Rect * inArg3, const Rect * inArg4, const Rect* inArg5, bool inArg6, Point * inArg7, Point * inArg8, bool * inArg9, bool * inArg10);
 				void		alignDragPtToGrid(const CDragInfo * inArg1, Point * inArg2);
-	virtual	void		dragFeedback(const CDragInfo * inArg1, const Point & inArg2, bool inArg3);
+	virtual	bool		dragFeedback(const CDragInfo * inDragInfo, const Point & inPt, bool inShow);
 	virtual	void		endDrag(const CDragInfo * inArg1, CView * inArg2, const Point * inArg3, const Point * inArg4, const Point * inArg5, bool inArg6);
-	virtual	void		drawDragBackground(const Rect * inArg1, bool inArg2);
+	virtual	bool		drawDragBackground(const Rect * inBounds, bool inCopy);
 	virtual	void		drawDragData(const Rect * inBounds);
-				void		dropApprove(CView * inTarget);
-	virtual	void		getSupportedDropTypes(const Point * inPt);
+				bool		dropApprove(CView * inTarget);
+	virtual	Ref		getSupportedDropTypes(Point inPt);
 	virtual	void		getClipboardDataBits(Rect * inArea);
-	virtual	void		findDropView(const CDragInfo & inArg1, const Point * inPt);
-	virtual	void		acceptDrop(const CDragInfo & inArg1, const Point * inPt);
-				void		targetDrop(const CDragInfo & inArg1, const Point * inPt);
+	virtual	CView *	findDropView(const CDragInfo & inDragInfo, Point inPt);
+	virtual	bool		acceptDrop(const CDragInfo & inDragInfo, Point inPt);
+				CView *	targetDrop(const CDragInfo & inDragInfo, Point inPt);
 	virtual	Ref		getDropData(RefArg inDragType, RefArg inDragRef);
-	virtual	void		drop(RefArg inArg1, RefArg inArg2, Point * inPt);
-	virtual	void		dropMove(RefArg inArg1, const Point * inArg2, const Point * inArg3, bool inArg4);
-	virtual	void		dropRemove(RefArg inArg1);
+	virtual	bool		drop(RefArg inDropType, RefArg inDropData, Point inDropPt);
+	virtual	bool		dropMove(RefArg inDragRef, Point inOffset, Point inLastDragPt, bool inCopy);
+	virtual	void		dropRemove(RefArg inDragRef);
 	virtual	bool		dropDone(void);
 
 // Scripts
 	virtual	void		setupForm(void);
 	virtual	void		setupDone(void);
-				Ref		runScript(RefArg tag, RefArg inArgs, bool inSelf = NO, bool * outDone = NULL);
-				Ref		runCacheScript(ArrayIndex index, RefArg inArgs, bool inSelf = NO, bool * outDone = NULL);
+				Ref		runScript(RefArg tag, RefArg inArgs, bool inSelf = false, bool * outDone = NULL);
+				Ref		runCacheScript(ArrayIndex index, RefArg inArgs, bool inSelf = false, bool * outDone = NULL);
 
 // Debug
 				void		dump(ArrayIndex inLevel);

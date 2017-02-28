@@ -11,64 +11,6 @@
 
 #include "NewtonTypes.h"
 
-enum
-{
-	// Boolean modes
-	// src modes are used with bitmaps and text;
-	// pat modes are used with lines and shapes
-	srcCopy               =0,
-	srcOr                 =1,
-	srcXor                =2,
-	srcBic                =3,
-	notSrcCopy            =4,
-	notSrcOr              =5,
-	notSrcXor             =6,
-	notSrcBic             =7,
-	patCopy               =8,
-	patOr                 =9,
-	patXor                =10,
-	patBic                =11,
-	notPatCopy            =12,
-	notPatOr              =13,
-	notPatXor             =14,
-	notPatBic             =15,
-	// Text dimming
-	grayishTextOr         =49,
-	// Highlighting
-	hilite                =50,
-	hilitetransfermode    =50,
-	// Arithmetic modes
-	blend                 =32,
-	addPin                =33,
-	addOver               =34,
-	subPin                =35,
-	addMax                =37,
-	adMax                 =37,
-	subOver               =38,
-	adMin                 =39,
-	ditherCopy            =64,
-	// Transparent mode
-	transparent           =36
-};
-
-//#if !defined(__QUARTZ_H)
-struct Point
-{
-	short	v;
-	short	h;
-};
-
-
-struct Rect
-{
-	short	top;
-	short	left;
-	short	bottom;
-	short	right;
-};
-//#endif
-
-
 struct FPoint
 {
 	float	x;
@@ -207,6 +149,7 @@ inline ULong	PixelDepth(const PixelMap * pixmap)			{ return pixmap->pixMapFlags 
 inline ULong	PixelDepth(const NativePixelMap * pixmap)	{ return pixmap->pixMapFlags & kPixMapDepth; }
 inline ULong	PixelMapVersion(const PixelMap * pixmap)	{ return pixmap->pixMapFlags & kPixMapVersionMask; }
 extern Ptr		PixelMapBits(const PixelMap * pixmap);
+extern Ptr		PixelMapBits(const NativePixelMap * pixmap);
 
 
 // Font/Text structures elsewhere

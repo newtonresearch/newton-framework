@@ -318,7 +318,7 @@ optional_deeply:	/* empty */
 withverb:		kTokenDo
 					{	$$ = SYMmap; }
 				|	kTokenSymbol
-					{	if (!EQRef($1, SYMcollect))
+					{	if (!EQ($1, SYMA(collect)))
 							syntaxError("FOREACH requires DO or COLLECT");
 						$$ = SYMcollect; }
 				;
@@ -418,7 +418,7 @@ arg_plus:		kTokenSymbol
 						CObjectIterator	iter(argNames);
 						for ( ; !iter.done(); iter.next())
 						{
-							if (EQRef(iter.value(), $3))
+							if (EQ(iter.value(), $3))
 							{
 								Str255	str;
 								sprintf(str, "Duplicate argument name: %s\n", SymbolName($3));
@@ -435,7 +435,7 @@ arg_plus:		kTokenSymbol
 						CObjectIterator	iter(argNames);
 						for ( ; !iter.done(); iter.next())
 						{
-							if (EQRef(iter.value(), $3))
+							if (EQ(iter.value(), $3))
 							{
 								Str255	str;
 								sprintf(str, "Duplicate argument name: %s\n", SymbolName($3));
@@ -472,7 +472,7 @@ local_plus:		kTokenSymbol local_clause
 						CObjectIterator	iter(locals);
 						for ( ; !iter.done(); iter.next())
 						{
-							if (EQRef(iter.value(), $3))
+							if (EQ(iter.value(), $3))
 							{
 								Str255	str;
 								sprintf(str, "Duplicate variable name: %s\n", SymbolName($3));
@@ -488,7 +488,7 @@ local_plus:		kTokenSymbol local_clause
 						CObjectIterator	iter(locals);
 						for ( ; !iter.done(); iter.next())
 						{
-							if (EQRef(iter.value(), $3))
+							if (EQ(iter.value(), $3))
 							{
 								Str255	str;
 								sprintf(str, "Duplicate variable name: %s\n", SymbolName($3));
@@ -571,7 +571,7 @@ sexpr:			kTokenConst
 path_expr:		kTokenSymbol
 					/* nothing to do here */
 				|	path_expr '.' kTokenSymbol
-					{	if (EQRef(ClassOf($1), SYMpathExpr))
+					{	if (EQ(ClassOf($1), SYMA(pathExpr)))
 						{
 							AddArraySlot($1, $3);
 							$$ = $1;

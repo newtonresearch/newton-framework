@@ -32,7 +32,7 @@ void	CheckWriteProtect(CStore * inStore);
 Ref	FGetCardSlotStores(void);
 
 Ref	StoreGetPasswordKey(CStore * inStore);
-Ref	CheckStorePassword(CStore * inStore, RefArg inPassword);
+bool	CheckStorePassword(CStore * inStore, RefArg inPassword);
 
 Ref	StoreConvertSoupSortTables(void);
 const CSortingTable *	StoreGetDirSortTable(RefArg);

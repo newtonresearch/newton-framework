@@ -9,7 +9,7 @@
 #import "Responder.h"
 #include "Objects.h"
 #include "Arrays.h"
-#include "Globals.h"
+#include "ROMResources.h"
 
 
 /*----------------------------------------------------------------------
@@ -22,7 +22,7 @@ VIEW_SOURCE_MACRO(clResponder, CResponder, CViewObject)
 bool
 CResponder::doCommand(RefArg inCmd)
 {
-	return NO;
+	return false;
 }
 
 #pragma mark -

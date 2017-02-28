@@ -30,8 +30,8 @@ public:
 	virtual void		mainDestructor(void);
 
 	CPackageEventHandler *	fEventHandler;
-	Heap					f74;	// kstk heap
-	Heap					f78;	// caller’s heap
+	Heap						fPersistentHeap;
+	Heap						fDefaultHeap;
 	uint32_t					f7C;
 };
 
@@ -65,7 +65,7 @@ private:
 	ArrayIndex	fIndex;			//+00
 	size_t		fPkgSize;		//+04
 	ULong			fPkgId;			//+08
-	UniChar		fPkgName[kMaxPackageNameSize];	//+0C
+	UniChar		fPkgName[kMaxPackageNameSize+1];	//+0C	+1 not original
 	ULong			fPkgVersion;	//+4C
 	SourceType	fSource;			//+50
 	ULong			fTimestamp;		//+58
@@ -85,6 +85,7 @@ inline bool					CPMIterator::isCopyProtected(void) const	{ return (fPkgFlags & k
 /* -----------------------------------------------------------------------------
 	C P r i v a t e P a c k a g e I t e r a t o r
 ----------------------------------------------------------------------------- */
+#include "NewtonPackage.h"
 
 class CPrivatePackageIterator
 {
@@ -111,6 +112,7 @@ public:
 
 private:
 	friend class CPackageIterator;
+	NewtonPackage *		fPackage;	// definitely not original -- for LP64 / byte-swapped platforms
 	Ptr			fMem;						//+04
 	PackageDirectory *	fPkgDir;		//+08
 	PartEntry *				fPkgParts;	//+0C

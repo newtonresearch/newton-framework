@@ -49,8 +49,6 @@
 
 #include "QDTypes.h"
 
-//#define __MACMEMORY__
-//#define __QD__ 1
 #include <CoreGraphics/CoreGraphics.h>
 
 

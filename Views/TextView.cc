@@ -7,7 +7,7 @@
 */
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Lookup.h"
 #include "RichStrings.h"
 #include "Unicode.h"
@@ -15,7 +15,7 @@
 #include "Preference.h"
 
 #include "TextView.h"
-#include "QDGeometry.h"
+#include "Geometry.h"
 #include "DrawText.h"
 
 extern void		GetStyleFontInfo(StyleRecord * inStyle, FontInfo * outFontInfo);
@@ -53,7 +53,7 @@ CTextView::init(RefArg inProto, CView * inView)
 ------------------------------------------------------------------------------*/
 
 void
-CTextView::realDraw(Rect * inRect)
+CTextView::realDraw(Rect& inRect)
 {
 	RefVar	text(getVar(SYMA(text)));
 	if (NOTNIL(text))

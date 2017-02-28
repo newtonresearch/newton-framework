@@ -9,7 +9,7 @@
 #include <stdarg.h>
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Unicode.h"
 #include "NTK.h"
 #include "NameServer.h"
@@ -94,7 +94,7 @@ NTKInit(void)
 
 	gREPEventHandler = new CREPEventHandler;
 	gREPEventHandler->init('rep ');
-	gREPEventHandler->initIdler(0, 0, NO);
+	gREPEventHandler->initIdler(0, 0, false);
 #endif
 }
 
@@ -163,7 +163,7 @@ CreateNub(RefArg inConnectionKind, RefArg inMachineName, RefArg inInputTranslato
 {
 #define kTranslatorNameMaxLen 63
 	NewtonErr		err;
-	bool				isSerial = NO;
+	bool				isSerial = false;
 	char				inputTranslatorName[kTranslatorNameMaxLen+1];
 	char				outputTranslatorName[kTranslatorNameMaxLen+1];
 	char *			inputTranslator = NULL;
@@ -176,7 +176,7 @@ CreateNub(RefArg inConnectionKind, RefArg inMachineName, RefArg inInputTranslato
 	{
 		// create the nub
 		gNTKNub = new CNTKNub;
-		XFAILNOT(gNTKNub, err = MemError();)
+		XFAILIF(gNTKNub == NULL, err = MemError();)
 
 		if (NOTNIL(inInputTranslator) && NOTNIL(inOutputTranslator))
 		{
@@ -191,7 +191,7 @@ CreateNub(RefArg inConnectionKind, RefArg inMachineName, RefArg inInputTranslato
 		{
 			// set up connection options for specified connection kind
 			sp08 = new COptionArray;
-			XFAILNOT(sp08, err = MemError();)
+			XFAILIF(sp08 == NULL, err = MemError();)
 			XFAIL(err = sp08->init())
 			switch (RINT(inConnectionKind))
 			{
@@ -200,12 +200,12 @@ CreateNub(RefArg inConnectionKind, RefArg inMachineName, RefArg inInputTranslato
 					break;
 
 				case 2:
-					isSerial = YES;
+					isSerial = true;
 					// fall thru…
 
 				case 1:
 					sp00 = new COptionArray;
-					XFAILNOT(sp00, err = MemError();)
+					XFAILIF(sp00 == NULL, err = MemError();)
 					XFAIL(err = sp00->init())
 					XFAIL(err = NubADSPOptions(sp08, sp00))
 					break;
@@ -214,7 +214,7 @@ CreateNub(RefArg inConnectionKind, RefArg inMachineName, RefArg inInputTranslato
 					XFAIL(err = EzMNPSerialOptions(sp08, NULL))
 
 					sp00 = new COptionArray;
-					XFAILNOT(sp00, err = MemError();)
+					XFAILIF(sp00 == NULL, err = MemError();)
 					XFAIL(err = sp00->init())
 					XFAIL(err = EzMNPConnectOptions(sp08, NULL))
 					break;
@@ -234,7 +234,7 @@ CreateNub(RefArg inConnectionKind, RefArg inMachineName, RefArg inInputTranslato
 			if (sp00 == NULL)
 			{
 				sp00 = new COptionArray;
-				XFAILNOT(sp00, err = MemError();)
+				XFAILIF(sp00 == NULL, err = MemError();)
 				XFAIL(err = sp00->init())
 			}
 			XFAIL(err = NubADSPLookup(&spm18, inMachineName))
@@ -399,7 +399,7 @@ FNTKSend(RefArg rcvr, RefArg inRef)
 /* -----------------------------------------------------------------------------
 	Determine whether the NTK nub is active.
 	Args:		rcvr
-	Return:	YES => it’s alive
+	Return:	true => it’s alive
 ----------------------------------------------------------------------------- */
 
 Ref
@@ -446,7 +446,7 @@ PNTKInTranslator::make(void)
 	fPipe = NULL;
 	fRetryInterval = 0;
 	fTimeout = kNoTimeout;
-	fIsFrameAvailable = NO;
+	fIsFrameAvailable = false;
 	return this;
 }
 
@@ -468,9 +468,9 @@ PNTKInTranslator::init(void * inArgs)
 		fTimeout = ((NTKTranslatorInfo*)inArgs)->x08;
 		fBuffer = ((NTKTranslatorInfo*)inArgs)->x00;
 		fPipe = new CTaskSafeRingPipe;
-		XFAILNOT(fPipe, err = MemError();)
+		XFAILIF(fPipe == NULL, err = MemError();)
 	//	SetPtrName(fPipe, 'ntkP');
-		fPipe->init(fBuffer, NO, fRetryInterval, fTimeout);
+		fPipe->init(fBuffer, false, fRetryInterval, fTimeout);
 	}
 	XENDTRY;
 	return err;
@@ -488,12 +488,12 @@ PNTKInTranslator::idle(void)
 			if (result < 0)
 				NTKShutdown(result);
 			else if (result > 0)
-				fIsFrameAvailable = YES;
+				fIsFrameAvailable = true;
 		}
 	}
 	newton_catch_all
 	{
-		NTKShutdown((NewtonErr)(unsigned long)CurrentException()->data);
+		NTKShutdown((NewtonErr)(long)CurrentException()->data);
 	}
 	end_try;
 
@@ -509,7 +509,7 @@ PNTKInTranslator::frameAvailable(void)
 Ref
 PNTKInTranslator::produceFrame(int inLevel)
 {
-	fIsFrameAvailable = NO;
+	fIsFrameAvailable = false;
 	NewtonErr	err;
 	CObjectReader	reader(*fPipe);
 	RefVar		frame;
@@ -626,9 +626,9 @@ PNTKOutTranslator::init(void * inArgs)
 		fBufPtr = fBuf;
 		fBufRemaining = fBufLen;
 		fPipe = new CTaskSafeRingPipe;
-		XFAILNOT(fPipe, err = MemError();)
+		XFAILIF(fPipe == NULL, err = MemError();)
 	//	SetPtrName(fPipe, 'ntkP');
-		fPipe->init(fBuffer, NO, fRetryInterval, fTimeout);
+		fPipe->init(fBuffer, false, fRetryInterval, fTimeout);
 	}
 	XENDTRY;
 	return err;
@@ -765,7 +765,7 @@ PNTKOutTranslator::sendData(void * inData, size_t inLength)
 void
 PNTKOutTranslator::consumeFrameReally(RefArg inRef)
 {
-	CObjectWriter	writer(inRef, *fPipe, NO);
+	CObjectWriter	writer(inRef, *fPipe, false);
 	newton_try
 	{
 		size_t	objSize = writer.size();
@@ -1147,7 +1147,7 @@ CNTKTask::getSizeOf(void) const
 NewtonErr
 CNTKTask::mainConstructor(void)
 {
-	enableForking(NO);
+	enableForking(false);
 	return CAppWorld::mainConstructor();
 }
 
@@ -1170,9 +1170,9 @@ CNTKTask::preMain(void)
 	XTRY
 	{
 		ep = new CNTKEndpointClient;
-		XFAILNOT(ep, err = MemError();)
+		XFAILIF(ep == NULL, err = MemError();)
 		evtHandler = new CKillEventHandler(ep);
-		XFAILNOT(evtHandler, err = MemError();)
+		XFAILIF(evtHandler == NULL, err = MemError();)
 		evtHandler->init();
 		err = ep->init(f80, f84, f8C, f74, f70, f78, f7C);
 	}
@@ -1207,7 +1207,7 @@ CNTKTask::initNTK(COptionArray * inOpt1, COptionArray * inOpt2, COptionArray * i
 	f80 = inOpt1;
 	f84 = inOpt2;
 	f88 = inOpt3;
-	return init('ntk ', YES, kSpawnedTaskStackSize);
+	return init('ntk ', true, kSpawnedTaskStackSize);
 }
 
 
@@ -1225,8 +1225,8 @@ CNTKNub::CNTKNub()
 	fREPOut = NULL;
 	fNTKIn = NULL;
 	fNTKOut = NULL;
-	fIsNTKTranslator = NO;
-	fIsConnected = NO;
+	fIsNTKTranslator = false;
+	fIsConnected = false;
 	fInputBuffer = NULL;
 	fOutputBuffer = NULL;
 }
@@ -1267,12 +1267,12 @@ CNTKNub::init(COptionArray * inOpt1, COptionArray * inOpt2, COptionArray * inOpt
 	XTRY
 	{
 		fInputBuffer = new CTaskSafeRingBuffer;
-		XFAILNOT(fInputBuffer, err = MemError();)
-		XFAIL(err = fInputBuffer->init(512, NO))
+		XFAILIF(fInputBuffer == NULL, err = MemError();)
+		XFAIL(err = fInputBuffer->init(512, false))
 
 		fOutputBuffer = new CTaskSafeRingBuffer;
-		XFAILNOT(fOutputBuffer, err = MemError();)
-		XFAIL(err = fOutputBuffer->init(512, NO))
+		XFAILIF(fOutputBuffer == NULL, err = MemError();)
+		XFAIL(err = fOutputBuffer->init(512, false))
 
 		{
 			CNTKTask	theTask;
@@ -1282,7 +1282,7 @@ CNTKNub::init(COptionArray * inOpt1, COptionArray * inOpt2, COptionArray * inOpt
 
 		if (inSerial)
 		{
-			fIsNTKTranslator = NO;
+			fIsNTKTranslator = false;
 			XFAIL(err = CreateSerialInTranslator(&fREPIn, fInputBuffer))
 			XFAIL(err = CreateSerialOutTranslator(&fREPOut, fOutputBuffer))
 		}
@@ -1290,7 +1290,7 @@ CNTKNub::init(COptionArray * inOpt1, COptionArray * inOpt2, COptionArray * inOpt
 		{
 			XFAIL(err = CreateNTKInTranslator(&fREPIn, inInTranslator ? inInTranslator : "PNTKInTranslator", fInputBuffer))
 			XFAIL(err = CreateNTKOutTranslator(&fREPOut, inOutTranslator ? inOutTranslator : "PNTKOutTranslator", fOutputBuffer))
-			fIsNTKTranslator = YES;
+			fIsNTKTranslator = true;
 			fNTKIn = (PNTKInTranslator *)fREPIn;
 			fNTKOut = (PNTKOutTranslator *)fREPOut;
 		}
@@ -1313,7 +1313,7 @@ CNTKNub::downloadPackage(void)
 	{
 		EventType	cmd;
 		size_t	cmdLen;
-		bool		done = NO;
+		bool		done = false;
 		while (!done && err == noErr)
 		{
 			fNTKOut->sendHeader();
@@ -1325,7 +1325,7 @@ CNTKNub::downloadPackage(void)
 				{
 				case kTLoadPackage:
 					err = fNTKIn->loadPackage();
-					done = YES;
+					done = true;
 					break;
 				case kTDeletePackage:
 					err = deletePackage(cmdLen);
@@ -1347,7 +1347,7 @@ CNTKNub::downloadPackage(void)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 
@@ -1386,14 +1386,14 @@ CNTKNub::startListener(void)
 			if ((err = readCommand(&cmd, &cmdLen)) == noErr)
 			{
 				if (cmd == kTOK)
-					fIsConnected = YES;
+					fIsConnected = true;
 				else
 					err = kDockErrBadHeader;
 			}
 		}
 		newton_catch_all
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()->data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 	}
@@ -1422,7 +1422,7 @@ CNTKNub::stopListener(void)
 		}
 		newton_catch_all
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()->data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 	}
@@ -1461,7 +1461,7 @@ CNTKNub::readCommand(EventType * outCmd, size_t * outLength)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	
@@ -1510,7 +1510,7 @@ CNTKNub::doCommand(void)
 			break;
 		case kTTerminate:
 			err = -1;
-			fIsConnected = NO;
+			fIsConnected = false;
 			break;
 		default:
 			err = kDockErrBadHeader;
@@ -1550,7 +1550,7 @@ CNTKNub::handleCodeBlock(size_t inLength)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	
@@ -1607,7 +1607,7 @@ CNTKNub::sendTextHeader(size_t inLength)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	
@@ -1634,7 +1634,7 @@ CNTKNub::sendResult(NewtonErr inResult)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	
@@ -1660,7 +1660,7 @@ CNTKNub::sendEOM(void)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	
@@ -1687,7 +1687,7 @@ CNTKNub::sendRef(EventType inCmd, RefArg inRef)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	
@@ -1713,7 +1713,7 @@ CNTKNub::enterBreakLoop(int inLevel)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	
@@ -1739,7 +1739,7 @@ CNTKNub::exitBreakLoop(void)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	
@@ -1762,7 +1762,7 @@ CNTKNub::exceptionNotify(Exception * inException)
 		return sendExceptionData(inException->name, (char *)inException->data);
 	else if (Subexception(inException->name, exRefException))
 		;//return sendExceptionData(inException->name, (RefVar) inException->data);
-	return sendExceptionData(inException->name, (NewtonErr)(unsigned long)inException->data);
+	return sendExceptionData(inException->name, (NewtonErr)(long)inException->data);
 }
 
 
@@ -1797,7 +1797,7 @@ CNTKNub::sendExceptionData(const char * inExceptionName, char * inMessage)
 		}
 		newton_catch_all
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()->data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 	}
@@ -1829,7 +1829,7 @@ CNTKNub::sendExceptionData(const char * inExceptionName, RefArg inData)
 		}
 		newton_catch_all
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()->data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 	}
@@ -1866,7 +1866,7 @@ CNTKNub::sendExceptionData(const char * inExceptionName, NewtonErr inError)
 		}
 		newton_catch_all
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()->data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 	}
@@ -1892,7 +1892,7 @@ CNTKNub::sendExceptionHeader(EventType inCmd)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	

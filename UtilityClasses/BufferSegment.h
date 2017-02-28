@@ -42,7 +42,7 @@ public:
 
 	NewtonErr	init(size_t len);
 	NewtonErr	init(void * data, size_t len,
-						 bool freeBuffer = NO,
+						 bool freeBuffer = false,
 						 long validOff = 0,
 						 long validCount = -1);
 

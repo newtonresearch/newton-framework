@@ -5,8 +5,10 @@
 #import "NewtonTime.h"
 #import "UserGlobals.h"
 
+#define forLayerDrawing 1
+
+
 extern CTime		GetClock(void);
-extern "C" void	SetupQuartzContext(CGContextRef inContext);
 
 extern "C" void	ResetNewton(void);
 extern void			TimerInterruptHandler(void * inQueue);
@@ -32,6 +34,7 @@ SetPlatformAlarm(int64_t inDelta)
 	if (!gIsAlarmSet)
 	{
 		gIsAlarmSet = YES;
+printf("SetPlatformAlarm(inDelta=%lldms)\n", inDelta);
 		dispatch_resume(alarmSource);
 	}
 }
@@ -58,17 +61,16 @@ SetPlatformAlarm(int64_t inDelta)
 // print stack trace
 //	NSLog(@"%@", [NSThread callStackSymbols]);
 ------------------------------------------------------------------------------*/
+MPWindowController * wc;
 
 @implementation MPController
 
 - (void) applicationDidFinishLaunching: (NSNotification *)notification
 {
-	// set quartz context for drawing
-	NSGraphicsContext *  context = [NSGraphicsContext currentContext];
-	SetupQuartzContext((CGContextRef) [context graphicsPort]);
+	[wc setupDrawing];
 
-	gNewtonQ = dispatch_queue_create("com.newton.messagepad", NULL);
-	gTimerQ = dispatch_queue_create("com.newton.messagepad.timer", NULL);
+	gNewtonQ = dispatch_queue_create("org.newton.messagepad", NULL);
+	gTimerQ = dispatch_queue_create("org.newton.messagepad.timer", NULL);
 
 	// set up scheduler interrupt
 	schedulerSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, gTimerQ);
@@ -79,7 +81,7 @@ SetPlatformAlarm(int64_t inDelta)
 		else
 		{
 			// handle the scheduler interrupt
-			putchar('>');
+//			putchar('>');
 			DispatchFakeInterrupt(kIntSourceScheduler);
 //			GetPlatformDriver()->timerInterruptHandler();
 		}
@@ -97,10 +99,10 @@ SetPlatformAlarm(int64_t inDelta)
 			gPendingInterrupt |= kIntSourceTimer;
 		else
 		{
-//			gIsAlarmSet = NO;
 			// handle the timer interrupt
-			putchar('!');
+//			putchar('!');
 			DispatchFakeInterrupt(kIntSourceTimer);
+//			gIsAlarmSet = NO;
 		}
 	});
 
@@ -122,9 +124,65 @@ ServicePendingInterrupts(void)
 }
 
 
-/*------------------------------------------------------------------------------
+/* -----------------------------------------------------------------------------
+	M P W i n d o w C o n t r o l l e r
+----------------------------------------------------------------------------- */
+extern CGContextRef quartz;
+
+extern void SetUpFakeTablet(void);
+
+
+@implementation MPWindowController
+- (void)windowDidLoad {
+	wc = self;
+}
+
+- (void)setupDrawing {
+	CGContextRef windowContext = self.window.graphicsContext.CGContext;
+#if defined(forLayerDrawing)
+	//create a CGLayer and draw into its context
+	MPView * theView = (MPView *)self.window.contentView;
+	CGLayerRef drgLayer = CGLayerCreateWithContext(windowContext, theView.frame.size, NULL);
+	theView.qContext = windowContext;
+	theView.qLayer = drgLayer;
+	quartz = CGLayerGetContext(drgLayer);
+#else
+	// for drawing direct into the window:
+	quartz = windowContext;
+#endif
+
+#if defined(forOriginTopLeft)
+	CGContextTranslateCTM(quartz, 0.0, 480.0);	// gScreenHeight not set yet
+	CGContextScaleCTM(quartz, 1.0, -1.0);
+	CGContextSetTextMatrix(quartz, CGAffineTransformMake(1.0, 0.0, 0.0, -1.0, 0.0, 0.0));
+#else
+	CGContextTranslateCTM(quartz, 0.0, 0.0);
+	CGContextScaleCTM(quartz, 1.0, 1.0);
+
+//	CGContextSetTextMatrix(quartz, CGAffineTransformIdentity);	// done every time we DrawUnicodeText
+
+//	CGContextSetAllowsAntialiasing(quartz, true);
+
+//	CGContextSetAllowsFontSmoothing(quartz, true);
+//	CGContextSetShouldSmoothFonts(quartz, false);	//improves draw quality of text
+
+//	CGContextSetAllowsFontSubpixelPositioning(quartz, true);
+//	CGContextSetShouldSubpixelPositionFonts(quartz, true);
+
+//	CGContextSetAllowsFontSubpixelQuantization(quartz, true);
+//	CGContextSetShouldSubpixelQuantizeFonts(quartz, true);
+
+#endif
+	// draw into quartz context
+	// StopDrawing() -> WeAreDirty() -> set needsDisplay on the contentView
+	SetUpFakeTablet();
+}
+@end
+
+
+/* -----------------------------------------------------------------------------
 	M P V i e w
-------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------- */
 #define kTabScale 8.0
 
 extern int gScreenHeight;
@@ -134,39 +192,50 @@ extern "C" void	PenMoved(float inX, float inY);
 extern "C" void	PenUp(void);
 
 
-@implementation MPView
-/*
-- (void) drawRect: (NSRect) dirtyRect
+void
+WeAreDirty(void)
 {
-	gRootView->update();
+	((MPView *)wc.window.contentView).needsDisplay = true;
 }
-*/
-
-- (BOOL) isOpaque
-{ return YES; }
-
-- (BOOL) acceptsFirstResponder
-{ return YES; }
-
-- (BOOL) mouseDownCanMoveWindow
-{ return NO; }
 
 
-- (void) mouseDown: (NSEvent *)inEvent
+@implementation MPView
+
+#if defined(forLayerDrawing)
+- (void)drawRect:(NSRect)dirtyRect
+{
+	if (self.qContext) {
+//printf("-[MPView drawRect:]\n");
+		CGContextDrawLayerAtPoint(self.qContext, CGPointZero, self.qLayer);
+	}
+}
+#endif
+
+- (BOOL)isOpaque
+{ return true; }
+
+- (BOOL)acceptsFirstResponder
+{ return true; }
+
+- (BOOL)mouseDownCanMoveWindow
+{ return false; }
+
+
+- (void)mouseDown:(NSEvent *)inEvent
 {
 	NSPoint penLoc = [self convertPoint: [inEvent locationInWindow] fromView: nil];
 	PenDown((penLoc.x) * kTabScale, (gScreenHeight-penLoc.y) * kTabScale);
 }
 
 
-- (void) mouseDragged: (NSEvent *)inEvent
+- (void)mouseDragged:(NSEvent *)inEvent
 {
 	NSPoint penLoc = [self convertPoint: [inEvent locationInWindow] fromView: nil];
 	PenMoved((penLoc.x) * kTabScale, (gScreenHeight-penLoc.y) * kTabScale);
 }
 
 
-- (void) mouseUp: (NSEvent *)inEvent
+- (void)mouseUp:(NSEvent *)inEvent
 {
 	PenUp();
 }

@@ -159,7 +159,7 @@ NewHeap(VAddr inAddr, Size inSize, Size inPageSize)
 	newHeap->pageSize = inPageSize;
 	newHeap->extent = newHeap->prevMaxExtent = newHeap->pageSize;
 	newHeap->maxExtent = newHeap->extent;
-	newHeap->isVMBacked = NO;
+	newHeap->isVMBacked = false;
 	newHeap->refCon = 0;
 
 	newHeap->end = inAddr + newHeap->extent;
@@ -336,7 +336,7 @@ NewPersistentVMHeap(ObjectId inDomain, Size inMaxSize, Heap * outHeap, ULong inO
 				VAddr						heapStart, heapEnd;
 				if ((err = GetHeapAreaInfo((VAddr)*outHeap, &heapStart, &heapEnd)) == noErr)
 				{
-					entry.init(inName, YES, index);
+					entry.init(inName, true, index);
 					entry.fHeap = *outHeap;
 					entry.fBase = heapStart;
 					entry.fSize = heapEnd - heapStart;
@@ -447,8 +447,8 @@ AddSemaphoreToHeap(Heap inHeap)
 	NewtonErr err = noErr;
 	XTRY
 	{
-		CULockingSemaphore *	sem;
-		XFAILNOT(sem = new CULockingSemaphore, err = MemError();)
+		CULockingSemaphore *	sem = new CULockingSemaphore;
+		XFAILIF(sem == NULL, err = MemError();)
 		XFAILIF(err = sem->init(), delete sem;)
 		if (IsSafeHeap(inHeap))
 			SetSafeHeapSemaphore(inHeap, sem);
@@ -542,7 +542,7 @@ ZapHeap(Heap inHeap, ULong inVerification, bool inRecoverable)
 static bool
 HeapReleaseRequestHandler(Heap inHeap, VAddr * outStart, VAddr * outEnd, bool inDoRelease)
 {
-	bool	result = NO;
+	bool	result = false;
 	if (IsSkiaHeap(inHeap))
 	{
 		if (HeapPtr(inHeap)->prevMaxExtent > HeapPtr(inHeap)->maxExtent)
@@ -550,7 +550,7 @@ HeapReleaseRequestHandler(Heap inHeap, VAddr * outStart, VAddr * outEnd, bool in
 			if (inDoRelease)
 				HeapPtr(inHeap)->prevMaxExtent = HeapPtr(inHeap)->maxExtent;
 			*outEnd = HeapPtr(inHeap)->start + HeapPtr(inHeap)->maxExtent;
-			result = YES;
+			result = true;
 		}
 		else
 			*outEnd = HeapPtr(inHeap)->start + HeapPtr(inHeap)->prevMaxExtent;
@@ -788,19 +788,19 @@ BasicVetHeap(SHeap * inHeap, void ** outWhereSmashed)
 		XFAILIF(inHeap->tag != 'skia', err = kMemErrBadHeapHeader;)
 
 		if ((p = inHeap->xA8) != NULL)
-			XFAIL(err = CheckPointer(inHeap, p, YES))
+			XFAIL(err = CheckPointer(inHeap, p, true))
 
 		if ((p = (Ptr) inHeap->xAC) != NULL)
-			XFAIL(err = CheckPointer(inHeap, p, YES))
+			XFAIL(err = CheckPointer(inHeap, p, true))
 
 		if ((p = (Ptr) inHeap->freeList) != NULL)
-			XFAIL(err = CheckPointer(inHeap, p, YES))
+			XFAIL(err = CheckPointer(inHeap, p, true))
 
 		if ((p = (Ptr) inHeap->freeListTail) != NULL)
-			XFAIL(err = CheckPointer(inHeap, p, YES))
+			XFAIL(err = CheckPointer(inHeap, p, true))
 
 		if ((p = (Ptr) inHeap->x48) != NULL)
-			XFAIL(err = CheckPointer(inHeap, p, YES))
+			XFAIL(err = CheckPointer(inHeap, p, true))
 
 		XFAILIF(inHeap->free > (inHeap->end - inHeap->start), err = kMemErrBogusFreeCount;)
 	}
@@ -868,7 +868,7 @@ static NewtonErr
 WalkEachBlock(SHeap * inHeap, void ** outWhereSmashed, VetProcPtr inVet, Size * outSize)
 {
 	NewtonErr	err;
-	bool			wasPrevBlockFree = YES;
+	bool			wasPrevBlockFree = true;
 	Ptr			p;
 	Block *		block, * nextBlock;
 
@@ -891,11 +891,11 @@ WalkEachBlock(SHeap * inHeap, void ** outWhereSmashed, VetProcPtr inVet, Size * 
 				return kMemErrPreposterousBlockSize;
 
 			if ((p = (Ptr) block->free.next) != NULL
-			&&  CheckPointer(inHeap, p, YES) != noErr)
+			&&  CheckPointer(inHeap, p, true) != noErr)
 				return kMemErrBadFreelistPointer;
 
 			if ((p = (Ptr) block->free.prev) != NULL
-			&&  CheckPointer(inHeap, p, YES) != noErr)
+			&&  CheckPointer(inHeap, p, true) != noErr)
 				return kMemErrBadFreelistPointer;
 
 			if (inVet != NULL
@@ -903,7 +903,7 @@ WalkEachBlock(SHeap * inHeap, void ** outWhereSmashed, VetProcPtr inVet, Size * 
 				return err;
 
 			nextBlock = (Block *)((VAddr) block + block->free.size);
-			wasPrevBlockFree = YES;			
+			wasPrevBlockFree = true;			
 		}
 		else
 		{
@@ -955,10 +955,10 @@ WalkEachBlock(SHeap * inHeap, void ** outWhereSmashed, VetProcPtr inVet, Size * 
 				return kMemErrBogusBlockType;
 
 			nextBlock = (Block *)((VAddr) block + block->inuse.size);
-			wasPrevBlockFree = NO;
+			wasPrevBlockFree = false;
 		}
 
-		if (CheckPointer(inHeap, (Ptr) nextBlock, NO) != noErr)
+		if (CheckPointer(inHeap, (Ptr) nextBlock, false) != noErr)
 			return kMemErrBadForwardMarch;
 	}
 
@@ -998,7 +998,7 @@ VetDynBlock(SHeap * inHeap, Block * inBlock, void ** outWhereSmashed)
 	NewtonErr err = VetBlock(inHeap, inBlock, outWhereSmashed);
 	if (err != noErr)
 		return err;
-	if ((err = CheckPointer(inHeap->masterPtrHeap, (Ptr) inBlock->inuse.link, NO)) == noErr)
+	if ((err = CheckPointer(inHeap->masterPtrHeap, (Ptr) inBlock->inuse.link, false)) == noErr)
 	{
 		if (HeapPtr(inBlock->inuse.link)->start != (VAddr) (inBlock+1))
 			err = kMemErrBadMasterPointer;

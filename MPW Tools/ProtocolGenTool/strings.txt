@@ -1,0 +1,460 @@
+
+
+# Elvis is alive and well and living with Dan Quayle on Mars.
+
+-i "%s" -!db -yydebug -pp -autocall -nolibmain -ClientGlue -ServerGlue -ServerSource -ServerHeader -ServerCFile
+-d %s
+-rename %s %s
+-stdout <-package
+{X} Arm6c -e -em -w -d PROTOCOLGEN "%s" > temp.pg n
+{X} ProtocolGenTool -date "`date`" -trueinputfile "%s" temp.pg  || Begin ; Delete -i temp.pg ; Exit 1; End
+{X} Delete -i temp.pg
+
+1.0d44
+
+# %s (Protocol Generator) version %s
+# Copyright  1992, Apple Computer, Inc.   All Rights Reserved.
+#
+# true input file = '%s'
+# someone claims it's %s
+#
+
+# ProtocolGen usage:
+#
+#	ProtocolGen {-InterfaceGlue | -ImplementationGlue | -ImplementationHeader | -ImplementationSource } 
+#              [-d <symbol>[=value]]  # define symbol (for preprocessing)
+#              [-i <directory>]       # specify includes directories
+#              [-NoLibMain]           # suppress generation of LibMain(...) in ImplementationSource
+#              [-Rename <from> <to>]  # rename <from> (an interface) to <to> (an implementation)
+#                                     #  (generally MUST be included when -ImplementationHeader is used)
+#              [-p]                   # enable witty repartee
+#              [-stdout]              # generate output on stdout
+#              [-package]             # output implementation glue suitable for use in a package
+#
+#	You must specify at least one of -InterfaceGlue, -ImplementationGlue, -ImplementationHeader
+#  or -ImplementationSource, or ProtocolGen will bitch at you (like this).
+
+# Elvis is dead!
+# reading <stdin> as '%s'
+# reading '%s'
+Cannot open '%s'
+
+
+;	----------------------------------------------------------------
+;  1.0d44
+;	File created %s by Protocol Generator version %s
+;	Don't edit this file
+;
+;
+
+			AREA	|C$$code|, CODE, READONLY
+
+			IMPORT	|AllocInstanceByName__FPCcT1|		; runtime new-by-name
+			IMPORT	|FreeInstance__FP9TProtocol|		; runtime delete-an-instance
+
+			MACRO
+$label		Dispatch	$slotno
+			LDR		R0,[R0,#4]				; R0 -> "real" this
+			LDR		R12,[R0,#8]				; R12 -> btable
+			ADD		R15,R12,#$slotno*4		; go there
+			MEND
+
+			MACRO
+$label		New		$classNameProc
+0			STMFD	R13!,{R0-R3,R14}		; save New(...) args
+			MOV		R1,R0					; R1 = implementation name
+			BL		$classNameProc			; R0 = interface name
+			BL		AllocInstanceByName__FPCcT1	; 
+			TST		R0,R0					; success?
+			ADD		R13,R13,#4				; pop (saved) string parm; R0 is 'this' now (or nil)
+			LDMFD	R13!,{R1-R3,R14}		; pop New(...) args
+			MOVEQ	PC,R14					; return nil if instance couldn't be made
+			MEND
+
+			MACRO
+$label		Delete	$slotno
+			LDR		R0,[R0,#4]				; R0 -> real this
+			STMFD	R13!,{R0,R14}			; save this, LK
+			ADR		R14,%%F1				; set return addr
+			LDR		R12,[R0,#8]				; R12 -> btable
+			ADD		R15,R12,#$slotno*4		; call it
+1			LDMFD	R13!,{R0,R14}			; restore this, return addr
+			B		FreeInstance__FP9TProtocol	; tail call to free mem
+			MEND
+
+
+			AREA	|C$$code|, CODE, READONLY
+			END
+
+
+;	----------------------------------------------------------------
+;  1.0d44
+;	File created %s by Protocol Generator version %s
+;	Don't edit this file
+;
+
+			AREA	|AAAA|, CODE, READONLY
+			ENTRY
+
+			AREA	|C$$code|, CODE, READONLY
+
+
+			AREA	|C$$code|, CODE, READONLY
+			END
+
+
+To generate prototype header, the protocol '%s' needs to be -rename'd
+
+/*%s	----------------------------------------------------------------
+**%s 1.0d44
+**%s	File created %s by Protocol Generator version %s
+**%s
+*/%s
+
+#ifndef __%s_H
+#define __%s_H
+
+#include <stddef.h>
+
+#ifndef __%s_H
+#include "%s"
+#endif
+
+#endif /* __%s_H */
+
+
+I couldn't find a protocol definition in your input, so I didn't generate any headers.
+
+/*%s	----------------------------------------------------------------
+**%s 1.0d44
+**%s	File created %s by Protocol Generator version %s
+**%s
+*/%s
+
+
+#ifndef __%s_H
+#include "%s"
+#endif
+
+#include <stdlib.h>
+#include <stdarg.h>
+
+/*	----------------------------------------------------------------
+**
+**	LibMain  --  Main entry point for protocols in the code block
+**
+*/
+void * LibMain(int selector, ...)
+{
+	switch ( selector )
+	{
+	case 0:	return (void*)0;					// no initialization (add some if you like)
+	case 1:	return (void*)0;					// version = 0
+	case 2:	return (void*)0;					// anything you like
+	
+	/*
+	**	YOU MAINTAIN THIS:
+	*/
+	case 3: return (void*) %d;					// # protocols exported here
+	
+	case 4:	{									// return info about Nth protocol
+				va_list ap;
+				va_start(ap, selector);
+				
+#ifdef va_hack
+				va_hack(int);	// CFront botch (ARM)
+#endif
+				int protocolNumber = va_arg(ap, int);
+				
+				TClassInfo * ci = 0;
+				switch ( protocolNumber )
+				{
+				/*
+				**	MAINTAIN EXPORTED PROTOCOLS HERE:
+				**
+				*/
+					case %d :	ci = %s :: ClassInfo(); break;
+				}
+				
+				va_end(ap);
+				
+				return ci;
+			}
+	}
+
+	return 0;									// unknown selector
+}
+
+
+
+
+I couldn't find any protocol implementations in your input, so I didn't generate any source.
+
+s-basek2-renamef-package|f-implsourcef-implheaderf-implgluef-implementationsourcef-implementationheaderf-implementationgluef-servercfile>f-serverheaderf-serversourcef-servergluef-interfacegluef-clientgluef-nolibmainf-autocallf-ppf-yydebugf-!dbf-stdoutkF-dF-i!ks-preprocessorb-emitscript
+k@	G0G*jG(GGG.GGG`GGG\GFGTFFFFGRFFGFFGvFFrFFzFF*FFGdFFGPFFxGPFvFjGHFhFZGLFXFJGJFHF4GHF2FGLFFGJFEGHEEGLEEGJEEGFE-EEGXEEG2EEG2EEE3"EHE0Df-stdins-ds-is-basekb-package|b-implsourceb-implheaderb-implglueb-implementationsourceb-implementationheaderb-implementationglueb-servercfile.b-serverheaderb-serverglueb-interfaceglueb-clientglues-preprocessorF-trueinputfilef-elvisf-!echo6b-stdouts-dateb-emitscript2-renameb-nolibmainb-autocallb-pf-ppb-yydebugf-!dbk
+CFront -e
+
+illegal-symbol
+yydebug: state %d, reading %d (%s)
+yydebug: state %d, shifting to state %d
+syntax error
+yydebug: state %d, error recovery shifting to state %d
+yydebug: error recovery discarding state %d
+illegal-symbol
+yydebug: state %d, error recovery discards token %d (%s)
+yydebug: state %d, reducing by rule %d (%s)
+
+Sorry, I can't handle non-const initializers.  (What is this doing in a header file, anyway?)
+# typedef of constant %s = %d
+# typedef of <type> (*%s)(...) as 6
+# typedef of %s as 
+# typedef (<ptr> ID) of %s as (
+# typedef (<ptr> ID [n]) of %s[%d] as "
+# typedef (ID [n]) of %s[%d] as z
+
+TProtocol
+A perfectly good protocol or monitor by this name already exists.
+Don't version protocol interfaces, please...
+#  processing interface protocol '%s'
+Xprotocol implementations must be directly subclassed from direct subclasses of TProtocol
+#  processing implementation protocol '%s'
+
+TProtocol
+A perfectly good protocol or monitor by this name already exists.
+Don't version protocol interfaces, please...
+#  processing interface monitor '%s'
+monitor implementations must be directly subclassed from direct subclasses of TProtocol
+#  processing implementation monitor '%s'
+
+# predefinition of PROTOCOL %s
+# predefinition of MONITOR %s
+Sorry, non-PSEUDOSTATIC inlines are not permitted in protocol declarations
+Sorry, non-PSEUDOSTATIC inlines are not permitted in protocol declarations
+Sorry, you can't declare 'virtual' methods in a protocol.
+constructor for embedded class object '%s' will not be run
+OperatorNew must be static
+OperatorDelete must be static
+New(...) must be static in an interface
+# method:  
+New(...) can't be static in a protocol implementation
+New must have at least a char* parameter
+# New method:  
+You can only add OperatorNew to an implementation
+OperatorNew can't have any parameters
+# OperatorNew method:  
+You can only add OperatorDelete to an implementation
+OperatorDelete can't have any parameters
+# SetHasOperatorDelete method:  
+# NONVIRTUAL method: %s
+# NONVIRTUAL method: %s
+TConstructor name doesn't match protocol name (or did you forget a type in front of a method?)
+Sorry, constructors and destructors are not allowed in this version of ProtocolGen.
+Sorry, constructors and destructors are not allowed in this version of ProtocolGen.
+Sorry, inlines are not permitted in protocol declarations.
+# prototype of %s()
+# declaration of %s
+# prototype of %s[]
+# prototype of %s()
+Zero size vectors don't work.  Go complain to X3J11 -- everyone else has.
+%d2
+# typedef of enum %s
+The type '%s' is not defined.
+# typedef of struct %s
+# typedef of class %s
+# typedef of union %s
+Division by zero.  You lose your mind.
+Modulo by zero.  You lose one turn.
+Error in constant expression.
+# Undefined symbol '%s'
+
+yydebug: after reduction, shifting from state 0 to state %d
+illegal-symbol
+yydebug: state %d, reading %d (%s)
+yydebug: after reduction, shifting from state %d to state %d
+yacc stack overflow
+File "%s"; Line %d ### %s
+File "%s"; Line %d ### warning: 
+EOF in {...}
+Unexpected EOF
+tok=CTRL-%c
+tok='%c'
+tok=PROTOCOL
+tok=MONITOR
+tok=PSEUDOSTATIC
+tok=CAPABILITIES
+tok=TYPEDEF
+tok=STRUCT
+tok=UNION
+tok=CLASS
+tok=CHAR 
+tok=INT
+tok=SHORT
+tok=LONG
+tok=SIGNED
+tok=UNSIGNED
+tok=VOID
+tok=CONST
+tok=PUBLIC
+tok=PRIVATE
+tok=PROTECTED
+tok=EXTERN
+tok=STATIC
+tok=ENUM
+tok=INLINE
+tok=VIRTUAL
+tok=FRIEND
+tok=OPERATOR
+tok=NEW
+tok=DELETE
+tok=PASCAL
+tok=DOUBLE
+tok=FLOAT
+tok="%s"
+tok=%d
+EOF encountered in /*...*/ comment
+# reading "%s"
+# reading (but ignoring, mostly) "%s"
+mis-formed ellipses
+mis-formed ellipses
+Bad octal number
+_~(),:;{}*/&.[]@!%^-+=.<>|\
+Bad character
+toplevel register volatile extended float double pascal delete new operator friend virtual inline enum static extern protected private public const void unsigned signed long short int char class union struct typedef
+ MONITOR VERSION PROTOCOLVERSION CAPABILITIES NONVIRTUAL PSEUDOSTATIC MONITORPROTOCOL
+ 42(rJ0V p6"X@0jR8jVD2V.8\p8p6dN"dB4t@x>*|h"n`J<$pV@"jN0tdJ.fRB(dHpFvDtJ,
+ ce_term : IDENTIFIERce_term : NUMBERce_term : '(' const_expr ')'@ce_term : '(' type ')' '(' const_expr ')'ce_unary : '~' ce_termce_unary : '!' ce_termce_unary : '+' ce_termce_unary : '-' ce_termce_unary : ce_term(ce_times_div_mod : ce_unary '%' ce_unary0ce_times_div_mod : ce_unary '/' ce_times_div_modce_times_div_mod : ce_unary '*' ce_times_div_modNce_times_div_mod : ce_unaryce_plus_minus : ce_times_div_mod '-' ce_plus_minus2ce_plus_minus : ce_times_div_mod '+' ce_plus_minus ce_plus_minus : ce_times_div_modnce_lsh_rsh : ce_plus_minus RSH ce_lsh_rshce_lsh_rsh : ce_plus_minus LSH ce_lsh_rshce_lsh_rsh : ce_plus_minus\ce_lt_le_gt_ge : ce_lsh_rsh GE ce_lt_le_gt_gece_lt_le_gt_ge : ce_lsh_rsh '>' ce_lt_le_gt_gece_lt_le_gt_ge : ce_lsh_rsh LE ce_lt_le_gt_gece_lt_le_gt_ge : ce_lsh_rsh '<' ce_lt_le_gt_gece_lt_le_gt_ge : ce_lsh_rshce_eq_ne : ce_lt_le_gt_ge NE ce_eq_nece_eq_ne : ce_lt_le_gt_ge EQEQ ce_eq_nece_eq_ne : ce_lt_le_gt_gece_and : ce_eq_ne '&' ce_and,ce_and : ce_eq_nece_xor : ce_and '^' ce_xor(ce_xor : ce_andce_or : ce_xor '|' ce_orce_or : ce_xorconst_expr : ce_or,const_expr_opt : const_exprconst_expr_opt :<enum_elem : IDENTIFIER '=' const_exprenum_elem : IDENTIFIER0enum_2 : enum_2 ',' enum_elemenum_2 : enum_elemenum_2 :enum_body : '{' enum_2 ',' '}'enum_body : '{' enum_2 '}'Fenum_body_opt : enum_bodyenum_body_opt :ignored_semi_or_braces : '{'ignored_semi_or_braces : ';'ignored_braces_opt :ignored_braces_opt : '{'base_type : VOID*base_type : LONG DOUBLEbase_type : DOUBLEbase_type : FLOATbase_type : UNSIGNED LONG INTbase_type : SIGNED LONG INTbase_type : UNSIGNED LONGbase_type : SIGNED LONGbase_type : LONG INTbase_type : LONGbase_type : UNSIGNED SHORT INTbase_type : SIGNED SHORT INTbase_type : SHORT UNSIGNED INTbase_type : SHORT SIGNED INT.base_type : SHORT INTbase_type : UNSIGNED INTbase_type : SIGNED INT*base_type : INTbase_type : UNSIGNED SHORTbase_type : SIGNED SHORTTbase_type : SHORTbase_type : UNSIGNED CHARbase_type : SIGNED CHARbase_type : CHARpointer : pointer CONSTpointer : '&'pointer : pointer '&'pointer : '*'pointer : pointer '*'identifier_opt : IDENTIFIERidentifier_opt :type3 : UNION identifier_opt ignored_braces_opttype3 : CLASS IDENTIFIER superclass_list_opt ignored_braces_opttype3 : STRUCT identifier_opt superclass_list_opt ignored_braces_opttype3 : IDENTIFIER(type3 : base_typetype2 : VOLATILE type3type2 : type3 CONSTtype2 : CONST type3type2 : type3type1 : ENUM identifier_opt enum_body_opttype1 : type2 pointertype1 : type2type : PASCAL type8type : type1 '(' '*' identifier_opt ')' '(' arg_list ')'type : type1&default_arg_value_opt : '=' IDENTIFIERdefault_arg_value_opt : '=' const_exprdefault_arg_value_opt :arg_list : ELLIPSESarg_list : type IDENTIFIER default_arg_value_opt ',' arg_listarg_list : type default_arg_value_opt ',' arg_list0arg_list : type IDENTIFIER default_arg_value_opt@arg_list : type default_arg_value_optarg_list : VOIDarg_list :placement : '@' const_expr<placement :vector_opt : '[' const_expr_opt ']'vector_opt :tsuperclass_list_elem : IDENTIFIERsuperclass_list_elem : PRIVATE IDENTIFIERsuperclass_list_elem : PUBLIC IDENTIFIER>superclass_list_2 : superclass_list_2 ',' superclass_list_elem(superclass_list_2 : superclass_list_elemsuperclass_list_opt : ':' superclass_list_2superclass_list_opt :top_level_ignored_stuff : ';'top_level_ignored_stuff : EXTERNXtop_level_ignored_stuff : EXTERN STRINGtop_level_ignored_stuff : EXTERN type IDENTIFIERtop_level_ignored_stuff : EXTERN STRING type IDENTIFIERtop_level_ignored_stuff : EXTERN base_type '(' IDENTIFIERtop_level_ignored_stuff : STATIC top_level_ignored_stuff : INLINE2top_level_ignored_stuff : opt_parenthesized_id '('Ntop_level_ignored_stuff : type opt_parenthesized_id '[' const_expr_opt ']' ';'"top_level_ignored_stuff : type opt_parenthesized_id ';'top_level_ignored_stuff : type opt_parenthesized_id '('opt_parenthesized_id : '(' IDENTIFIER ')'opt_parenthesized_id : IDENTIFIERCONST_opt : CONSTCONST_opt :meth_not_impl : type IDENTIFIER '(' arg_list ')' CONST_opt placement '{'4meth_not_impl : '~' IDENTIFIER '(' ')' placement ';'Pmeth_not_impl : IDENTIFIER '(' arg_list ')' placement ';'method : meth_not_implRmethod : PSEUDOSTATIC IDENTIFIER '(' arg_list ')' CONST_opt ignored_semi_or_bracesmethod : PSEUDOSTATIC type IDENTIFIER '(' arg_list ')' CONST_opt ignored_semi_or_bracesmethod : STATIC type IDENTIFIER '(' arg_list ')' CONST_opt placement ignored_semi_or_bracesmethod : type IDENTIFIER '(' arg_list ')' CONST_opt placement ';'field : type IDENTIFIER vector_opt ';'(sig_elem : '(' NUMBER opt_dot NUMBER ')'sig_elem : '(' NUMBER opt_dot STRING ')'sig_elem : '(' STRING opt_dot NUMBER ')'sig_elem : '(' STRING opt_dot STRING ')'sig_elem : '(' NUMBER ')'sig_elem : '(' STRING ')'sig_elem : NUMBERsig_elem : STRINGsig_body : sig_elemsig_body : sig_body opt_dot sig_elem*opt_dot :opt_dot : '.'body_elem : FRIENDDbody_elem : VIRTUALbody_elem : '~' IDENTIFIER '(' ')' placement '{'~body_elem : IDENTIFIER '(' arg_list ')' placement '{'body_elem : PROTECTED ':'body_elem : PRIVATE ':'body_elem : PUBLIC ':'Nbody_elem : CAPABILITIES '(' sig_body ')'body_elem : fieldbody_elem : method4monitor_body : monitor_body body_elemmonitor_body :Nprotocol_body : protocol_body body_elemprotocol_body :protocol_version_opt :@protocol_version_opt : VERSION '(' const_expr '.' const_expr ')'protocol_version_opt : VERSION '(' const_expr ')'protocolgen_decl : MONITOR IDENTIFIER ';'protocolgen_decl : PROTOCOL IDENTIFIER ';'pprotocolgen_decl : MONITOR IDENTIFIER ':' PUBLIC IDENTIFIER protocol_version_opt '{' $$3 monitor_body '}'$$3 :protocolgen_decl : PROTOCOL IDENTIFIER ':' PUBLIC IDENTIFIER protocol_version_opt '{' $$2 protocol_body '}'$$2 :aug_type_elem : IDENTIFIER '[' const_expr_opt ']'aug_type_elem : pointer IDENTIFIER '[' const_expr_opt ']'aug_type_elem : pointer IDENTIFIERaug_type_elem : IDENTIFIERtypedef_list :typedef_list : aug_type_elemtypedef_list : typedef_list ',' aug_type_elemid_decl_list_elem :id_decl_list_elem : IDENTIFIER '[' const_expr_opt ']'id_decl_list_elem : pointer IDENTIFIER '[' const_expr_opt ']'id_decl_list_elem : pointer IDENTIFIERid_decl_list_elem : IDENTIFIER id_decl_list : id_decl_list_elemrid_decl_list : id_decl_list ',' id_decl_list_elemclause : protocolgen_declclause : EXTERN STRING '{' clauses '}'*clause : TYPEDEF type $$1 typedef_list ';'$$$1 :clause : type id_decl_list ';'Hclause : type IDENTIFIER '=' const_expr
+ clause : top_level_ignored_stuff
+ clauses : clause
+ clauses clauses :
+ $accept : clauses
+ 
+ VOLATILE PASCAL DELETE NEW OPERATOR FRIEND VIRTUAL CLCL OROR ANDAND RSH LSH GE LE NE EQEQ INLINE NUMBER ENUM STATIC EXTERN ELLIPSES OSTYPE PROTECTED PRIVATE PUBLIC CONST FLOAT DOUBLE VOID UNSIGNED SIGNED LONG INT SHORT CHAR CLASS UNION STRUCT TYPEDEF IDENTIFIER STRING VERSION CAPABILITIES PSEUDOSTATIC MONITOR PROTOCOL
+ '~' '}' '|' '{' '^' ']' '[' '@' '>' '=' '<' ';' ':' '/' '.' '-' ',' '+' '*' ')' '(' '&' '%' '!'
+ end-of-file
+
+
+expected number, got '%s' instead
+%s requires an argument
+%s requires an argument
+%s requires an argument
+%s requires two arguments
+%s requires two arguments
+Unknown option: '%s'
+Bad argument treatment '%s'
+Out of memory (%s) allocating symbol
+# Holy smoke, buy more memory!  I'm totally wedged.
+
+
+%s__%d%s%s%sF__nw__%d%sSF__dl__%d%sSFC%sPFT%dN%d%sN%d%sv_
+New
+Delete
+OperatorNew
+OperatorDelete
+b%s
+
+			New			asciz__%s
+			Dispatch	%d
+			Delete	%d
+			Dispatch	%d
+
+void * %s :: operator new (  )
+{
+	// write your new operator here
+}
+$void %s :: operator delete (  )
+{
+	// write your delete operator here
+}
+ %s :: %s (  const/ )%s
+{
+	return ::%s (  );
+	// write your code for method %s here
+}
+void * operator new ();
+void operator delete();
+static  %s ( const")%s;void,  = %s
+
+
+/*	----------------------------------------------------------------
+**
+**	%s, implementation of %s
+***
+*/
+MONITOR %s : public %s 
+{
+public:
+	PROTOCOL_IMPL_HEADER_MACRO(%s);			// magic stuff, don't touch
+	
+};
+
+
+
+# the method 
+ is missing from the implementation of %s
+  %s (* [%d] [])
+(")
+signed 
+unsigned 
+volatile 
+char
+short
+int
+short int
+long
+void
+%s
+float
+double
+long double
+*
+&
+struct %s
+union %s
+class %s...
+[%d]
+[]
+(*)(p)
+ const 
+C
+S
+U
+c
+s
+i
+s
+l
+f
+d
+r
+v
+P
+R
+e
+P
+# Warning, internal error, typedef name has zero length [call landon]
+
+%d.h
+Glue.a
+.impl.h
+.c
+Glue.a
+@Internal error (bogus file kind %d)
+# Creating output file '%s'
+w
+Cannot create output file '%s'
+Internal error (something jumped the gun writing to a file of kind %d)
+%04d
+, 
+%s
+ %s 
+
+out of core in CloneString
+out of core in CloneStrCat
+
+2			DCB	"%s",0
+,"%s"
+,0
+FSYS
+CONS
+zSYST
+

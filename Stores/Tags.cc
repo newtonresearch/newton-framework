@@ -147,10 +147,10 @@ SKey::equals(const SKey & inKey) const
 Ref
 GetEntryKey(RefArg inEntry, RefArg inPath)
 {
-	if (EQRef(ClassOf(inPath), RSYMarray))
+	if (EQ(ClassOf(inPath), SYMA(array)))
 	{
 		RefVar aKey;
-		bool isKeyObjValid = NO;
+		bool isKeyObjValid = false;
 		ArrayIndex count = Length(inPath);
 		RefVar keyObj(MakeArray(count));
 		for (ArrayIndex i = 0; i < count; ++i)
@@ -158,7 +158,7 @@ GetEntryKey(RefArg inEntry, RefArg inPath)
 			aKey = GetEntryKey(inEntry, GetArraySlot(inPath, i));
 			if (NOTNIL(aKey))
 			{
-				isKeyObjValid = YES;
+				isKeyObjValid = true;
 				SetArraySlot(keyObj, i, aKey);
 			}
 		}
@@ -181,9 +181,9 @@ GetEntrySKey(RefArg inEntry, RefArg inQuerySpec, SKey * outKey, bool * outIsComp
 	{
 		short keySize;
 		KeyToSKey(keyObj, GetFrameSlot(inQuerySpec, SYMA(type)), outKey, &keySize, outIsComplexKey);
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -266,12 +266,12 @@ SKeyToKey(const SKey & inKey, RefArg inType, short * outp)
 void
 KeyToSKey(RefArg inKey, RefArg inType, SKey * outKey, short * outSize, bool * outIsComplexKey)
 {
-	bool isNonNumericKey = NO;	// assume it’s numeric
+	bool isNonNumericKey = false;	// assume it’s numeric
 
 	if (IsArray(inType))
 	{
 		MultiKeyToSKey(inKey, inType, outKey);
-		isNonNumericKey = YES;
+		isNonNumericKey = true;
 	}
 
 	else if (!((ISINT(inKey) && EQ(inType, SYMA(real))) || IsInstance(inKey, inType)))	// allow int keys where real specified
@@ -290,7 +290,7 @@ KeyToSKey(RefArg inKey, RefArg inType, SKey * outKey, short * outSize, bool * ou
 			UniChar * s = (UniChar *)BinaryData(inKey);
 			outKey->set(Ustrlen(s) * sizeof(UniChar), s);
 		}
-		isNonNumericKey = YES;
+		isNonNumericKey = true;
 	}
 
 	else if (EQ(inType, SYMA(int)))
@@ -318,7 +318,7 @@ KeyToSKey(RefArg inKey, RefArg inType, SKey * outKey, short * outSize, bool * ou
 	{
 		const char * s = SymbolName(inKey);
 		outKey->set(strlen(s), (void *)s);
-		isNonNumericKey = YES;
+		isNonNumericKey = true;
 	}
 
 	else
@@ -432,7 +432,7 @@ STagsBits::validTest(const STagsBits & inTag, int inArg2) const
 		if (tag1Size > tag2Size)
 			tag1Size = tag2Size;
 		else if (inArg2 == 1)
-			return NO;
+			return false;
 	}
 	char * tag1 = (char *)data();
 	char * tag2 = (char *)inTag.data();
@@ -444,21 +444,21 @@ STagsBits::validTest(const STagsBits & inTag, int inArg2) const
 		{
 		case 1:
 			if ((ch1 & ch2) != ch2)
-				return NO;
+				return false;
 			break;
 		case 2:
 			if ((ch1 & ch2) != 0)
-				return YES;
+				return true;
 			break;
 		case 3:
 			if ((ch1 & ch2) != 0)
-				return NO;
+				return false;
 			break;
 		}
 	}
 	if (inArg2 != 2)
-		return YES;
-	return NO;
+		return true;
+	return false;
 }
 
 #pragma mark Tags
@@ -471,7 +471,7 @@ static bool
 EncodeTags(RefArg inTagDesc, RefArg inSpec, STagsBits * outTagBits)
 {
 	outTagBits->setSize(0);
-	bool allOK = YES;
+	bool allOK = true;
 	Ref index;
 	RefVar tagSpec;
 
@@ -486,7 +486,7 @@ EncodeTags(RefArg inTagDesc, RefArg inSpec, STagsBits * outTagBits)
 			if (ISINT(index))
 				outTagBits->setTag(RINT(index));
 			else
-				allOK = NO;
+				allOK = false;
 		}
 	}
 
@@ -496,7 +496,7 @@ EncodeTags(RefArg inTagDesc, RefArg inSpec, STagsBits * outTagBits)
 		if (ISINT(index))
 			outTagBits->setTag(RINT(index));
 		else
-			allOK = NO;
+			allOK = false;
 	}
 
 	else
@@ -528,11 +528,11 @@ EncodeTag(RefArg inTagDesc, RefArg inQuerySpec, RefArg inSym, int inType, RefArg
 		{
 			AddArraySlot(outTagList, MAKEINT(inType));
 			AddArraySlot(outTagList, MakeTagBinary(&tagsBits));
-			return YES;
+			return true;
 		}
-		return NO;
+		return false;
 	}
-	return YES;
+	return true;
 }
 
 
@@ -558,12 +558,12 @@ bool
 TagsValidTest(CSoupIndex & index, RefArg inTags, PSSId inTagsId)
 {
 	if (ISNIL(inTags))
-		return NO;
+		return false;
 
 	SKey tagsKey;
 	tagsKey = (int)inTagsId;
 	STagsBits tagsData;
-	int status = index.find(&tagsKey, &tagsKey, &tagsData, NO);
+	int status = index.find(&tagsKey, &tagsKey, &tagsData, false);
 	if (status == 0)
 	{
 		ArrayIndex i, count = Length(inTags);
@@ -571,27 +571,27 @@ TagsValidTest(CSoupIndex & index, RefArg inTags, PSSId inTagsId)
 		{
 			CDataPtr spm04(GetArraySlot(inTags, i+1));
 			if (!tagsData.validTest(*(const STagsBits *)(char *)spm04, RINT(GetArraySlot(inTags, i))))
-				return NO;
+				return false;
 		}
-		return YES;
+		return true;
 	}
 	else if (status == 2 || status == 3)
 	{
 		if (Length(inTags) != 2)
-			return NO;
+			return false;
 		int tagType = RINT(GetArraySlot(inTags, 0));
 		if (tagType == kTagsNone)
-			return YES;
+			return true;
 		if (tagType == kTagsEqual)
 		{
 			SKey * key = (SKey *)BinaryData(GetArraySlot(inTags, 1));
 			return key->size() == 0;
 		}
-		return NO;
+		return false;
 	}
 	else
 		ThrowErr(exStore, kNSErrInvalidQueryType);
-	return NO;	// just to keep the compiler quiet
+	return false;	// just to keep the compiler quiet
 }
 
 
@@ -614,7 +614,7 @@ AddTag(RefArg inTags, RefArg inNewTag)
 		{
 		// slot is occupied -- ensure we’re not trying to duplicate the tag
 			if (EQ(tag, inNewTag))
-				return NO;
+				return false;
 		}
 	}
 	tag = EnsureInternal(inNewTag);
@@ -622,7 +622,7 @@ AddTag(RefArg inTags, RefArg inNewTag)
 		SetArraySlot(inTags, slot, tag);
 	else
 		AddArraySlot(inTags, tag);
-	return YES;
+	return true;
 }
 
 
@@ -662,7 +662,7 @@ GetTagsIndexDesc(RefArg inSpec)
 
 
 void
-AlterTagsIndex(unsigned char inSelector, CSoupIndex & ioSoupIndex, PSSId inId, RefArg inKey, RefArg inSoup, RefArg inTags)
+AlterTagsIndex(bool inAdd, CSoupIndex & ioSoupIndex, PSSId inId, RefArg inKey, RefArg inSoup, RefArg inTags)
 {
 	NewtonErr err;
 	if (IsSymbol(inKey)
@@ -676,10 +676,10 @@ AlterTagsIndex(unsigned char inSelector, CSoupIndex & ioSoupIndex, PSSId inId, R
 			PlainSoupAddTags(inSoup, inKey);
 			EncodeTags(inTags, inKey, &tagsData);
 		}
-		if (inSelector == 0)
-			err = ioSoupIndex.Delete(&tagsKey, &tagsData);
-		else
+		if (inAdd)
 			err = ioSoupIndex.add(&tagsKey, &tagsData);
+		else
+			err = ioSoupIndex.Delete(&tagsKey, &tagsData);
 		if (err != noErr)
 			ThrowErr(exStore, kNSErrInternalError);
 	}
@@ -693,7 +693,7 @@ UpdateTagsIndex(RefArg inSoup, RefArg indexDesc, RefArg inOldTags, RefArg inNewT
 	RefVar oldKey(GetEntryKey(inOldTags, path));
 	RefVar newKey(GetEntryKey(inNewTags, path));
 	if (ISNIL(oldKey) && ISNIL(newKey))
-		return NO;
+		return false;
 
 	RefVar tags(GetFrameSlot(indexDesc, SYMA(tags)));
 	STagsBits oldTagsData;
@@ -734,7 +734,7 @@ UpdateTagsIndex(RefArg inSoup, RefArg indexDesc, RefArg inOldTags, RefArg inNewT
 			ThrowErr(exStore, kNSErrInternalError);
 		}
 		XENDFAIL;
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }

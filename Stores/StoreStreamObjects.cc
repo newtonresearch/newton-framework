@@ -8,7 +8,7 @@
 
 #include "Objects.h"
 #include "RefMemory.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "LargeBinaries.h"
 #include "StoreStreamObjects.h"
 #include "OSErrors.h"
@@ -303,10 +303,10 @@ CStoreReadPipe::decompCallback(void * ioBuf, size_t * ioSize, bool * outUnderflo
 	if (*ioSize > fSizeRemaining)
 	{
 		*ioSize = fSizeRemaining;
-		*outUnderflow = YES;
+		*outUnderflow = true;
 	}
 	else
-		*outUnderflow = NO;
+		*outUnderflow = false;
 	OSERRIF(fStoreWrapper->store()->read(fObjectId, fOffset, ioBuf, *ioSize));
 	fSizeRemaining -= *ioSize;
 	fOffset += *ioSize;
@@ -392,7 +392,7 @@ CStoreWritePipe::init(CStoreWrapper * inWrapper, PSSId inObjectId, size_t inObje
 	&&  (fBufPtr = NewPtr(objSize)))
 	{
 		fBufSize = inObjectSize;
-		f22C = YES;
+		f22C = true;
 	}
 	else
 	{
@@ -602,7 +602,7 @@ CStoreWritePipe::compCallback(void * ioBuf, size_t inSize, bool inArg3)
 		if (fSrcOffset + inSize > fSrcSize)
 		{
 			bufferToObject(fSrcStart, fSrcOffset);
-			f22C = NO;
+			f22C = false;
 			fOffset = fSrcOffset;
 			fObjectSize = fSrcOffset;
 			compCallback(ioBuf, inSize, inArg3);
@@ -696,7 +696,7 @@ CStoreObjectReader::CStoreObjectReader(CStoreWrapper * inWrapper, PSSId inObject
 	else
 	{
 		fPrecedents = gPrecedentsForReading;
-		gPrecedentsForReadingUsed = YES;
+		gPrecedentsForReadingUsed = true;
 	}
 }
 
@@ -705,7 +705,7 @@ CStoreObjectReader::~CStoreObjectReader()
 {
 	if (fPrecedents == gPrecedentsForReading)
 	{
-		gPrecedentsForReadingUsed = NO;
+		gPrecedentsForReadingUsed = false;
 		fPrecedents->reset();
 	}
 	else if (fPrecedents != NULL)
@@ -1005,13 +1005,13 @@ CStoreObjectWriter::CStoreObjectWriter(RefArg inObj, CStoreWrapper * inWrapper, 
 	else
 	{
 		fPrecedents = gPrecedentsForWriting;
-		gPrecedentsForWritingUsed = YES;
+		gPrecedentsForWritingUsed = true;
 	}
 
 	fLargeBinaries = NULL;
-	fLargeBinaryIsDuplicate = NO;
-	fHasLargeBinary = NO;
-	fLargeBinaryIsString = NO;
+	fLargeBinaryIsDuplicate = false;
+	fHasLargeBinary = false;
+	fLargeBinaryIsString = false;
 }
 
 
@@ -1025,7 +1025,7 @@ CStoreObjectWriter::~CStoreObjectWriter()
 
 	if (fPrecedents == gPrecedentsForWriting)
 	{
-		gPrecedentsForWritingUsed = NO;
+		gPrecedentsForWritingUsed = false;
 		fPrecedents->reset();
 	}
 	else if (fPrecedents != NULL)
@@ -1066,13 +1066,13 @@ CStoreObjectWriter::write(void)
 
 	fStoreObject = (StoreObjectHeader *)fPipe.getDataPtr(0);
 	if (fStoreObject)
-		isObjectOnStore = YES;
+		isObjectOnStore = true;
 	else
 	{
 		fStoreObject = (StoreObjectHeader *)new char[storeObjHeaderSize];
 		if (fStoreObject == NULL)
 			OutOfMemory();
-		isObjectOnStore = NO;
+		isObjectOnStore = false;
 	}
 	fCurrHint = fFirstHint = fStoreObject->textHints;
 	ClearHintBits(fCurrHint);
@@ -1199,7 +1199,7 @@ CStoreObjectWriter::scan1(void)
 				else							// array
 				{
 					Ref	arrayClass = ((ArrayObject *)ObjectPtr(fObj))->objClass;
-					unsigned char	objType = EQRef(arrayClass, RSYMarray) ? kNSPlainArray : kNSArray;
+					unsigned char	objType = EQ(arrayClass, SYMA(array)) ? kNSPlainArray : kNSArray;
 					ArrayIndex numOfSlots = Length(fObj);
 
 					fPipe << objType;
@@ -1223,7 +1223,7 @@ CStoreObjectWriter::scan1(void)
 			}
 			else								// binary
 			{
-				unsigned char	objType = IsInstance(fObj, RSYMstring) ? kNSString : kNSBinaryObject;
+				unsigned char	objType = IsInstance(fObj, SYMA(string)) ? kNSString : kNSBinaryObject;
 				size_t	objSize = Length(fObj);
 
 				fPipe << (unsigned char) objType;
@@ -1236,7 +1236,7 @@ CStoreObjectWriter::scan1(void)
 				else
 				{
 					fTextPipe.write(BinaryData(fObj), objSize);
-					if (!EQRef(ClassOf(fObj), RSYMstring_2Enohint))
+					if (!EQ(ClassOf(fObj), SYMA(string_2Enohint)))
 					{
 						UniChar * text = (UniChar *)BinaryData(fObj);	// r5
 						UniChar * word = text;	// sp08
@@ -1330,11 +1330,11 @@ CStoreObjectWriter::prescan1(void)
 						ArrayIndex numOfSlots = Length(fObj);
 
 						RefVar	map(((FrameObject*)ObjectPtr(fObj))->map);
-						protoIndex = FindOffset(map, RSYM_proto);
+						protoIndex = FindOffset(map, SYMA(_proto));
 						if (fStack.top == fStack.base)
 						{
-							uniqueIdIndex = FindOffset(map, RSYM_uniqueId);
-							modTimeIndex = FindOffset(map, RSYM_modTime);
+							uniqueIdIndex = FindOffset(map, SYMA(_uniqueId));
+							modTimeIndex = FindOffset(map, SYMA(_modTime));
 						}
 						else
 						{
@@ -1356,7 +1356,7 @@ CStoreObjectWriter::prescan1(void)
 				{
 					Ref	arrayClass = ((ArrayObject *)ObjectPtr(fObj))->objClass;
 					ArrayIndex numOfSlots = Length(fObj);
-					if (!EQRef(arrayClass, RSYMarray))
+					if (!EQ(arrayClass, SYMA(array)))
 						prescan(arrayClass);
 
 					fStoreObjectSize += (1 + longToSize(numOfSlots));
@@ -1380,7 +1380,7 @@ CStoreObjectWriter::prescan1(void)
 				Ref	binClass = ((BinaryObject *)ObjectPtr(fObj))->objClass;
 				prescan(binClass);
 
-				if (IsInstance(fObj, RSYMstring))
+				if (IsInstance(fObj, SYMA(string)))
 					fStoreTextObjectSize += objSize;
 				else
 					fStoreObjectSize += objSize;
@@ -1403,8 +1403,8 @@ void
 CStoreObjectWriter::writeLargeBinary(void)
 {
 	RefVar	obj(fObj);
-	fHasLargeBinary = YES;
-	fLargeBinaryIsString = IsInstance(obj, RSYMstring);
+	fHasLargeBinary = true;
+	fLargeBinaryIsString = IsInstance(obj, SYMA(string));
 	fPipe << (unsigned char)kNSLargeBinary;
 
 	LBData *	largeBinary = (LBData *)&((IndirectBinaryObject *)ObjectPtr(obj))->data;
@@ -1414,7 +1414,7 @@ CStoreObjectWriter::writeLargeBinary(void)
 	{
 		obj = DuplicateLargeBinary(obj, fStoreWrapper);
 		largeBinary = (LBData *)&((IndirectBinaryObject *)ObjectPtr(obj))->data;
-		fLargeBinaryIsDuplicate = YES;
+		fLargeBinaryIsDuplicate = true;
 	}
 
 	if (fLargeBinaries == NULL)

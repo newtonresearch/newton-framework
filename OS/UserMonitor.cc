@@ -41,9 +41,9 @@ CUMonitor::~CUMonitor()
 				inStackSize
 				inContext				instance data for inMonitorProc
 				inEnvironmentId
-				inFaultMonitor			YES => is a fault monitor
+				inFaultMonitor			true => is a fault monitor
 				inName
-				inRebootProtected		YES => wait for monitor before rebooting
+				inRebootProtected		true => wait for monitor before rebooting
 	Return:	error code
 ------------------------------------------------------------------------------*/
 

@@ -10,6 +10,7 @@
 #define __SOUNDSERVER_H 1
 
 #include "SoundCodec.h"
+#include "SoundDriver.h"
 #include "AppWorld.h"
 #include <math.h>
 
@@ -41,9 +42,10 @@ enum
 	kSndGetVolume
 };
 
-/*--------------------------------------------------------------------------------
+
+/* -------------------------------------------------------------------------------
 	S o u n d B l o c k
---------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------- */
 class CSoundCodec;
 
 struct SoundBlock
@@ -94,13 +96,8 @@ public:
 	ULong			fValue;		// +10
 };
 
-inline	CUSoundRequest::CUSoundRequest()
-	:	CEvent(kUserSndId), fChannel(0), fSelector(0), fValue(0)
-{ }
-
-inline	CUSoundRequest::CUSoundRequest(ULong inChannel, int inSelector, ULong inValue)
-	:	CEvent(kUserSndId), fChannel(inChannel), fSelector(inSelector), fValue(inValue)
-{ }
+inline CUSoundRequest::CUSoundRequest() : CEvent(kUserSndId), fChannel(0), fSelector(0), fValue(0) { }
+inline CUSoundRequest::CUSoundRequest(ULong inChannel, int inSelector, ULong inValue) : CEvent(kUserSndId), fChannel(inChannel), fSelector(inSelector), fValue(inValue) { }
 
 
 struct SoundRequest
@@ -119,9 +116,7 @@ public:
 	float			fVolume;		// +48
 };
 
-inline	CUSoundNodeRequest::CUSoundNodeRequest()
-	:	CUSoundRequest(0,0,0), fVolume(INFINITY)
-{ }
+inline CUSoundNodeRequest::CUSoundNodeRequest() : CUSoundRequest(0,0,0), fVolume(INFINITY) { }
 
 
 
@@ -139,9 +134,7 @@ public:
 	ULong			fValue;		// +10
 };
 
-inline	CUSoundReply::CUSoundReply()
-	:	CEvent(kUserSndId), fChannel(0), fError(noErr), fValue(0)
-{ }
+inline CUSoundReply::CUSoundReply() : CEvent(kUserSndId), fChannel(0), fError(noErr), fValue(0) { }
 
 
 class CUSoundNodeReply : public CUSoundReply
@@ -154,9 +147,7 @@ public:
 	ULong			f1C;	// samples actually played
 };
 
-inline	CUSoundNodeReply::CUSoundNodeReply()
-	:	f14(0), f18(0), f1C(0)
-{ }
+inline CUSoundNodeReply::CUSoundNodeReply() : f14(0), f18(0), f1C(0) { }
 
 
 /*------------------------------------------------------------------------------
@@ -168,19 +159,70 @@ struct ChannelNode;
 class CSoundChannel
 {
 public:
-					CSoundChannel(ULong);
-					~CSoundChannel();
+							CSoundChannel(ULong);
+	virtual				~CSoundChannel();
 
-	void			start(CUMsgToken * inToken);
-	void			pause(CUSoundNodeReply * ioReply);
-	void			stop(CUSoundNodeReply * ioReply, NewtonErr inErr);
+	virtual NewtonErr	schedule(CUSoundNodeRequest * inRequest, CUMsgToken * inToken);
+	virtual NewtonErr	cancel(CUSoundNodeRequest * inRequest);
 
-	void			schedule(CUSoundNodeRequest * inRequest, CUMsgToken * inToken);
-	void			cancel(CUSoundNodeRequest * inRequest);
+	virtual NewtonErr	start(CUMsgToken * inToken);
+	virtual void		pause(CUSoundNodeReply * ioReply);
+	virtual void		stop(CUSoundNodeReply * ioReply, NewtonErr inErr);
 
-	void			makeNode(ChannelNode ** outNode);
-	void			cleanupNode(ChannelNode * inNode);
-	void			freeNode(ChannelNode * inNode, long, int);
+	void					makeNode(ChannelNode ** outNode);
+	virtual void		freeNode(ChannelNode * inNode, long, int);
+//	virtual void		setupNode(ChannelNode * inNode) = 0;
+	virtual void		cleanupNode(ChannelNode * inNode);
+
+	CSoundChannel *	next(void) const;
+
+	ULong					fId;			// +04
+	CSoundChannel *	fNext;		// +08
+	int					f0C;
+	ULong					fFlags;		// +14
+	int					f18;
+	CUMsgToken			fMsgToken;	// +1C
+	int					fDevice;		// +2C
+	bool					f30;
+// size+1E0
+};
+
+inline CSoundChannel * CSoundChannel::next(void) const  { return fNext; }
+
+// flags
+// 0x01 = output channel
+// 0x02 = input channel
+// 0x20 = output codec
+// 0x10 = input codec
+
+
+/* -------------------------------------------------------------------------------
+	C D M A C h a n n e l
+------------------------------------------------------------------------------- */
+
+class CDMAChannel : public CSoundChannel
+{
+public:
+							CDMAChannel(ULong inChannelId, SoundDriverInfo& info);
+
+	ULong					f200;
+	CSoundChannel *	f204;
+// size+208
+};
+
+
+/* -------------------------------------------------------------------------------
+	C C o d e c C h a n n e l
+------------------------------------------------------------------------------- */
+
+class CCodecChannel : public CSoundChannel
+{
+public:
+							CCodecChannel(ULong inChannelId, SoundDriverInfo& info);
+
+	ULong					f200;
+	CSoundChannel *	f204;
+// size+218
 };
 
 
@@ -238,13 +280,15 @@ public:
 
 	NewtonErr	setInputDevice(ULong, int);
 	NewtonErr	setOutputDevice(ULong, int);
-	NewtonErr	setInputVolume(int);
-	NewtonErr	setOutputVolume(int);
+	NewtonErr	setInputVolume(int);	// that would be gain rather than volume
+	NewtonErr	setOutputVolume(float);
+
+	ULong			uniqueId(void);
+	CSoundChannel *	findChannel(ULong);
 	NewtonErr	startChannel(ULong, CUMsgToken*);
 	NewtonErr	pauseChannel(ULong, CUSoundNodeReply*);
 	NewtonErr	stopChannel(ULong, CUSoundNodeReply*);
 	NewtonErr	closeChannel(ULong);
-	CSoundChannel *	findChannel(ULong);
 
 	NewtonErr	scheduleNode(CUSoundNodeRequest*, CUMsgToken*);
 	NewtonErr	cancelNode(CUSoundNodeRequest*);
@@ -252,23 +296,23 @@ public:
 	void			scheduleInputBuffer(int);
 	NewtonErr	openInputChannel(ULong*, ULong);
 	NewtonErr	openCompressorChannel(ULong*, ULong);
-	void			startCompressor(int);
-	void			stopCompressor(int);
 	void			startInput(int);
 	void			stopInput(int);
+	void			startCompressor(int);
+	void			stopCompressor(int);
 	int			soundInputIH(void);
 
 	void			scheduleOutputBuffer(void);
 	void			prepOutputChannels(void);
 	NewtonErr	openOutputChannel(ULong*, ULong);
+	void			startOutput(int);
+	void			stopOutput(int);
 	NewtonErr	openDecompressorChannel(ULong*, ULong);
 	void			startDecompressor(int);
 	void			stopDecompressor(int);
-	void			startOutput(int);
-	void			stopOutput(int);
 	int			soundOutputIH(void);
 
-	NewtonErr	stopAll(void);
+	void			stopAll(void);
 
 	void			fillDMABuffer(void);
 	void			emptyDMABuffer(int);
@@ -276,35 +320,34 @@ public:
 	bool			allInputChannelsEmpty(void);
 	bool			allOutputChannelsEmpty(void);
 
-	ULong			uniqueId(void);
-
 private:
 	friend class CSoundServerHandler;
 
 	SoundRequest *			fOutputRequest;		// +70
 	SoundRequest *			fInputRequest;			// +74
-	int32_t					f78;
+	ULong						fUID;						// +78
 	CSoundServerHandler	fSoundEventHandler;	// +7C
 	CSoundPowerHandler	fPowerEventHandler;	// +94
 	StackLimits				fB0;
 	Ptr						fB8;
 	int32_t					fBC;
 	int32_t					fC0;
-	int32_t					fC4;
+	CSoundChannel *		fOutputChannels;		// +C4	linked list
 	Ptr						fC8;	// output buffers
 	Ptr						fCC;
 	int32_t					fD0;
 	int32_t					fD4;
 	int32_t					fD8;
-	int32_t					fDC;
+	CSoundChannel *		fInputChannels;		// +DC	linked list
 	Ptr						fE0;	// input buffers
 	Ptr						fE4;
 	int32_t					fE8;
 	int32_t					fEC;
 	int32_t					fF0;
-	int32_t					fF4;
-	int32_t					fF8;
-	int32_t					fFC;
+	bool						fF4;
+	CSoundChannel *		fDecompressorChannels;	// +F8	decompressor (output) channels
+	CSoundChannel *		fCompressorChannels;		// +FC	compressor (input) channels
+	float						fOutputVolume;				// +100
 // size +0104
 };
 

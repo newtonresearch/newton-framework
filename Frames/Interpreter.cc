@@ -62,6 +62,8 @@ CInterpreter *	gInterpreterList;				// +10 0C10545C link to next interpreter ins
 bool				gFramesBreakPointsEnabled;	// +14 0C105460 - byte
 Ref				gFramesBreakPoints;			// +18 0C105464 - frame, GCRoot
 
+extern ArrayIndex		gCurrentStackPos;
+
 
 /* -----------------------------------------------------------------------------
 	F r a m e s F u n c t i o n P r o f i l i n g
@@ -166,19 +168,19 @@ ForEachLoopNext(RefArg iter)
 	{
 		Ref	tag = NOTNIL(iterMap) ? GetTag(iterMap, slotIndex) : MAKEINT(slotIndex);
 		SetArraySlotRef(iter, kIterTagIndex, tag);
-		if (isDeep && EQRef(tag, RSYM_proto))
+		if (isDeep && EQ(tag, SYMA(_proto)))
 			isMore = ForEachLoopNext(iter);
 		else
 		{
 			SetArraySlotRef(iter, kIterValueIndex, GetArraySlot(obj, slotIndex));
-			isMore = YES;
+			isMore = true;
 		}
 	}
 	else if (!isDeep || ISNIL(iterMap) || ISNIL(proto = GetFrameSlot(obj, SYMA(_proto))))
 	{
 		SetArraySlotRef(iter, kIterTagIndex, NILREF);
 		SetArraySlotRef(iter, kIterValueIndex, NILREF);
-		isMore = NO;
+		isMore = false;
 	}
 	else
 	{
@@ -202,7 +204,7 @@ ForEachLoopDone(RefArg iter)
 	 && NOTNIL(GetArraySlot(iter, kIterMapIndex)))
 	{
 		if (currentIndex < lastIndex)
-			return NO;
+			return false;
 		return ISNIL(GetFrameSlot(GetArraySlot(iter, kIterObjectIndex), SYMA(_proto)));
 	}
 	
@@ -441,16 +443,17 @@ InitForkGlobalsForFrames(NewtGlobals * inGlobals)
 //	SetPtrName(intrp, 'intp');
 
 	// give it a unique id
-	ArrayIndex	index = inGlobals->lastId;	// short
-	for (intrp = gInterpreterList; intrp != NULL; )
-	{
+	ArrayIndex	index = inGlobals->stackPos;	// short
+	for (intrp = gInterpreterList; intrp != NULL; ) {
 		index++;
-		for (intrp = gInterpreterList; intrp != NULL; intrp = intrp->next)
-			 if (intrp->id == index)	// ensure next unique id hasn’t already been taken
+		for (intrp = gInterpreterList; intrp != NULL; intrp = intrp->next) {
+			 if (intrp->id == index) {	// ensure next unique id hasn’t already been taken
 				break;
+			}
+		}
 	}
 	newt->interpreter->id = index;
-	newt->lastId = index;
+	newt->stackPos = index;
 
 #if defined(correct)
 	// set up fork’s stack
@@ -465,7 +468,7 @@ InitForkGlobalsForFrames(NewtGlobals * inGlobals)
 
 /*------------------------------------------------------------------------------
 	Switch fork globals in/out.
-	Args:		inDoFork		YES => switching into fork
+	Args:		inDoFork		true => switching into fork
 	Return:  --
 ------------------------------------------------------------------------------*/
 
@@ -473,13 +476,12 @@ void
 SwitchFramesForkGlobals(bool inDoFork)
 {
 	NewtGlobals *	newt = GetNewtGlobals();
-	if (inDoFork)
-	{
-		gCurrentStackPos = newt->lastId;
+	if (inDoFork) {
+		gCurrentStackPos = newt->stackPos;
 		gInterpreter = newt->interpreter;
+	} else {
+		newt->stackPos = gCurrentStackPos;
 	}
-	else
-		newt->lastId = gCurrentStackPos;
 }
 
 
@@ -492,8 +494,9 @@ SwitchFramesForkGlobals(bool inDoFork)
 void
 DestroyForkGlobalsForFrames(NewtGlobals * inGlobals)
 {
-	if (inGlobals->interpreter)
+	if (inGlobals->interpreter) {
 		delete inGlobals->interpreter;
+	}
 }
 
 
@@ -511,13 +514,16 @@ InitFunctions(void)
 {
 	gFunctionFrame = AllocateFrame();
 
-	gDebugCodeBlockPrototype = RA(debugCodeBlockPrototype);
-	gCodeBlockPrototype = RA(codeBlockPrototype);
+	gDebugCodeBlockPrototype = RA(debugCodeblockPrototype);
+	gCodeBlockPrototype = RA(codeblockPrototype);
 
-	if (gUseCFunctionDocStrings)
+	// the original used the mechanism in FakeFrames.h to declare these xxFunctionPrototypes
+	// we’ve built them in
+	if (gUseCFunctionDocStrings) {
 		gCFunctionPrototype = RA(debugCFunctionPrototype);
-	else
+	} else {
 		gCFunctionPrototype = RA(cFunctionPrototype);
+	}
 }
 
 
@@ -553,9 +559,26 @@ InitInterpreter(void)
 	gNewtGlobals->interpreter = intrp;
 
 	// initialize breakpoints
-	gFramesBreakPointsEnabled = NO;
+	gFramesBreakPointsEnabled = false;
 	gFramesBreakPoints = NILREF;
 	AddGCRoot(&gFramesBreakPoints);
+}
+
+
+/*------------------------------------------------------------------------------
+	Return an array of ids of all threaded interpreters.
+	Args:		--
+	Return:  array object
+------------------------------------------------------------------------------*/
+
+Ref
+GetInterpreterIds(void)
+{
+	RefVar ids(MakeArray(0));
+	for (CInterpreter * interPtr = gInterpreterList; interPtr != NULL; interPtr = interPtr->next) {
+		AddArraySlot(ids, MAKEINT(interPtr->id));
+	}
+	return ids;
 }
 
 
@@ -568,12 +591,11 @@ InitInterpreter(void)
 CInterpreter *
 GetCInterpreter(ULong inId)
 {
-	CInterpreter * iPtr;
-
-	while ((iPtr = gInterpreterList) != NULL)
-		if (iPtr->id == inId)
-			return iPtr;
-
+	for (CInterpreter * interPtr = gInterpreterList; interPtr != NULL; interPtr = interPtr->next) {
+		if (interPtr->id == inId) {
+			return interPtr;
+		}
+	}
 	return NULL;
 }
 
@@ -626,9 +648,9 @@ GetFunctionArgCount(Ref fn)
 		argCount = RVALUE(((ArrayObject *)ObjectPtr(fn))->slot[kPlainCFunctionNumArgsIndex]);
 	else if (fnClass == kBinCFunctionClass)
 		argCount = RINT(GetArraySlotRef(fn, kCFunctionNumArgsIndex));
-	else if (EQRef(fnClass, RSYMCodeBlock))
+	else if (EQ(fnClass, SYMA(CodeBlock)))
 		argCount = RINT(GetArraySlotRef(fn, kFunctionNumArgsIndex));
-	else if (EQRef(fnClass, RSYMBinCFunction))
+	else if (EQ(fnClass, SYMA(binCFunction)))
 		argCount = RINT(GetFrameSlot(fn, SYMA(numArgs)));
 
 	return argCount;
@@ -694,7 +716,7 @@ DoScript(RefArg rcvr, RefArg script, RefArg args)
 
 	// trace return -- not original
 	if (gInterpreter->tracing)
-		gInterpreter->traceReturn(YES);
+		gInterpreter->traceReturn(true);
 
 	return gInterpreter->popValue();
 }
@@ -780,13 +802,13 @@ DoMessageIfDefined(RefArg rcvr, RefArg msg, RefArg args, bool * isDefined)
 	if (ISNIL(impl))
 	{
 		if (isDefined)
-			*isDefined = NO;
+			*isDefined = false;
 		result = NILREF;
 	}
 	else
 	{
 		if (isDefined)
-			*isDefined = YES;
+			*isDefined = true;
 		result = DoSend(rcvr, impl, msg, PushArgArray(args));
 	}
 
@@ -806,13 +828,13 @@ DoProtoMessageIfDefined(RefArg rcvr, RefArg msg, RefArg args, bool * isDefined)
 	if (ISNIL(impl))
 	{
 		if (isDefined)
-			*isDefined = NO;
+			*isDefined = false;
 		result = NILREF;
 	}
 	else
 	{
 		if (isDefined)
-			*isDefined = YES;
+			*isDefined = true;
 		result = DoSend(rcvr, impl, msg, PushArgArray(args));
 	}
 
@@ -955,8 +977,8 @@ CInterpreter::CInterpreter()
 	fTraceMethodDepth = 0;
 	traceIndent = 0;
 	tracing = kTraceNothing;
-	isTraceGetEnabled = NO;
-	isTraceFuncEnabled = NO;
+	isTraceGetEnabled = false;
+	isTraceFuncEnabled = false;
 	exceptionStackIndex = 0;
 
 // thread this intepreter instance into the VM environment
@@ -994,10 +1016,10 @@ CInterpreter::setFlags()
 	if ((stackInfo & kStackFrameFlagMask) & kStackFrameLocals)
 	{
 		localsIndex = stackInfo >> kStackFrameFlagBits;
-		is2x = YES;
+		is2x = true;
 	}
 	else
-		is2x = NO;
+		is2x = false;
 }
 
 
@@ -1326,7 +1348,7 @@ CInterpreter::run1(ArrayIndex initialStackDepth)
 					goto bailCheck;
 				}
 				else
-					ThrowExInterpreterWithSymbol(kNSErrUndefinedMethod, var1);
+					ThrowExInterpreterWithSymbol(kNSErrUndefinedMethod, var2);
 				break;
 
 		/*------------------------------
@@ -1784,7 +1806,7 @@ CInterpreter::run1(ArrayIndex initialStackDepth)
 					else
 					{
 						Ref	rClass = ((StringObject *)ObjectPtr(r1))->objClass;
-						if ((obj->flags & kObjSlotted) == 0 && (EQRef(rClass, RSYMstring) || IsSubclass(rClass, RSYMstring)))
+						if ((obj->flags & kObjSlotted) == 0 && (EQ(rClass, SYMA(string)) || IsSubclass(rClass, SYMA(string))))
 						{
 							CRichString	rstr(var1);
 							if (index < 0 || index >= rstr.length())
@@ -1818,7 +1840,7 @@ CInterpreter::run1(ArrayIndex initialStackDepth)
 					{
 						Ref	rClass = ((StringObject *)ObjectPtr(var1))->objClass;
 						if ((obj->flags & kObjSlotted) == 0
-						 && (EQRef(rClass, RSYMstring) || IsSubclass(rClass, RSYMstring)))
+						 && (EQ(rClass, SYMA(string)) || IsSubclass(rClass, SYMA(string))))
 						{
 							UniChar		ch;
 							CRichString	rstr(var1);
@@ -1861,7 +1883,7 @@ CInterpreter::run1(ArrayIndex initialStackDepth)
 								result = (CoerceToDouble(r1) == CoerceToDouble(r2));
 						}
 						else
-							result = EQRef(r1, r2);
+							result = EQ(r1, r2);
 					}
 					*dataStack.top++ = MAKEBOOLEAN(result);
 				}
@@ -1898,7 +1920,7 @@ CInterpreter::run1(ArrayIndex initialStackDepth)
 								result = (CoerceToDouble(r1) != CoerceToDouble(r2));
 						}
 						else
-							result = !EQRef(r1, r2);
+							result = !EQ(r1, r2);
 					}
 					*dataStack.top++ = MAKEBOOLEAN(result);
 				}
@@ -2195,7 +2217,7 @@ CInterpreter::setLocalOnStack(RefArg index, RefArg tag, RefArg value)
 		Ref	fn = vms->func;
 		Ref	fnClass = ClassOf(fn);
 		ArrayIndex	stackIndex;
-		if (EQRef(fnClass, RSYM_function))
+		if (EQ(fnClass, SYMA(_function)))
 		{
 			if (/*localIndex < 0 ||*/ localIndex >= RINT(GetArraySlotRef(fn, kFunctionNumArgsIndex)))
 				ThrowExFramesWithBadValue(kNSErrOutOfRange, tag);
@@ -2209,7 +2231,7 @@ CInterpreter::setLocalOnStack(RefArg index, RefArg tag, RefArg value)
 			stackIndex = RVALUE(vms->stackFrame) >> 6;
 			dataStack.base[stackIndex] = value;	// ••
 		}
-		else if (EQRef(fnClass, RSYMCodeBlock))
+		else if (EQ(fnClass, SYMA(CodeBlock)))
 		{
 			Ref locals = vms->locals;
 			if (/*localIndex < 0 ||*/ localIndex + 3 >= Length(locals))
@@ -2245,7 +2267,7 @@ CInterpreter::getLocalFromStack(RefArg index, RefArg tag)
 		Ref	fn = vms->func;
 		Ref	fnClass = ClassOf(fn);
 		ArrayIndex	stackIndex;
-		if (EQRef(fnClass, RSYM_function))
+		if (EQ(fnClass, SYMA(_function)))
 		{
 			if (/*localIndex < 0 ||*/ localIndex >= RINT(GetArraySlotRef(fn, kFunctionNumArgsIndex)))
 				ThrowExFramesWithBadValue(kNSErrOutOfRange, tag);
@@ -2259,7 +2281,7 @@ CInterpreter::getLocalFromStack(RefArg index, RefArg tag)
 			stackIndex = RVALUE(vms->stackFrame) >> 6;
 			var = dataStack.base[stackIndex];	// ••
 		}
-		else if (EQRef(fnClass, RSYMCodeBlock))
+		else if (EQ(fnClass, SYMA(CodeBlock)))
 		{
 			Ref	locals = vms->locals;
 			if (/*localIndex < 0 ||*/ localIndex + 3 >= Length(locals))
@@ -2333,8 +2355,10 @@ CInterpreter::stackFrameAt(ArrayIndex index)
 int
 CInterpreter::unsafeDoSend(RefArg rcvr, RefArg impl, RefArg fn, ArrayIndex numArgs)
 {
+#if defined(correct)
 	if (ISREALPTR(fn) && ISRO(fn))
 	{
+		// function is in package or ROM
 		Ref *	funSlot = ((FrameObject *)PTR(fn))->slot;
 		Ref	funClass = funSlot[kFunctionClassIndex];
 		if (funClass == kPlainFuncClass)
@@ -2387,18 +2411,19 @@ CInterpreter::unsafeDoSend(RefArg rcvr, RefArg impl, RefArg fn, ArrayIndex numAr
 			setSendEnv(rcvr, impl);
 
 			// call the function: pop args off the stack and replace with the result
-			Ref result = callCFuncPtr((CFunction) funSlot[kCFunctionPtrIndex], numArgs);
+			Ref result = callCFuncPtr((CFunction) funSlot[kPlainCFunctionPtrIndex], numArgs);
 			dataStack.top -= ((int)numArgs - 1);
 			*(dataStack.top - 1) = result;
 
 			// restore VM and return, indicating new run-loop required
-			ctrlStack.pop();
+			vm = ctrlStack.pop();
+			instructionOffset = RVALUE(vm->pc);
 			setFlags();
 			return kCFunction;
 		}
 	}
-
-	// function is not in heap - must be in packages or ROM
+#endif
+	// function is in heap
 	// so call it directly
 	return send(rcvr, impl, fn, numArgs);
 }
@@ -2411,8 +2436,10 @@ CInterpreter::unsafeDoSend(RefArg rcvr, RefArg impl, RefArg fn, ArrayIndex numAr
 int
 CInterpreter::unsafeDoCall(Ref func, ArrayIndex numArgs)		// yes, really a Ref!
 {
+#if defined(correct)
 	if (ISREALPTR(func) && ISRO(func))
 	{
+		// function is in package or ROM
 		Ref * funSlot = ((FrameObject *)PTR(func))->slot;
 		Ref	funClass = funSlot[kFunctionClassIndex];
 		if (funClass == kPlainFuncClass)
@@ -2460,7 +2487,7 @@ CInterpreter::unsafeDoCall(Ref func, ArrayIndex numArgs)		// yes, really a Ref!
 
 			setCallEnv();
 			// call the function: pop args off the stack and replace with the result
-			Ref result = callCFuncPtr((CFunction) funSlot[kCFunctionPtrIndex], numArgs);
+			Ref result = callCFuncPtr((CFunction) funSlot[kPlainCFunctionPtrIndex], numArgs);
 			dataStack.top -= ((int)numArgs - 1);
 			*(dataStack.top - 1) = result;
 
@@ -2469,8 +2496,8 @@ CInterpreter::unsafeDoCall(Ref func, ArrayIndex numArgs)		// yes, really a Ref!
 			return kCFunction;
 		}
 	}
-
-	// function is not in heap - must be in packages or ROM
+#endif
+	// function is in heap
 	// so call it directly
 	return call(func, numArgs);
 }
@@ -2483,7 +2510,7 @@ CInterpreter::unsafeDoCall(Ref func, ArrayIndex numArgs)		// yes, really a Ref!
 		kPlainFuncClass      2.x
 		kPlainCFunctionClass 2.x native
 		kBinCFunctionClass   2.x NCT
-	or	'BinCFunction
+	or	'binCFunction
 
 	Args:		rcvr		receiver frame
 				impl		implementor frame
@@ -2524,7 +2551,7 @@ CInterpreter::send(RefArg rcvr, RefArg impl, RefArg func, ArrayIndex numArgs)
 	}
 
 	else if (funClass == kBinCFunctionClass
-	|| EQRef(funClass, RSYMBinCFunction))
+	|| EQ(funClass, SYMA(binCFunction)))
 	{
 		// set up environment
 		vm->locals = vm->rcvr;
@@ -2537,7 +2564,7 @@ CInterpreter::send(RefArg rcvr, RefArg impl, RefArg func, ArrayIndex numArgs)
 		return kCFunction;
 	}
 
-	else if (EQRef(funClass, RSYMCodeBlock))
+	else if (EQ(funClass, SYMA(CodeBlock)))
 		callCodeBlock(func, numArgs, 0x01);
 
 	else
@@ -2590,7 +2617,7 @@ CInterpreter::call(RefArg func, ArrayIndex numArgs)
 	}
 
 	else if (funClass == kBinCFunctionClass
-	|| EQRef(funClass, RSYMBinCFunction))
+	|| EQ(funClass, SYMA(binCFunction)))
 	{
 		// set up environment
 		setCallEnv();
@@ -2607,7 +2634,7 @@ CInterpreter::call(RefArg func, ArrayIndex numArgs)
 		return kCFunction;
 	}
 
-	else if (EQRef(funClass, RSYMCodeBlock))
+	else if (EQ(funClass, SYMA(CodeBlock)))
 	{
 		vm = ctrlStack.push();
 		callCodeBlock(func, numArgs, 0x01);
@@ -2643,7 +2670,7 @@ CInterpreter::topLevelCall(RefArg func, RefArg args)
 		vm = ctrlStack.push();
 		callPlainCodeBlock(func, 0, 0x02);
 	}
-	else if (EQRef(funClass, RSYMCodeBlock))
+	else if (EQ(funClass, SYMA(CodeBlock)))
 	{
 		vm = ctrlStack.push();
 		callCodeBlock(func, 0, 0x02);
@@ -2756,7 +2783,7 @@ CInterpreter::callPlainCodeBlock(RefArg func, ArrayIndex numArgs, unsigned huh)
 
 
 /*------------------------------------------------------------------------------
-	Call C function, class = kBinCFunctionClass or 'BinCFunction.
+	Call C function, class = kBinCFunctionClass or 'binCFunction.
 	Args:		func			function frame with slots in the following order
 					class
 					code
@@ -2765,7 +2792,7 @@ CInterpreter::callPlainCodeBlock(RefArg func, ArrayIndex numArgs, unsigned huh)
 					offset
 				numArgs		number of arguments on the stack
 				isUnordered	set if func slots may be unordered:
-								YES when class = 'BinCFunction
+								true when class = 'binCFunction
 	Return:	--
 ------------------------------------------------------------------------------*/
 
@@ -2915,11 +2942,19 @@ CInterpreter::callCFuncPtr(CFunction cfunc, ArrayIndex numArgs)
 	return result;
 }
 
+extern "C"
+void
+FNullCFunc(void)
+{
+	printf("-- NULL plain C function pointer!\n");
+}
+
+
 #pragma mark -
 
 /*------------------------------------------------------------------------------
 	T r a c i n g
-	Tracing is enabled by the glopbal var 'trace.
+	Tracing is enabled by the global var 'trace.
 	nil => no tracing
 	'functions => trace function calls
 	'full => trace var access and functions
@@ -2979,8 +3014,8 @@ CInterpreter::traceSetOptions(void)
 	else
 	{
 		tracing = kTraceVars;
-		isTraceGetEnabled = YES;
-		isTraceFuncEnabled = YES;
+		isTraceGetEnabled = true;
+		isTraceFuncEnabled = true;
 		fTraceMethodName = NILREF;
 		fTraceViewContextFrame = NILREF;
 		fTraceSlotName = NILREF;
@@ -2989,7 +3024,7 @@ CInterpreter::traceSetOptions(void)
 			if (EQ(trace, SYMA(functions)))
 			{
 				tracing = kTraceFunctions;
-				isTraceGetEnabled = NO;
+				isTraceGetEnabled = false;
 			}
 			else if (EQ(trace, SYMA(full)))
 			{
@@ -3019,7 +3054,7 @@ CInterpreter::traceSetOptions(void)
 					{
 						isTraceGetEnabled = NOTNIL(slot);
 						fTraceSlotName = slot;
-						isTraceFuncEnabled = NO;
+						isTraceFuncEnabled = false;
 					}
 				}
 			}
@@ -3199,7 +3234,7 @@ CInterpreter::translateException(Exception * x)
 	}
 	else
 	{
-		arg = MAKEINT((long) x->data);
+		arg = MAKEINT((long)x->data);
 		SetFrameSlot(fr, SYMA(error), arg);
 	}
 
@@ -3250,10 +3285,10 @@ CInterpreter::handleException(Exception * inException, int inDepth, StackState &
 				if (Subexception(xName, SymbolName(GetArraySlot(handlers, i))))
 				{
 					int stackDelta = STACKINDEX(dataStack) - RINT(GetArraySlot(xContext, kExcDataFnStackIndex));
-					dataStack.top = dataStack.top - MAKEINT(stackDelta);
+					dataStack.top = dataStack.top - stackDelta;
 					if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL)
 					{
-						int stackPos = gCurrentStackPos >> 16;
+						ArrayIndex stackPos = gCurrentStackPos >> 16;
 						// trace the stack
 						for (VMState * xVM = ctrlStack.at(xStackDepth/kNumOfItemsInStackFrame); vm != xVM; )
 						{
@@ -3265,7 +3300,7 @@ CInterpreter::handleException(Exception * inException, int inDepth, StackState &
 					}
 
 					stackDelta = STACKINDEX(ctrlStack) - xStackDepth;
-					ctrlStack.top = ctrlStack.top - MAKEINT(stackDelta);
+					ctrlStack.top = ctrlStack.top - stackDelta;
 					vm = ctrlStack.at(STACKINDEX(ctrlStack)/kNumOfItemsInStackFrame);
 					
 					vm->func = GetArraySlot(xContext, kExcDataFn);
@@ -3276,7 +3311,7 @@ CInterpreter::handleException(Exception * inException, int inDepth, StackState &
 					setFlags();
 					SetArraySlot(xContext, kExcDataFrame, translateException(inException));
 					exceptionContext = xContext;
-					return YES;
+					return true;
 				}
 			}
 		}
@@ -3284,8 +3319,8 @@ CInterpreter::handleException(Exception * inException, int inDepth, StackState &
 
 	if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL)
 	{
-		int stackPos = gCurrentStackPos >> 16;
-		int stackDepth = STACKINDEX(ctrlStack);
+		ArrayIndex stackPos = gCurrentStackPos >> 16;
+		ArrayIndex stackDepth = STACKINDEX(ctrlStack);
 		// trace the stack
 		for (VMState * xVM = ctrlStack.at(inState.ctrlStackIndex/kNumOfItemsInStackFrame); vm != xVM; )
 		{
@@ -3310,7 +3345,7 @@ CInterpreter::handleException(Exception * inException, int inDepth, StackState &
 	if (NOTNIL(vm->func) && instructionOffset != -1)
 		setFlags();
 
-	return NO;
+	return false;
 }
 
 
@@ -3348,8 +3383,8 @@ DeveloperNotified(Exception * inException)
 
 	for (p = gDeveloperNotified; p != NULL; p = p->next)
 		if (p->name == inException->name)
-			return YES;
-	return NO;
+			return true;
+	return false;
 }
 
 
@@ -3427,17 +3462,17 @@ CInterpreter::handleBreakPoints(void)
 	RefVar	bps(GetFrameSlot(gFramesBreakPoints, SYMA(programCounter)));
 	if (NOTNIL(bps))
 	{
-		bool					isBP = NO;
+		bool					isBP = false;
 		CObjectIterator	iter(bps);
 		for ( ; !iter.done(); iter.next())
 		{
 			Ref pc = GetFrameSlot(iter.value(), SYMA(programCounter));
 			if (RINT(pc) == instructionOffset)
 			{
-				if (EQRef(instructions, GetFrameSlot(iter.value(), SYMA(instructions)))
+				if (EQ(instructions, GetFrameSlot(iter.value(), SYMA(instructions)))
 				 && ISNIL(GetFrameSlot(iter.value(), SYMA(disabled))))
 				{
-					isBP = YES;
+					isBP = true;
 					if (NOTNIL(GetFrameSlot(iter.value(), SYMA(temporary))))
 					{
 						ArrayRemoveCount(bps, RINT(iter.tag()), 1);

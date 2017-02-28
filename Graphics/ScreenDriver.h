@@ -31,8 +31,8 @@ public:
 	void		powerOn(void);
 	void		powerOff(void);
 
-	void		blit(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
-	void		doubleBlit(PixelMap *, PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
+	void		blit(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
+	void		doubleBlit(NativePixelMap *, NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
 
 	int		getFeature(int inSelector);
 	void		setFeature(int inSelector, int inValue);
@@ -45,6 +45,7 @@ public:
 
 /*------------------------------------------------------------------------------
 	C M a i n D i s p l a y D r i v e r
+	LCD display driver implementation.
 ------------------------------------------------------------------------------*/
 struct BlitRec;
 
@@ -64,8 +65,8 @@ public:
 	void	powerOn(void);
 	void	powerOff(void);
 
-	void	blit(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
-	void	doubleBlit(PixelMap *, PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
+	void	blit(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
+	void	doubleBlit(NativePixelMap *, NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
 
 	int	getFeature(int inSelector);
 	void	setFeature(int inSelector, int inValue);
@@ -77,8 +78,8 @@ public:
 private:
 	void	blitLandscape(BlitRec * inBlit);
 	void	blitLandscapeFlip(BlitRec * inBlit);
-	void	blitPortrait(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode, int inMode);
-	void	blitPortraitFlip(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode, int inMode);
+	void	blitPortrait(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode, int inMode);
+	void	blitPortraitFlip(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode, int inMode);
 
 	ScreenGeometry			fInfo;			// +00
 	NativePixelMap			fPixMap;			// +10

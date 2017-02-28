@@ -335,8 +335,8 @@ CCRelocationGenerator::getRelocDataForBlock(ULong inBlock, char ** outData, long
 
 CFrameRelocationGenerator::CFrameRelocationGenerator()
 {
-	f17 = NO;
-	f14 = NO;
+	f17 = false;
+	f14 = false;
 	f08 = 0;
 	f04 = -1;
 	f00 = 0;
@@ -346,7 +346,7 @@ CFrameRelocationGenerator::CFrameRelocationGenerator()
 CFrameRelocationGenerator::CFrameRelocationGenerator(int inArg1)
 {
 	f17 = (inArg1 != 0);
-	f14 = NO;
+	f14 = false;
 	f08 = 0;
 	f04 = -1;
 	f00 = 0;

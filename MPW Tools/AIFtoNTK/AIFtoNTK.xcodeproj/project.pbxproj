@@ -1,0 +1,328 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F41EF3D50695ED8E00430084 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F41EF3D40695ED8E00430084 /* CoreServices.framework */; };
+		F41EF49006960E6700430084 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F41EF3D40695ED8E00430084 /* CoreServices.framework */; };
+		F429988C069492AA00CAA2A8 /* MachOtoNTK.cc in Sources */ = {isa = PBXBuildFile; fileRef = F429988B069492AA00CAA2A8 /* MachOtoNTK.cc */; };
+		F42999250695837800CAA2A8 /* MachOtoNTK.cc in Sources */ = {isa = PBXBuildFile; fileRef = F429988B069492AA00CAA2A8 /* MachOtoNTK.cc */; };
+		F4BA0D4E06948BCB00BE8E9A /* AIFtoNTK.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4BA0CD9069489F500BE8E9A /* AIFtoNTK.cc */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		F41EF3D40695ED8E00430084 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
+		F429986306948E4B00CAA2A8 /* AIFtoNTK.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIFtoNTK.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F429988B069492AA00CAA2A8 /* MachOtoNTK.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = MachOtoNTK.cc; sourceTree = "<group>"; };
+		F42998F4069580EB00CAA2A8 /* Info-MachOtoNTK.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-MachOtoNTK.plist"; sourceTree = "<group>"; };
+		F42998F5069580EB00CAA2A8 /* MachOtoNTK.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MachOtoNTK.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F4BA0CD9069489F500BE8E9A /* AIFtoNTK.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = AIFtoNTK.cc; sourceTree = "<group>"; };
+		F4BA0D5206948BCB00BE8E9A /* Info-AIFtoNTK.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-AIFtoNTK.plist"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F42998F1069580EB00CAA2A8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F41EF3D50695ED8E00430084 /* CoreServices.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4BA0D4F06948BCB00BE8E9A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F41EF49006960E6700430084 /* CoreServices.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F4BA0CC6069482A200BE8E9A = {
+			isa = PBXGroup;
+			children = (
+				F4BA0D5206948BCB00BE8E9A /* Info-AIFtoNTK.plist */,
+				F42998F4069580EB00CAA2A8 /* Info-MachOtoNTK.plist */,
+				F4BA0CD9069489F500BE8E9A /* AIFtoNTK.cc */,
+				F429988B069492AA00CAA2A8 /* MachOtoNTK.cc */,
+				F41EF3D40695ED8E00430084 /* CoreServices.framework */,
+				F4BA0CE306948A3B00BE8E9A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F4BA0CE306948A3B00BE8E9A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F429986306948E4B00CAA2A8 /* AIFtoNTK.app */,
+				F42998F5069580EB00CAA2A8 /* MachOtoNTK.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		F42998EE069580EB00CAA2A8 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4BA0D4B06948BCB00BE8E9A /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		F42998ED069580EB00CAA2A8 /* MachOtoNTK */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F4F9288B0C81CD920077CA66 /* Build configuration list for PBXNativeTarget "MachOtoNTK" */;
+			buildPhases = (
+				F42998EE069580EB00CAA2A8 /* Headers */,
+				F42998EF069580EB00CAA2A8 /* Resources */,
+				F42998F0069580EB00CAA2A8 /* Sources */,
+				F42998F1069580EB00CAA2A8 /* Frameworks */,
+				F42998F2069580EB00CAA2A8 /* Rez */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MachOtoNTK;
+			productInstallPath = "$(USER_APPS_DIR)";
+			productName = MachOtoNTK;
+			productReference = F42998F5069580EB00CAA2A8 /* MachOtoNTK.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F4BA0D4A06948BCB00BE8E9A /* AIFtoNTK */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F4F928870C81CD920077CA66 /* Build configuration list for PBXNativeTarget "AIFtoNTK" */;
+			buildPhases = (
+				F4BA0D4B06948BCB00BE8E9A /* Headers */,
+				F4BA0D4C06948BCB00BE8E9A /* Resources */,
+				F4BA0D4D06948BCB00BE8E9A /* Sources */,
+				F4BA0D4F06948BCB00BE8E9A /* Frameworks */,
+				F4BA0D5006948BCB00BE8E9A /* Rez */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AIFtoNTK;
+			productInstallPath = "$(USER_APPS_DIR)";
+			productName = AIFtoNTK;
+			productReference = F429986306948E4B00CAA2A8 /* AIFtoNTK.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F4BA0CCA069482A200BE8E9A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+			};
+			buildConfigurationList = F4F9288F0C81CD920077CA66 /* Build configuration list for PBXProject "AIFtoNTK" */;
+			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = F4BA0CC6069482A200BE8E9A;
+			productRefGroup = F4BA0CE306948A3B00BE8E9A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F4BA0D4A06948BCB00BE8E9A /* AIFtoNTK */,
+				F42998ED069580EB00CAA2A8 /* MachOtoNTK */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F42998EF069580EB00CAA2A8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4BA0D4C06948BCB00BE8E9A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXRezBuildPhase section */
+		F42998F2069580EB00CAA2A8 /* Rez */ = {
+			isa = PBXRezBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4BA0D5006948BCB00BE8E9A /* Rez */ = {
+			isa = PBXRezBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXRezBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F42998F0069580EB00CAA2A8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F42999250695837800CAA2A8 /* MachOtoNTK.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4BA0D4D06948BCB00BE8E9A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4BA0D4E06948BCB00BE8E9A /* AIFtoNTK.cc in Sources */,
+				F429988C069492AA00CAA2A8 /* MachOtoNTK.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F4F928880C81CD920077CA66 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				INFOPLIST_FILE = "Info-AIFtoNTK.plist";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = AIFtoNTK;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+			};
+			name = Development;
+		};
+		F4F928890C81CD920077CA66 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				INFOPLIST_FILE = "Info-AIFtoNTK.plist";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = AIFtoNTK;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+			};
+			name = Deployment;
+		};
+		F4F9288C0C81CD920077CA66 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = "Info-MachOtoNTK.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				PRODUCT_NAME = MachOtoNTK;
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Development;
+		};
+		F4F9288D0C81CD920077CA66 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INFOPLIST_FILE = "Info-MachOtoNTK.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				PRODUCT_NAME = MachOtoNTK;
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+			};
+			name = Deployment;
+		};
+		F4F928900C81CD920077CA66 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				SDKROOT = macosx;
+			};
+			name = Development;
+		};
+		F4F928910C81CD920077CA66 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				SDKROOT = macosx;
+			};
+			name = Deployment;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F4F928870C81CD920077CA66 /* Build configuration list for PBXNativeTarget "AIFtoNTK" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4F928880C81CD920077CA66 /* Development */,
+				F4F928890C81CD920077CA66 /* Deployment */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Development;
+		};
+		F4F9288B0C81CD920077CA66 /* Build configuration list for PBXNativeTarget "MachOtoNTK" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4F9288C0C81CD920077CA66 /* Development */,
+				F4F9288D0C81CD920077CA66 /* Deployment */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Development;
+		};
+		F4F9288F0C81CD920077CA66 /* Build configuration list for PBXProject "AIFtoNTK" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4F928900C81CD920077CA66 /* Development */,
+				F4F928910C81CD920077CA66 /* Deployment */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Development;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F4BA0CCA069482A200BE8E9A /* Project object */;
+}

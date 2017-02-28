@@ -34,8 +34,8 @@ public:
 	NewtonErr	pauseSystem(void);
 	NewtonErr	powerOffSystem(void);
 
-	void			powerOnSubsystem(ULong);
-	void			powerOffSubsystem(ULong);
+	void			powerOnSubsystem(ULong inSelector);
+	void			powerOffSubsystem(ULong inSelector);
 	void			powerOffAllSubsystems(void);
 
 	void			translatePowerEvent(ULong);
@@ -75,8 +75,8 @@ public:
 	NewtonErr	pauseSystem(void);
 	NewtonErr	powerOffSystem(void);
 
-	void			powerOnSubsystem(ULong);
-	void			powerOffSubsystem(ULong);
+	void			powerOnSubsystem(ULong inSelector);
+	void			powerOffSubsystem(ULong inSelector);
 	void			powerOffAllSubsystems(void);
 
 	void			translatePowerEvent(ULong);

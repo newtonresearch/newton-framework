@@ -123,7 +123,7 @@ CLZDecompressor::decompressChunk(size_t * outSize, void * inDstBuf, size_t inDst
 
 	size_t	totalSize = 0;
 	size_t	doneSize = 0;
-	bool		isFirstBlock = YES;
+	bool		isFirstBlock = true;
 	fSrcUsed = 0;
 	fDataSize = 1;		// anything non-zero to start loop
 
@@ -131,7 +131,7 @@ CLZDecompressor::decompressChunk(size_t * outSize, void * inDstBuf, size_t inDst
 	{
 		if (isFirstBlock)
 		{
-			isFirstBlock = NO;
+			isFirstBlock = false;
 			fDataSize = CANONICAL_LONG(*(uint32_t *)inSrcBuf) - sizeof(uint32_t);	// first block is prefixed with its length
 			srcLen = fDataSize + sizeof(uint32_t);	// include the length word
 			if (fDataSize > 0)
@@ -173,7 +173,7 @@ CLZDecompressor::decompressBlock(size_t * outSize, void * inDstBuf, size_t inDst
 	size_t	copyOffset;
 	size_t	literalLength;
 
-	fLitFlag = YES;
+	fLitFlag = true;
 	fDecodeCase = 10;
 
 	if (*(unsigned char *)inSrcBuf == 1)
@@ -187,7 +187,7 @@ CLZDecompressor::decompressBlock(size_t * outSize, void * inDstBuf, size_t inDst
 	else
 	{
 		fBitStack.setReadBuffer(srcPtr, inSrcLen - sizeof(uint32_t));	// original doesn’t bother reducing length by size of length prefix
-		fBinaryFlag = YES;	// never used
+		fBinaryFlag = true;	// never used
 		while (srcPtr <= srcEndPtr
 			&& totalSize < kSubPageSize
 			&& ((srcPtr - (unsigned char *)inSrcBuf) < fDataSize
@@ -259,7 +259,7 @@ CLZDecompressor::codeword_dec_bin(size_t * outCopyLen, size_t * outCopyOffset, s
 		copyLen += 2;
 		if (!fLitFlag)
 			copyLen++;
-		fLitFlag = YES;
+		fLitFlag = true;
 		*outCopyOffset = decode_offset_bin(inLen);
 	}
 	*outCopyLen = copyLen;

@@ -12,40 +12,6 @@
 
 
 /*--------------------------------------------------------------------------------
-	C S y s t e m E v e n t
---------------------------------------------------------------------------------*/
-
-CSystemEvent::CSystemEvent()
-	:	CEvent(kSystemMessageId)
-{
-	fSysEventType = 0;
-}
-
-
-CSystemEvent::CSystemEvent(ULong inType)
-	:	CEvent(kSystemMessageId)
-{
-	fSysEventType = inType;
-}
-
-#pragma mark -
-
-/*--------------------------------------------------------------------------------
-	C P o w e r E v e n t
---------------------------------------------------------------------------------*/
-
-CPowerEvent::CPowerEvent()
-	:	fReason(0)
-{ }
-
-
-CPowerEvent::CPowerEvent(ULong inType, ULong inReason)
-	:	CSystemEvent(inType), fReason(inReason)
-{ }
-
-#pragma mark -
-
-/*--------------------------------------------------------------------------------
 	C E v e n t C o m p a r e r
 	fItem points to a CEvent.
 --------------------------------------------------------------------------------*/
@@ -68,7 +34,6 @@ CEventComparer::testItem(const void * inItem) const
 
 
 #pragma mark -
-
 /*--------------------------------------------------------------------------------
 	C E v e n t I d l e T i m e r
 --------------------------------------------------------------------------------*/
@@ -89,12 +54,11 @@ CEventIdleTimer::timeout(void)
 	fHandler->idleProc(NULL, &size, &evt);
 }
 
-#pragma mark -
 
+#pragma mark -
 /*--------------------------------------------------------------------------------
 	C E v e n t H a n d l e r
 --------------------------------------------------------------------------------*/
-
 
 CEventHandler::CEventHandler()
 	:	fNext(NULL), fEventClass(0), fEventId(0), fIdler(NULL)
@@ -165,7 +129,7 @@ CEventHandler::replyImmed(void)
 bool
 CEventHandler::testEvent(CEvent * inEvent)
 {
-	return YES;
+	return true;
 }
 
 
@@ -190,7 +154,8 @@ CEventHandler::initIdler(Timeout inIdle, ULong inRefCon, bool inStart)
 	NewtonErr err = noErr;
 	XTRY
 	{
-		XFAILNOT(fIdler = new CEventIdleTimer(gAppWorld->fTimers, inRefCon, this, inIdle), err = MemError();)
+		fIdler = new CEventIdleTimer(gAppWorld->fTimers, inRefCon, this, inIdle);
+		XFAILIF(fIdler == NULL, err = MemError();)
 		XFAILIF(inStart && !fIdler->start(), err = -1;)
 	}
 	XENDTRY;
@@ -299,8 +264,8 @@ CEventHandler::doEvent(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
 {
 	NewtonErr			err = noErr;
 	CEventHandler *	handler = this;
-	if (handler->testEvent(inEvent))										// vt04
-		handler->eventHandlerProc(inToken, inSize, inEvent);		// vt08
+	if (handler->testEvent(inEvent))
+		handler->eventHandlerProc(inToken, inSize, inEvent);
 	else if ((handler = handler->getNextHandler()))		// intentional assignment
 		handler->doEvent(inToken, inSize, inEvent);
 	else
@@ -320,118 +285,100 @@ CEventHandler::doComplete(CUMsgToken * inToken, size_t * inSize, CEvent * inEven
 	} while ((handler = handler->getNextHandler()));		// intentional assignment
 }
 
-#pragma mark -
 
+#pragma mark -
 /*--------------------------------------------------------------------------------
 	C S y s t e m E v e n t H a n d l e r
 --------------------------------------------------------------------------------*/
+#include "SystemEvents.h"
 
 CSystemEventHandler::CSystemEventHandler()
-{}
+{
+	fInited = false;
+}
 
 
 NewtonErr
-CSystemEventHandler::init(ULong inSystemEvent, ULong inSendFilter)
-{ return noErr; }
+CSystemEventHandler::init(SystemEvent inSystemEvent, ULong inSendFilter)
+{
+	NewtonErr err;
+	CSystemEvent sysEvt(inSystemEvent);
+	err = sysEvt.registerForSystemEvent(*gAppWorld->getMyPort(), inSendFilter);
+	if (err == noErr && !fInited)
+	{
+		CEventHandler::init(kSystemEventId, kNewtEventClass);
+		fInited = true;
+	}
+	return noErr;
+}
+
+
+void
+CSystemEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
+{
+	anySystemEvents(inEvent);
+	switch (inEvent->fEventId)
+	{
+	case kSysEvent_AppAlive:
+		appAlive(inEvent);
+		break;
+	case kSysEvent_NewICCard:
+		newCard(inEvent);
+		break;
+	case kSysEvent_DeviceNotification:
+		deviceNotification(inEvent);
+		break;
+	case kSysEvent_PowerOn:
+		powerOn(inEvent);
+		break;
+	case kSysEvent_PowerOff:
+		powerOff(inEvent);
+		break;
+	case kSysEvent_PowerOffPending:
+		powerOffPending(inEvent);
+		break;
+	}
+}
 
 
 void
 CSystemEventHandler::anySystemEvents(CEvent * inEvent)
-{}
-
-
-void
-CSystemEventHandler::powerOn(CEvent * inEvent)
-{}
-
-
-void
-CSystemEventHandler::powerOff(CEvent * inEvent)
-{}
-
-
-void
-CSystemEventHandler::newCard(CEvent * inEvent)
-{}
+{ }
 
 
 void
 CSystemEventHandler::appAlive(CEvent * inEvent)
-{}
+{
+	printf("CSystemEventHandler::appAlive\n");
+}
+
+
+void
+CSystemEventHandler::newCard(CEvent * inEvent)
+{ }
 
 
 void
 CSystemEventHandler::deviceNotification(CEvent * inEvent)
-{}
+{ }
+
+
+void
+CSystemEventHandler::powerOn(CEvent * inEvent)
+{ }
+
+
+void
+CSystemEventHandler::powerOff(CEvent * inEvent)
+{ }
 
 
 void
 CSystemEventHandler::powerOffPending(CEvent * inEvent)
-{}
+{ }
 
-
-void
-CSystemEventHandler::CEventHandlerProc(CUMsgToken * token, ULong *, CEvent * inEvent)
-{}
 
 #pragma mark -
-
-/*--------------------------------------------------------------------------------
-	C P o w e r E v e n t H a n d l e r
---------------------------------------------------------------------------------*/
-typedef int PowerPlantStatus;
-int	SetBatteryType(ULong, ULong);
-int	GetPowerPlantStatus(ULong, PowerPlantStatus *);
-int	GetRawPowerPlantStatus(ULong, PowerPlantStatus *);
-int	GetPowerPlantCount(void);
-
-void
-CPowerEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
-{
-#if 0
-	switch (inEvent->x08)
-	{
-	case 1:
-	case 2:
-	case 3:
-		inEvent->x08 = 100;
-		setReply(16, inEvent);
-		break;
-	case 4:
-		inEvent->x08 = GetPowerPlantStatus(inEvent->x0C, &inEvent->x10);
-		setReply(68, inEvent);
-		break;
-	case 5:
-		inEvent->x08 = GetRawPowerPlantStatus(inEvent->x0C, &inEvent->x10);
-		setReply(68, inEvent);
-		break;
-	case 6:
-		inEvent->x0C = GetPowerPlantCount();
-		setReply(16, inEvent);
-		break;
-	case 7:
-		inEvent->x0C = SetBatteryType(inEvent->x0C, inEvent->x10);
-		break;
-	default:
-		CPowerManager * mgr = (CPowerManager *)GetGlobals();
-		mgr->doCommand(inToken, inSize, inEvent);
-		mgr->eventSetReply(16);
-	}
-#endif
-}
-
-
-void
-CPowerEventHandler::eventCompletionProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
-{
-#if 0
-	CPowerManager * mgr = (CPowerManager *)GetGlobals();
-	mgr->doReply(inToken, inSize, inEvent);
-#endif
-}
-
-#pragma mark -
-
 /*--------------------------------------------------------------------------------
 	C E v e n t H a n d l e r C o m p a r e r
 	fItem points to a CEventHandler.
@@ -454,8 +401,8 @@ CEventHandlerComparer::testItem(const void * inItem) const
 	return kItemEqualCriteria;
 }
 
-#pragma mark -
 
+#pragma mark -
 /*--------------------------------------------------------------------------------
 	C E v e n t H a n d l e r I t e r a t o r
 --------------------------------------------------------------------------------*/

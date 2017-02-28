@@ -50,7 +50,8 @@ MakeSystemStackManager(void)
 
 	XTRY
 	{
-		XFAILNOT(gStackManager = new CStackManager, err = kOSErrNoMemory;)
+		gStackManager = new CStackManager;
+		XFAILIF(gStackManager == NULL, err = kOSErrNoMemory;)
 		err = gStackManager->init();
 		SetHeap(gKernelHeap);
 		gStackManagerHeap = gKernelHeap;
@@ -123,7 +124,7 @@ CStackManager::CStackManager()
 	f6C[15] = 6;
 
 	fAC = 6;
-	fC0 = NO;
+	fC0 = false;
 }
 
 
@@ -156,10 +157,10 @@ CStackManager::init(void)
 CStackPage *
 CStackManager::allocNewPage(ObjectId inId)
 {
-	CStackPage * page;
+	CStackPage * page = new CStackPage;
 	XTRY
 	{
-		XFAIL((page = new CStackPage) == NULL)
+		XFAIL(page == NULL)
 		XFAILIF(page->init(this, inId) != noErr, delete page; page = NULL;)
 	}
 	XENDTRY;
@@ -223,7 +224,7 @@ CStackManager::userRequest(int inSelector, void * inData)
 NewtonErr
 CStackManager::releaseRequest(int inSelector)
 {
-	return releaseRequest(inSelector, YES, NULL);
+	return releaseRequest(inSelector, true, NULL);
 }
 
 
@@ -503,7 +504,7 @@ CStackManager::updatePageState(CStackPage * inPage)
 }
 
 
-void
+CStackPage *
 CStackManager::findOrAllocPage_ReturnUnLockedOnNoPage(CStackInfo * info, ULong inPageNo, ULong inSubPageMask)
 {
 	VAddr pageAddr = info->fBase + inPageNo * kPageSize;
@@ -515,7 +516,7 @@ CStackManager::findOrAllocPage_ReturnUnLockedOnNoPage(CStackInfo * info, ULong i
 			fLock.release();
 			page = allocNewPage(kNoId);
 			XFAIL(page == NULL)
-			XFAILIF(remember(info->fDomainId, pageAddr, 0, *page, YES) != noErr, page = NULL;)
+			XFAILIF(remember(info->fDomainId, pageAddr, 0, *page, true) != noErr, page = NULL;)
 			fLock.acquire(kWaitOnBlock);
 			f44.add(page);
 			pageMatchFound(info, inPageNo, inSubPageMask, page);
@@ -523,7 +524,7 @@ CStackManager::findOrAllocPage_ReturnUnLockedOnNoPage(CStackInfo * info, ULong i
 		else
 		{
 			fLock.release();
-			XFAILIF(remember(info->fDomainId, pageAddr, 0, *page, YES) != noErr, forgetMappings(info, inPageNo, page); page = NULL;)
+			XFAILIF(remember(info->fDomainId, pageAddr, 0, *page, true) != noErr, forgetMappings(info, inPageNo, page); page = NULL;)
 			fLock.acquire(kWaitOnBlock);
 		}
 	}
@@ -773,7 +774,7 @@ CStackManager::releasePagesInOneStack(CHeapDomain * inDomain, CUEnvironment inEn
 		XFAIL(ConvertIdToObj(kTaskType, info->fOwnerId, &task))
 		XFAIL(checkRange(info, task->fRegister[kcTheStack]))
 		freeSpace = 0;
-		freeSubPagesBelow(info, task->fRegister[kcTheStack] - kSubPageSize, inArg4, &freeSpace, NO);
+		freeSubPagesBelow(info, task->fRegister[kcTheStack] - kSubPageSize, inArg4, &freeSpace, false);
 		spaceFreed = freeSpace;
 	}
 	XENDTRY;
@@ -784,7 +785,7 @@ CStackManager::releasePagesInOneStack(CHeapDomain * inDomain, CUEnvironment inEn
 		bool isManager, hasDomain;
 		env.hasDomain(*inDomain, &hasDomain, &isManager);
 		if (!isManager)
-			env.add(*inDomain, YES, NO, NO);
+			env.add(*inDomain, true, false, false);
 
 		HoldSchedule();
 		VAddr stackStart, stackEnd;
@@ -798,11 +799,11 @@ CStackManager::releasePagesInOneStack(CHeapDomain * inDomain, CUEnvironment inEn
 		}
 
 		freeSpace = 0;
-		freeSubPagesBelow(info, stackStart - kSubPageSize, inArg4, &freeSpace, NO);
+		freeSubPagesBelow(info, stackStart - kSubPageSize, inArg4, &freeSpace, false);
 		spaceFreed += freeSpace;
 
 		freeSpace = 0;
-		freeSubPagesAbove(info, stackEnd + kSubPageSize, inArg4, &freeSpace, NO);
+		freeSubPagesAbove(info, stackEnd + kSubPageSize, inArg4, &freeSpace, false);
 		spaceFreed += freeSpace;
 	}
 
@@ -887,8 +888,8 @@ CStackManager::countMatches(CStackInfo * info, ArrayIndex inPageNo, CStackPage *
 {
 	ArrayIndex count = 0;
 	*outSubPageMask = 0;
-	*outArg5 = NO;
-	*outArg6 = NO;
+	*outArg5 = false;
+	*outArg6 = false;
 	for (ArrayIndex subPageIndex = 0; subPageIndex < kSubPagesPerPage; subPageIndex++)
 	{
 		if (inPage->fStackInfo[subPageIndex] == info && inPage->fPageNo[subPageIndex] == inPageNo)
@@ -897,9 +898,9 @@ CStackManager::countMatches(CStackInfo * info, ArrayIndex inPageNo, CStackPage *
 			*outSubPageMask |= (1 << subPageIndex);
 			if (inPage->f28[subPageIndex] != 0)
 			{
-				*outArg5 = YES;
+				*outArg5 = true;
 				if (inPage->f2C[subPageIndex] != 0)
-					*outArg6 = YES;
+					*outArg6 = true;
 			}
 		}
 	}
@@ -997,8 +998,8 @@ CStackManager::FMNewStack(FM_NewStack_Parms * ioParms, CStackInfo ** outInfo)
 		stackBase = stackRegionEnd - (regionsRequired * kGuardedStackRegionSize) + kTwilightStackSize;	// don’t enter the twilight zone
 
 		// create info describing the stack
-		CStackInfo * info;
-		XFAILNOT(info = new CStackInfo, err = kOSErrNoMemory;)
+		CStackInfo * info = new CStackInfo;
+		XFAILIF(info == NULL, err = kOSErrNoMemory;)
 		XFAIL(err = info->init(stackRegionEnd, stackBase,
 									  (stackRegionEnd - stackRegionStart)/kPageSize + 1,
 									  ioParms->ownerId,
@@ -1092,8 +1093,8 @@ CStackManager::FMSetHeapLimits(FM_SetHeapLimits_Parms * ioParms)
 		fLock.acquire(kWaitOnBlock);
 		info->fStackStart = ioParms->start;
 		info->fStackEnd = ioParms->end;
-		freeSubPagesBelow(info, ioParms->start - kSubPageSize, YES, NULL, NO);
-		freeSubPagesAbove(info, ioParms->end-1 + kSubPageSize, YES, NULL, NO);
+		freeSubPagesBelow(info, ioParms->start - kSubPageSize, true, NULL, false);
+		freeSubPagesAbove(info, ioParms->end-1 + kSubPageSize, true, NULL, false);
 		fLock.release();
 	}
 	return err;
@@ -1108,7 +1109,7 @@ CStackManager::FMFreeHeapRange(FM_SetHeapLimits_Parms * ioParms)
 	{
 		CStackInfo *	info;
 		info = getStackInfo(ioParms->start);
-		freeSubPagesBetween(info, ioParms->start, ioParms->end, YES, NULL, NO);
+		freeSubPagesBetween(info, ioParms->start, ioParms->end, true, NULL, false);
 	}
 	return err;
 }
@@ -1131,7 +1132,7 @@ CStackManager::FMFree(FM_Free_Parms * ioParms)
 //ArrayIndex count = 0;
 		int index = ((info->fAreaEnd - 1) - domain->fBase) / kGuardedStackRegionSize;
 		fLock.acquire(kWaitOnBlock);
-		freeSubPagesBelow(info, info->fAreaEnd - 1, YES, NULL, YES);	// ie everything
+		freeSubPagesBelow(info, info->fAreaEnd - 1, true, NULL, true);	// ie everything
 		for ( ; index >= 0; index--)
 		{
 			if (domain->fStackRegion[index] != info)
@@ -1160,7 +1161,7 @@ CStackManager::FMLockHeapRange(FM_LockHeapRange_Parms * ioParms)
 		VAddr	subPage;
 		VAddr	firstSubPage = TRUNC(ioParms->start, kSubPageSize);
 		VAddr	lastSubPage = TRUNC(ioParms->end, kSubPageSize);
-		fC0 = YES;
+		fC0 = true;
 //		fState = sp00;
 		for (subPage = firstSubPage; subPage <= lastSubPage; subPage += kSubPageSize)
 		{
@@ -1177,11 +1178,11 @@ CStackManager::FMLockHeapRange(FM_LockHeapRange_Parms * ioParms)
 			{
 			//	r0 = (subPage - info->fBase) / kSubPageSize;
 			//	r0 = info->fPage[r0/4] + (r0 & 0x03);	// subpage within page?
-			//	r0->f2C = YES;	// isWired?
+			//	r0->f2C = true;	// isWired?
 			}
 	}
 fail:
-	fC0 = NO;
+	fC0 = false;
 	return err;
 }
 
@@ -1212,8 +1213,8 @@ CStackManager::FMNewHeapDomain(FM_NewHeapDomain_Parms * ioParms)
 	NewtonErr err;
 	XTRY
 	{
-		CHeapDomain *	domain;
-		XFAILNOT(domain = new CHeapDomain, err = kOSErrNoMemory;)
+		CHeapDomain *	domain = new CHeapDomain;
+		XFAILIF(domain == NULL, err = kOSErrNoMemory;)
 		XFAIL(err = domain->init(this, ioParms->sectionBase, ioParms->sectionCount))
 
 		ioParms->domainId = *domain;
@@ -1244,7 +1245,7 @@ CStackManager::FMAddPageMappingToDomain(FM_AddPageMappingToDomain_Parms * ioParm
 
 		XFAILNOT(info = getStackInfo(ioParms->addr), err = kStackErrAddressOutOfRange;)
 		XFAILIF(info->fDomainId != ioParms->domainId, err = kStackErrAddressOutOfRange;)
-		XFAIL(err = CUDomainManager::remember(ioParms->domainId, ioParms->addr, 0, ioParms->pageId, YES))
+		XFAIL(err = CUDomainManager::remember(ioParms->domainId, ioParms->addr, 0, ioParms->pageId, true))
 		XFAILNOT(page = allocNewPage(ioParms->pageId), err = kOSErrNoMemory;)
 		fLock.acquire(kWaitOnBlock);
 		index = (ioParms->addr - info->fBase) / kPageSize;
@@ -1294,7 +1295,7 @@ CStackManager::FMGetSystemReleaseable(FM_GetSystemReleaseable_Parms * ioParms)
 	CStackPage *	page;
 	CStackInfo *	info;
 
-	err = releaseRequest(2, NO, &ioParms->releasable);
+	err = releaseRequest(2, false, &ioParms->releasable);
 
 	fLock.acquire(kWaitOnBlock);
 	ioParms->stackUsed = 0;
@@ -1337,7 +1338,7 @@ CStackPage::CStackPage()
 		f2C[i] = 0;
 	}
 	fFreeSubPages = 0x0F;
-	f30_8 = YES;
+	f30_8 = true;
 }
 
 
@@ -1357,11 +1358,11 @@ CStackPage::init(CUDomainManager * inManager, ObjectId inPageId)
 		//	reuse existing page
 		fPageId = inPageId;
 		// we don’t own it
-		fIsPageOurs = NO;
+		fIsPageOurs = false;
 		return noErr;
 	}
 	//	get our own
-	fIsPageOurs = YES;
+	fIsPageOurs = true;
 	return inManager->get(fPageId, 2);
 }
 
@@ -1403,7 +1404,8 @@ CStackInfo::init(VAddr inStackTop, VAddr inStackBase, ArrayIndex inNumOfPages, O
 
 	XTRY
 	{
-		XFAILNOT(fPage = new CStackPage*[inNumOfPages], err = kOSErrNoMemory;)
+		fPage = new CStackPage*[inNumOfPages];
+		XFAILIF(fPage == NULL, err = kOSErrNoMemory;)
 
 		for (ArrayIndex i = 0; i < inNumOfPages; ++i)
 			fPage[i] = NULL;
@@ -1476,7 +1478,8 @@ CHeapDomain::init(CStackManager * inManager, ULong inSectionBase, ULong inSectio
 
 		// for each 32K stack page within the domain there is a CStackInfo, initially NULL
 		fStackRegionCount = domainSize / kGuardedStackRegionSize;		// !!!! this will be one short for the whole domain !!!!
-		XFAILNOT(fStackRegion = new CStackInfo*[fStackRegionCount], err = kOSErrNoMemory;)
+		fStackRegion = new CStackInfo*[fStackRegionCount];
+		XFAILIF(fStackRegion == NULL, err = kOSErrNoMemory;)
 		for (ArrayIndex i = 0; i < fStackRegionCount; ++i)
 			fStackRegion[i] = NULL;
 

@@ -18,6 +18,24 @@ GetFramesErrorString(int inErr)
 
 
 /* -----------------------------------------------------------------------------
+	Return a string describing a magic pointer.
+	Args:		inMP		a magic pointer
+	Return:	C string
+----------------------------------------------------------------------------- */
+
+const char *
+GetMagicPointerString(int inMP)
+{
+	NSString * key = [NSString stringWithFormat: @"%d", inMP];
+	NSString * mpStr = NSLocalizedStringFromTable(key, @"MagicPointer", NULL);
+	if (isdigit([mpStr characterAtIndex:0])) {
+		mpStr = [@"@" stringByAppendingString:mpStr];
+	}
+	return mpStr.UTF8String;
+}
+
+
+/* -----------------------------------------------------------------------------
 	While we’re in the Cocoa environment:
 	Return the URL to the Application Support directory.
 	Args:		--
@@ -31,7 +49,7 @@ ApplicationSupportFolder(void)
 	NSURL * baseURL = [fmgr URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:nil];
 	NSURL * appFolder = [baseURL URLByAppendingPathComponent:@"Newton"];
 	// if folder doesn’t exist, create it
-	[fmgr createDirectoryAtPath:appFolder.path withIntermediateDirectories:NO attributes:nil error:nil];
+	[fmgr createDirectoryAtURL:appFolder withIntermediateDirectories:NO attributes:nil error:nil];
 	return appFolder;
 }
 

@@ -249,12 +249,12 @@ CFlashRange::isVirgin(VAddr inAddr, size_t inLength)
 	VAddr addr = fReadVAddr + (inAddr - fRangeAddr);
 	size_t longLen;
 	size_t byteLen = inLength;
-	bool isSo = YES;
+	bool isSo = true;
 	// check bytes up to 32-bit alignment
 	for ( ; (addr & 0x03) != 0 && byteLen != 0; addr++, byteLen--)
 		if (*(uint8_t *)addr != 0xFF)
 		{
-			isSo = NO;
+			isSo = false;
 			break;
 		}
 	if (isSo)
@@ -264,7 +264,7 @@ CFlashRange::isVirgin(VAddr inAddr, size_t inLength)
 		for (size_t count = longLen; count != 0; addr += 4, count -= 4)
 			if (*(uint32_t *)addr != 0xFFFFFFFF)
 			{
-				isSo = NO;
+				isSo = false;
 				break;
 			}
 	}
@@ -275,7 +275,7 @@ CFlashRange::isVirgin(VAddr inAddr, size_t inLength)
 		for ( ; byteLen != 0; addr++, byteLen--)
 			if (*(uint8_t *)addr != 0xFF)
 			{
-				isSo = NO;
+				isSo = false;
 				break;
 			}
 	}
@@ -373,7 +373,7 @@ CFlashRange::startErase(VAddr inAddr, size_t inLength)
 
 bool
 CFlashRange::isEraseComplete(NewtonErr& outErr)
-{ return YES; }
+{ return true; }
 
 
 #pragma mark -

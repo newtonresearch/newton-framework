@@ -53,8 +53,8 @@ CSerTool::listenStart(void)
 void
 CSerTool::putBytes(CBufferList * inData)
 {
-	f278 = NO;
-	fIsPutFramed = NO;
+	f278 = false;
+	fIsPutFramed = false;
 	startOutput(inData);
 }
 
@@ -62,7 +62,7 @@ void
 CSerTool::putFramedBytes(CBufferList * inData, bool inArg2)
 {
 	f278 = inArg2;
-	fIsPutFramed = YES;
+	fIsPutFramed = true;
 	startOutput(inData);
 }
 
@@ -74,7 +74,7 @@ CSerTool::startOutput(CBufferList * inData)
 		fDataToSend = inData;
 		inData->seek(0, kSeekFromBeginning);
 		fNumOfBytesToSend = inData->getSize();
-		fIsFirstOutput = YES;
+		fIsFirstOutput = true;
 		doOutput();
 	}
 
@@ -92,16 +92,16 @@ CSerTool::putComplete(NewtonErr inStatus, ULong inCount)
 void
 CSerTool::getBytes(CBufferList * outData)
 {
-	fIsGetFramed = NO;
-	fIsGetImmediate = NO;
+	fIsGetFramed = false;
+	fIsGetImmediate = false;
 	startInput(outData);
 }
 
 void
 CSerTool::getBytesImmediate(CBufferList * outData, size_t inThreshold)
 {
-	fIsGetFramed = NO;
-	fIsGetImmediate = YES;
+	fIsGetFramed = false;
+	fIsGetImmediate = true;
 	fThreshold = inThreshold;
 	startInput(outData);
 }
@@ -109,8 +109,8 @@ CSerTool::getBytesImmediate(CBufferList * outData, size_t inThreshold)
 void
 CSerTool::getFramedBytes(CBufferList * outData)
 {
-	fIsGetFramed = YES;
-	fIsGetImmediate = NO;
+	fIsGetFramed = true;
+	fIsGetImmediate = false;
 	startInput(outData);
 }
 
@@ -140,7 +140,7 @@ CCommTool::getComplete(NewtonErr inStatus, bool inEndOfFrame, size_t inGetBytesC
 	CCommToolGetReply reply;
 	reply.fGetBytesCount = inGetBytesCount;
 	if (inEndOfFrame)
-		reply.fEndOfFrame = YES;
+		reply.fEndOfFrame = true;
 	completeRequest(0, processOptionsCleanUp(inStatus, &fOptionInfo_2), &reply);
 }
 
@@ -179,7 +179,7 @@ CAsyncSerTool::deallocateBuffers(void)
 {
 	if (f28C)
 	{
-		f28C = NO;
+		f28C = false;
 
 		f3AC.deallocate();
 		f384.deallocate();
@@ -243,8 +243,8 @@ CAsyncSerTool::doOutput(void)
 {
 	if (f470.fTxdOffUntilSend)
 	{
-		setTxDTransceiverEnable(YES);
-		f470.fTxdOffUntilSend = NO;
+		setTxDTransceiverEnable(true);
+		f470.fTxdOffUntilSend = false;
 	}
 
 	NewtonErr status;
@@ -253,13 +253,13 @@ CAsyncSerTool::doOutput(void)
 		f498 |= 0x20000000;
 		if (fIsFirstOutput)
 		{
-			fIsFirstOutput = NO;
+			fIsFirstOutput = false;
 			if (f292)
-				fSerialChip->configureForOutput(YES);
+				fSerialChip->configureForOutput(true);
 			startOutputST();
 		}
 		else
-			continueOutputST(YES);
+			continueOutputST(true);
 	}
 
 	else if (status == 5)
@@ -274,7 +274,7 @@ CAsyncSerTool::doPutComplete(NewtonErr inStatus)
 {
 	f498 &= ~0x20000000;
 	if (f292)
-		fSerialChip->configureForOutput(NO);
+		fSerialChip->configureForOutput(false);
 	putComplete(inStatus, fDataToSend->position());
 }
 
@@ -490,7 +490,7 @@ CFramedAsyncSerTool::fillOutputBuffer(void)
 						numOfBytesInFrame += 3;
 					}
 					fPutFCS.reset();
-					fIsPutCharStacked = NO;
+					fIsPutCharStacked = false;
 					fPutFrameState = 1;
 					break;
 
@@ -498,7 +498,7 @@ CFramedAsyncSerTool::fillOutputBuffer(void)
 				case 1:
 					if (fIsPutCharStacked)
 					{
-						fIsPutCharStacked = NO;
+						fIsPutCharStacked = false;
 						ch = fStackedPutChar;
 					}
 					else
@@ -511,10 +511,10 @@ CFramedAsyncSerTool::fillOutputBuffer(void)
 							else if (f278)
 								fPutFrameState = 3;
 							else
-								r10 = NO;	// not in the original, but gotta break the loop somehow
+								r10 = false;	// not in the original, but gotta break the loop somehow
 						}
 					}
-					XFAILIF(fSendBuf.putNextByte(ch), fIsPutCharStacked = YES; fStackedPutChar = ch;)
+					XFAILIF(fSendBuf.putNextByte(ch), fIsPutCharStacked = true; fStackedPutChar = ch;)
 					if (framing.fDoPutFCS)
 						fPutFCS.computeCRC(ch);
 					numOfBytesInFrame++;
@@ -613,8 +613,8 @@ CFramedAsyncSerTool::emptyInputBuffer(ULong * outArg)
 				{
 				case 0:
 //	scan for SYN start-of-frame char
-					fIsGetCharEscaped = NO;
-					fIsGetCharStacked = NO;
+					fIsGetCharEscaped = false;
+					fIsGetCharStacked = false;
 					fGetFCS.reset();
 					if (framing.fDoHeader)
 					{
@@ -659,7 +659,7 @@ CFramedAsyncSerTool::emptyInputBuffer(ULong * outArg)
 				case 3:
 					if (fIsGetCharStacked)
 					{
-						fIsGetCharStacked = NO;
+						fIsGetCharStacked = false;
 						ch = fStackedGetChar;
 						status = 0;
 					}
@@ -673,12 +673,12 @@ CFramedAsyncSerTool::emptyInputBuffer(ULong * outArg)
 						{
 							if (framing.fDoGetFCS)
 								fGetFCS.computeCRC(ch);
-							fIsGetCharEscaped = NO;
+							fIsGetCharEscaped = false;
 						}
 						else
 						{
 							// get buffer is full -- flush it out to client read buffer
-							fIsGetCharStacked = YES;
+							fIsGetCharStacked = true;
 							fStackedGetChar = ch;
 							XFAIL(status = fGetBuffer.copyOut(fDataRcvd, &fNumOfBytesToRecv, NULL))
 						}
@@ -702,9 +702,9 @@ CFramedAsyncSerTool::emptyInputBuffer(ULong * outArg)
 					else if (ch == framing.fEscapeChar)
 					{
 						// it’s an escaped escape
-						fIsGetCharStacked = YES;
+						fIsGetCharStacked = true;
 						fStackedGetChar = ch;
-						fIsGetCharEscaped = YES;
+						fIsGetCharEscaped = true;
 						fGetFrameState = 3;
 					}
 					else

@@ -39,7 +39,7 @@ GetNewPageFromPageMgr(void ** outPage, ObjectId * outId, CPhys ** outPhys)
 			XFAIL(err = gThePageManager->get(id, gCurrentTaskId, 2))
 			pageAddr = GetNextKernelVAddr();
 			*outPage = (void *)pageAddr;
-			XFAILIF(err = CUDomainManager::remember(gKernelDomainId, pageAddr, 0xFF, id, YES), gThePageManager->release(id);)
+			XFAILIF(err = CUDomainManager::remember(gKernelDomainId, pageAddr, 0xFF, id, true), gThePageManager->release(id);)
 			*outId = id;
 			*outPhys = NULL;
 		}
@@ -50,7 +50,7 @@ GetNewPageFromPageMgr(void ** outPage, ObjectId * outId, CPhys ** outPhys)
 			CLittlePhys *	physPage = gPageTracker->take();
 			pageAddr = GetNextKernelVAddr();
 			*outPage = (void *)pageAddr;
-			RememberMappingUsingPAddr(pageAddr, 0xFF, physPage->base(), YES);
+			RememberMappingUsingPAddr(pageAddr, 0xFF, physPage->base(), true);
 			*outId = kNoId;
 			*outPhys = physPage;
 		}
@@ -102,7 +102,7 @@ InitSafeHeap(SSafeHeapPage ** outHeap)
 /*------------------------------------------------------------------------------
 	Determine whether the safe heap is completely empty.
 	Args:		inHeap			the heap
-	Return:	YES => it’s empty
+	Return:	true => it’s empty
 ------------------------------------------------------------------------------*/
 
 bool
@@ -431,7 +431,7 @@ SWiredHeapDescr::growByOnePage(void)
 	VAddr			limit = fStart + fSize;
 	if ((err = SetHeapLimits(fStart, limit + kPageSize)) == noErr)
 	{
-		if ((err = LockHeapRange(limit, limit + kPageSize, YES)) == noErr)
+		if ((err = LockHeapRange(limit, limit + kPageSize, true)) == noErr)
 			fSize += kPageSize;
 		else
 			SetHeapLimits(fStart, limit - kPageSize);

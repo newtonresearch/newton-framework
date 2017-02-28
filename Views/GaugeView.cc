@@ -7,12 +7,12 @@
 */
 
 #include "Quartz.h"
-#include "QDGeometry.h"
+#include "Geometry.h"
 #include "GaugeView.h"
 
 #include "NewtonTime.h"
 #include "Arrays.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Sound.h"
 
 #include "Unit.h"
@@ -31,7 +31,7 @@ VIEW_SOURCE_MACRO(clGaugeView, CGaugeView, CView)
 	Perform a command.
 	If itÕs a click then track the pen otherwise pass it on.
 	Args:		inCmd		the command frame
-	Return:	YES if we handled the command
+	Return:	true if we handled the command
 --------------------------------------------------------------------------------*/
 
 bool
@@ -83,7 +83,7 @@ CGaugeView::init(RefArg inContext, CView * inView)
 --------------------------------------------------------------------------------*/
 
 void
-CGaugeView::realDraw(Rect * inBounds)
+CGaugeView::realDraw(Rect& inRect)
 {
 	Rect	bar;
 	bool  isSlider;
@@ -157,7 +157,7 @@ CGaugeView::realDraw(Rect * inBounds)
 /*--------------------------------------------------------------------------------
 	Track the slider while the pen is down.
 	Args:		inUnit		the pen unit
-	Return:	YES always
+	Return:	true always
 --------------------------------------------------------------------------------*/
 
 bool
@@ -167,7 +167,7 @@ CGaugeView::trackSetValue(CUnit * inUnit)
 	BusyBoxSend(53);
 
 	CStroke * theStroke = inUnit->stroke();
-	theStroke->inkOff(YES);
+	theStroke->inkOff(true);
 
 	RefVar snd(getProto(SYMA(_sound)));
 
@@ -196,13 +196,13 @@ CGaugeView::trackSetValue(CUnit * inUnit)
 	if (viewValue != initialValue)
 	{
 		RefVar	args(MakeArray(2));
-		SetArraySlot(args, 0, initialValue);
-		SetArraySlot(args, 1, viewValue);
-		runScript(SYMA(viewFinalChangeScript), args, NO, NULL);
+		SetArraySlot(args, 0, MAKEINT(initialValue));
+		SetArraySlot(args, 1, MAKEINT(viewValue));
+		runScript(SYMA(viewFinalChangeScript), args, false, NULL);
 	}
 
 	BusyBoxSend(54);
-	return YES;
+	return true;
 }
 
 

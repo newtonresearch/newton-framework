@@ -110,19 +110,9 @@ DeclawRefsInRegisteredRanges(void)
 
 
 /* ---------------------------------------------------------------------
-	F u n c t i o n   P r o t o t y p e s
---------------------------------------------------------------------- */
-
-void		InitStartupHeap(void);
-void		FixStartupHeap(void);
-
-//extern Heap		GetCurrentHeap(void);
-//extern void		ValidateHeap(Heap inHeap, int inArg2);
-
-
-/* ---------------------------------------------------------------------
 	D a t a
 --------------------------------------------------------------------- */
+extern OffsetCacheItem offsetCache[];
 
 ObjHeader * gROMSoupData;
 ObjHeader * gROMSoupDataSize;
@@ -137,51 +127,17 @@ struct GCContext
 } gGC
 = { true, NULL, NULL, NULL };
 
-CObjectHeap *	gHeap;
-ObjectCache		gCached;
-int				gCurrentStackPos;
+CObjectHeap *	gHeap = NULL;
+ObjectCache		gCached = { INVALIDPTRREF, NULL, INVALIDPTRREF, 0, offsetCache };
+ArrayIndex		gCurrentStackPos = 1;	// top 16 bits is interpreter identifier
 
-bool			gPrintMaps;
-bool			gUriahROM;
-bool			gUriahPrintArrays;
-bool			gUriahSaveOutput;
-
-#pragma mark -
-
-/* ---------------------------------------------------------------------
-	S t a r t u p   H e a p
-	Used for creating symbols (which should be in ROM) at startup time.
---------------------------------------------------------------------- */
-
-extern OffsetCacheItem offsetCache[];
-CObjectHeap * gStartupHeap;
-
-void
-InitStartupHeap(void)
-{
-	gStartupHeap = new CObjectHeap(16*KByte);
-	gHeap = gStartupHeap;
-
-	gCached.ref = INVALIDPTRREF;
-	gCached.lenRef = INVALIDPTRREF;
-	gCached.offset = offsetCache;
-
-	gPrintMaps = false;
-	gUriahROM = false;
-	gUriahPrintArrays = false;
-	gUriahSaveOutput = false;
-}
-
-void
-FixStartupHeap(void)
-{
-	RemoveGCRoot(&gStartupHeap->objRoot);
-	gGC.roots = NULL;
-}
+bool			gPrintMaps = false;
+bool			gUriahROM = false;
+bool			gUriahPrintArrays = false;
+bool			gUriahSaveOutput = false;
 
 
 #pragma mark -
-
 /* ---------------------------------------------------------------------
 	P u b l i c   I n t e r f a c e
 --------------------------------------------------------------------- */
@@ -283,7 +239,7 @@ AllocateMapWithTags(RefArg inSuperMap, RefArg tagsArray)
 	{
 		Ref tag = tags->slot[i];
 		mapPtr->slot[i] = tag;
-		if (!isProtoFlagSet && SymbolCompare(tag, RSYM_proto))
+		if (!isProtoFlagSet && SymbolCompare(tag, SYMA(_proto)))
 		{
 			mapPtr->objClass |= kMapProto;
 			isProtoFlagSet = true;
@@ -738,14 +694,14 @@ ClearRefHandles(void)
 void
 IncrementCurrentStackPos(void)
 {
-	gCurrentStackPos++;
+	++gCurrentStackPos;
 }
 
 
 void
 DecrementCurrentStackPos(void)
 {
-	gCurrentStackPos--;
+	--gCurrentStackPos;
 }
 
 
@@ -1202,16 +1158,19 @@ CObjectHeap::~CObjectHeap()
 RefHandle *
 CObjectHeap::allocateRefHandle(Ref inRef)
 {
+if (refHIndex > NUMOFREFHANDLES) {
+	printf("\nCObjectHeap::allocateRefHandle() refHIndex=%ud\n", refHIndex);
+}
 	// point to next free RefHandle
 	RefHandle * refh = refHBlock->data + refHIndex;
 	// …which points to the next
 	ArrayIndex nxFree = RVALUE(refh->ref);
 
-if (nxFree == kIndexNotFound)
+if (nxFree == kIndexNotFound) {
 	printf("==== LAST REF HANDLE ====\n");
-else if (nxFree > NUMOFREFHANDLES)
+} else if (nxFree > NUMOFREFHANDLES) {
 	printf("---- BAD REF HANDLE ----\n");
-
+}
 	// update index to next free refHandle
 	refHIndex = nxFree;
 
@@ -1236,16 +1195,22 @@ else if (nxFree > NUMOFREFHANDLES)
 void
 CObjectHeap::disposeRefHandle(RefHandle * inRefHandle)
 {
-	if (inRefHandle != NULL)	// original doesn’t check
-	{
+	if (inRefHandle != NULL) {	// original doesn’t check
 		ArrayIndex x = refHIndex;
-		// original says if (x < 0) x = -1;
+if (refHIndex > NUMOFREFHANDLES) {
+	printf("\nCObjectHeap::disposeRefHandle() refHIndex=%ud\n", refHIndex);
+}
+		if (x < 0) {
+			x = -1;
+		}
 		inRefHandle->ref = MAKEINT(x);
 		inRefHandle->stackPos = MAKEINT(kIndexNotFound);
 		refHIndex = inRefHandle - refHBlock->data;
+if (refHIndex > NUMOFREFHANDLES) {
+	printf("\nCObjectHeap::disposeRefHandle() refHIndex=%ud\n", refHIndex);
+}
 	}
 }
-
 
 
 /*----------------------------------------------------------------------
@@ -1264,7 +1229,7 @@ printf("CObjectHeap::expandObjectTable(#%p)\n", inRefHandle);
 	// if size hasn't changed then there wasn't enough memory
 	if ((refHBlock->size - originalSize) / sizeof(RefHandle) == 0)
 	{
-		refHIndex = - (long)(&refHBlock->data[0]) / sizeof(RefHandle);
+		refHIndex = - (long)(&refHBlock->data[0]) / sizeof(RefHandle);	// sic -- but pointless since we WILL crash hard
 		OutOfMemory();
 	}
 	return inRefHandle;
@@ -1272,51 +1237,22 @@ printf("CObjectHeap::expandObjectTable(#%p)\n", inRefHandle);
 
 
 /*----------------------------------------------------------------------
-	Clear all the RefHandles.
-
--- Original --
-	ArrayIndex count = (refHBlock->size - sizeof(ObjHeader)) / sizeof(RefHandle);
-	int hiWord = refHIndex >> 16;		//r8
-	int loWord = refHIndex & 0xFFFF;	//r7
-	for (ArrayIndex i = 0; i < count - 1; ++i)
-	{
-		RefHandle * rhp = refHBlock->data + i;
-		int x = RVALUE(rhp->stackPos);
-		if (x != 0 && hiWord == (x >> 16) && loWord < (x & 0xFFFF))
-			DisposeRefHandle(rhp);
-	}
-
--- My way --
-	int limit = refHIndex;
-	RefHandle * rhp = refHBlock->data;
-	for (ArrayIndex i = 0; i < NUMOFREFHANDLES - 1; ++i, ++rhp)
-	{
-		int x = RVALUE(rhp->stackPos);
-		if (x != 0 && x > limit)
-			DisposeRefHandle(rhp);
-	}
-
+	Clear RefHandles allocated after the position saved in gCurrentStackPos.
 ----------------------------------------------------------------------*/
 
 void
 CObjectHeap::clearRefHandles(void)
 {
-	int hiWord = refHIndex >> 16;
-	int loWord = refHIndex & 0xFFFF;
-//printf("ClearRefHandles() >%d : ",refHIndex);
+	ArrayIndex count = (refHBlock->size - sizeof(ObjHeader)) / sizeof(RefHandle);
+	ArrayIndex currentInterpreter = gCurrentStackPos >> 16;
+	ArrayIndex currentStackPos = gCurrentStackPos & 0xFFFF;
 	RefHandle * rhp = refHBlock->data;
-	for (ArrayIndex i = 0; i < NUMOFREFHANDLES - 1; ++i, ++rhp)	// last RefHandle is reserved
-	{
-		int x = RVALUE(rhp->stackPos);
-if (x > (int)NUMOFREFHANDLES)
-	printf("---- BAD REF HANDLE ----\n");
-		if (x != 0 && hiWord == (x >> 16) && loWord < (x & 0xFFFF))
-		{
-//printf("%d ",x);
+	for (ArrayIndex i = 0; i < count - 1; ++i, ++rhp) {	// last RefHandle is reserved
+		ArrayIndex x = RVALUE(rhp->stackPos);
+		if (x != 0 && (x >> 16) == currentInterpreter && (x & 0xFFFF) > currentStackPos) {
 			DisposeRefHandle(rhp);
 		}
 	}
-//printf("\n");
 }
 
 
@@ -1514,7 +1450,7 @@ CObjectHeap::allocateObject(size_t inSize, unsigned char flags)
 	if ((flags & kObjSlotted) != 0)
 	{
 		Ref * p = ((ArrayObject *)obj)->slot;
-		for (ArrayIndex i = 0, numSlots = (inSize - SIZEOF_ARRAYOBJECT) / sizeof(Ref); i < numSlots; ++i, ++p)
+		for (ArrayIndex i = 0, numSlots = (inSize - SIZEOF_ARRAYOBJECT(0)) / sizeof(Ref); i < numSlots; ++i, ++p)
 			*p = NILREF;
 	}
 	else if (inSize > SIZEOF_BINARYOBJECT)
@@ -1570,7 +1506,7 @@ CObjectHeap::allocateArray(RefArg inClass, ArrayIndex inLength)
 	else */ if (inLength > kMaxSlottedObjSize)
 		ThrowExFramesWithBadValue(kNSErrOutOfRange, MAKEINT(inLength));
 
-	Ref	obj = allocateObject(SIZEOF_ARRAYOBJECT + (inLength * sizeof(Ref)), kArrayObject);
+	Ref	obj = allocateObject(SIZEOF_ARRAYOBJECT(inLength), kArrayObject);
 	((ArrayObject *)PTR(obj))->objClass = inClass;
 
 	return obj;
@@ -1585,7 +1521,7 @@ Ref
 CObjectHeap::allocateFrame(void)
 {
 	// obj must be RefVar 'cause map allocation might move it
-	RefVar obj(allocateObject(SIZEOF_FRAMEOBJECT, kFrameObject));
+	RefVar obj(allocateObject(SIZEOF_FRAMEOBJECT(0), kFrameObject));
 	Ref theMap = allocateMap(RA(NILREF), 0);
 	((FrameObject *)PTR(obj))->map = theMap;
 
@@ -1600,7 +1536,7 @@ CObjectHeap::allocateFrame(void)
 Ref
 CObjectHeap::allocateFrameWithMap(RefArg inMap)
 {
-	Ref r = allocateObject(SIZEOF_FRAMEOBJECT + ComputeMapSize(inMap) * sizeof(Ref), kFrameObject);
+	Ref r = allocateObject(SIZEOF_FRAMEOBJECT(ComputeMapSize(inMap)), kFrameObject);
 	((FrameObject *)PTR(r))->map = inMap;
 
 	return r;
@@ -1614,7 +1550,7 @@ CObjectHeap::allocateFrameWithMap(RefArg inMap)
 Ref
 CObjectHeap::allocateMap(RefArg inSuperMap, ArrayIndex inLength)
 {
-	Ref r = allocateObject(SIZEOF_FRAMEMAPOBJECT + inLength * sizeof(Ref), kArrayObject);
+	Ref r = allocateObject(SIZEOF_FRAMEMAPOBJECT(inLength), kArrayObject);
 	((FrameMapObject *)PTR(r))->objClass = kMapPlain;
 	((FrameMapObject *)PTR(r))->supermap = inSuperMap;
 
@@ -1660,7 +1596,7 @@ CObjectHeap::unsafeSetArrayLength(RefArg inObj, ArrayIndex inLength)
 {
 	ArrayObject * obj = (ArrayObject *)ObjectPtr(inObj);
 	size_t oldSize = obj->size;
-	size_t newSize = SIZEOF_ARRAYOBJECT + inLength * sizeof(Ref);
+	size_t newSize = SIZEOF_ARRAYOBJECT(inLength);
 	if (newSize != oldSize)
 	{
 		ArrayIndex oldLength = ARRAYLENGTH(obj);
@@ -2642,15 +2578,15 @@ if (objSize > 32000)
 			{
 				if ((obj->flags & kObjFrame) != 0)
 				{
-					frameMapObjSize += Length(objRef) * sizeof(Ref) + SIZEOF_FRAMEMAPOBJECT;
+					frameMapObjSize += SIZEOF_FRAMEMAPOBJECT(Length(objRef));
 					frameSize += objSize;
 					frameCount++;
 					if (ISNIL(((FrameObject *)obj)->map))
-						objClassSym = RSYMframe;
+						objClassSym = SYMA(frame);
 					else if (FrameHasSlot(objRef, SYMA(viewCObject)))
 						viewCount += objSize;
 					else if (ISINT(GetFrameSlot(objRef, SYMA(_proto))))	// frame is NTK definition
-						objClassSym = RSYMframe;									// (not in original)
+						objClassSym = SYMA(frame);									// (not in original)
 				}
 				else
 				{
@@ -2670,9 +2606,9 @@ if (objSize > 32000)
 			}
 			if (ISNIL(objClassSym))
 				objClassSym = ClassOf(objRef);
-			if (objClassSym == RSYMsymbol)
+			if (objClassSym == SYMA(symbol))
 				symbolSize += objSize;
-			else if (EQRef(objClassSym, RSYMCodeBlock) || EQRef(objClassSym, RSYM_function))
+			else if (EQ(objClassSym, SYMA(CodeBlock)) || EQ(objClassSym, SYMA(_function)))
 			{
 				Ref instr = GetFrameSlot(objRef, SYMA(instructions));
 				Ref litrl = GetFrameSlot(objRef, SYMA(literals));
@@ -2694,12 +2630,12 @@ if (objSize > 32000)
 					fprintf(f, "map #%p ", obj);
 					fprintf(f, objClassSym == kMapShared ? "  " : "* ");
 					fprintf(f, "sup #%lX ", ((FrameMapObject *)obj)->supermap);
-					for (ArrayIndex i = 0, numOfSlots = (obj->size - SIZEOF_FRAMEMAPOBJECT) / sizeof(Ref); i < numOfSlots; ++i)
+					for (ArrayIndex i = 0, numOfSlots = (obj->size - SIZEOF_FRAMEMAPOBJECT(0)) / sizeof(Ref); i < numOfSlots; ++i)
 						fprintf(f, "%s ", BinaryData(((FrameMapObject *)obj)->slot[i]) + sizeof(ULong));
 					fprintf(f, "\n");
 				}
 			}
-			else if (objClassSym == RSYMliterals)
+			else if (objClassSym == SYMA(literals))
 			{
 				literalObjSize += objSize;
 			}
@@ -2801,7 +2737,7 @@ CObjectHeap::uriahBinaryObjects(bool doSaveOutput)
 				r = MAKEINT(RINT(totalThisClass) + objSize);
 			SetFrameSlot(totalsFrame, className, r);
 			
-			if (IsSubclass(className, RSYMstring))
+			if (IsSubclass(className, SYMA(string)))
 			{
 				SafelyPrintString(((StringObject *)obj)->str);
 				fprintf(f, "\n");

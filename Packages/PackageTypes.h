@@ -1,7 +1,7 @@
 /*
 	File:		PackageTypes.h
 
-	Copyright:	© 1992-1996 by Apple Computer, Inc., all rights reserved.
+	Copyright:	Â© 1992-1996 by Apple Computer, Inc., all rights reserved.
 
 	Derived from v1 internal, 1/8/96.
 */
@@ -51,21 +51,12 @@ typedef ULong	PartKind;
 #if defined(forNTK) || !defined(forDocker)
 #ifndef FRAM
 
-struct RemoveObj
-{
-	RefStruct	obj;
-	Ptr			x04;
-};
-typedef long		RemoveObjPtr;
-
-
-#ifndef __KERNELTYPES_H
-#include "KernelTypes.h"
-#endif
-
-
 // the magic number header for a package
 extern "C" const char * const	kPackageMagicNumber;
+// length of kPackageMagicNumber up to version character
+#define kPackageMagicLen 7
+// number of version characters
+#define kPackageMagicVersionCount 2
 
 const long kMaxInfoSize					= 64;
 const long kMaxCompressorNameSize	= 32;
@@ -74,8 +65,8 @@ const long kMaxPackageNameSize		= 32;
 
 struct PartId
 {
-	ObjectId packageId;
-	ULong		partIndex;
+	ObjectId		packageId;
+	ArrayIndex	partIndex;
 };
 
 
@@ -88,10 +79,10 @@ struct SourceType
 };
 
 
-inline bool IsRemovable(SourceType type)	{ return ( type.format & kRemovableMask ); }
-inline bool IsPersistent(SourceType type)	{ return ( !(type.format & kRemovableMask) ); }
-inline bool IsStream(SourceType type)		{ return ( !(type.format & kFormatMask ) ); }
-inline bool IsMemory(SourceType type)		{ return ( (type.format & kFormatMask ) ); }
+inline bool IsRemovable(SourceType type)	{ return (type.format & kRemovableMask) != 0; }
+inline bool IsPersistent(SourceType type)	{ return (type.format & kRemovableMask) == 0; }
+inline bool IsMemory(SourceType type)		{ return (type.format & kFormatMask) != 0; }
+inline bool IsStream(SourceType type)		{ return (type.format & kFormatMask) == 0; }
 
 
 struct PartInfo
@@ -131,8 +122,8 @@ struct StreamSource
 
 struct MemSource
 {
-	VAddr		buffer;
-	ULong		size;
+	void *	buffer;
+	size_t	size;
 };
 
 

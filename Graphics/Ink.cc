@@ -7,9 +7,9 @@
 */
 
 #include "Ink.h"
-#include "QDGeometry.h"
+#include "Geometry.h"
 #include "CoreGraphics/CGGeometry.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 
 
 // from DrawInk.cc
@@ -34,6 +34,8 @@ Ref	FInkConvert(RefArg rcvr, RefArg inObj, RefArg inType);
 Ref	FStrokeBundleToInkWord(RefArg rcvr, RefArg inUnit);
 }
 
+void	StrokeLine(Point inFrom, Point inTo);
+
 
 /*------------------------------------------------------------------------------
 	In NewtonOS 1, all ink is of class 'ink.
@@ -47,9 +49,9 @@ IsInk(RefArg inObj)
 	if (IsBinary(inObj))
 	{
 		Ref objClass = ClassOf(inObj);
-		return EQRef(objClass, RSYMink) || EQRef(objClass, RSYMinkWord) || EQRef(objClass, RSYMink2);
+		return EQ(objClass, SYMA(ink)) || EQ(objClass, SYMA(inkWord)) || EQ(objClass, SYMA(ink2));
 	}
-	return NO;
+	return false;
 }
 
 
@@ -59,9 +61,9 @@ IsRawInk(RefArg inObj)
 	if (IsBinary(inObj))
 	{
 		Ref objClass = ClassOf(inObj);
-		return EQRef(objClass, RSYMink) || EQRef(objClass, RSYMink2);
+		return EQ(objClass, SYMA(ink)) || EQ(objClass, SYMA(ink2));
 	}
-	return NO;
+	return false;
 }
 
 
@@ -69,7 +71,7 @@ bool
 IsOldRawInk(RefArg inObj)
 {
 	return IsBinary(inObj)
-		 && EQRef(ClassOf(inObj), RSYMink);
+		 && EQ(ClassOf(inObj), SYMA(ink));
 }
 
 
@@ -77,7 +79,7 @@ bool
 IsInkWord(RefArg inObj)
 {
 	return IsBinary(inObj)
-		 && EQRef(ClassOf(inObj), RSYMinkWord);
+		 && EQ(ClassOf(inObj), SYMA(inkWord));
 }
 
 #pragma mark Ink
@@ -87,8 +89,8 @@ IsInkWord(RefArg inObj)
 	Don’t really know where best to put this.
 #include "Objects.h"
 #include "Preference.h"
-#include "ROMSymbols.h"
-#include "QDGeometry.h"
+#include "RSSymbols.h"
+#include "Geometry.h"
 ------------------------------------------------------------------------------*/
 
 void
@@ -276,7 +278,7 @@ StrokeBundleToRecStrokes(RefArg inUnit)
 		for (ArrayIndex i = 0; i < count; ++i)
 		{
 			RefVar pts(GetArraySlot(strokes, i));
-			CDataPtr ptsData(sp00);
+			CDataPtr ptsData(pts);
 			Point * srcPtr = (Point *)(char *)ptsData;
 			int j, numOfPts = Length(pts) / sizeof(Point);
 			CRecStroke * aStroke = CRecStroke::make(numOfPts);
@@ -305,7 +307,7 @@ StrokeBundleToRecStrokes(RefArg inUnit)
 /*------------------------------------------------------------------------------
 	Compress strokes into an ink object.
 	Args:		inStrokes		array of pointers to strokes
-				inWords			YES => treat as ink word
+				inWords			true => treat as ink word
 	Return:	ink object of class 'ink2, or 'inkWord as appropriate
 ------------------------------------------------------------------------------*/
 
@@ -324,10 +326,10 @@ InkCompress(CRecStroke ** inStrokes, bool inWords)
 		{
 			GetPackedInkWordInfoFromStrokes(inStrokes, &info);
 			inkObjSize += sizeof(PackedInkWordInfo);
-			objClass = RSYMinkWord;
+			objClass = SYMA(inkWord);
 		}
 		else
-			objClass = RSYMink2;
+			objClass = SYMA(ink2);
 		inkObj = AllocateBinary(objClass, inkObjSize);
 		CDataPtr inkObjData(inkObj);
 		memmove((char *)inkObjData, inkData, inkDataSize);
@@ -522,7 +524,7 @@ RecStrokesToInkWord(CRecStroke ** inStrokes, Rect * outBounds)
 		outBounds->right += penSize;
 	}
 
-	RefVar ink(InkCompress(inStrokes, YES));
+	RefVar ink(InkCompress(inStrokes, true));
 	if (ISNIL(ink))
 		OutOfMemory();
 	return ink;
@@ -539,7 +541,7 @@ RecStrokesToInk(CRecStroke ** inStrokes, Rect * outBounds)
 	if (outBounds)
 		*outBounds = bounds;
 
-	RefVar ink(InkCompress(inStrokes, NO));
+	RefVar ink(InkCompress(inStrokes, false));
 	if (ISNIL(ink))
 		OutOfMemory();
 	return ink;
@@ -573,7 +575,7 @@ HandleInk(CEditView * inView, RefArg inUnit)
 	CRecStroke ** strokes = StrokeBundleToRecStrokes(inUnit);
 	HandleInk(inView, strokes);
 	DisposeRecStrokes(strokes);
-	return YES;
+	return true;
 }
 
 void
@@ -600,17 +602,17 @@ InkConvert(RefArg inObj, RefArg inType)
 		int r5, r6;
 		//sp-04
 		Ref reqType = inType;
-		if (EQRef(reqType, SYMink))
+		if (EQ(reqType, SYMA(ink)))
 		{
 			r5 = 0;
 			r6 = 2;
 		}
-		else if (EQRef(reqType, SYMink2))
+		else if (EQ(reqType, SYMA(ink2)))
 		{
 			r5 = 1;
 			r6 = 3;
 		}
-		else if (EQRef(reqType, SYMinkword))
+		else if (EQ(reqType, SYMA(inkword)))
 		{
 			r5 = 2;
 			r6 = 3;
@@ -627,7 +629,7 @@ InkConvert(RefArg inObj, RefArg inType)
 			r6 = 2;
 			reqType = SYMink;
 		}
-		if (EQRef(ClassOf(inObj), reqType))
+		if (EQ(ClassOf(inObj), reqType))
 		{
 			ink = Clone(inObj);
 		}
@@ -655,7 +657,7 @@ InkConvert(RefArg inObj, RefArg inType)
 						Rect bounds;
 						UnionBounds(strokes, &bounds);
 						ScaleStrokesForInkWord(strokes, &bounds);
-						ink = InkCompress(strokes, YES);
+						ink = InkCompress(strokes, true);
 						DisposeRecStrokes(strokes);
 					}
 					else

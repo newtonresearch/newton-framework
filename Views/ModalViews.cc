@@ -1,4 +1,4 @@
-/*
+ /*
 	File:		ModalViews.cc
 
 	Contains:	Modal view utilities.
@@ -7,9 +7,9 @@
 */
 
 #include "Objects.h"
+#include "ROMResources.h"
 #include "Lookup.h"
 #include "Funcs.h"
-#include "Globals.h"
 #include "ArrayIterator.h"
 #include "NewtonScript.h"
 
@@ -18,17 +18,17 @@
 #include "RootView.h"
 #include "Modal.h"
 #include "Recognition.h"
-#include "QDGeometry.h"
+#include "Geometry.h"
 
 
 extern "C" Ref	FOpenX(RefArg inRcvr);
 extern bool	RealOpenX(RefArg inRcvr, bool inHuh);  // ViewUtils.cc
 
 
-CDynamicArray *	gDelayedShowList;		// 0C101944
-bool					gInhibitPopup;			// 0C101948
+CDynamicArray *	gDelayedShowList;	// 0C101944
+bool					gInhibitPopup;		// 0C101948
 
-int		gModalCount = 0;			// 0C105524		should be initialized somewhere
+int		gModalCount = 0;				// 0C105524		should be initialized somewhere
 
 
 
@@ -66,7 +66,7 @@ Ref
 FFilterDialog(RefArg inRcvr)
 {
 	NSSend(inRcvr, SYMA(StuffModalCommandKeys));
-	if (!RealOpenX(inRcvr, YES))
+	if (!RealOpenX(inRcvr, true))
 		return TRUEREF;
 
 	if (gModalCount++ != 0)
@@ -87,7 +87,7 @@ Ref
 FModalDialog(RefArg inRcvr)
 {
 	NSSend(inRcvr, SYMA(StuffModalCommandKeys));
-	if (!RealOpenX(inRcvr, YES))
+	if (!RealOpenX(inRcvr, true))
 		return TRUEREF;
 
 	gRootView->update();
@@ -110,9 +110,9 @@ FModalDialog(RefArg inRcvr)
 		SetModalView(view);
 		SetFrameSlot(modalContext, SYMA(modalState), AddressToRef(&pss));
 
-		bool  huh = NO;
+		bool  huh = false;
 		ULong recState = gRecognitionManager.saveRecognitionState(&huh);
-		if (huh == NO)
+		if (huh == false)
 			pss->block(0);
 		gRecognitionManager.restoreRecognitionState(recState);
 		SetFrameSlot(modalContext, SYMA(modalState), RA(NILREF));
@@ -154,7 +154,7 @@ ModalSafeShow(CView * inView)
 		CRootView *	root = gRootView;
 		RefVar		selection = root->getSelection();
 		root->holdPendingKeyView(&root->f68->f24, selection);
-		root->setKeyView(NULL, 0, 0, NO);
+		root->setKeyView(NULL, 0, 0, false);
 	}
 */
 }
@@ -213,7 +213,7 @@ FSetPopup(RefArg inRcvr)
 {
 	CView * popup = GetView(inRcvr);
 	if (popup)
-		gRootView->setPopup(popup, YES);
+		gRootView->setPopup(popup, true);
 	return NILREF;
 }
 
@@ -223,7 +223,7 @@ FClearPopup(RefArg inRcvr)
 {
 	CView * popup = gRootView->getPopup();
 	if (popup)
-		gRootView->setPopup(NULL, NO);
+		gRootView->setPopup(NULL, false);
 	return NILREF;
 }
 
@@ -234,7 +234,7 @@ FDoPopup(RefArg inRcvr, RefArg inPickItems, RefArg inX, RefArg inY, RefArg inCon
 // r7 r5 r4 r6 r9
 	if (Length(inPickItems) == 0 || gInhibitPopup)
 	{
-		if (!EQRef(inContext, TRUEREF))
+		if (!EQ(inContext, RA(TRUEREF)))
 		{
 			bool exists;
 			GetVariable(inContext, SYMA(pickCancelledScript), &exists);
@@ -246,7 +246,7 @@ FDoPopup(RefArg inRcvr, RefArg inPickItems, RefArg inX, RefArg inY, RefArg inCon
 
 	CView * view = GetView(inRcvr);		// r7
 	Rect bounds;
-	bool r8 = YES;
+	bool r8 = true;
 	if (IsFrame(inX) && FromObject(inX, &bounds))
 	{
 		if (view)
@@ -256,7 +256,7 @@ FDoPopup(RefArg inRcvr, RefArg inPickItems, RefArg inX, RefArg inY, RefArg inCon
 	{
 		int x, y;
 		if (ISINT(inX)) x = RVALUE(inX); else x = 0;
-		if (ISINT(inY)) { y = RVALUE(inY); r8 = NO; } else y = 0;
+		if (ISINT(inY)) { y = RVALUE(inY); r8 = false; } else y = 0;
 		if (view)
 		{
 			if (r8)
@@ -271,7 +271,7 @@ FDoPopup(RefArg inRcvr, RefArg inPickItems, RefArg inX, RefArg inY, RefArg inCon
 		}
 		else
 		{
-			r8 = NO;
+			r8 = false;
 			bounds.top = y;
 			bounds.left = x;
 			bounds.bottom = y;
@@ -285,10 +285,10 @@ FDoPopup(RefArg inRcvr, RefArg inPickItems, RefArg inX, RefArg inY, RefArg inCon
 		SetFrameSlot(popupTemplate, SYMA(info), AddressToRef(view));
 	SetFrameSlot(popupTemplate, SYMA(bounds), popupBounds);
 	SetFrameSlot(popupTemplate, SYMA(pickItems), inPickItems);
-	if (!EQRef(inContext, TRUEREF))
+	if (!EQ(inContext, RA(TRUEREF)))
 		SetFrameSlot(popupTemplate, SYMA(callbackContext), inContext);
 
-	RefVar popupView(view->buildContext(popupTemplate, YES));
+	RefVar popupView(view->buildContext(popupTemplate, true));
 	if (gModalCount == 0)
 		FOpenX(popupView);
 	else
@@ -304,9 +304,9 @@ FDismissPopup(RefArg inRcvr)
 {
 	CView * popup = gRootView->getPopup();
 	if (popup)
-		gRootView->setPopup(NULL, YES);
+		gRootView->setPopup(NULL, true);
 	if (gRootView->getPopup() == NULL)
-		gInhibitPopup = NO;
+		gInhibitPopup = false;
 	return NILREF;
 }
 

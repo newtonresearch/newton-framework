@@ -21,10 +21,10 @@
 CTypeList *
 CTypeList::make(void)
 {
-	CTypeList * list;
+	CTypeList * list = new CTypeList;
 	XTRY
 	{
-		XFAIL((list = new CTypeList) == NULL)
+		XFAIL(list == NULL)
 		XFAILIF(list->iTypeList() != noErr, list->release(); list = NULL;)
 	}
 	XENDTRY;
@@ -112,10 +112,10 @@ CTypeList::getType(ArrayIndex index)
 CTypeAssoc *
 CTypeAssoc::make(void)
 {
-	CTypeAssoc * assoc;
+	CTypeAssoc * assoc = new CTypeAssoc;
 	XTRY
 	{
-		XFAIL((assoc = new CTypeAssoc) == NULL)
+		XFAIL(assoc == NULL)
 		XFAILIF(assoc->iTypeAssoc() != noErr, assoc->release(); assoc = NULL;)
 	}
 	XENDTRY;
@@ -146,7 +146,7 @@ CTypeAssoc::dump(CMsg * outMsg)
 CTypeAssoc *
 CTypeAssoc::copy(void)
 {
-	CTypeAssoc *	theCopy = new CTypeAssoc;
+	CTypeAssoc * theCopy = new CTypeAssoc;
 	copyInto(theCopy);
 	return theCopy;
 }

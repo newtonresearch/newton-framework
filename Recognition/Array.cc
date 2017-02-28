@@ -30,10 +30,10 @@ CArray::~CArray()
 CArray *
 CArray::make(size_t inElementSize, ArrayIndex inSize)
 {
-	CArray * array;
+	CArray * array = new CArray;
 	XTRY
 	{
-		XFAIL((array = new CArray) == NULL)
+		XFAIL(array == NULL)
 		XFAILIF(array->iArray(inElementSize, inSize) != noErr, array->release(); array = NULL;)
 	}
 	XENDTRY;
@@ -325,10 +325,10 @@ GetNext(ArrayIterator * ioIter)
 CDArray *
 CDArray::make(size_t inElementSize, ArrayIndex inSize)
 {
-	CDArray * array;
+	CDArray * array = new CDArray;
 	XTRY
 	{
-		XFAIL((array = new CDArray) == NULL)
+		XFAIL(array == NULL)
 		XFAILIF(array->iDArray(inElementSize, inSize) != noErr, array->release(); array = NULL;)
 	}
 	XENDTRY;

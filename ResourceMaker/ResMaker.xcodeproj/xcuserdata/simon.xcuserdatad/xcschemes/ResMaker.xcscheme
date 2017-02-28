@@ -23,10 +23,10 @@
       </BuildActionEntries>
    </BuildAction>
    <TestAction
+      buildConfiguration = "Development"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES"
-      buildConfiguration = "Development">
+      shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
       </Testables>
       <MacroExpansion>
@@ -38,16 +38,20 @@
             ReferencedContainer = "container:ResMaker.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
+      <AdditionalOptions>
+      </AdditionalOptions>
    </TestAction>
    <LaunchAction
+      buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
-      useCustomWorkingDirectory = "NO"
-      buildConfiguration = "Debug"
+      useCustomWorkingDirectory = "YES"
+      customWorkingDirectory = "/Users/simon/Projects/newton-framework/Frames"
       ignoresPersistentStateOnLaunch = "NO"
-      debugDocumentVersioning = "YES"
-      allowLocationSimulation = "YES">
+      debugDocumentVersioning = "NO"
+      debugServiceExtension = "internal"
+      allowLocationSimulation = "NO">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
@@ -58,14 +62,24 @@
             ReferencedContainer = "container:ResMaker.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "&quot;/Users/simon/Projects/DisARM/ROM Images/rom.image&quot; -s &quot;RefStarSource.txt&quot; -sym &quot;/Users/simon/Projects/DisARM/ROM Images/717006.cfunctions&quot;"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "&quot;/Users/simon/Projects/DisARM/ROM Images/rom.image&quot; -s &quot;RefStarSource.txt&quot; -via &quot;/Users/simon/Projects/newton-framework/Toolkit.exp&quot; -via &quot;/Users/simon/Projects/newton-framework/Editor.exp&quot; -sym &quot;/Users/simon/Projects/DisARM/ROM Images/717006.cfunctions&quot;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+      </CommandLineArguments>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
+      buildConfiguration = "Deployment"
       shouldUseLaunchSchemeArgsEnv = "YES"
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
-      buildConfiguration = "Deployment"
       debugDocumentVersioning = "YES">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">

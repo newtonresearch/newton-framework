@@ -287,7 +287,7 @@ InitDictionaries(void)
 		d.dict = dict;
 		d.seq = i;
 		d.status = RINT(GetProtoVariable(dictFrame, SYMA(status)));
-		d.isCustom = NO;
+		d.isCustom = false;
 		memcpy(gDictList->addEntry(), &d, sizeof(DictListEntry));
 	}
 	gDictList->compact();
@@ -538,12 +538,12 @@ AddToChain(CDictChain ** outChains, DictListEntry * inEntry)
 		else if (dictType == 4)
 			dictIndex = 2;
 		else
-			XFAIL(YES)
+			XFAIL(true)
 
 		if (inEntry->dict)
 		{
 			CDictChain * dictChain;
-			bool exists = NO;
+			bool exists = false;
 			if ((dictChain = outChains[dictIndex]) == NULL)
 			{
 				XFAIL((dictChain = CDictChain::make(0)) == NULL)
@@ -556,7 +556,7 @@ AddToChain(CDictChain ** outChains, DictListEntry * inEntry)
 					DictListEntry * entry = (DictListEntry *)dictChain->getEntry(j);
 					if (entry->dict == inEntry->dict)
 					{
-						exists = YES;
+						exists = true;
 						break;
 					}
 				}
@@ -1548,10 +1548,10 @@ A8_WalkNextChars(DictWalkBlock * inParms, ULong inOffset)
 				dict->fTrieOffset = r10;
 				dict->x20 = inOffset;
 				if (!A8_PrefixCompletions(inParms))
-					return NO;
+					return false;
 			}
 		}
-		return YES;
+		return true;
 	}
 	else
 	{
@@ -1828,7 +1828,7 @@ FAirusRegisterDictionary(RefArg inRcvr)
 	d.dict = GetScriptDictRef(inRcvr);
 	d.seq = gDictList->count();
 	d.status = RINT(GetProtoVariable(inRcvr, SYMA(status)));
-	d.isCustom = EQRef(GetProtoVariable(inRcvr, SYMA(custom)), RSYMcustom);
+	d.isCustom = EQ(GetProtoVariable(inRcvr, SYMA(custom)), SYMA(custom));
 	memcpy(gDictList->addEntry(), &d, sizeof(DictListEntry));
 
 	DictionariesChanged();
@@ -1840,7 +1840,7 @@ Ref
 FAirusUnregisterDictionary(RefArg inRcvr)
 {
 	int dictId = RINT(GetProtoVariable(inRcvr, SYMA(dictId)));
-	bool isUnregistered = NO;
+	bool isUnregistered = false;
 	for (ArrayIndex i = 0, count = gDictList->count(); i < count; ++i)
 	{
 		DictListEntry * d = (DictListEntry *)gDictList->getEntry(i);
@@ -1851,7 +1851,7 @@ FAirusUnregisterDictionary(RefArg inRcvr)
 			gDictList->deleteEntry(i);
 			i--;
 			count--;
-			isUnregistered = YES;
+			isUnregistered = true;
 		}
 	}
 	FSetRemove(RA(NILREF), Dictionaries(), inRcvr);
@@ -1921,7 +1921,7 @@ Walker(UniChar * inWord, ULong inArg2, UChar inArg3, ULong inArg4, void * inArg5
 	SetArraySlot(args, 3, inArg4);
 	return NOTNIL(DoBlock(inArg5->x00, args));
 #else
-	return NO;
+	return false;
 #endif
 }
 

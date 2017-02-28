@@ -163,7 +163,7 @@ void
 		timeFromNow = TimeFromNow(inDelay*kMilliseconds);
 		timeToSend = &timeFromNow;
 	}
-	SendForInterrupt(*gTabletQueue.port, gTabletQueue.message->getMsgId(), kNoId, gTabletQueue.event, sizeof(CInkerEvent)/*16*/, kMsgType_FromInterrupt, kNoTimeout, timeToSend, true);
+	SendForInterrupt(*gTabletQueue.port, gTabletQueue.message->getMsgId(), kNoId, gTabletQueue.event, sizeof(CInkerEvent), kMsgType_FromInterrupt, kNoTimeout, timeToSend, true);
 }
 
 
@@ -177,9 +177,8 @@ void
 		timeFromNow = TimeFromNow(inDelay*kMilliseconds);
 		timeToSend = &timeFromNow;
 	}
-	gTabletQueue.event->setSelector(2);
-
-	gTabletQueue.port->send(gTabletQueue.message, gTabletQueue.event, sizeof(CInkerEvent)/*16*/, kNoTimeout, timeToSend, 1, true);
+	//gTabletQueue.event->fSelector = 2;	// sic
+	gTabletQueue.port->send(gTabletQueue.message, gTabletQueue.event, sizeof(CInkerEvent), kNoTimeout, timeToSend, 1, true);
 }
 
 
@@ -277,26 +276,6 @@ InsertAndSendTabletSample(ULong inSample, ULong inTime)
 	NewtonErr err = /*TBC*/InsertTabletSample(inSample, inTime);
 	/*TBC*/WakeUpInker(0);
 	return err;
-}
-
-
-void
-InsertArmisticeSamples(void)
-{
-	for (bool isDone = false; !isDone; )
-	{
-		newton_try
-		{
-			ULong sample;
-			// read sample from memory somewhere
-			;
-			InsertAndSendTabletSample(sample, 0);
-			;
-		}
-		newton_catch(exAbort)
-		{ }
-		end_try;
-	}
 }
 
 

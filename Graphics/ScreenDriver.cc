@@ -6,8 +6,10 @@
 	Written by:	Newton Research Group.
 */
 #include "Quartz.h"
+#include "Geometry.h"
 
 #include "ScreenDriver.h"
+#include "ViewFlags.h"
 #include "QDDrawing.h"
 #include "NewtonGestalt.h"
 
@@ -30,14 +32,14 @@
 
 struct BlitRec
 {
-	long		srcRowOffset;	// +00
-	long		dstRowOffset;	// +04
-	long		x08;
+	int		srcRowOffset;	// +00
+	int		dstRowOffset;	// +04
+	int		x08;
 	Ptr		srcAddr;			// +0C
 	Ptr		dstAddr;			// +10
-	long		mode;				// +14
-	long		numOfRows;		// +18
-	long		numOfBytes;		// +1C
+	int		mode;				// +14
+	int		numOfRows;		// +18
+	int		numOfBytes;		// +1C
 //	size +20
 };
 
@@ -83,8 +85,8 @@ CLASSINFO_BEGIN
 "		.long		__ZN18CMainDisplayDriver9powerInitEv - 4b	\n"
 "		.long		__ZN18CMainDisplayDriver7powerOnEv - 4b	\n"
 "		.long		__ZN18CMainDisplayDriver8powerOffEv - 4b	\n"
-"		.long		__ZN18CMainDisplayDriver4blitEP8PixelMapP4RectS3_i - 4b	\n"
-"		.long		__ZN18CMainDisplayDriver10doubleBlitEP8PixelMapS1_P4RectS3_i - 4b	\n"
+"		.long		__ZN18CMainDisplayDriver4blitEP14NativePixelMapP4RectS3_i - 4b	\n"
+"		.long		__ZN18CMainDisplayDriver10doubleBlitEP14NativePixelMapS1_P4RectS3_i - 4b	\n"
 "		.long		__ZN18CMainDisplayDriver10getFeatureEi - 4b	\n"
 "		.long		__ZN18CMainDisplayDriver10setFeatureEii - 4b	\n"
 "		.long		__ZN18CMainDisplayDriver18autoAdjustFeaturesEv - 4b	\n"
@@ -116,10 +118,10 @@ CMainDisplayDriver::screenSetup(void)
 	fOrientation = kPortraitFlip;
 	fContrast = 0;
 	fContrast2 = 0;
-	fBacklight = NO;
+	fBacklight = false;
 	getScreenInfo(&info);
 
-	long	rowBytes = ALIGN(fScreenWidth, 8) / 8 * kScreenDepth;	// r6
+	int	rowBytes = ALIGN(fScreenWidth, 8) / 8 * kScreenDepth;	// r6
 
 #if defined(correct)
 	CScreenMemory * r7 = (CScreenMemory *)MakeByName("CScreenMemory", "CReservedContiguousMemory");
@@ -133,8 +135,8 @@ CMainDisplayDriver::screenSetup(void)
 	size_t	size;
 	f44->base(addr);
 	f44->size(size);
-	f48->init(addr, size, NO, NO);
-	f48->map(NO, kReadWrite);
+	f48->init(addr, size, false, false);
+	f48->map(false, kReadWrite);
 
 	fPixMap.baseAddr = f48->f10;
 #else
@@ -153,12 +155,13 @@ CMainDisplayDriver::screenSetup(void)
 
 	memset(fPixMap.baseAddr, 0xA5, fScreenWidth * fScreenHeight * kScreenDepth / 8);
 
-#if 0
-	CUGestalt	gestalt;
+#if !defined(forFramework)
+	// register gestalt information for screen contrast and backlight controls
+	CUGestalt gestalt;
 	GestaltSoftContrast * contrast = new GestaltSoftContrast;
 	if (contrast)
 	{
-		contrast->fHasSoftContrast = YES;
+		contrast->fHasSoftContrast = true;
 		contrast->fMinContrast = -16;
 		contrast->fMaxContrast =  16;
 		gestalt.registerGestalt(kGestalt_SoftContrast, contrast, sizeof(GestaltSoftContrast));
@@ -167,7 +170,7 @@ CMainDisplayDriver::screenSetup(void)
 	GestaltBacklight * backlight = new GestaltBacklight;
 	if (backlight)
 	{
-		backlight->fHasBacklight = YES;
+		backlight->fHasBacklight = true;
 		gestalt.registerGestalt(kGestalt_Ext_Backlight, backlight, sizeof(GestaltBacklight));
 	}
 #endif
@@ -246,8 +249,43 @@ static const unsigned char colorTable4bit[] = { 0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0x
 static const unsigned char * colorTable[5] = { NULL, colorTable1bit, colorTable2bit, NULL, colorTable4bit };
 
 void
-CMainDisplayDriver::blit(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode)	// 007A5EA4
+CMainDisplayDriver::blit(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode)	// 007A5EA4
 {
+	size_t	pixmapWidth = RectGetWidth(inPixmap->bounds);
+	size_t	pixmapHeight = RectGetHeight(inPixmap->bounds);
+	size_t	pixmapDepth = PixelDepth(inPixmap);
+
+	CGImageRef			image = NULL;
+	CGColorSpaceRef	baseColorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericGray);
+	CGColorSpaceRef	colorSpace = CGColorSpaceCreateIndexed(baseColorSpace, (1 << pixmapDepth)-1, colorTable[pixmapDepth]);
+	CGDataProviderRef source = CGDataProviderCreateWithData(NULL, PixelMapBits(inPixmap), pixmapHeight * inPixmap->rowBytes, NULL);
+	if (source != NULL) {
+		image = CGImageCreate(pixmapWidth, pixmapHeight, pixmapDepth, pixmapDepth, inPixmap->rowBytes,
+									colorSpace, kCGImageAlphaNone, source, NULL, false, kCGRenderingIntentDefault);
+		CGDataProviderRelease(source);
+	}
+	CGColorSpaceRelease(colorSpace);
+	CGColorSpaceRelease(baseColorSpace);
+
+printf("CMainDisplayDriver::blit(pixmap={w:%lu,h:%lu}, srcBounds={t:%d,l:%d,b:%d,r:%d}, dstBounds={t:%d,l:%d,b:%d,r:%d}, mode=%d) -- ", pixmapWidth,pixmapHeight, inSrcBounds->top,inSrcBounds->left,inSrcBounds->bottom,inSrcBounds->right, inDstBounds->top,inDstBounds->left,inDstBounds->bottom,inDstBounds->right, inTransferMode);
+	if (image) {
+		CGRect imageRect = MakeCGRect(*inDstBounds);
+		if (inTransferMode == 0) {
+			CGContextDrawImage(quartz, imageRect, image);
+		} else {
+			// we should mask the image
+			const CGFloat maskingColors[2] = {0,0};
+			CGImageRef colorMaskedImage = CGImageCreateWithMaskingColors(image, maskingColors);
+			CGContextDrawImage(quartz, imageRect, colorMaskedImage);
+			CGImageRelease(colorMaskedImage);
+		}
+		CGImageRelease(image);
+	} else {
+printf("image=NULL -- ");
+	}
+
+
+#if defined(correct)
 	BlitRec	blitParms;
 
 //	g20000000 = fContrast + fContrast2 + 0x66;
@@ -269,8 +307,8 @@ CMainDisplayDriver::blit(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBo
  
 		blitParms.srcRowOffset = inPixmap->rowBytes - byteWd;
 		blitParms.dstRowOffset = fPixMap.rowBytes - byteWd;
-		blitParms.srcAddr = GetPixelMapBits(inPixmap) + srcOffset;
-		blitParms.dstAddr = GetPixelMapBits(&fPixMap) + dstOffset;
+		blitParms.srcAddr = PixelMapBits(inPixmap) + srcOffset;
+		blitParms.dstAddr = PixelMapBits(&fPixMap) + dstOffset;
 		blitParms.mode = inTransferMode;
 		blitParms.numOfRows = inDstBounds->bottom - inDstBounds->top;
 		blitParms.numOfBytes = byteWd;
@@ -291,6 +329,7 @@ CMainDisplayDriver::blit(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBo
 		blitLandscapeFlip(&blitParms);
 		break;
 	}
+#endif
 }
 
 
@@ -304,10 +343,10 @@ CMainDisplayDriver::blitLandscape(BlitRec * inBlit)	// 007A6070
 
 	for (ArrayIndex row = inBlit->numOfRows; row > 0; row--)
 	{
-		if (mode == 0 /*srcCopy*/)
+		if (mode == modeCopy)
 			for (ArrayIndex i = numOfLongs; i > 0; i--)
 				*dstPtr++ = *srcPtr++;
-		else
+		else /*srcOr*/
 			for (ArrayIndex i = numOfLongs; i > 0; i--)
 				*dstPtr++ |= *srcPtr++;
 	}
@@ -325,7 +364,7 @@ CMainDisplayDriver::blitLandscapeFlip(BlitRec * inBlit)	// 007A60E8
 
 	for (ArrayIndex row = inBlit->numOfRows; row > 0; row--)
 	{
-		if (mode == 0 /*srcCopy*/)
+		if (mode == modeCopy)
 			for (ArrayIndex i = numOfLongs; i > 0; i--)
 			{
 				src = *srcPtr++;
@@ -346,7 +385,7 @@ CMainDisplayDriver::blitLandscapeFlip(BlitRec * inBlit)	// 007A60E8
 				flipper |= (src & 0x0F);
 				*dstPtr-- = flipper;
 			}
-		else
+		else /*srcOr*/
 			for (ArrayIndex i = numOfLongs; i > 0; i--)
 			{
 				src = *srcPtr++;
@@ -372,7 +411,7 @@ CMainDisplayDriver::blitLandscapeFlip(BlitRec * inBlit)	// 007A60E8
 
 
 void
-CMainDisplayDriver::blitPortrait(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode, int inMode)
+CMainDisplayDriver::blitPortrait(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode, int inMode)
 {
 return;	// don’t risk this yet
 // r9: r4..
@@ -395,12 +434,12 @@ return;	// don’t risk this yet
 	int r1 = r5 * inPixmap->rowBytes;
 	int spm04 = r1 + (r6/8)*4;
 
-	Ptr sp0C = GetPixelMapBits(inPixmap) + spm04;
+	Ptr sp0C = PixelMapBits(inPixmap) + spm04;
 	int r4 = inPixmap->rowBytes / 4;
 	r1 = sp04 * r10;
 	r10 = r1 + (fScreenWidth - sp20 - 1) / 8 * 4;
 
-	Ptr sp08 = GetPixelMapBits(&fPixMap) + r10;
+	Ptr sp08 = PixelMapBits(&fPixMap) + r10;
 	r1 = (r8 - r5)/8;
 	int sp1C = (r7 - r6)/8;
 	int sp14 = r1;
@@ -441,13 +480,13 @@ return;	// don’t risk this yet
 
 
 void
-CMainDisplayDriver::blitPortraitFlip(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode, int inMode)
+CMainDisplayDriver::blitPortraitFlip(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode, int inMode)
 {
 }
 
 
 void
-CMainDisplayDriver::doubleBlit(PixelMap * inArg1, PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode)
+CMainDisplayDriver::doubleBlit(NativePixelMap * inArg1, NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode)
 {	/* this really does nothing */	}
 
 
@@ -513,7 +552,7 @@ CMainDisplayDriver::setFeature(int inSelector, int inValue)
 		break;
 
 	case 2:	// backlight
-		if ((inValue == YES || inValue == NO) && inValue != fBacklight)
+		if ((inValue == true || inValue == false) && inValue != fBacklight)
 		{
 			fBacklight = inValue;
 /*			if (fBacklight)
@@ -538,10 +577,7 @@ CMainDisplayDriver::setFeature(int inSelector, int inValue)
 
 int
 CMainDisplayDriver::autoAdjustFeatures(void)
-{
-	/* this really does nothing */
-	return 0;
-}
+{	/* this really does nothing */ return 0;	}
 
 
 void

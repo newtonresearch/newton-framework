@@ -7,12 +7,20 @@
 */
 
 #include "GSMCodec.h"
+#include "SoundErrors.h"
 
 
 /*------------------------------------------------------------------------------
 	G S M C o d e c
 	Requires the open source gsmlib.
 ------------------------------------------------------------------------------*/
+
+// stubbed for now.
+gsm  gsm_create(void) { return NULL; }
+void gsm_destroy(gsm) {}
+void gsm_encode(gsm, gsm_signal *, gsm_byte *) {}
+int  gsm_decode(gsm, gsm_byte *, gsm_signal *) {}
+
 
 /* ----------------------------------------------------------------
 	CGSMCodec implementation class info.
@@ -88,11 +96,11 @@ CGSMCodec::init(CodecBlock * inParms)
 NewtonErr
 CGSMCodec::reset(CodecBlock * inParms)
 {
-	fComprBuffer = inParms->x04;
-	f24 = inParms->x10;
-	f28 = inParms->x14;
-	f2C = inParms->x0C;
-	fComprBufLength = inParms->x08;
+	fComprBuffer = (UChar *)inParms->data;
+	fComprType = inParms->comprType;
+	fSampleRate = inParms->sampleRate;
+	fDataType = inParms->dataType;
+	fComprBufLength = inParms->dataSize;
 	fComprBufOffset = 0;
 	return noErr;
 }
@@ -102,34 +110,28 @@ CGSMCodec::reset(CodecBlock * inParms)
 NewtonErr
 CGSMCodec::produce(void * outBuf, size_t * ioBufSize, size_t * outComprSize, CodecBlock * ioParms)
 {
-	NewtonErr	err;
-
 	if (fComprBuffer == NULL)
-		err = -30008;	// no samples
-	else
-	{
-		UChar * srcPtr = fComprBuffer + fComprBufOffset;
-		short * dstPtr = (short *)outBuf;
-		int numOfBlocks = *ioBufSize / (160 * sizeof(short));
-		int numOfBlocksAvail = (fComprBufLength - fComprBufOffset) / 33;
-		if (numOfBlocks > numOfBlocksAvail)
-			numOfBlocks = numOfBlocksAvail;
-		for (ArrayIndex i = 0; i < numOfBlocks; ++i)
-		{
-			gsm_decode(fGSMRef, srcPtr, dstPtr);
-			srcPtr += 33;
-			dstPtr += 160;
-		}
-		fComprBufOffset += numOfBlocks * 33;
-		*ioBufSize = numOfBlocks * (160 * sizeof(short));
-		*outComprSize = numOfBlocks * 33;
-		ioParms->x0C = f2C;
-		ioParms->x10 = 6;
-		ioParms->x14 = f28;
-		err = noErr;
-	}
+		return kSndErrNoSamples;
 
-	return err;
+	UChar * srcPtr = fComprBuffer + fComprBufOffset;
+	short * dstPtr = (short *)outBuf;
+	int numOfBlocks = *ioBufSize / (160 * sizeof(short));
+	int numOfBlocksAvail = (fComprBufLength - fComprBufOffset) / 33;
+	if (numOfBlocks > numOfBlocksAvail)
+		numOfBlocks = numOfBlocksAvail;
+	for (ArrayIndex i = 0; i < numOfBlocks; ++i)
+	{
+		gsm_decode(fGSMRef, srcPtr, dstPtr);
+		srcPtr += 33;
+		dstPtr += 160;
+	}
+	fComprBufOffset += numOfBlocks * 33;
+	*ioBufSize = numOfBlocks * (160 * sizeof(short));
+	*outComprSize = numOfBlocks * 33;
+	ioParms->dataType = fDataType;
+	ioParms->comprType = kSampleLinear;
+	ioParms->sampleRate = fSampleRate;
+	return noErr;
 }
 
 
@@ -137,31 +139,25 @@ CGSMCodec::produce(void * outBuf, size_t * ioBufSize, size_t * outComprSize, Cod
 NewtonErr
 CGSMCodec::consume(const void * inBuf, size_t * ioBufSize, size_t * outComprSize, const CodecBlock * inParms)
 {
-	NewtonErr	err;
-
 	if (fComprBuffer == NULL)
-		err = -30008;	// no samples
-	else
-	{
-		short * srcPtr = (short *)inBuf;
-		UChar * dstPtr = fComprBuffer + fComprBufOffset;
-		int numOfBlocks = *ioBufSize / (160 * sizeof(short));
-		int numOfBlocksAvail = (fComprBufLength - fComprBufOffset) / 33;
-		if (numOfBlocks > numOfBlocksAvail)
-			numOfBlocks = numOfBlocksAvail;
-		for (ArrayIndex i = 0; i < numOfBlocks; ++i)
-		{
-			gsm_encode(fGSMRef, srcPtr, dstPtr);
-			srcPtr += 160;
-			dstPtr += 33;
-		}
-		fComprBufOffset += numOfBlocks * 33;
-		*ioBufSize = numOfBlocks * (160 * sizeof(short));
-		*outComprSize = numOfBlocks * 33;
-		err = noErr;
-	}
+		return kSndErrNoSamples;
 
-	return err;
+	short * srcPtr = (short *)inBuf;
+	UChar * dstPtr = fComprBuffer + fComprBufOffset;
+	int numOfBlocks = *ioBufSize / (160 * sizeof(short));
+	int numOfBlocksAvail = (fComprBufLength - fComprBufOffset) / 33;
+	if (numOfBlocks > numOfBlocksAvail)
+		numOfBlocks = numOfBlocksAvail;
+	for (ArrayIndex i = 0; i < numOfBlocks; ++i)
+	{
+		gsm_encode(fGSMRef, srcPtr, dstPtr);
+		srcPtr += 160;
+		dstPtr += 33;
+	}
+	fComprBufOffset += numOfBlocks * 33;
+	*ioBufSize = numOfBlocks * (160 * sizeof(short));
+	*outComprSize = numOfBlocks * 33;
+	return noErr;
 }
 
 

@@ -19,19 +19,21 @@
 #include "Funcs.h"
 #include "NameServer.h"
 #include "VirtualMemory.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "Preference.h"
 #include "Debugger.h"
 
-extern void		QDStartDrawing(PixelMap * inPixmap, Rect * inBounds);
-extern void		QDStopDrawing(PixelMap * inPixmap, Rect * inBounds);
+extern void		QDStartDrawing(NativePixelMap * inPixmap, Rect * inBounds);
+extern void		QDStopDrawing(NativePixelMap * inPixmap, Rect * inBounds);
 
 extern void		BlockLCDActivity(bool doIt);
-extern void		BlitToScreens(PixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
+extern void		BlitToScreens(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode);
 
 
 extern void		RealStrokeInit(void);
 extern int		RealStrokeTime(void);
+
+extern void		InsertArmisticeSamples(void);
 
 
 /* -----------------------------------------------------------------------------
@@ -59,14 +61,14 @@ void			InkerOffUnhobbled(Rect * inRect);
 	D a t a
 ----------------------------------------------------------------------------- */
 
-bool	gInkerCalibrated = YES;	// 0C101654	original is probably NO
+bool	gInkerCalibrated = true;	// 0C101654	original is probably false
 CUPort * gTheInkerPort = NULL;	// 0C101658
 
-bool	gCalibrate = NO;			// 0C104D20
-Heap	gStrokerHeap;				// 0C104D24
-bool	gFakeTablet;				// 0C104D28	private
-bool	gWireRecog = YES;			// 0C104D2C
-int	gCount = 0;					// 0C104D30
+bool	gCalibrate = false;			// 0C104D20
+Heap	gStrokerHeap;					// 0C104D24
+bool	gFakeTablet;					// 0C104D28	private
+bool	gWireRecog = true;			// 0C104D2C
+int	gCount = 0;						// 0C104D30
 
 
 /* -----------------------------------------------------------------------------
@@ -75,11 +77,11 @@ int	gCount = 0;					// 0C104D30
 ----------------------------------------------------------------------------- */
 
 void
-BusyBoxSend(int inCmd)
+BusyBoxSend(int inSelector)
 {
 	if (gTheInkerPort != NULL)
 	{
-		CInkerEvent  evt(inCmd);	// size +10
+		CInkerEvent evt(inSelector);
 		gTheInkerPort->send(&evt, sizeof(CInkerEvent), 3*kSeconds);
 	}
 }
@@ -102,9 +104,9 @@ InkerPort(void)
 void
 StartInker(CUPort * inPort)
 {
-	CInker	inker;
+	CInker inker;
 	inker.setNewtPort(inPort);
-	inker.init('inkr', YES, kSpawnedTaskStackSize);
+	inker.init('inkr', true, kSpawnedTaskStackSize);
 }
 
 
@@ -119,10 +121,10 @@ void
 InkerOffUnhobbled(Rect * outRect)
 {
 	size_t replySize;
-	CInkerEvent request(7);		// sp+1C size +10
-	CInkerBoundsEvent reply;	// sp+04 size +18
+	CInkerEvent request(7);
+	CInkerBoundsEvent reply;
 	InkerPort()->sendRPC(&replySize, &request, sizeof(request), &reply, sizeof(reply));
-	*outRect = reply.fBounds;
+	*outRect = reply.bounds();
 }
 
 
@@ -130,8 +132,8 @@ NewtonErr
 HobbleTablet(void)
 {
 	size_t replySize;
-	CInkerEvent request(29);	// sp+1C size +10
-	CInkerBoundsEvent reply;	// sp+04 size +18
+	CInkerEvent request(29);
+	CInkerBoundsEvent reply;
 	return InkerPort()->sendRPC(&replySize, &request, sizeof(request), &reply, sizeof(reply));
 }
 
@@ -140,8 +142,8 @@ NewtonErr
 CalibrateInker(void)
 {
 	size_t replySize;
-	CInkerEvent request(5);		// sp+14 size +10
-	CInkerEvent reply;			// sp+04 size +10
+	CInkerEvent request(5);
+	CInkerReply reply;
 	Timeout timeout = 0;
 	RefVar sleepTime(GetPreference(SYMA(sleepTime)));
 	if (ISINT(sleepTime))
@@ -149,14 +151,14 @@ CalibrateInker(void)
 		timeout = RINT(sleepTime);
 		if (timeout > 600) timeout = 600;
 	}
-	request.fResult = timeout * kSeconds;
+	request.setParameter(timeout * kSeconds);
 	InkerPort()->sendRPC(&replySize, &request, sizeof(request), &reply, sizeof(reply));
-	if (reply.fResult == noErr)
+	if (reply.result() == noErr)
 	{
-		gInkerCalibrated = YES;
+		gInkerCalibrated = true;
 //		DoBlock(RA(SaveCalibration), RA(NILREF));		// donÕt have that code readily to hand
 	}
-	return reply.fResult;
+	return reply.result();
 }
 
 
@@ -172,10 +174,10 @@ bool
 CheckTabletHWCalibration(void)
 {
 	size_t replySize;
-	CInkerEvent request(33);	// size +10
-	CInkerEvent reply;			// size +10
+	CInkerEvent request(33);
+	CInkerReply reply;
 	return InkerPort()->sendRPC(&replySize, &request, sizeof(request), &reply, sizeof(reply)) == noErr
-		 && reply.fResult > 0;
+		 && reply.result() > 0;
 }
 
 
@@ -183,13 +185,13 @@ void
 LoadInkerCalibration(void)
 {
 	if (NOTNIL(DoBlock(MAKEMAGICPTR(117), RA(NILREF))))
-		gInkerCalibrated = YES;
+		gInkerCalibrated = true;
 
 #if defined(correct)
 	FILE *	f = fopen("bootNoCalibrate", "r");
 	if (f != NULL)
 	{
-		gInkerCalibrated = YES;
+		gInkerCalibrated = true;
 		fclose(f);
 	}
 	else
@@ -198,7 +200,18 @@ LoadInkerCalibration(void)
 }
 
 
-void	InkerLine(const Point inPt1, const Point inPt2, Rect * outRect, const Point inPenSize, const PixelMap * ioPixMap);
+/* -----------------------------------------------------------------------------
+	Draw an ink line into a pixmap.
+	Args:		inPt1			from this point
+				inPt2			to this point
+				outRect		rect enclosing the line drawn
+				inPenSize	thickness of pen
+				ioPixMap		pixmap into which to draw
+	Return:	--
+				outRect
+----------------------------------------------------------------------------- */
+
+void	InkerLine(const Point inPt1, const Point inPt2, Rect * outRect, const Point inPenSize, const NativePixelMap * ioPixMap);
 void
 InkerLine(const Point inPt1, const Point inPt2, Rect * outRect, const Point inPenSize)
 {
@@ -207,9 +220,9 @@ InkerLine(const Point inPt1, const Point inPt2, Rect * outRect, const Point inPe
 
 
 void
-InkerLine(const Point inPt1, const Point inPt2, Rect * outRect, const Point inPenSize, const PixelMap * ioPixMap)
+InkerLine(const Point inPt1, const Point inPt2, Rect * outRect, const Point inPenSize, const NativePixelMap * ioPixMap)
 {
-	Rect inkyBox;	// sp1C
+	Rect inkyBox;
 	// create rect enclosing the ink
 	Pt2Rect(inPt1, inPt2, &inkyBox);
 	inkyBox.right += inPenSize.h;
@@ -229,9 +242,10 @@ InkerLine(const Point inPt1, const Point inPt2, Rect * outRect, const Point inPe
 		if (inPt1.v == inPt2.v)
 		{
 			// horizontal straight line
+			// always draw left-right
 			int left = (inPt1.h < inPt2.h) ? inPt1.h : inPt2.h;
-			xLeft = (float) left /*+ 0.5*/;
-			xRight = (float) boxRight /*+ 0.5*/;
+			xLeft = (float)left + 0.5;
+			xRight = (float)boxRight + 0.5;
 			dX = 0.0;
 		}
 		else
@@ -242,107 +256,99 @@ InkerLine(const Point inPt1, const Point inPt2, Rect * outRect, const Point inPe
 				startPt = inPt2;
 				endPt = inPt1;
 			}
-			float r8 = (float) startPt.h + 0.5;
-			xRight = r8 + (float) inPenSize.h;
-//			float dX = endPt.h - startPt.h;	// r0
-//			float dY = endPt.v - startPt.v;	// r1
+			float r8 = (float)startPt.h + 0.5;
 			// dX is amount to offset per row
 			dX = (float)(endPt.h - startPt.h) / (float)(endPt.v - startPt.v);
 			float r0 = inPenSize.v * dX;
 			xLeft = r8 + dX/2;
-			xRight = xRight + dX/2;
+			xRight = r8 + (float)inPenSize.h + dX/2;
 			if (dX >= 0.0)
 			{
+				// left-right diagonal
 				xLeft -= r0;
-				if (dX >= 1)
+				if (dX >= 1.0)
 					xRight -= 1.0;
 				else
 					xLeft += dX;
 			}
 			else
 			{
+				// right-left diagonal
 				xRight -= r0;
-				if (dX < -1)
+				if (dX < -1.0)
 					xLeft += 1.0;
 				else
 					xRight += dX;
 			}
-			if (box.top != box.bottom)
+			if (box.top != inkyBox.top)
 			{
-//				r0 = box.top - box.bottom;
-//				r2 = r0 * FractionalPartOf(dX);
-//				r1 = r0 * IntegerPartOf(dX);
-//				r0 = r2 + r1;
-				float r0 = (box.top - box.bottom) * dX;
+				float r0 = (box.top - inkyBox.top) * dX;
 				xLeft += r0;
 				xRight += r0;
 			}
 		}
 		//sp-08
 		int pixDepth = PixelDepth(ioPixMap);		// spm04
-		int pixMask = gScreenConstants.pixMask[pixDepth];				// 00,1F,0F,00,07		r8
-		int pixShift = gScreenConstants.pixShift[pixDepth];			// 00,05,04,00,03		spm00
+		int pixMask = gScreenConstants.xMask[pixDepth];				// 00,1F,0F,00,07		r8
+		int pixShift = gScreenConstants.xShift[pixDepth];			// 00,05,04,00,03		spm00
 		int depthShift = gScreenConstants.depthShift[pixDepth];		// 00,03,02,00,01		r9
 
-		ULong r10 = ioPixMap->bounds.left + ((boxLeft - ioPixMap->bounds.left) & ~pixMask);
+		ULong xWordOrigin = ioPixMap->bounds.left + ((boxLeft - ioPixMap->bounds.left) & ~pixMask);		// r10
 
-		char * rowPtr	= GetPixelMapBits((PixelMap *)ioPixMap)
+		char * rowPtr	= PixelMapBits(ioPixMap)
 							+ (box.top - ioPixMap->bounds.top) * rowBytes	// start of row in pixmap	r9
-							+ ((r10 - ioPixMap->bounds.left) >> depthShift);													// offset to active rect
-		xLeft -= r10;
-		xRight -= r10;
-		boxLeft -= r10;
-		boxRight -= r10;
+							+ ((xWordOrigin - ioPixMap->bounds.left) >> depthShift);	// offset to active rect
+		xLeft -= xWordOrigin;
+		xRight -= xWordOrigin;
+		boxLeft -= xWordOrigin;
+		boxRight -= xWordOrigin;
 
-		QDStartDrawing((PixelMap *)ioPixMap, outRect);
-		for (int y = box.top; y < box.bottom; y++)
+		QDStartDrawing((NativePixelMap *)ioPixMap, outRect);
+//printf("InkerLine() x:%d-%d y:%d-%d rowOffset=%d byteOffset=%d\n",boxLeft,boxRight, box.top,box.bottom, (box.top - ioPixMap->bounds.top), ((xWordOrigin - ioPixMap->bounds.left) >> depthShift));
+		for (int y = box.top; y < box.bottom; ++y)
 		{
-			int x1 = xLeft;	// r2
-			int x2 = xRight;	// r1
-			x1 = MAX(boxLeft, x1);
-			x2 = MIN(x2, boxRight);
+			int x1 = MAX(boxLeft, xLeft);
+			int x2 = MIN(xRight, boxRight);
+//printf("x:%d-%d\n",x1,x2);
 			if (x1 < x2)
 			{
 				ULong lBits = 0xFFFFFFFF >> ((x1 & pixMask) * pixDepth);				// r3
-				ULong rBits = 0xFFFFFFFF << (32 - (x2 & pixMask) * pixDepth);		// r12
-				if (x2 == 8)
-					rBits = 0;
+				ULong rBits = (x2 & pixMask) == 0 ? 0 : 0xFFFFFFFF << (32 - ((x2 & pixMask) * pixDepth));	// r12
+#if defined(hasByteSwapping)
+				lBits = BYTE_SWAP_LONG(lBits);
+				rBits = BYTE_SWAP_LONG(rBits);
+#endif
 				ULong wordOffset = (x1 >> pixShift);
 				ULong numOfWords = (x2 >> pixShift) - wordOffset;
 				ULong * pixPtr = (ULong *)rowPtr + wordOffset;
 				if (numOfWords == 0)
 				{
 					ULong xBits = lBits & rBits;
-#if defined(hasByteSwapping)
-					xBits = BYTE_SWAP_LONG(xBits);
-#endif
 					*pixPtr |= xBits;
+//printf("%08X\n", xBits);
 				}
 				else
 				{
-#if defined(hasByteSwapping)
-					lBits = BYTE_SWAP_LONG(lBits);
-#endif
 					*pixPtr++ |= lBits;
-					for (numOfWords--; numOfWords > 0; numOfWords--)
+//printf("%08X", lBits);
+					for ( ; numOfWords > 1; --numOfWords) {
 						*pixPtr++ = 0xFFFFFFFF;
-#if defined(hasByteSwapping)
-					rBits = BYTE_SWAP_LONG(rBits);
-#endif
+//printf("FFFFFFFF");
+					}
 					*pixPtr |= rBits;
+//printf("%08X\n", rBits);
 				}
 			}
 			rowPtr += rowBytes;
 			xLeft += dX;
 			xRight += dX;
 		}
-		QDStopDrawing((PixelMap *)ioPixMap, outRect);
+		QDStopDrawing((NativePixelMap *)ioPixMap, outRect);
 	}
 }
 
 
-#pragma mark -
-#pragma mark PlainC
+#pragma mark - PlainC
 /* -----------------------------------------------------------------------------
 	P l a i n   C   I n t e r f a c e
 ----------------------------------------------------------------------------- */
@@ -416,8 +422,7 @@ FHobbleTablet(RefArg rcvr)
 }
 
 
-#pragma mark -
-#pragma mark CLiveInker
+#pragma mark - CLiveInker
 /*--------------------------------------------------------------------------------
 	C L i v e I n k e r
 
@@ -488,9 +493,9 @@ CLiveInker::startLiveInk(void)
 void
 CLiveInker::stopLiveInk(void)
 {
-	BlockLCDActivity(YES);
+	BlockLCDActivity(true);
 	BlitToScreens(&fPixMap, &fPixMap.bounds, &fPixMap.bounds, 1/*srcOr*/);
-	BlockLCDActivity(NO);
+	BlockLCDActivity(false);
 }
 
 
@@ -515,8 +520,8 @@ CLiveInker::addPoint(const Point inLocation, const Point inSize)
 	&&  pt.right <= fInkBounds.right && pt.bottom <= fInkBounds.bottom)
 	{
 		// point is totally within our ink bounds
-		fNumOfPts++;
-		return YES;
+		++fNumOfPts;
+		return true;
 	}
 
 	Rect bBox;
@@ -528,10 +533,10 @@ CLiveInker::addPoint(const Point inLocation, const Point inSize)
 	if (fNumOfPts <= 1 || mapLCDExtent(&bBox, NULL))
 	{
 		fInkBounds = bBox;
-		fNumOfPts++;
-		return YES;
+		++fNumOfPts;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -552,29 +557,19 @@ CLiveInker::mapLCDExtent(const Rect * inRect, Rect * outRect)
 		// we have enough memory to hold the image in the rect
 		if (outRect)
 			SetRect(outRect, aligned.left, aligned.top, aligned.right, aligned.bottom);
-		return YES;
+		return true;
 	}
 	// rect must be constrained for the memory available
 	if (outRect)
 		SetRect(outRect, aligned.left, aligned.top, aligned.left+64, aligned.top+64);
-	return NO;
+	return false;
 }
 
 
-#pragma mark -
-#pragma mark CInker
+#pragma mark - CInker
 /*--------------------------------------------------------------------------------
 	C I n k e r
 --------------------------------------------------------------------------------*/
-
-enum
-{
-	kPenDown,
-	kPenError,
-	kPenActive,
-	kPenUp
-};
-
 
 CInker::CInker()
 { }
@@ -606,7 +601,7 @@ CInker::mainConstructor(void)
 			handler->stopIdle();
 
 		Heap	aHeap;
-//		XFAIL(NewSegregatedVMHeap(0, 64*KByte, 64*KByte, &aHeap, 0))
+		XFAIL(NewSegregatedVMHeap(0, 64*KByte, 64*KByte, &aHeap, 0))
 		gStrokerHeap = aHeap;
 		SetHeap(aHeap);
 
@@ -626,41 +621,36 @@ CInker::iInker(void)
 	fLiveInker.init();
 
 	// initialize the tablet to the dimensions of the display
-	PixelMap	pixMap;
+	NativePixelMap	pixMap;
 	GetGrafInfo(kGrafPixelMap, &pixMap);
 	TabInitialize(pixMap.bounds, getMyPort());
 
 	fCurrentPenMode = 2;
 	fNextPenMode = 2;
 
-	fEvent.fEventClass = kNewtEventClass;
-	fEvent.fEventId = kIdleEventId;
-	fEvent.fSelector = kInkerEventId;
+	fEvent.fEventType = kInkerEventId;
 
 	fPenState = kPenUp;
 
 	gFakeTablet = FLAGTEST(gDebuggerBits, kDebuggerUseARMisticeCard);
 	if (gFakeTablet)
 	{
-#if defined(correct)
-		r9 = 0x033C0000;
-		r8 = 0x033C0010;
-		r7 = 0x033C0210;
-		for (done = NO; !done; )
+		for (bool done = false; !done; )
 		{
 			newton_try
 			{
-				r9->x00 = r8;
-				r9->x04 = r8;
-				r9->x0C = r7;
-				r9->x08 = r8;
-				done = YES;
-				0x03380000->x04 = r9;
+				ARMisticeSamples * samples = &gFakeTabletSamples;
+				samples->wrPtr = gFakeTabletSamples.buf;
+				samples->rdPtr = gFakeTabletSamples.buf;
+				samples->bufStart = gFakeTabletSamples.buf;
+				samples->bufEnd = gFakeTabletSamples.buf + kFakeTabletSampleBufSize;
+				done = true;
+//				0x03380000->x04 = samples;
 			}
 			newton_catch(exAbort)
 			{ /* just catch it */ }
+			end_try;
 		}
-#endif
 		StartBypassTablet();
 	}
 }	
@@ -735,7 +725,7 @@ CInker::convert(void)
 {
 	if (gCalibrate || InkerBufferEmpty())
 		// thereÕs nothing to convert
-		return NO;
+		return false;
 
 	TabletSample sample;
 	sample.intValue = GetInkerData();
@@ -767,7 +757,7 @@ CInker::convert(void)
 
 	// remove sample from the buffer
 	IncInkerIndex(1);
-	return YES;
+	return true;
 }
 
 
@@ -801,18 +791,17 @@ CInker::LCDEntry(void)
 					prevPt = currentPt;
 				else
 				{
-					prevPt.h = fPenLoc.x;
-					prevPt.v = fPenLoc.y;
+					prevPt.h = fPenLoc.x + 0.5;
+					prevPt.v = fPenLoc.y + 0.5;
 				}
-				if (currentPt.v != prevPt.v
-				||  fPenLoc.x == -1.0)
+				if (*(int *)&currentPt != *(int *)&prevPt		// pen has moved
+				||  fPenLoc.x == -1.0)								// this is the first point
 				{
 					drawInk(prevPt, currentPt, &inkyBox, fPenSize);
 					UnionRect(&fInkBounds, &inkyBox, &fInkBounds);	// original says JoinRect which does the same thing
 				}
 			}
-			fPenLoc.x = fSampleLoc.x;
-			fPenLoc.y = fSampleLoc.y;
+			fPenLoc = fSampleLoc;
 			break;
 
 		case kPenUp:
@@ -822,41 +811,58 @@ CInker::LCDEntry(void)
 		if (!gWireRecog)
 			FlushInkerBuffer();
 		if (fPenState != kPenDown  &&  RealStrokeTime() != 0)
-			fPort->send(&fMessage, &fEvent, sizeof(CInkerEvent));
+			fPort->send(&fMessage, &fEvent, sizeof(CInkerEvent));		// sic -- sizeof(CIdleEvent) ?
 	}
+	// send idle event to update display
 	if (fPenState != kPenDown  &&  RealStrokeTime() != 0)
-		fPort->send(&fMessage, &fEvent, sizeof(CInkerEvent));
+		fPort->send(&fMessage, &fEvent, sizeof(CInkerEvent));		// sic -- sizeof(CIdleEvent) ?
 }
 
 
-// CInkerEventHandler::idleProc() -> CInkerEventHandler::inkThem() -> gInkWorld->LCDEntry() -> CInker::drawInk
+/* -------------------------------------------------------------------------------
+	Draw a line of ink.
+	Call stack:
+	CInkerEventHandler::idleProc()
+	-> CInkerEventHandler::inkThem()
+		-> gInkWorld->LCDEntry()
+			-> CInker::drawInk
+	Args:		inPt1			from this point
+				inPt2			to this point
+				outBounds	box enclosing the drawn ink
+				inPenSize	ignored
+	Return:	--
+------------------------------------------------------------------------------- */
+
 void
 CInker::drawInk(Point inPt1, Point inPt2, Rect * outBounds, short inPenSize)
 {
-	Point	ptsArray[80];	// sp00
-	ArrayIndex ptsIndex;	// r6
-	bool isInBounds;
-	Point penSize;			// sp144
+	Point penSize;
 	penSize.h = penSize.v = fCurrentPenMode;	// inPenSize is ignored
 
-	fLiveInker.resetAccumulator();
+	Point	ptsArray[80];
 	ptsArray[0] = inPt1;
 	ptsArray[1] = inPt2;
+	ArrayIndex ptsIndex = 2;
 
+	fLiveInker.resetAccumulator();
 	fLiveInker.addPoint(inPt1, penSize);
-	isInBounds = fLiveInker.addPoint(inPt2, penSize);
-	for (ptsIndex = 2; isInBounds && !InkerBufferEmpty() && ptsIndex < 80; ptsIndex++)
+	bool isInBounds = fLiveInker.addPoint(inPt2, penSize);
+	// if there are more tablet samples pending, add them to our points vector
+	while (isInBounds && !InkerBufferEmpty() && ptsIndex < 80)
 	{
-		Point penPt;
-		FPoint samplePt;
+		// read tablet sample
 		TabletSample sample;
 		sample.intValue = GetInkerData();
 		if (sample.z > kPenMaxPressureSample)
 			break;
-		samplePt.x = sample.x;
-		samplePt.y = sample.y;
-		penPt.h = samplePt.x / kTabScale + 0.5;
-		penPt.v = samplePt.y / kTabScale + 0.5;
+		FPoint samplePt;
+		samplePt.x = sample.x / kTabScale;
+		samplePt.y = sample.y / kTabScale;
+		// convert to pen coord
+		Point penPt;
+		penPt.h = samplePt.x + 0.5;
+		penPt.v = samplePt.y + 0.5;
+
 		isInBounds = fLiveInker.addPoint(penPt, penSize);
 		if (isInBounds)
 		{
@@ -870,27 +876,11 @@ CInker::drawInk(Point inPt1, Point inPt2, Rect * outBounds, short inPenSize)
 	}
 	*outBounds = fLiveInker.bounds();
 
-#if defined(correct)
-	Point * pt, * ptsLimit = &ptsArray[ptsIndex];
+	// ink the line segments
 	fLiveInker.startLiveInk();
-	for (pt = ptsArray; pt < ptsLimit; pt++)
+	for (Point * pt = ptsArray, * ptsLimit = ptsArray+ptsIndex-1; pt < ptsLimit; ++pt)
 		fLiveInker.inkLine(pt[0], pt[1], penSize);
 	fLiveInker.stopLiveInk();
-#else
-	Point * pt = ptsArray;
-	Point prevPt;
-	CGContextSetLineWidth(quartz, penSize.h);
-	CGContextBeginPath(quartz);
-	CGContextMoveToPoint(quartz, pt->h, pt->v);
-	prevPt = *pt++;
-	for (ArrayIndex i = 1; i < ptsIndex; i++, pt++)
-	{
-		if (pt->h != prevPt.h  ||  pt->v != prevPt.v)
-			CGContextAddLineToPoint(quartz, pt->h, pt->v);
-		prevPt = *pt;
-	}
-	CGContextStrokePath(quartz);
-#endif
 }
 
 
@@ -908,11 +898,10 @@ CInker::insertionSort(ULong * inArray, ArrayIndex inCount, ULong inItem)
 }
 
 
-#pragma mark -
-#pragma mark CInkerEventHandler
-/*--------------------------------------------------------------------------------
+#pragma mark - CInkerEventHandler
+/* -------------------------------------------------------------------------------
 	C I n k e r E v e n t H a n d l e r
---------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------- */
 
 void
 CInkerEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
@@ -938,7 +927,7 @@ CInkerEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEve
 		break;
 
 	case 5:
-		((CInkerEvent *)inEvent)->fResult = gInkWorld->calibrate(((CInkerEvent *)inEvent)->fResult);
+		((CInkerEvent *)inEvent)->fParameter = gInkWorld->calibrate(((CInkerEvent *)inEvent)->fParameter);
 		srand(0x0F181800);
 		setReply(sizeof(CInkerEvent), inEvent);
 		break;
@@ -947,7 +936,7 @@ CInkerEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEve
 		gInkWorld->presCalibrate();
 		break;
 
-	case 7:
+	case 7:	// inker off
 		((CInkerBoundsEvent *)inEvent)->fBounds = gInkWorld->fInkBounds;
 		penMode = gInkWorld->getCurrentPenMode();
 		gInkWorld->setCurrentPenMode(((CInkerEvent *)inEvent)->fSelector - 7);
@@ -995,8 +984,10 @@ CInkerEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEve
 		SetTabletCalibration(((CInkerCalibrationEvent *)inEvent)->fCalibration);
 		break;
 
+//	case 29:		hobble tablet
+
 	case 33:
-		((CInkerEvent *)inEvent)->fResult = gInkWorld->testForCalibrationNeeded();
+		((CInkerEvent *)inEvent)->fParameter = gInkWorld->testForCalibrationNeeded();
 		setReply(sizeof(CInkerEvent), inEvent);
 		break;
 	}
@@ -1015,11 +1006,9 @@ CInkerEventHandler::idleProc(CUMsgToken * inToken, size_t * inSize, CEvent * inE
 	inkThem();		// draw strokes
 	XTRY
 	{
-#if defined(correct)
 		if (gFakeTablet)
 			InsertArmisticeSamples();
 		else
-#endif
 		if (gInkWorld->fPenState == kPenUp  &&  TabletBufferEmpty())
 		{
 			XFAIL(GetTabletState() == kTabletAwake)

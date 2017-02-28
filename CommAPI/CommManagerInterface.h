@@ -95,7 +95,7 @@ inline CConnectedDevice::CConnectedDevice() : fLastConnectTime(0), fDeviceType(0
 	CDeviceIdNotification
 --------------------------------------------------------------------------------*/
 
-class CDeviceIdNotification : public CSystemEvent
+class CDeviceIdNotification : public CEventSystemEvent
 {
 public:
 	CConnectedDevice	fConnectedDevice;
@@ -126,6 +126,8 @@ private:
 	ULong		fServiceId;		// service Id
 };
 
+inline void			CServiceInfo::setPortId(ObjectId portId)		{ fPortId = portId; }
+inline void			CServiceInfo::setServiceId(ULong serviceId)	{ fServiceId = serviceId; }
 inline ObjectId	CServiceInfo::getPortId(void)		{ return fPortId; }
 inline ULong		CServiceInfo::getServiceId(void)	{ return fServiceId; }
 
@@ -139,7 +141,7 @@ NewtonErr	InitializeCommManager(void);
 
 /*--------------------------------------------------------------------------------
 	start the service described in the COptionArray,
-	return the TObjectId of the port associated with
+	return the ObjectId of the port associated with
 	the service.
 --------------------------------------------------------------------------------*/
 NewtonErr CMStartService(COptionArray* options, CServiceInfo* serviceInfo);
@@ -156,7 +158,7 @@ NewtonErr CMStartServiceInternal(COptionArray* options, CServiceInfo* serviceInf
 	to the service.  If handleAborts is TRUE, a user
 	abort handler is automatically installed
 --------------------------------------------------------------------------------*/
-NewtonErr CMGetEndpoint(COptionArray* options, CEndpoint** endPoint, bool handleAborts = NO);
+NewtonErr CMGetEndpoint(COptionArray* options, CEndpoint** endPoint, bool handleAborts = false);
 
 /*--------------------------------------------------------------------------------
 	returns a CConnectedDevice object, describing the last

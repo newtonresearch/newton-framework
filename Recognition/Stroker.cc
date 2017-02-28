@@ -66,7 +66,7 @@ short						useStylus;					// 0C10115C
 
 ULong						gDoubleTapInterval;		// 0C101854
 
-bool						gDefaultInk;				// 0C101890
+bool						gDefaultInk = true;		// 0C101890
 FPoint					gTabScale;					// 0C101894
 StrokeQueue				gStrokeQ;					// 0C10189C	original makes this a pointer
 
@@ -152,7 +152,7 @@ void
 TabOn(void)
 {
 	TabInit();
-	collect = YES;
+	collect = true;
 }
 
 
@@ -205,8 +205,8 @@ static ULong penDownTime;
 				outPt->p = 0;
 				IncStrokerIndex(1);
 				gLastPenState = 4;
-printf("pen at %f, %f\n", outPt->x, outPt->y);
-				return YES;
+//printf("pen at %f, %f\n", outPt->x, outPt->y);
+				return true;
 			}
 			break;
 
@@ -216,8 +216,8 @@ printf("pen at %f, %f\n", outPt->x, outPt->y);
 				gLastDownTime = GetStrokerData(1);
 				IncStrokerIndex(2);
 				gLastPenState = 6;
-penDownTime = gLastDownTime;
-printf("pen down @ %u\n", gLastDownTime);
+//penDownTime = gLastDownTime;
+//printf("pen down @ %u\n", gLastDownTime);
 				// and loop for an actual pen location sample
 			}
 			break;
@@ -230,8 +230,8 @@ printf("pen down @ %u\n", gLastDownTime);
 				gLastUpTime = GetStrokerData(1);
 				IncStrokerIndex(4);
 				gLastPenState = 3;
-printf("pen lifted @ %u, duration %u\n", gLastUpTime, gLastUpTime - penDownTime);
-				return YES;
+//printf("pen lifted @ %u, duration %u\n", gLastUpTime, gLastUpTime - penDownTime);
+				return true;
 			}
 			IncStrokerIndex(4);
 			gLastPenState = 3;
@@ -242,7 +242,7 @@ printf("pen lifted @ %u, duration %u\n", gLastUpTime, gLastUpTime - penDownTime)
 			break;
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -293,7 +293,7 @@ RealStrokeInit(void)
 	gStrokeQSemaphore->acquire(kWaitOnBlock);
 
 	CSStroke ** p = gStrokeQ.buf;
-	for (ArrayIndex i = 0; i < kStrokeQSize; i++, p++)
+	for (ArrayIndex i = 0; i < kStrokeQSize; ++i, ++p)
 		*p = NULL;
 /*
 	in the original, but redundant since this is done by StrokeReInit()
@@ -313,13 +313,50 @@ RealStrokeInit(void)
 }
 
 
+void
+NukeEgregiousStrokes(FRect * ioBounds)
+{/*INCOMPLETE*/}
+
+
+void
+StrokeUpdate(FRect * ioBounds)
+{
+	FRect aBox;
+	CSStroke * buf[kStrokeQSize];
+	ArrayIndex numOfGoodStrokes = 0;
+	CSStroke * stroke;
+	CSStroke ** p = gStrokeQ.buf;
+
+	gStrokeSemaphore->acquire(kWaitOnBlock);
+	for (ArrayIndex i = 0; i < kStrokeQSize; ++i, ++p)
+	{
+		if ((stroke = *p) != NULL)
+		{
+			if (stroke->testFlags(0x10000000) && stroke->count() > 0)
+			{
+				if (!stroke->testFlags(0x08000000) || SectRectangle(&aBox, ioBounds, stroke->bounds()))
+				{
+					buf[numOfGoodStrokes++] = stroke;
+				}
+			}
+		}
+	}
+	gStrokeQSemaphore->release();
+	
+	for (ArrayIndex i = 0; i < numOfGoodStrokes; ++i)
+	{
+		buf[i]->draw();
+	}
+}
+
+
 bool
 AcquireStroke(CRecStroke * inStroke)
 {
 	if (inStroke->isDone())
-		return NO;
+		return false;
 	gStrokeSemaphore->acquire(kWaitOnBlock);
-	return YES;
+	return true;
 }
 
 
@@ -337,7 +374,7 @@ StrokeReInit(void)
 	gStrokeQ.buf[0] = CSStroke::make(0);
 	gStrokeQ.rdIndex = 0;
 	gStrokeQ.wrIndex = 0;
-	gStrokeValid = YES;		// original doesn’t do this -- but surely it’s essential?!
+	gStrokeValid = true;		// original doesn’t do this -- but surely it’s essential?!
 
 	TabInit();
 	if (useStylus)
@@ -351,7 +388,7 @@ ClearStrokeBuf(void)
 {
 	CSStroke * stroke;
 	CSStroke ** p = gStrokeQ.buf;
-	for (ArrayIndex i = 0; i < kStrokeQSize; i++, p++)
+	for (ArrayIndex i = 0; i < kStrokeQSize; ++i, ++p)
 	{
 		if ((stroke = *p) != NULL)
 		{
@@ -367,7 +404,7 @@ UnbufferStroke(CRecStroke * inStroke)
 {
 	CSStroke ** p = gStrokeQ.buf;
 	gStrokeQSemaphore->acquire(kWaitOnBlock);
-	for (ArrayIndex i = 0; i < kStrokeQSize; i++, p++)
+	for (ArrayIndex i = 0; i < kStrokeQSize; ++i, ++p)
 	{
 		if (*p == (CSStroke *)inStroke)
 			*p = NULL;
@@ -379,13 +416,13 @@ UnbufferStroke(CRecStroke * inStroke)
 bool
 ScanStrokeQueueEvents(ULong inStartTime, ULong inDuration, bool inArg3)
 {
-	bool isFound = NO;
+	bool isFound = false;
 	ULong limit = inStartTime + inDuration;
 	CSStroke * stroke;
 	CSStroke ** p = gStrokeQ.buf;
 
 	gStrokeQSemaphore->acquire(kWaitOnBlock);
-	for (ArrayIndex i = 0; i < kStrokeQSize; i++, p++)
+	for (ArrayIndex i = 0; i < kStrokeQSize; ++i, ++p)
 	{
 		if ((stroke = *p) != NULL
 		&&  (inArg3 || !stroke->testFlags(0x80000000))
@@ -393,7 +430,7 @@ ScanStrokeQueueEvents(ULong inStartTime, ULong inDuration, bool inArg3)
 		&&  stroke->startTime() > inStartTime
 		&&  stroke->startTime() < limit)
 		{
-			isFound = YES;
+			isFound = true;
 			break;
 		}
 	}
@@ -406,7 +443,7 @@ ScanStrokeQueueEvents(ULong inStartTime, ULong inDuration, bool inArg3)
 bool
 CheckStrokeQueueEvents(ULong inStartTime, ULong inDuration)
 {
-	return ScanStrokeQueueEvents(inStartTime, inDuration, NO);
+	return ScanStrokeQueueEvents(inStartTime, inDuration, false);
 }
 
 
@@ -447,7 +484,7 @@ StrokeGet(void)
 /* -----------------------------------------------------------------------------
 	Create a new empty stroke and add it to the queue.
 	Args:		--
-	Return:	YES => success
+	Return:	true => success
 ----------------------------------------------------------------------------- */
 
 bool
@@ -468,12 +505,12 @@ StrokeNext(void)
 		// add it to the queue
 		gStrokeQ.buf[i] = stroke;
 		gStrokeQ.wrIndex = i;
-		gStrokeValid = YES;
-		return YES;
+		gStrokeValid = true;
+		return true;
 	}
 	XENDTRY;
-	gStrokeValid = NO;
-	return NO;
+	gStrokeValid = false;
+	return false;
 }
 
 
@@ -494,17 +531,17 @@ RealStrokeTime(void)
 		{
 			stroke = gStrokeQ.buf[gStrokeQ.wrIndex];
 			if (stroke == NULL)
-				gStrokeValid = NO;
+				gStrokeValid = false;
 		}
 		if (LastTabPt(&penLoc))
 		{
 			// pen has been lifted
-			gStrokeInProgress = NO;
+			gStrokeInProgress = false;
 			if (gStrokeValid)
 			{
 				status = 1;
 				stroke->setEndTime(GetUpTime() + gTickOff);
-				CheckHiliteState(stroke, &oldHilite, &newHilite, YES);
+				CheckHiliteState(stroke, &oldHilite, &newHilite, true);
 				oldHilite = newHilite;
 				oldHilite.x0C = stroke->endTime();
 				if (stroke->count() == 0)
@@ -526,7 +563,7 @@ RealStrokeTime(void)
 			{
 				if (!gStrokeInProgress)
 				{
-					gStrokeInProgress = YES;
+					gStrokeInProgress = true;
 					status = 1;
 				}
 				stroke->addPoint(&penLoc);
@@ -543,7 +580,7 @@ RealStrokeTime(void)
 					// update duration of current stroke
 					stroke->setEndTime(stroke->startTime() + stroke->count() * gSamplesToTicks);
 					// check for hilite gesture -- holding down the pen
-					CheckHiliteState(stroke, &oldHilite, &newHilite, NO);
+					CheckHiliteState(stroke, &oldHilite, &newHilite, false);
 				}
 			}
 			else
@@ -551,7 +588,7 @@ RealStrokeTime(void)
 				if (!gStrokeInProgress)
 				{
 					GetDownTime();
-					gStrokeInProgress = YES;
+					gStrokeInProgress = true;
 					status = 2;
 				}
 			}
@@ -618,7 +655,6 @@ InitHiliteState(CRecStroke * inStroke, StrokeHiliteState * inPrevState, StrokeHi
 int
 CheckHiliteState(CRecStroke * inStroke, StrokeHiliteState * inPrevState, StrokeHiliteState * outNewState, bool inFlag)
 {
-// r5 r6 r4 r8
 	outNewState->x0C = inStroke->endTime();
 	outNewState->x14++;
 	if (outNewState->x18 != 0)
@@ -714,8 +750,7 @@ SetUpDistances(void)
 }
 
 
-#pragma mark -
-#pragma mark CSStroke
+#pragma mark - CSStroke
 /* -----------------------------------------------------------------------------
 	C S S t r o k e
 	Don’t really know why this is needed -- the extra data members aren’t used.
@@ -730,12 +765,12 @@ SetUpDistances(void)
 CSStroke *
 CSStroke::make(ULong inNumOfPts)
 {
-	CSStroke * stroke;
+	CSStroke * stroke = new CSStroke;
 	XTRY
 	{
-		XFAIL((stroke = new CSStroke) == NULL)
+		XFAIL(stroke == NULL)
 		XFAILIF(stroke->iStroke(inNumOfPts) != noErr, stroke->release(); stroke = NULL;)
-		stroke->f54 = NO;
+		stroke->f54 = false;
 		stroke->f4C.h = stroke->f4C.v = -1;
 		stroke->f50.h = stroke->f50.v = -1;
 	}
@@ -761,7 +796,7 @@ CSStroke::addPoint(TabPt * inPt)
 		{
 			f50.h = inPt->x + 0.5;
 			f50.v = inPt->y + 0.5;
-			f54 = YES;
+			f54 = true;
 		}
 	}
 	XENDTRY;

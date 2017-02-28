@@ -19,6 +19,7 @@
 
 extern "C" {
 
+Ref	FTicks(RefArg inRcvr);
 Ref	FTime(RefArg inRcvr);
 Ref	FTimeInSeconds(RefArg inRcvr);
 Ref	FSetTimeInSeconds(RefArg inRcvr, RefArg inSecsSince1993);
@@ -267,7 +268,7 @@ bool
 CParseBuffer::convert(void * inContext)
 {
 	CDate * date = (CDate *)inContext;
-	bool status = YES;
+	bool status = true;
 
 	if (bufLen > 0
 	||  contentType != 0)
@@ -282,42 +283,42 @@ CParseBuffer::convert(void * inContext)
 			|| (numericValue >= 1904 && numericValue <= 2920))
 				date->fYear = numericValue;
 			else
-				status = NO;
+				status = false;
 			break;
 
 		case 6:
 			if (numericValue <= 12)
 				date->fMonth = numericValue;
 			else
-				status = NO;
+				status = false;
 			break;
 
 		case 7:
 			if (numericValue <= 31)
 				date->fDay = numericValue;
 			else
-				status = NO;
+				status = false;
 			break;
 
 		case 9:
 			if (numericValue <= 24)
 				date->fHour = numericValue;
 			else
-				status = NO;
+				status = false;
 			break;
 
 		case 10:
 			if (numericValue <= 60)
 				date->fMinute = numericValue;
 			else
-				status = NO;
+				status = false;
 			break;
 
 		case 11:
 			if (numericValue <= 60)
 				date->fSecond = numericValue;
 			else
-				status = NO;
+				status = false;
 			break;
 
 		case 12:
@@ -550,12 +551,12 @@ CDictionary::findLongestWord(UChar * outWord, const UniChar * inStr, ArrayIndex 
 	do
 	{
 		// find extent of line
-		FindWordBreaks(inStr, wordLen, wordLen-1, YES, lineBreaks, &lineStart, &lineEnd);
+		FindWordBreaks(inStr, wordLen, wordLen-1, true, lineBreaks, &lineStart, &lineEnd);
 
 		UChar saveChar = outWord[lineEnd];
 		outWord[lineEnd] = 0;
 		verifyStart();
-		verifyWord(outWord, &sp18, &sp14, &sp10, YES, &sp0C);
+		verifyWord(outWord, &sp18, &sp14, &sp10, true, &sp0C);
 		outWord[lineEnd] = saveChar;
 		if (airusResult == 2 || airusResult == 3)
 		{
@@ -603,7 +604,7 @@ CDictionary::parseString(void * inContext, const UniChar * inStr, ArrayIndex * o
 			ULong * sp50 = NULL;
 			ULong * sp4C = NULL;
 			UChar * sp48 = (UChar *)1;
-			bool sp44 = YES;
+			bool sp44 = true;
 			parser.init();
 			for (ArrayIndex i = 0; i < wordLen; ++i)
 			{
@@ -623,7 +624,7 @@ CDictionary::parseString(void * inContext, const UniChar * inStr, ArrayIndex * o
 					{
 						if (r9 == 0x80 && r7 != 0)
 							parser.contentType = r7;
-						XXFAILIF(parser.convert(inContext) == NO, err = -1;)
+						XXFAILIF(parser.convert(inContext) == false, err = -1;)
 						parser.init();
 					}
 					if (r9 == 0x40
@@ -650,7 +651,7 @@ CDictionary::parseString(void * inContext, const UniChar * inStr, ArrayIndex * o
 				}
 			}
 			if (parser.bufLen > 0)
-				XFAILIF(parser.convert(inContext) == NO, err = -1;)
+				XFAILIF(parser.convert(inContext) == false, err = -1;)
 		}
 failed:
 		FreePtr((Ptr)s);
@@ -753,7 +754,7 @@ CDate::initWithDateFrame(RefArg inDateFrame, bool inMakeValidDefaults)
 		else
 			fMonth = inMakeValidDefaults ? 1 : 0xFFFFFFFF;
 
-		rVal = GetFrameSlot(inDateFrame, SYMA(date));
+		rVal = GetFrameSlot(inDateFrame, SYMA(Date));
 		if (ISINT(rVal))
 			fDay = RINT(rVal);
 		else
@@ -929,7 +930,7 @@ CDate::stringToDateFrame(const UniChar * inStr, ArrayIndex * outParsedStrLen, Ar
 		if (fMonth != 0xFFFFFFFF)
 			SetFrameSlot(theDate, SYMA(month), MAKEINT(fMonth));
 		if (fDay != 0xFFFFFFFF)
-			SetFrameSlot(theDate, SYMA(date), MAKEINT(fDay));
+			SetFrameSlot(theDate, SYMA(Date), MAKEINT(fDay));
 		if (fHour != 0xFFFFFFFF)
 			SetFrameSlot(theDate, SYMA(hour), MAKEINT(fHour));
 		if (fMinute != 0xFFFFFFFF)
@@ -1090,17 +1091,17 @@ CDate::longDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 
 	if (inStrSpec == kIncludeAllElements)
 	{
-		hasDay = YES;
-		hasMonth = YES;
-		hasYear = YES;
+		hasDay = true;
+		hasMonth = true;
+		hasYear = true;
 		dayFormat = dayOfWeekFormat = monthFormat = yearFormat = kFormatDefault;
 		numOfElements = 4;
 	}
 	else
 	{
-		hasDay = NO;
-		hasMonth = NO;
-		hasYear = NO;
+		hasDay = false;
+		hasMonth = false;
+		hasYear = false;
 		while (inStrSpec != 0)
 		{
 			ULong elementType = GetNextElementType(&inStrSpec);
@@ -1108,17 +1109,17 @@ CDate::longDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 			numOfElements++;
 			switch (elementType)
 			{
-			case kElementDay:			hasDay = YES;			dayFormat = elementFormat;			break;
-			case kElementDayOfWeek:	hasDayOfWeek = YES;	dayOfWeekFormat = elementFormat;	break;
-			case kElementMonth:		hasMonth = YES;		monthFormat = elementFormat;		break;
-			case kElementYear:		hasYear = YES;			yearFormat = elementFormat;		break;
+			case kElementDay:			hasDay = true;			dayFormat = elementFormat;			break;
+			case kElementDayOfWeek:	hasDayOfWeek = true;	dayOfWeekFormat = elementFormat;	break;
+			case kElementMonth:		hasMonth = true;		monthFormat = elementFormat;		break;
+			case kElementYear:		hasYear = true;			yearFormat = elementFormat;		break;
 			}
 		}
 	}
 
 	if (hasYear && fYear >= 2920)
 	{
-		hasYear = NO;
+		hasYear = false;
 		numOfElements--;
 	}
 
@@ -1131,15 +1132,15 @@ CDate::longDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 		ULong theFormat = 0;
 		ULong elementType = GetNextElementType(&dateOrderSpec);
 		ULong elementFormat = GetNextElementFormat(&dateOrderSpec);
-		if ((elementType == kElementDay && hasDay && (theFormat = dayFormat, YES))
-		||  (elementType == kElementDayOfWeek && hasDayOfWeek && (theFormat = dayOfWeekFormat, YES))
-		||  (elementType == kElementMonth && hasMonth && (theFormat = monthFormat, YES))
-		||  (elementType == kElementYear && hasYear && (theFormat = yearFormat, YES)))
+		if ((elementType == kElementDay && hasDay && (theFormat = dayFormat, true))
+		||  (elementType == kElementDayOfWeek && hasDayOfWeek && (theFormat = dayOfWeekFormat, true))
+		||  (elementType == kElementMonth && hasMonth && (theFormat = monthFormat, true))
+		||  (elementType == kElementYear && hasYear && (theFormat = yearFormat, true)))
 		{
 			if (theFormat)
 				elementFormat = theFormat;
 			numOfElements--;
-			dateElementString(elementType, elementFormat, elementStr, kStr31Len, YES);
+			dateElementString(elementType, elementFormat, elementStr, kStr31Len, true);
 			if (numOfElements > 0 || dateOrderSpec == 0)
 			{
 				CDataPtr delimStr(GetArraySlot(dateDelim, index));
@@ -1168,16 +1169,16 @@ CDate::shortDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 
 	if (inStrSpec == kIncludeAllElements)
 	{
-		hasDay = YES;
-		hasMonth = YES;
-		hasYear = YES;
+		hasDay = true;
+		hasMonth = true;
+		hasYear = true;
 		numOfElements = 3;
 	}
 	else
 	{
-		hasDay = NO;
-		hasMonth = NO;
-		hasYear = NO;
+		hasDay = false;
+		hasMonth = false;
+		hasYear = false;
 		while (inStrSpec != 0)
 		{
 			ULong elementType = GetNextElementType(&inStrSpec);
@@ -1185,16 +1186,16 @@ CDate::shortDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 			numOfElements++;
 			switch (elementType)
 			{
-			case kElementDay:		hasDay = YES;		break;
-			case kElementMonth:	hasMonth = YES;	break;
-			case kElementYear:	hasYear = YES;		break;
+			case kElementDay:		hasDay = true;		break;
+			case kElementMonth:	hasMonth = true;	break;
+			case kElementYear:	hasYear = true;		break;
 			}
 		}
 	}
 
 	if (hasYear && fYear >= 2920)
 	{
-		hasYear = NO;
+		hasYear = false;
 		numOfElements--;
 	}
 
@@ -1210,7 +1211,7 @@ CDate::shortDateString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 		||  (elementType == kElementYear && hasYear))
 		{
 			numOfElements--;
-			dateElementString(elementType, kFormatNumeric, elementStr, kStr31Len, NO);
+			dateElementString(elementType, kFormatNumeric, elementStr, kStr31Len, false);
 			if (numOfElements > 0 || dateOrderSpec == 0)
 			{
 				CDataPtr delimStr(GetArraySlot(dateDelim, index));
@@ -1236,30 +1237,30 @@ CDate::timeString(ULong inStrSpec, UniChar * outStr, ArrayIndex inStrSize)
 
 	if (inStrSpec == kIncludeAllElements)
 	{
-		hasHours = YES;
-		hasSeconds = YES;
-		hasMinutes = YES;
-		hasAMPM = YES;
-		hasSuffix = YES;
+		hasHours = true;
+		hasSeconds = true;
+		hasMinutes = true;
+		hasAMPM = true;
+		hasSuffix = true;
 	}
 	else
 	{
-		hasHours = NO;
-		hasSeconds = NO;
-		hasMinutes = NO;
-		hasAMPM = NO;
-		hasSuffix = NO;
+		hasHours = false;
+		hasSeconds = false;
+		hasMinutes = false;
+		hasAMPM = false;
+		hasSuffix = false;
 		while (inStrSpec != 0)
 		{
 			ULong elementType = GetNextElementType(&inStrSpec);
 			ULong elementFormat = GetNextElementFormat(&inStrSpec);	// ignored for time elements
 			switch (elementType)
 			{
-			case kElementHour:	hasHours = YES;	break;
-			case kElementMinute:	hasMinutes = YES;	break;
-			case kElementSecond:	hasSeconds = YES;	break;
-			case kElementAMPM:	hasAMPM = YES;		break;
-			case kElementSuffix:	hasSuffix = YES;	break;
+			case kElementHour:	hasHours = true;	break;
+			case kElementMinute:	hasMinutes = true;	break;
+			case kElementSecond:	hasSeconds = true;	break;
+			case kElementAMPM:	hasAMPM = true;		break;
+			case kElementSuffix:	hasSuffix = true;	break;
 			}
 		}
 	}
@@ -1555,7 +1556,7 @@ ToObject(const CDate & inDate)
 
 	SetFrameSlot(theDate, SYMA(year), inDate.fYear < 2920 ? MAKEINT(inDate.fYear) : MAKEINT(2920));
 	SetFrameSlot(theDate, SYMA(month), MAKEINT(inDate.fMonth));
-	SetFrameSlot(theDate, SYMA(date), MAKEINT(inDate.fDay));
+	SetFrameSlot(theDate, SYMA(Date), MAKEINT(inDate.fDay));
 	SetFrameSlot(theDate, SYMA(dayOfWeek), MAKEINT(inDate.fDayOfWeek));
 	SetFrameSlot(theDate, SYMA(hour), MAKEINT(inDate.fHour));
 	SetFrameSlot(theDate, SYMA(minute), MAKEINT(inDate.fMinute));
@@ -1664,7 +1665,7 @@ TimeFrameString(RefArg inDateFrame, ULong inStrSpec, UniChar * outStr, ArrayInde
 {
 	CDate theDate;
 	*outStr = 0;
-	theDate.initWithDateFrame(inDateFrame, NO);
+	theDate.initWithDateFrame(inDateFrame, false);
 	theDate.setFormatResource(inResource);
 	theDate.timeString(inStrSpec, outStr, inStrSize);
 }
@@ -1674,6 +1675,14 @@ TimeFrameString(RefArg inDateFrame, ULong inStrSpec, UniChar * outStr, ArrayInde
 /*------------------------------------------------------------------------------
 	P l a i n   C   F u n c t i o n   I n t e r f a c e
 ------------------------------------------------------------------------------*/
+
+// Ticks are deprecated but required for some ROM-based scripts
+extern ULong GetTicks(void);
+Ref
+FTicks(RefArg inRcvr)
+{
+	return MAKEINT(GetTicks());
+}
 
 Ref
 FTime(RefArg inRcvr)
@@ -1726,7 +1735,7 @@ FIsValidDate(RefArg inRcvr, RefArg inDate)
 		theDate.stringToDateFrame((const UniChar *)(char *)str, &strParsedLen, 0xFFFFFFFF);
 	}
 	else if (IsFrame(inDate))
-		theDate.initWithDateFrame(inDate, NO);
+		theDate.initWithDateFrame(inDate, false);
 
 	return MAKEBOOLEAN(theDate.isValidDate());
 }
@@ -1895,7 +1904,7 @@ Ref
 FTotalMinutes(RefArg inRcvr, RefArg inDateFrame)
 {
 	CDate theDate;
-	theDate.initWithDateFrame(inDateFrame, YES);
+	theDate.initWithDateFrame(inDateFrame, true);
 	return MAKEINT(theDate.totalMinutes());
 }
 

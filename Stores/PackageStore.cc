@@ -241,7 +241,7 @@ CPackageStore::init(void * inStoreData, size_t inStoreSize, ULong inArg3, ArrayI
 NewtonErr
 CPackageStore::needsFormat(bool * outNeedsFormat)
 {
-	*outNeedsFormat = NO;
+	*outNeedsFormat = false;
 	return noErr;
 }
 
@@ -328,7 +328,7 @@ CPackageStore::storeKind(void)
 NewtonErr
 CPackageStore::isReadOnly(bool * outIsReadOnly)
 {
-	*outIsReadOnly = YES;
+	*outIsReadOnly = true;
 	return noErr;
 }
 
@@ -337,13 +337,13 @@ CPackageStore::isReadOnly(bool * outIsReadOnly)
 	Is this store in ROM?
 	Well, yes, kinda.
 	Args:		--
-	Return	YES => it’s in ROM
+	Return	true => it’s in ROM
 ----------------------------------------------------------------------------- */
 
 bool
 CPackageStore::isROM(void)
 {
-	return YES;
+	return true;
 }
 
 
@@ -526,13 +526,13 @@ CPackageStore::nextObject(PSSId inObjectId, PSSId * outNextObjectId)
 /* -----------------------------------------------------------------------------
 	Does this store own the given object?
 	Args:		inObjectId
-	Return	YES => store owns the object
+	Return	true => store owns the object
 ----------------------------------------------------------------------------- */
 
 bool
 CPackageStore::ownsObject(PSSId inObjectId)
 {
-	return YES;
+	return true;
 }
 
 
@@ -649,7 +649,7 @@ CPackageStore::inTransaction(void)
 bool
 CPackageStore::inSeparateTransaction(PSSId inObjectId)
 {
-	return NO;
+	return false;
 }
 
 
@@ -703,8 +703,8 @@ CPackageStore::getXIPObjectInfo(PSSId inObjectId, unsigned long * outArg2, unsig
 NewtonErr
 CPackageStore::idle(bool * outArg1, bool * outArg2)
 {
-	*outArg1 = NO;
-	*outArg2 = NO;
+	*outArg1 = false;
+	*outArg2 = false;
 	return noErr;
 }
 
@@ -741,7 +741,7 @@ CPackageStore::vppOff(void)
 	C P a c k a g e S t o r e P a r t H a n d l e r
 ------------------------------------------------------------------------------*/
 #include "PartHandler.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "Stores.h"
 
 

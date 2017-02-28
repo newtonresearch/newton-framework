@@ -1,0 +1,306 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F42947A11C50DDF200367F28 /* REx.cc in Sources */ = {isa = PBXBuildFile; fileRef = F429479F1C50DDF200367F28 /* REx.cc */; };
+		F44B949A1C7341F000B670F9 /* ClauseHandlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = F44B94981C7341F000B670F9 /* ClauseHandlers.cc */; };
+		F44B949D1C7390EB00B670F9 /* PatchTable.cc in Sources */ = {isa = PBXBuildFile; fileRef = F44B949B1C7390EB00B670F9 /* PatchTable.cc */; };
+		F4D5064E1C522E5F0080DFFB /* PackageAccessor.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D5064C1C522E5F0080DFFB /* PackageAccessor.cc */; };
+		F4D506511C522FA30080DFFB /* Chunk.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D5064F1C522FA30080DFFB /* Chunk.cc */; };
+		F4D506521C5232C90080DFFB /* Reporting.cc in Sources */ = {isa = PBXBuildFile; fileRef = F429479D1C50DDF200367F28 /* Reporting.cc */; };
+		F4D506551C523E390080DFFB /* Lexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D506531C523E380080DFFB /* Lexer.cc */; };
+		F4D506581C5249310080DFFB /* CRC16.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D506561C5249310080DFFB /* CRC16.cc */; };
+		F4D5065B1C524B0D0080DFFB /* Options.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D506591C524B0D0080DFFB /* Options.cc */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F42947901C50DD9100367F28 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		F42947921C50DD9100367F28 /* REx */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = REx; sourceTree = BUILT_PRODUCTS_DIR; };
+		F429479C1C50DDF200367F28 /* NewtonKit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NewtonKit.h; sourceTree = "<group>"; };
+		F429479D1C50DDF200367F28 /* Reporting.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Reporting.cc; sourceTree = "<group>"; };
+		F429479E1C50DDF200367F28 /* Reporting.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reporting.h; sourceTree = "<group>"; };
+		F429479F1C50DDF200367F28 /* REx.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = REx.cc; sourceTree = "<group>"; };
+		F44B94981C7341F000B670F9 /* ClauseHandlers.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClauseHandlers.cc; sourceTree = "<group>"; };
+		F44B94991C7341F000B670F9 /* ClauseHandlers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClauseHandlers.h; sourceTree = "<group>"; };
+		F44B949B1C7390EB00B670F9 /* PatchTable.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PatchTable.cc; sourceTree = "<group>"; };
+		F44B949C1C7390EB00B670F9 /* PatchTable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PatchTable.h; sourceTree = "<group>"; };
+		F48BB4C81C566B2800623A9B /* TestREx.config */ = {isa = PBXFileReference; indentWidth = 4; lastKnownFileType = text; name = TestREx.config; path = Test/TestREx.config; sourceTree = "<group>"; tabWidth = 4; usesTabs = 0; };
+		F4B642A91C78BA1500E0E906 /* RExArray.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RExArray.h; sourceTree = "<group>"; };
+		F4B8E2531D916B5B00CDE7C2 /* REx.config */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = REx.config; path = ../../OS/REx.config; sourceTree = "<group>"; };
+		F4D5064C1C522E5F0080DFFB /* PackageAccessor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PackageAccessor.cc; sourceTree = "<group>"; };
+		F4D5064D1C522E5F0080DFFB /* PackageAccessor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PackageAccessor.h; sourceTree = "<group>"; };
+		F4D5064F1C522FA30080DFFB /* Chunk.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Chunk.cc; sourceTree = "<group>"; };
+		F4D506501C522FA30080DFFB /* Chunk.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Chunk.h; sourceTree = "<group>"; };
+		F4D506531C523E380080DFFB /* Lexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Lexer.cc; sourceTree = "<group>"; };
+		F4D506541C523E390080DFFB /* Lexer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Lexer.h; sourceTree = "<group>"; };
+		F4D506561C5249310080DFFB /* CRC16.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CRC16.cc; sourceTree = "<group>"; };
+		F4D506571C5249310080DFFB /* CRC16.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CRC16.h; sourceTree = "<group>"; };
+		F4D506591C524B0D0080DFFB /* Options.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Options.cc; sourceTree = "<group>"; };
+		F4D5065A1C524B0D0080DFFB /* Options.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Options.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F429478F1C50DD9100367F28 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F42947891C50DD9100367F28 = {
+			isa = PBXGroup;
+			children = (
+				F42947941C50DD9100367F28 /* REx */,
+				F42947931C50DD9100367F28 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F42947931C50DD9100367F28 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F42947921C50DD9100367F28 /* REx */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F42947941C50DD9100367F28 /* REx */ = {
+			isa = PBXGroup;
+			children = (
+				F429479C1C50DDF200367F28 /* NewtonKit.h */,
+				F4D506541C523E390080DFFB /* Lexer.h */,
+				F4D506531C523E380080DFFB /* Lexer.cc */,
+				F4D5065A1C524B0D0080DFFB /* Options.h */,
+				F4D506591C524B0D0080DFFB /* Options.cc */,
+				F4D506501C522FA30080DFFB /* Chunk.h */,
+				F4D5064F1C522FA30080DFFB /* Chunk.cc */,
+				F4D506571C5249310080DFFB /* CRC16.h */,
+				F4D506561C5249310080DFFB /* CRC16.cc */,
+				F4D5064D1C522E5F0080DFFB /* PackageAccessor.h */,
+				F4D5064C1C522E5F0080DFFB /* PackageAccessor.cc */,
+				F44B949C1C7390EB00B670F9 /* PatchTable.h */,
+				F44B949B1C7390EB00B670F9 /* PatchTable.cc */,
+				F429479E1C50DDF200367F28 /* Reporting.h */,
+				F429479D1C50DDF200367F28 /* Reporting.cc */,
+				F44B94991C7341F000B670F9 /* ClauseHandlers.h */,
+				F44B94981C7341F000B670F9 /* ClauseHandlers.cc */,
+				F4B642A91C78BA1500E0E906 /* RExArray.h */,
+				F429479F1C50DDF200367F28 /* REx.cc */,
+				F4B8E2531D916B5B00CDE7C2 /* REx.config */,
+				F48BB4C81C566B2800623A9B /* TestREx.config */,
+			);
+			path = REx;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F42947911C50DD9100367F28 /* REx */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F42947991C50DD9100367F28 /* Build configuration list for PBXNativeTarget "REx" */;
+			buildPhases = (
+				F429478E1C50DD9100367F28 /* Sources */,
+				F429478F1C50DD9100367F28 /* Frameworks */,
+				F42947901C50DD9100367F28 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = REx;
+			productName = REx;
+			productReference = F42947921C50DD9100367F28 /* REx */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F429478A1C50DD9100367F28 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0620;
+				ORGANIZATIONNAME = "Newton Research";
+				TargetAttributes = {
+					F42947911C50DD9100367F28 = {
+						CreatedOnToolsVersion = 6.2;
+					};
+				};
+			};
+			buildConfigurationList = F429478D1C50DD9100367F28 /* Build configuration list for PBXProject "REx" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = F42947891C50DD9100367F28;
+			productRefGroup = F42947931C50DD9100367F28 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F42947911C50DD9100367F28 /* REx */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F429478E1C50DD9100367F28 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4D506551C523E390080DFFB /* Lexer.cc in Sources */,
+				F4D5065B1C524B0D0080DFFB /* Options.cc in Sources */,
+				F44B949D1C7390EB00B670F9 /* PatchTable.cc in Sources */,
+				F4D506581C5249310080DFFB /* CRC16.cc in Sources */,
+				F44B949A1C7341F000B670F9 /* ClauseHandlers.cc in Sources */,
+				F4D506511C522FA30080DFFB /* Chunk.cc in Sources */,
+				F42947A11C50DDF200367F28 /* REx.cc in Sources */,
+				F4D506521C5232C90080DFFB /* Reporting.cc in Sources */,
+				F4D5064E1C522E5F0080DFFB /* PackageAccessor.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F42947971C50DD9100367F28 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"~/Projects/newton-framework",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		F42947981C50DD9100367F28 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"~/Projects/newton-framework",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		F429479A1C50DD9100367F28 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		F429479B1C50DD9100367F28 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F429478D1C50DD9100367F28 /* Build configuration list for PBXProject "REx" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F42947971C50DD9100367F28 /* Debug */,
+				F42947981C50DD9100367F28 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F42947991C50DD9100367F28 /* Build configuration list for PBXNativeTarget "REx" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F429479A1C50DD9100367F28 /* Debug */,
+				F429479B1C50DD9100367F28 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F429478A1C50DD9100367F28 /* Project object */;
+}

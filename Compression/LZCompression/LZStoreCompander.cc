@@ -372,7 +372,7 @@ CLZStoreCompander::make(void)
 	fBuffer = NULL;
 	fDecompressor = NULL;
 	fCompressor = NULL;
-	fIsAllocated = NO;
+	fIsAllocated = false;
 	return this;
 }
 
@@ -413,7 +413,7 @@ CLZStoreCompander::init(CStore * inStore, PSSId inRootId, PSSId inParmsId, bool 
 			fCompressor = (CCompressor *)MakeByName("CCompressor", "CLZCompressor");
 			fDecompressor = (CDecompressor *)MakeByName("CDecompressor", "CLZDecompressor");
 			fBuffer = new char[0x520];
-			fIsAllocated = YES;
+			fIsAllocated = true;
 			XFAILIF(fCompressor == NULL || fDecompressor == NULL || fBuffer == NULL, err = kOSErrNoMemory;)
 		}
 
@@ -486,7 +486,7 @@ CLZStoreCompander::write(size_t inOffset, char * inBuf, size_t inBufLen, VAddr i
 NewtonErr
 CLZStoreCompander::doTransactionAgainst(int inArg1, ULong inArg2)
 {
-	return LODefaultDoTransaction(fStore, fRootId, fChunksId, inArg1, YES);
+	return LODefaultDoTransaction(fStore, fRootId, fChunksId, inArg1, true);
 }
 
 

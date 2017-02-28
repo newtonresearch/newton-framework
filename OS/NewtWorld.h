@@ -53,6 +53,7 @@ class CNewtWorld : public CAppWorld
 {
 public:
 	void					handleEvents(Timeout inDelta);
+	ObjectId				msgId(void) const;
 			
 protected:
 	virtual size_t		getSizeOf(void) const;
@@ -77,8 +78,12 @@ protected:
 // size +94
 };
 
-inline void	CNewtWorld::handleEvents(Timeout inDelta)
+inline void CNewtWorld::handleEvents(Timeout inDelta)
 { fEventHandler->setWakeupTime(inDelta); }
+
+inline ObjectId CNewtWorld::msgId(void) const
+{ return *f70; }
+
 
 #define gNewtWorld static_cast<CNewtWorld*>(GetGlobals())
 

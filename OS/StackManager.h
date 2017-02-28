@@ -205,7 +205,7 @@ public:
 
 	NewtonErr	resolveFault(CStackInfo * info);
 
-	void			findOrAllocPage_ReturnUnLockedOnNoPage(CStackInfo * info, ULong, ULong);
+	CStackPage *	findOrAllocPage_ReturnUnLockedOnNoPage(CStackInfo * info, ULong, ULong);
 
 	ULong			buildPerms(CStackInfo * info, ULong inArg2, CStackPage * inPage);
 	void			rememberMappings(CStackInfo * info, ULong, CStackPage*);

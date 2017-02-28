@@ -81,7 +81,7 @@ NewtonErr
 InitializeNameServer(void)
 {
 	CNameServer	nameServer;
-	return nameServer.startTask(YES, NO, kNoTimeout, kSpawnedTaskStackSize, kUserTaskPriority, 'name');
+	return nameServer.startTask(true, false, kNoTimeout, kSpawnedTaskStackSize, kUserTaskPriority, 'name');
 }
 
 
@@ -135,7 +135,8 @@ CNameServer::taskConstructor(void)
 		XFAIL(err = fPort.init())
 		XFAIL(err = fReplyMem.init())
 		gNameServer = &fPort;
-		XFAILNOT(fSysEvents = new CList, err = kOSErrNoMemory;)
+		fSysEvents = new CList;
+		XFAILIF(fSysEvents == NULL, err = kOSErrNoMemory;)
 	}
 	XENDTRY;
 	return err;
@@ -198,7 +199,7 @@ CNameServer::taskMain(void)
 		}
 		else if (err == noErr)
 		{
-			isReplyWanted = YES;
+			isReplyWanted = true;
 			switch (request.fCommand)
 			{
 			case kRegisterForSystemEvent:
@@ -215,7 +216,7 @@ CNameServer::taskMain(void)
 				fSysEventToken = token;
 				err = sendSystemEvent(request.fThing, request.fSpec);
 				if (err == noErr)
-					isReplyWanted = NO;
+					isReplyWanted = false;
 				token.replyRPC(&reply, sizeof(reply), err);
 				break;
 
@@ -244,7 +245,7 @@ CNameServer::taskMain(void)
 						err = lookup(&reply.fThing, &reply.fSpec);
 						break;
 					case kResourceArbitration:
-						isReplyWanted = NO;
+						isReplyWanted = false;
 						resourceArbitration(token, &request);
 						break;
 					default:
@@ -404,8 +405,8 @@ CNameServer::queueForRegister(CUMsgToken * ioToken)
 		else
 		{
 			//	name isnÕt there yet; form an orderly queue to wait for it
-			CRegistryListener * listener;
-			XFAILNOT(listener = new CRegistryListener, err = kOSErrNoMemory;)
+			CRegistryListener * listener = new CRegistryListener;
+			XFAILIF(listener == NULL, err = kOSErrNoMemory;)
 			listener->fName = fName;
 			listener->fType = fType;
 			listener->fMsgToken = *ioToken;
@@ -445,8 +446,8 @@ CNameServer::queueForUnregister(CUMsgToken * ioToken)
 		else
 		{
 			//	name is still there; form an orderly queue to wait for it to go
-			CRegistryListener *	listener;
-			XFAILNOT(listener = new CRegistryListener, err = kOSErrNoMemory;)
+			CRegistryListener * listener = new CRegistryListener;
+			XFAILIF(listener == NULL, err = kOSErrNoMemory;)
 			listener->fName = fName;
 			listener->fType = fType;
 			listener->fMsgToken = *ioToken;
@@ -491,7 +492,8 @@ CNameServer::resArbBuildResArbInfo(CObjectNameEntry * ioEntry)
 	XTRY
 	{
 		// create and initialize a resource arbitration record
-		XFAILNOT(ioEntry->fResArbInfo = new CResArbitrationInfo, err = MemError();)
+		ioEntry->fResArbInfo = new CResArbitrationInfo;
+		XFAILIF(ioEntry->fResArbInfo == NULL, err = MemError();)
 		err = ioEntry->fResArbInfo->init(&fPort);
 	}
 	XENDTRY;
@@ -538,7 +540,8 @@ CNameServer::resArbBuildResOwnerInfo(CResOwnerInfo *& ioOwner, ObjectId inName, 
 	NewtonErr err = noErr;
 	XTRY
 	{
-		XFAILNOT(ioOwner = new CResOwnerInfo, err = MemError();)
+		ioOwner = new CResOwnerInfo;
+		XFAILIF(ioOwner == NULL, err = MemError();)
 		*ioOwner = inPortId;
 		if (inName != kNoId)
 		{
@@ -782,17 +785,18 @@ CNameServer::registerForSystemEvent(ULong inEvtId, ULong inEventClass, ULong inf
 		if ((sysEvt = (CEventMasterListItem *)fSysEvents->search(&tester, index)) == NULL)
 		{
 			// sys evt doesnÕt exist yet so try to create one
-			XFAILNOT(sysEvt = new CEventMasterListItem, err = kOSErrNoMemory;)
+			sysEvt = new CEventMasterListItem;
+			XFAILIF(sysEvt == NULL, err = kOSErrNoMemory;)
 			XFAIL(err = sysEvt->init(inEvtId))
 			XFAIL(err = fSysEvents->insertFirst(sysEvt))
 		}
 
 		// add new system event to the sublist
-		CSystemEvent *	event;
-		XFAILNOT(event = new CSystemEvent, err = kOSErrNoMemory;)
+		CEventSystemEvent *	event = new CEventSystemEvent;
+		XFAILIF(event == NULL, err = kOSErrNoMemory;)
 		event->fEventClass = inEventClass;
 		event->fEventId = infEventId;
-		event->fSysEventType = inSysEventType;
+		event->fEventType = inSysEventType;
 		XFAILNOT(sysEvt->fEventList->insertUnique(event), delete event; err = kOSErrAlreadyRegistered;)
 
 		// if sublist is empty, delete it
@@ -830,8 +834,8 @@ CNameServer::unregisterForSystemEvent(ULong inEvtId, ULong inArg2)
 		evtId = inArg2;
 		sysEvt->fCmp.setTestItem(&evtId);
 
-		CSystemEvent *	event;
-		XFAILNOT(event = (CSystemEvent *)sysEvt->fEventList->search(&sysEvt->fCmp, index), err = kOSErrNotRegistered;)
+		CEventSystemEvent *	event;
+		XFAILNOT(event = (CEventSystemEvent *)sysEvt->fEventList->search(&sysEvt->fCmp, index), err = kOSErrNotRegistered;)
 		err = sysEvt->fEventList->remove(event);
 		delete event;
 
@@ -867,22 +871,25 @@ CNameServer::sendSystemEvent(ULong inEvtId, ObjectId inMemMsg)
 		XFAILIF((sysEvt = (CEventMasterListItem *)fSysEvents->search(&tester, index)) == NULL
 			  ||  sysEvt->fEventList->isEmpty(), err = kOSErrNotRegistered;)
 
-		XFAILNOT(fSysEventIter = new CListIterator(sysEvt->fEventList), err = kOSErrNoMemory;)
-
 		CUAsyncMessage	msg(inMemMsg, fReplyMem);
 		fSysEventMsg = msg;
 		fSysEventMsg.setCollectorPort(fPort);
 		fSysEventMsg.setUserRefCon((OpaqueRef)&fInfo);
+
+		fSysEventIter = new CListIterator(sysEvt->fEventList);
+		XFAILIF(fSysEventIter == NULL, err = kOSErrNoMemory;)
 
 		SysEvent *	eventInfo;
 		for (eventInfo = (SysEvent *)fSysEventIter->firstItem(); eventInfo != NULL; eventInfo = (SysEvent *)fSysEventIter->nextItem())
 		{
 			fSysEventPort = eventInfo->fSysEventObjId;
 			if (fSysEventPort.sendRPC(&fSysEventMsg, kPortSend_BufferAlreadySet, 0, NULL, 0, eventInfo->fSysEventSendFilter, NULL, eventInfo->fSysEventTimeOut) == noErr)
-				return noErr;	// wonÕt this leak fSysEventIter?
+				break;
 		}
 		delete fSysEventIter;
-		err = kOSErrNotRegistered;
+		if (eventInfo == NULL)
+			// there arenÕt any SysEvents
+			err = kOSErrNotRegistered;
 	}
 	XENDTRY;
 	return err;
@@ -926,7 +933,7 @@ CNameServer::gestalt(GestaltSelector inSelector, CUMsgToken * ioToken)
 		reply.system.fROMStage = gROMStage;
 		reply.system.fRAMSize = InternalRAMInfo(kSystemRAMAlloc);
 
-		PixelMap	pixmap;
+		NativePixelMap	pixmap;
 		GetGrafInfo(kGrafPixelMap, &pixmap);
 		reply.system.fScreenWidth = pixmap.bounds.right;
 		reply.system.fScreenHeight = pixmap.bounds.bottom;
@@ -1061,7 +1068,7 @@ CObjectNameList::CObjectNameList()
 				inType			key part 2
 				inThing			data part 1
 				inSpec			data part 2
-	Return:	YES => it was added successfully
+	Return:	true => it was added successfully
 --------------------------------------------------------------------------------*/
 
 bool
@@ -1101,9 +1108,9 @@ CObjectNameList::add(const char * inName, const char * inType, OpaqueRef inThing
 				listener = (CRegistryListener *)&nextListener;
 			}
 		}
-		return YES;	// it was added okay
+		return true;	// it was added okay
 	}
-	return NO;	// we couldnÕt create an entry
+	return false;	// we couldnÕt create an entry
 }
 
 
@@ -1111,7 +1118,7 @@ CObjectNameList::add(const char * inName, const char * inType, OpaqueRef inThing
 	Remove a CObjectNameEntry from the list.
 	Args:		inName			key part 1
 				inType			key part 2
-	Return:	YES => it was removed successfully
+	Return:	true => it was removed successfully
 --------------------------------------------------------------------------------*/
 
 bool
@@ -1166,10 +1173,10 @@ CObjectNameList::remove(const char * inName, const char * inType)
 			FreePtr((Ptr)entry->fName);
 			FreePtr((Ptr)entry->fType);
 			delete entry;
-			return YES;	// it was removed okay
+			return true;	// it was removed okay
 		}
 	}
-	return NO;	// we couldnÕt find the name
+	return false;	// we couldnÕt find the name
 }
 
 
@@ -1180,7 +1187,7 @@ CObjectNameList::remove(const char * inName, const char * inType)
 				outThing			where to put the data
 				outSpec
 				outEntry			optional: the actual entry
-	Return:	YES => it was found
+	Return:	true => it was found
 --------------------------------------------------------------------------------*/
 
 bool
@@ -1197,10 +1204,10 @@ CObjectNameList::lookup(const char * inName, const char * inType, OpaqueRef * ou
 			*outSpec = entry->fSpec;
 			if (outEntry != NULL)
 				*outEntry = entry;
-			return YES;
+			return true;
 		}
 	}
-	return NO;
+	return false;
 }
 
 #pragma mark -
@@ -1248,7 +1255,7 @@ CResArbitrationInfo::init(CUPort * inPort)
 	NewtonErr err;
 	XTRY
 	{
-		XFAIL(err = f20.init(YES))
+		XFAIL(err = f20.init(true))
 		XFAIL(err = f20.setUserRefCon((OpaqueRef)&f58))
 		err = f20.setCollectorPort(*inPort);
 	}
@@ -1280,7 +1287,8 @@ CEventMasterListItem::init(ULong inEvtId)
 	XTRY
 	{
 		fEvtId = inEvtId;
-		XFAILNOT(fEventList = new CSortedList(&fCmp), err = kOSErrNoMemory;)
+		fEventList = new CSortedList(&fCmp);
+		XFAILIF(fEventList == NULL, err = kOSErrNoMemory;)
 	}
 	XENDTRY;
 	return err;

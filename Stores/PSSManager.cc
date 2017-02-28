@@ -11,6 +11,7 @@
 #include "MuxStore.h"
 #include "FlashStore.h"
 #include "Strings.h"
+#include "ROMResources.h"
 
 
 extern size_t		InternalStoreInfo(int inSelector);
@@ -25,7 +26,7 @@ CPSSManager * gPSSManager;
 CUPort * gPSSPort;
 bool gFormatCardsWhenInserted;
 
-ULong gNumberOfHWSockets = 0;		// 0C100AB4
+ArrayIndex gNumberOfHWSockets = 0;		// 0C100AB4
 
 
 /*------------------------------------------------------------------------------
@@ -57,7 +58,7 @@ SetCardReinsertReason(const UniChar * inReason, bool inArg2)
 			if (inArg2)
 			{
 			// 
-				UniChar * alertText = (UniChar *)BinaryData(RA(STRuPackageNeedsCardAlertText));
+				UniChar * alertText = (UniChar *)BinaryData(RA(uPackageNeedsCardAlertText));
 				size_t reasonStrLen = Ustrlen(alertText) + Ustrlen(inReason);
 				XFAIL(reasonStr = (UniChar *)NewPtr((reasonStrLen + 1)*sizeof(UniChar)))
 				ParamString(reasonStr, reasonStrLen, alertText, inReason);
@@ -139,10 +140,10 @@ InitPSSManager(ObjectId inEnvId, ObjectId inDomId)
 		ns.registerName("InRAMStore", (char *)kRegisteredStore, (OpaqueRef)muxStore, 0);
 
 		// and finally... init the PSS manager
-		CPSSManager * pssManager;
-		XFAILNOT(pssManager = new CPSSManager, err =  kOSErrCouldNotCreateObject;)	// inline constructor
-		err = pssManager->init('pssm', YES, kSpawnedTaskStackSize);
-		gCardReinsertionTracker.f00 = NO;
+		CPSSManager * pssManager = new CPSSManager;
+		XFAILIF(pssManager == NULL, err =  kOSErrCouldNotCreateObject;)	// inline constructor
+		err = pssManager->init('pssm', true, kSpawnedTaskStackSize);
+		gCardReinsertionTracker.f00 = false;
 #endif
 	}
 	XENDTRY;
@@ -160,18 +161,18 @@ InitializeCardStore(PSSStoreInfo * info, bool * outArg)
 	{
 #if defined(correct)
 		if (info->f39)		// is initialized?
-			*outArg = YES;
+			*outArg = true;
 		else
 		{
 			info->f40->init(info->f1C, info->f14, info->f3C, info->f18, 1, info);
-			info->f39 = YES;
+			info->f39 = true;
 			if (gFormatCardsWhenInserted)
 			{
-				gFormatCardsWhenInserted = NO;
+				gFormatCardsWhenInserted = false;
 				err = info->f10->format();
 			}
 			*outArg = !info->f38;
-			info->f38 = NO;
+			info->f38 = false;
 			if (*outArg)
 			{
 				bool doIt;
@@ -194,9 +195,9 @@ IsValidStore(const CStore * inStore)
 {
 #if defined(correct)
 	return inStore == gMuxInRAMStore
-		 || gPSSManager->getStorePSSInfo(inStore, YES) != NULL;
+		 || gPSSManager->getStorePSSInfo(inStore, true) != NULL;
 #else
-	return YES;
+	return true;
 #endif
 }
 
@@ -214,7 +215,7 @@ const PSSStoreInfo *
 GetStorePSSInfo(const CStore * inStore)
 {
 #if defined(correct)
-	return gPSSManager->getStorePSSInfo(inStore, NO);
+	return gPSSManager->getStorePSSInfo(inStore, false);
 #else
 	static PSSStoreInfo info;
 	info.f18 = 0;
@@ -269,21 +270,21 @@ CPSSManager::mainConstructor(void)
 	{
 		CAppWorld::mainConstructor();
 
-		f70.init(YES);
+		f70.init(true);
 		f80.clear();
 		gPSSPort = f138 = getMyPort();
 		f14C.init(kCardServerId);
 		f160.init(kCardEventId, 0);
-		f180.init(YES);
+		f180.init(true);
 		f180.setCollectorPort(*gAppWorld->getMyPort());
 		f180.setUserRefCon((OpaqueRef)&f14C);
-		f304 = gNumberOfHWSockets;
-		for (ArrayIndex i = 0; i < f304; ++i)
+		fNumOfSlots = gNumberOfHWSockets;
+		for (ArrayIndex i = 0; i < fNumOfSlots; ++i)
 		{
 			f308[i].clear();
 			fAF8[i] = 0;
 			fB08[i] = 0;
-			f244[i].init(YES);
+			f244[i].init(true);
 			f244[i].setCollectorPort(0);
 			f284[i].fEventClass = kNewtEventClass;
 			f284[i].fEventId = kIdleEventId;
@@ -314,8 +315,8 @@ CPSSManager::theMain(void)
 	{
 		CUNameServer ns;
 		OpaqueRef newtPort, cardPort, spec;
-		XFAIL(ns.waitForRegister("newt", (char *)kUPort, &newtPort, &spec))
-		XFAIL(ns.waitForRegister("cdsv", (char *)kUPort, &cardPort, &spec))
+		XFAIL(ns.waitForRegister("newt", kUPort, &newtPort, &spec))
+		XFAIL(ns.waitForRegister("cdsv", kUPort, &cardPort, &spec))
 		f13C = (ObjectId)newtPort;
 		f144 = (ObjectId)cardPort;
 
@@ -346,20 +347,20 @@ CPSSManager::UIEngine(bool inArg)
 bool
 CPSSManager::messageInUse(void)
 {
-	for (ArrayIndex slotNo = 0; slotNo < f304; ++slotNo)
+	for (ArrayIndex slotNo = 0; slotNo < fNumOfSlots; ++slotNo)
 	{
 		int r3 = f308[slotNo].f00;
 		if (r3 == 2 || r3 == 3 || r3 == 6 || r3 == 7)
-			return YES;
+			return true;
 	}
-	return NO;
+	return false;
 }
 
 
 int
 CPSSManager::doReplyTransitions(void)
 {
-	for (ArrayIndex slotNo = 0; slotNo < f304; ++slotNo)
+	for (ArrayIndex slotNo = 0; slotNo < fNumOfSlots; ++slotNo)
 	{
 		int r3 = f308[slotNo].f00;
 		if (r3 == 2)
@@ -383,7 +384,7 @@ CPSSManager::stuffSendAndTransition(int inSlot, int inArg2, int inArg3)
 #if defined(correct)
 	f190.f08 = inArg2;
 
-	for (ArrayIndex i = 0; i < 4; ++i)
+	for (ArrayIndex i = 0; i < kNumberOfHWSockets; ++i)
 	{
 		f190.f1C[i] = f308[i].f3C;			// it’s actually a little more complicated than this
 	}
@@ -401,45 +402,45 @@ CPSSManager::stuffSendAndTransition(int inSlot, int inArg2, int inArg3)
 bool
 CPSSManager::registerStores(void)
 {
-	for (ArrayIndex slotNo = 0; slotNo < f304; ++slotNo)
+	for (ArrayIndex slotNo = 0; slotNo < fNumOfSlots; ++slotNo)
 	{
 		int r3 = f308[slotNo].f00;
 		if (r3 == 2 || r3 == 3)
-			return NO;
+			return false;
 	}
 
-	for (ArrayIndex slotNo = 0; slotNo < f304; ++slotNo)
+	for (ArrayIndex slotNo = 0; slotNo < fNumOfSlots; ++slotNo)
 	{
 		int r3 = f308[slotNo].f00;
 		if (r3 == 1)
 		{
 			stuffSendAndTransition(slotNo, 'stor', 2);
-			return YES;
+			return true;
 		}
 	}
-	return NO;
+	return false;
 }
 
 
 bool
 CPSSManager::deregisterStores(void)
 {
-	for (ArrayIndex slotNo = 0; slotNo < f304; ++slotNo)
+	for (ArrayIndex slotNo = 0; slotNo < fNumOfSlots; ++slotNo)
 	{
 		if (f308[slotNo].f00 == 5)
 		{
 			stuffSendAndTransition(slotNo, 'rstr', 6);
-			return YES;
+			return true;
 		}
 	}
-	return NO;
+	return false;
 }
 
 
 void
 CPSSManager::gcStores(void)
 {
-	for (ArrayIndex slotNo = 0; slotNo < f304; ++slotNo)
+	for (ArrayIndex slotNo = 0; slotNo < fNumOfSlots; ++slotNo)
 	{
 		if (f308[slotNo].f00 == 8)
 		{
@@ -451,7 +452,7 @@ CPSSManager::gcStores(void)
 				fAF8[slotNo]->replyRPC(&fB08[slotNo]->f00, sizeof(CCardMessage), 0);
 				delete fAF8[slotNo]; fAF8[slotNo] = NULL;
 				delete fB08[slotNo]; fB08[slotNo] = NULL;
-				for (ArrayIndex i = 0; i < 4; ++i)
+				for (ArrayIndex i = 0; i < kNumberOfHWSockets; ++i)
 				{
 					CStore * store = f308[i].fBC[0].f10;
 					if (store)
@@ -480,12 +481,12 @@ CPSSManager::cardIsSame(CCardMessage * inMessage)
 void
 CPSSManager::reinsertCard(int inSlot, const UniChar * inReason, bool inArg3)
 {
-	if (inSlot >= 0 && inSlot < f304)
+	if (inSlot >= 0 && inSlot < fNumOfSlots)
 	{
 		char sp00;
 		SetCardReinsertReason(inReason, inArg3);
 		memmove(&sp00, f308[inSlot].fBC[0].f1C, 1);
-		SetCardReinsertReason(NULL, NO);
+		SetCardReinsertReason(NULL, false);
 	}
 }
 
@@ -494,10 +495,10 @@ size_t
 CPSSManager::getCardSlotStores(int inSlot, CStore ** outStores) const
 {
 	size_t numOfStores = 0;
-	if (inSlot >= 0 && inSlot < f304)
+	if (inSlot >= 0 && inSlot < fNumOfSlots)
 	{
 		const PSSStoreInfo * info = f308[inSlot].fBC;
-		for (ArrayIndex i = 0; i < 4; ++i, ++info)
+		for (ArrayIndex i = 0; i < kNumberOfHWSockets; ++i, ++info)
 		{
 			if (info->f10)
 				outStores[numOfStores++] = info->f10;
@@ -510,12 +511,12 @@ CPSSManager::getCardSlotStores(int inSlot, CStore ** outStores) const
 const PSSStoreInfo *
 CPSSManager::getStorePSSInfo(const CStore * inStore, bool inArg2) const
 {
-	for (ArrayIndex slotNo = 0; slotNo < f304; ++slotNo)
+	for (ArrayIndex slotNo = 0; slotNo < fNumOfSlots; ++slotNo)
 	{
 		int r3 = f308[slotNo].f00;
 		if (inArg2 || r3 == 4 || r3 == 7 || r3 == 2)
 		{
-			for (ArrayIndex i = 0; i < 4; ++i)
+			for (ArrayIndex i = 0; i < kNumberOfHWSockets; ++i)
 			{
 				const PSSStoreInfo * info = &f308[i].fBC[0];
 				if (info->f10 == inStore)
@@ -555,7 +556,7 @@ CPSSManager::doReply(CUMsgToken * inToken, size_t * inSize, CCardMessage * inMes
 
 	if (inMessage->f08 == 'rstr'		// storage card removed
 	||  inMessage->f08 == 'stor')		// storage card inserted
-		UIEngine(YES);
+		UIEngine(true);
 }
 
 #pragma mark -
@@ -581,7 +582,7 @@ PSSSlotInfo::clear(void)
 {
 	f00 = 0;
 	memset(&f04, 0, sizeof(CCardMessage));
-	for (ArrayIndex i = 0; i < 4; ++i)
+	for (ArrayIndex i = 0; i < kNumberOfHWSockets; ++i)
 		fBC[i].clear();
 }
 
@@ -594,14 +595,14 @@ PSSSlotInfo::clear(void)
 void
 CPSSEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
 {
-	gPSSWorld->doCommand(inToken, inSize, (CCardMessage *)inEvent, NO);
+	gPSSWorld->doCommand(inToken, inSize, (CCardMessage *)inEvent, false);
 	gPSSWorld->eventSetReply(0xB8);	// coincidentally sizeof(CCardMessage)?
 }
 
 void
 CPSSEventHandler::eventCompletionProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
 {
-	gPSSWorld->doReply(inToken, inSize, (CCardMessage *)inEvent, YES);
+	gPSSWorld->doReply(inToken, inSize, (CCardMessage *)inEvent, true);
 }
 
 #pragma mark -

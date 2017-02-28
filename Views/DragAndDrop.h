@@ -24,8 +24,8 @@ public:
 	void		addDragItem(void);
 	void		addItemDragType(long, RefArg);
 	void		setItemDragTypes(long, RefArg);
-	void		checkTypes(RefArg) const;
-	void		findType(long, RefArg) const;
+	bool		checkTypes(RefArg) const;
+	Ref		findType(ArrayIndex, RefArg) const;
 
 	void		getItemTypes(long) const;
 	void		getItemIndType(long, long) const;
@@ -38,6 +38,8 @@ public:
 
 	void		setItemView(long, CView *);
 	CView *	getItemView(long) const;
+
+	Ref		f00;	// clearly not, but gets things going
 };
 
 

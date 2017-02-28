@@ -104,12 +104,12 @@ public:
 	// could be T_INFINITE or T_INVALID
 	// see XTI documentation for interpretation of values
 
-	long		tdsu;				// maximum data size transport can send/receive
-	long		etdsu;			// maximum expedited data size transport can send/receive
-	long		connect;			// max connect data
-	long		discon;			// max disconnect data
-	long		addr;				// max addr size
-	long		opt;				// max option size
+	int		tdsu;				// maximum data size transport can send/receive
+	int		etdsu;			// maximum expedited data size transport can send/receive
+	int		connect;			// max connect data
+	int		discon;			// max disconnect data
+	int		addr;				// max addr size
+	int		opt;				// max option size
 };
 
 

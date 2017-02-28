@@ -6,11 +6,13 @@
 	Written by:	Newton Research Group.
 */
 #include "Quartz.h"
+#include "Geometry.h"
 
 #include "Objects.h"
+#include "ROMData.h"
+#include "ROMResources.h"
 #include "Lookup.h"
 #include "Funcs.h"
-#include "Globals.h"
 #include "Arrays.h"
 #include "NewtonGestalt.h"
 #include "ListLoop.h"
@@ -27,15 +29,14 @@
 #include "Notebook.h"
 #include "Animation.h"
 #include "Recognition.h"
-#include "QDGeometry.h"
 
 extern CGImageRef LoadPNG(const char * inName);
 
-CViewList *		gEmptyViewList = NULL;		// 0C101930
-CRootView *		gRootView = NULL;				// 0C101934
-bool				gKeyboardConnected = NO;	// 0C101938		result of undocumented gestalt
-bool				gOutlineViews = YES;			// 0C10193C
-int				gSlowMotion = 0;				// 0C101940		delay after drawing in milliseconds
+CViewList *		gEmptyViewList = NULL;			// 0C101930
+CRootView *		gRootView = NULL;					// 0C101934
+bool				gKeyboardConnected = false;	// 0C101938		result of undocumented gestalt
+bool				gOutlineViews = false;			// 0C10193C
+int				gSlowMotion = 0;					// 0C101940		delay after drawing in milliseconds
 
 extern bool		gNewtIsAliveAndWell;
 
@@ -47,6 +48,7 @@ extern bool		gNewtIsAliveAndWell;
 	F u n c t i o n   P r o t o t y p e s
 --------------------------------------------------------------------------------*/
 
+extern void		ClearHardKeymap(void);
 
 extern long		LSearch(RefArg inArray, RefArg inItem, RefArg inStart, RefArg inTest, RefArg inKey);
 extern ULong	TextOrInkWordsEnabled(CView * inView);
@@ -74,11 +76,6 @@ FGetRoot(RefArg inRcvr)
 	U t i l i t i e s
 --------------------------------------------------------------------------------*/
 
-void
-ClearHardKeymap(void)
-{}
-
-
 bool
 ViewContainsCaretView(CView * inView)
 {
@@ -89,10 +86,10 @@ ViewContainsCaretView(CView * inView)
 		for ( ; caretView != gRootView; caretView = caretView->fParent)
 		{
 			if (inView == caretView)
-				return YES;
+				return true;
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -136,10 +133,10 @@ CRootView::CRootView()
 
 CRootView::~CRootView()
 {
-	if (x40)
-		delete x40;
-	if (x34)
-		delete x34;
+	if (fIdlingViews)
+		delete fIdlingViews;
+	if (fLayer)
+		delete[] fLayer;
 //	if (fCaret)
 //		delete fCaret;
 }
@@ -148,13 +145,13 @@ CRootView::~CRootView()
 /*--------------------------------------------------------------------------------
 	Perform a command.
 	Args:		inCmd		the command frame
-	Return:	YES if we handled the command
+	Return:	true if we handled the command
 --------------------------------------------------------------------------------*/
 
 bool
 CRootView::realDoCommand(RefArg inCmd)
 {
-	bool  isHandled = NO;
+	bool  isHandled = false;
 
 	switch(CommandId(inCmd))
 	{
@@ -169,13 +166,13 @@ CRootView::realDoCommand(RefArg inCmd)
 			if (fPopup != NULL)
 				sync();
 			dirty();
-			isHandled = YES;
+			isHandled = true;
 		}
 		break;
 
 	case aeStartHilite:
 		hiliter((CUnit*)CommandParameter(inCmd), (CView*)CommandReceiver(inCmd));
-		isHandled = YES;
+		isHandled = true;
 		break;
 	case aeAddData:
 		{
@@ -225,7 +222,7 @@ CRootView::realDoCommand(RefArg inCmd)
 				theView->dirty();
 			}
 			gApplication->postUndoCommand(aeRemoveData, this, fId);
-			isHandled = YES;
+			isHandled = true;
 		}
 		break;
 
@@ -258,7 +255,7 @@ CRootView::realDoCommand(RefArg inCmd)
 				CommandSetFrameParameter(cmd, frame);
 				gApplication->postUndoCommand(cmd);
 			}
-			isHandled = YES;
+			isHandled = true;
 		}
 		break;
 
@@ -282,8 +279,9 @@ CRootView::realDoCommand(RefArg inCmd)
 void
 CRootView::init(RefArg inProto, CView * inView)
 {
-	x34 = new CViewStuff[3];
-	x40 = new CDynamicArray(sizeof(IdleViewInfo));
+	fLayer = new CViewStuff[kNumOfLayers];
+	fIdlingViews = new CDynamicArray(sizeof(IdleViewInfo));
+	fIdlingList = NULL;	// not original
 	InitCorrection();
 	gEmptyViewList = static_cast<CViewList *>(CViewList::make());
 	fKeyboards = MakeArray(0);
@@ -295,11 +293,11 @@ CRootView::init(RefArg inProto, CView * inView)
 	CUGestalt	gestalt;
 	if (gestalt.gestalt(kGestalt_Extended_Base+10, &result, sizeof(result)) == noErr
 	&& result != 0)	// actually first byte of result -- maybe cast to (bool)
-		gKeyboardConnected = YES;
+		gKeyboardConnected = true;
 #endif
 	
-	RefVar context(Clone(gConstNSData->rootContext));	// originally RA(rootContext)
-	SetFrameSlot(context, SYMA(_proto), inProto);		// RA(rootProto) = SYS_rootProto = @287
+	RefVar context(Clone(RA(rootConText)));
+	SetFrameSlot(context, SYMA(_proto), inProto);		// RA(viewRoot) = SYS_rootProto = @287
 	CView::init(context, this);
 
 	// initialize caret
@@ -320,97 +318,106 @@ CRootView::init(RefArg inProto, CView * inView)
 /*--------------------------------------------------------------------------------
 	V i e w   M a n i p u l a t i o n
 --------------------------------------------------------------------------------*/
+extern void WeAreDirty(void);
 
 void
 CRootView::dirty(const Rect * inRect)
 {
 	Rect dirtyBounds = (inRect != NULL) ? *inRect : viewBounds;
-	CRectangularRegion rgn(&dirtyBounds);
+	CRectangularRegion rgn(dirtyBounds);
 	invalidate(rgn, NULL);
 }
 
 
 void
-CRootView::invalidate(const CBaseRegion inRgn, CView * inView)
+CRootView::invalidate(const CBaseRegion& inRgn, CView * inView)
 {
+printf("CRootView::invalidate(inRgn={t:%d,l:%d,b:%d,r:%d}, inView=%p)\n", inRgn.bounds().top, inRgn.bounds().left, inRgn.bounds().bottom, inRgn.bounds().right, inView);
 	if (gSlowMotion)
 	{
 		StartDrawing(NULL, NULL);
 //		InvertRgn(inRgn);					// flash this view in inverse
 		StopDrawing(NULL, NULL);
 	}
-
 	if (inView == NULL || inView == this)
 	{
-		// invalidating in the root view context -- collect all invalid regions into x34[0] and NULL out the rest
-		x34[0].fView = this;
-//		UnionRgn(x34[0].fRegion, inRgn, x34[0].fRegion);	// add invalid region to view(0)
-		for (ArrayIndex i = 1; i < 3; ++i)
+		// invalidating in the root view context -- collect all invalid regions into fLayer[0] and NULL out the rest
+		fLayer[0].fView = this;
+		fLayer[0].fInvalid.fRegion->unionRegion(inRgn);
+//		UnionRect(&fLayer[0].fInvalid, &inRgn, &fLayer[0].fInvalid);	// add invalid region to view(0)
+		for (ArrayIndex i = 1; i < kNumOfLayers; ++i)
 		{
-			if (x34[i].fView != NULL)
+			if (fLayer[i].fView != NULL)
 			{
-//				UnionRgn(x34[0].fRegion, x34[i].fRegion, x34[0].fRegion); // add invalid region of view(n) to view(0)
-				x34[i].fView = NULL;				// view(n) is no longer needed
-//				SetEmptyRgn(x34[i].fRegion);
+				fLayer[0].fInvalid.fRegion->unionRegion(*fLayer[i].fInvalid.fRegion);
+//				UnionRect(&fLayer[0].fInvalid, &fLayer[i].fInvalid, &fLayer[0].fInvalid);	// add invalid region of view(n) to view(0)
+				fLayer[i].fView = NULL;				// view(n) is no longer needed
+				fLayer[i].fInvalid.fRegion->setEmpty();
+//				SetEmptyRect(&fLayer[i].fInvalid);
 			}
 		}
 	}
 	else
 	{
-		CView * commonParent[3] = {NULL,NULL,NULL};
-		for (ArrayIndex i = 0; i < 3; ++i)
+		CView * commonParent[kNumOfLayers] = {NULL,NULL,NULL};
+		for (ArrayIndex i = 0; i < kNumOfLayers; ++i)
 		{
-			CView * parentView;
-			CView * theView = x34[i].fView;
+			CView * theView = fLayer[i].fView;
 			if (theView == NULL)
 			{
 				// we found an empty slot, use it for the invalidated view and record its invalid region
-				x34[i].fView = inView;
-//				UnionRgn(x34[i].fRegion, inRgn, x34[i].fRegion)
+				fLayer[i].fView = inView;
+				fLayer[i].fInvalid.fRegion->unionRegion(inRgn);
+//				UnionRect(&fLayer[i].fInvalid, &inRgn, &fLayer[i].fInvalid);
 				return;
 			}
 			else if (theView == this)
 			{
 				// add invalid region to root view
-//				UnionRgn(x34[i].fRegion, inRgn, x34[i].fRegion);
+				fLayer[i].fInvalid.fRegion->unionRegion(inRgn);
+//				UnionRect(&fLayer[i].fInvalid, &inRgn, &fLayer[i].fInvalid);
 				return;
 			}
 			else
 			{
-				parentView = getCommonParent(theView, inView);
+				CView * parentView = getCommonParent(theView, inView);
 				commonParent[i] = parentView;
-				if (x34[i].fView == parentView || inView == parentView)
+				if (fLayer[i].fView == parentView || inView == parentView)
 				{
-					x34[i].fView = commonParent[i];
-//					UnionRgn(x34[i].fRegion, inRgn, x34[i].fRegion);	// add invalid region to common parent view
+					fLayer[i].fView = commonParent[i];
+					fLayer[i].fInvalid.fRegion->unionRegion(inRgn);
+//					UnionRect(&fLayer[i].fInvalid, &inRgn, &fLayer[i].fInvalid);	// add invalid region to common parent view
 					return;
 				}
 			}
 		}
 
-		for (ArrayIndex i = 0; i < 3; ++i)
+		for (ArrayIndex i = 0; i < kNumOfLayers; ++i)
 		{
 			if (commonParent[i] != this)
 			{
-				x34[i].fView = commonParent[i];
-//				UnionRgn(x34[i].fRegion, inRgn, x34[i].fRegion);
-				for (ArrayIndex i1 = i+1; i1 < 3 && commonParent[i1] != NULL; i1++)
+				fLayer[i].fView = commonParent[i];
+				fLayer[i].fInvalid.fRegion->unionRegion(inRgn);
+//				UnionRect(&fLayer[i].fInvalid, &inRgn, &fLayer[i].fInvalid);
+				for (ArrayIndex i1 = i+1; i1 < kNumOfLayers && commonParent[i1] != NULL; i1++)
 				{
 					if (commonParent[i] == commonParent[i1])
 					{
 						// views share a parent -- coalesce regions and remove view
-//						UnionRgn(x34[i].fRegion, x34[i1].fRegion, x34[i].fRegion);
+						fLayer[i].fInvalid.fRegion->unionRegion(*fLayer[i1].fInvalid.fRegion);
+//						UnionRect(&fLayer[i].fInvalid, &fLayer[i1].fInvalid, &fLayer[i].fInvalid);
 						for (ArrayIndex i2 = i1; i2 < 2; i2++)
 						{
 							commonParent[i2] = commonParent[i2+1];
-							x34[i2].fView = x34[i2+1].fView;
-//							RgnHandle rgn = x34[i2+1].fRegion;	// swap regions
-//							x34[i2+1].fRegion = x34[i2].fRegion;
-//							x34[i2].fRegion = rgn;
+							fLayer[i2].fView = fLayer[i2+1].fView;
+							CBaseRegion * rgn = fLayer[i2+1].fInvalid.fRegion;	// swap regions
+							fLayer[i2+1].fInvalid = fLayer[i2].fInvalid;
+							fLayer[i2].fInvalid.fRegion = rgn;
 						}
 						commonParent[2] = NULL;
-						x34[2].fView = NULL;
-//						SetEmptyRgn(x34[2].fRegion);
+						fLayer[2].fView = NULL;
+						fLayer[2].fInvalid.fRegion->setEmpty();
+//						SetEmptyRect(&fLayer[2].fInvalid);
 						i1--;
 					}
 				}
@@ -419,34 +426,66 @@ CRootView::invalidate(const CBaseRegion inRgn, CView * inView)
 		}
 		
 		// when all else fails -- view(0) is the root view with the invalidated region; the others are NULL
-		x34[0].fView = this;
-//		UnionRgn(x34[0].fRegion, inRgn, x34[0].fRegion)
-		for (ArrayIndex i = 1; i < 3; ++i)
+		fLayer[0].fView = this;
+		fLayer[0].fInvalid.fRegion->unionRegion(inRgn);
+//		UnionRect(&fLayer[0].fInvalid, &inRgn, &fLayer[0].fInvalid);
+		for (ArrayIndex i = 1; i < kNumOfLayers; ++i)
 		{
-//			UnionRgn(x34[0].fRegion, x34[i].fRegion, x34[0].fRegion)
-			x34[i].fView = NULL;
-//			SetEmptyRgn(x34[i].fRegion);
+			fLayer[0].fInvalid.fRegion->unionRegion(*fLayer[i].fInvalid.fRegion);
+//			UnionRect(&fLayer[0].fInvalid, &fLayer[i].fInvalid, &fLayer[0].fInvalid);
+			fLayer[i].fView = NULL;
+			fLayer[i].fInvalid.fRegion->setEmpty();
+//			SetEmptyRect(&fLayer[i].fInvalid);
 		}
 	}
 }
 
 
 void
-CRootView::validate(const CBaseRegion inRgn)
+CRootView::validate(const CBaseRegion& inRgn)
 {
-	for (ArrayIndex i = 0; i < 3; ++i)
+	for (ArrayIndex i = 0; i < kNumOfLayers; ++i)
 	{
 #if 0
-		RgnHandle	rgn = x34[i].fRegion;
+		RgnHandle	rgn = fLayer[i].fInvalid;
 		DiffRgn(rgn, inRgn, rgn);
 #endif
+		fLayer[i].fInvalid.fRegion->diffRegion(inRgn);
 	}
 }
 
 
 void
-CRootView::smartInvalidate(const Rect *)
-{}
+CRootView::smartInvalidate(const Rect * inRect)
+{
+	CView * dirtyView = this;
+	Rect bBox;
+	bool isInView;
+	do {
+		isInView = false;
+		// iterate over child views, front-back
+		CView * view;
+		CBackwardLoop iter(viewChildren);
+		while ((view = (CView *)iter.next()))	// intentional assignment
+		{
+			if (FLAGTEST(view->viewFlags, vVisible))
+			{
+				view->outerBounds(&bBox);
+				if (RectsOverlap(inRect, &bBox) && RectContains(&view->viewBounds, inRect))
+				{
+					// found a view that contains the invalid rect
+					isInView = true;
+					dirtyView = view;		// this is the view that needs dirtying
+					break;					// but keep looking for views further back
+				}
+			}
+		}
+	} while (isInView);
+
+	Rect viewPortBounds = ViewPortRegion().bounds();
+	SectRect(inRect, &viewPortBounds, &bBox);
+	dirtyView->dirty(&bBox);
+}
 
 
 void
@@ -467,13 +506,13 @@ CRootView::needsUpdate(void)
 		findDefaultButtonAndCaretSlip(fCaretView, &defaultButton, &caretSlip);
 		if (fCaretSlip == caretSlip && fDefaultButton == defaultButton)
 		{
-			for (ArrayIndex i = 0; i < 3; ++i)
-				if (x34[i].fView != NULL)
-					return YES;
-			return NO;
+			for (ArrayIndex i = 0; i < kNumOfLayers; ++i)
+				if (fLayer[i].fView != NULL)
+					return true;
+			return false;
 		}
 	}
-	return YES;
+	return true;
 }
 
 
@@ -483,16 +522,17 @@ CRootView::update(Rect * inRect)
 	if (inRect != NULL)
 	{
 		// invalidate the area specified so we update it later
-		CRectangularRegion	rgn(inRect);
-		invalidate(rgn, NULL);
+printf("CRootView::update(inRect={t:%d,l:%d,b:%d,r:%d})\n", inRect->top, inRect->left, inRect->bottom, inRect->right);
+		CRectangularRegion updateRgn(*inRect);
+		invalidate(updateRgn, NULL);
 	}
 
 	if (needsUpdate())
 	{
 		Point pt;
-		bool  updateCaret = NO;
+		bool  updateCaret = false;
 		if (!caretValid(&pt))
-			updateCaret = YES;
+			updateCaret = true;
 		updateDefaultButtonAndCaretSlip();
 
 		if (gSlowMotion == 0)
@@ -502,12 +542,12 @@ CRootView::update(Rect * inRect)
 		{
 			// caret is up -- if it’s in any of our views of interest it may need updating
 			Rect  caretRect = getCaretRect();
-			for (ArrayIndex i = 0; i < 3; ++i)
+			for (ArrayIndex i = 0; i < kNumOfLayers; ++i)
 			{
-				if (x34[i].fView != NULL
-			/*	&&  RectInRgn(&caretRect, x34[i].fRegion)*/)
+				if (fLayer[i].fView != NULL
+				&&  fLayer[i].fInvalid.fRegion->intersects(&caretRect))
 				{
-					updateCaret = YES;
+					updateCaret = true;
 					break;
 				}
 			}
@@ -523,25 +563,37 @@ CRootView::update(Rect * inRect)
 			fInkyRect = gZeroRect;				// original sets ’em manually
 		}
 
-		CRegionVar  updateRgn;
-		for (ArrayIndex i = 0; i < 3; ++i)
+		for (ArrayIndex i = 0; i < kNumOfLayers; ++i)
 		{
-			if (x34[i].fView != NULL)
+			if (fLayer[i].fView != NULL)
 			{
-/*				GrafPtr	thePort;
+				CRegionVar updateRgn;
+#if defined(correct)
+				GrafPtr	thePort;
 				GetPort(&thePort);
-				DiffRgn(x34[i].fRegion, thePort->visRgn, updateRgn);
+				DiffRgn(fLayer[i].fInvalid, thePort->visRgn, updateRgn);
 
-				RgnHandle viewRgn = x34[i].fRegion;
-				x34[i].fRegion = updateRgn;
+				RgnHandle viewRgn = fLayer[i].fInvalid;
+				fLayer[i].fInvalid = updateRgn;
 				updateRgn = viewRgn;
-	
-				if (EmptyRgn(x34[i].fRegion))
-					x34[i].fView = NULL;
-				CView::update(updateRgn, x34[i].fView);
-*/			// else
-				CView::update(updateRgn, x34[i].fView);
-				x34[i].fView = NULL;
+				if (EmptyRgn(fLayer[i].fInvalid))
+					fLayer[i].fView = NULL;
+
+				CView::update(updateRgn, fLayer[i].fView);
+#else
+				updateRgn.fRegion->setRegion(*fLayer[i].fInvalid.fRegion);
+				updateRgn.fRegion->diffRegion(ViewPortRegion());
+
+				CBaseRegion * viewRgn = fLayer[i].fInvalid.fRegion;
+				fLayer[i].fInvalid.fRegion = updateRgn.fRegion;
+				if (fLayer[i].fInvalid.fRegion->isEmpty())
+					fLayer[i].fView = NULL;
+
+				updateRgn.fRegion = viewRgn;	// so we free it
+
+				CView::update(*viewRgn, fLayer[i].fView);
+				// updateRgn destructor
+#endif
 			}
 		}
 
@@ -560,7 +612,7 @@ CRootView::update(Rect * inRect)
 --------------------------------------------------------------------------------*/
 
 void
-CRootView::realDraw(Rect * inRect)
+CRootView::realDraw(const Rect * inRect)
 {
 	// if the application layer is not up yet, just show the splash screen
 	if (!gNewtIsAliveAndWell)
@@ -569,10 +621,10 @@ CRootView::realDraw(Rect * inRect)
 
 
 void
-CRootView::postDraw(Rect * inRect)
+CRootView::postDraw(Rect& inRect)
 {
 	// if current live stroke intersects the rect, redraw it
-	gRecognitionManager.update(inRect);
+	gRecognitionManager.update(&inRect);
 }
 
 
@@ -601,7 +653,7 @@ CRootView::forgetAboutView(CView * inView)
 		caretViewGone();
 
 	if (inView == fPopup)
-		setPopup(inView, NO);
+		setPopup(inView, false);
 
 	if (inView == fCaretSlip)
 		fCaretSlip = NULL;
@@ -610,14 +662,14 @@ CRootView::forgetAboutView(CView * inView)
 
 	unregisterKeyboard(inView->fContext);
 
-	if (MASKTEST(viewFlags, 0x20000000))
+	if (FLAGTEST(viewFlags, vHasIdlerHint))
 		removeAllIdlers(inView);
 
-	for (ArrayIndex i = 0; i < 3; ++i)
-		if (x34[i].fView == inView)
-			x34[i].fView = inView->fParent;
+	for (ArrayIndex i = 0; i < kNumOfLayers; ++i)
+		if (fLayer[i].fView == inView)
+			fLayer[i].fView = inView->fParent;
 
-	if (MASKTEST(viewJustify, 0x40000000))	// sic
+	if (FLAGTEST(viewJustify, vIsModal))	// sic
 		RealExitModalDialog(inView);
 	else if (gModalCount)
 		RemoveModalSafeView(inView);
@@ -629,11 +681,10 @@ CRootView::forgetAboutView(CView * inView)
 CView *
 CRootView::getCommonParent(CView * inView1, CView * inView2)
 {
-	CView *	theParent;
-	CView *	view1, * view2;
-	for (view1 = inView1; view1 != NULL; )
+	CView * theParent;
+	for (CView * view1 = inView1; view1 != NULL; )
 	{
-		for (view2 = inView2; view2 != NULL; )
+		for (CView * view2 = inView2; view2 != NULL; )
 		{
 			if (view2 == view1)
 				return view1;	// the common ancestor
@@ -656,7 +707,7 @@ CRootView::getFrontmostModalView(void)
 	CBackwardLoop	iter(viewChildren);
 	while ((view = (CView *)iter.next()))	// intentional assignment
 	{
-		if (MASKTEST(view->viewFlags, vVisible)
+		if (FLAGTEST(view->viewFlags, vVisible)
 		 && NOTNIL(view->getProto(SYMA(modalState))))
 			return view;
 	}
@@ -668,10 +719,10 @@ CRootView::getFrontmostModalView(void)
 	I d l i n g
 --------------------------------------------------------------------------------*/
 
-IdlingItem *
+IdlingView *
 CRootView::getIdlingView(CView * inView)
 {
-	for (IdlingItem * idler = fIdlingList, * prev = NULL; idler != NULL; prev = idler, idler = idler->fNext)	// original inits prev = this
+	for (IdlingView * idler = fIdlingList, * prev = (IdlingView *)&fIdlingList; idler != NULL; prev = idler, idler = idler->fNext)	// blimey that’s tricky
 		if (idler->fView == inView)
 			return prev;
 	return NULL;
@@ -681,7 +732,7 @@ CRootView::getIdlingView(CView * inView)
 void
 CRootView::unlinkIdleView(CView * inView)
 {
-	IdlingItem * prev = getIdlingView(inView);
+	IdlingView * prev = getIdlingView(inView);
 	if (prev)
 	{
 		prev->fNext = prev->fNext->fNext;
@@ -696,26 +747,29 @@ CRootView::addIdler(CView * inView, Timeout inTimeout, ULong inId)
 		removeIdler(inView, inId);
 	else
 	{
+		// create idle view info
 		IdleViewInfo info;
 		info.fView = inView;
 		info.fId = inId;
 		info.fTime = TimeFromNow((inTimeout*kMilliseconds));
-		bool hasExistingIdler = false;
-		CArrayIterator	iter(x40);
+		// see if we are already idling this view
+		bool isFound = false;
+		CArrayIterator	iter(fIdlingViews);
 		for (ArrayIndex index = iter.firstIndex(); iter.more(); index = iter.nextIndex())
 		{
-			IdleViewInfo * idler = (IdleViewInfo *)x40->safeElementPtrAt(index);
+			IdleViewInfo * idler = (IdleViewInfo *)fIdlingViews->safeElementPtrAt(index);
 			if (idler->fView == inView && idler->fId == inId)
 			{
 				// this view is already idling - update its wakeup time
 				idler->fTime = info.fTime;
-				hasExistingIdler = true;
+				isFound = true;
 				break;
 			}
 		}
-		if (!hasExistingIdler)
-			x40->addElement(&info);
-		setFlags(0x20000000);
+		// not already idling - add it to our list
+		if (!isFound)
+			fIdlingViews->addElement(&info);
+		inView->setFlags(vHasIdlerHint);
 		gApplication->updateNextIdleTime(info.fTime);
 	}
 }
@@ -725,16 +779,16 @@ ULong
 CRootView::removeIdler(CView * inView, ULong inId)
 {
 	ULong	timeToRun = 0;
-	CArrayIterator	iter(x40);
+	CArrayIterator	iter(fIdlingViews);
 	for (ArrayIndex index = iter.firstIndex(); iter.more(); index = iter.nextIndex())
 	{
-		IdleViewInfo *	idler = (IdleViewInfo *)x40->safeElementPtrAt(index);
+		IdleViewInfo *	idler = (IdleViewInfo *)fIdlingViews->safeElementPtrAt(index);
 		if (idler->fView == inView && idler->fId == inId)
 		{
-			CTime delta = GetGlobalTime() - idler->fTime;
-			if (delta > CTime(0))	// idler has expired - return by how much - for debug?
+			CTime delta = idler->fTime - GetGlobalTime();
+			if (delta > CTime(0))	// idler would fire at some point in the future
 				timeToRun = delta;
-			x40->removeElementsAt(index, 1);
+			fIdlingViews->removeElementsAt(index, 1);
 			unlinkIdleView(inView);
 			break;
 		}
@@ -746,114 +800,109 @@ CRootView::removeIdler(CView * inView, ULong inId)
 void
 CRootView::removeAllIdlers(CView * inView)
 {
-	CArrayIterator	iter(x40);
+	CArrayIterator	iter(fIdlingViews);
 	for (ArrayIndex index = iter.firstIndex(); iter.more(); index = iter.nextIndex())
 	{
-		IdleViewInfo *	idler = (IdleViewInfo *)x40->safeElementPtrAt(index);
+		IdleViewInfo *	idler = (IdleViewInfo *)fIdlingViews->safeElementPtrAt(index);
 		if (idler->fView == inView)
 		{
-			x40->removeElementsAt(index, 1);
+			fIdlingViews->removeElementsAt(index, 1);
 			unlinkIdleView(inView);
 		}
 	}
-	clearFlags(0x20000000);
+	inView->clearFlags(vHasIdlerHint);
 }
 
 
 CTime
 CRootView::idleViews(void)
 {
-	// original compacts viewChildren and x40 CDynamicArrays
+	ArrayIndex count;
 
-//sp-28
-	IdleViewInfo sp18;
-	sp18.fView = (CView *)0x7FFFFFFF;
-	sp18.fId = 0;
-	sp18.fTime = GetGlobalTime();
+	// original compacts viewChildren and fIdlingViews CDynamicArrays
+#if 0
+	count = viewChildren->count();
+	if (x44 > count)
+		MoveLow(viewChildren);
+	x44 = count;
 
-	CTime sp10(10, kMilliseconds);
+	count = fIdlingViews->count();
+	if (x48 > count)
+		MoveLow(fIdlingViews);
+	x48 = count;
+#endif
+
+	CTime sp20Time(GetGlobalTime());
+	CTime nextIdleTime(kFarFuture);	//sp18
+	CTime tenMilliseconds(10, kMilliseconds);	//sp10
 
 	// insert NULL view in list of idling views
-	IdlingItem sp08;
-	sp08.fNext = fIdlingList;
-	sp08.fView = NULL;
-	fIdlingList = &sp08;
-#if 0
+	IdlingView idling;	// sp08
+	idling.fNext = fIdlingList;
+	idling.fView = NULL;
+	fIdlingList = &idling;
+
 //sp-1C
-	size_t r9 = x40->count();
-	CArrayIterator	iter(x40);
-	for (ArrayIndex index = iter.firstIndex(); iter.more() && r9-- > 0; index = iter.nextIndex())
+	count = fIdlingViews->count();	// r9
+	CArrayIterator	iter(fIdlingViews);
+	for (ArrayIndex index = iter.firstIndex(); iter.more() && count-- > 0; index = iter.nextIndex())	// sp00
 	{
-		IdleViewInfo *	idler = (IdleViewInfo *)x40->safeElementPtrAt(index);	// r5
-		IdlingItem * r0 = getIdlingView(idler->fView);
+		IdleViewInfo *	idler = (IdleViewInfo *)fIdlingViews->safeElementPtrAt(index);	// r5
+		IdlingView * r0 = getIdlingView(idler->fView);
 		if (r0 == NULL)
 		{
-//sp-10
-			CTime spr00(idler->fTime);
-			CTime spr08 = spr00 - sp10;
-//sp+08
-			if (spr00 > sp18.fTime)
+//sp-08
+			ULong msToNextIdle = 0;	// r6
+			if ((idler->fTime - tenMilliseconds) <= sp20Time)
 			{
-				long r6 = 0;
-				sp08.fView = idler->fView;
+				// idler has timed out
+				idling.fView = idler->fView;
 				newton_try
 				{
-					r6 = idler->fView->idle(idler->fId);	// r6 = time to next idle in ms
+printf("CRootView::idleViews()\n");
+					msToNextIdle = idler->fView->idle(idler->fId);	// run viewIdleScript
 				}
 				newton_catch_all
 				{ }
 				end_try;
 			}
-			IdleViewInfo *	r5 = (IdleViewInfo *)x40->safeElementPtrAt(iter.currentIndex());
-			bool r7 = (getIdlingView(sp08.fView) != NULL);
-			if (r6)
+			ArrayIndex indx = iter.currentIndex();
+			IdleViewInfo *	r5 = (IdleViewInfo *)fIdlingViews->safeElementPtrAt(indx);
+			bool isViewIdling = (getIdlingView(idling.fView) != NULL);	// r7
+			if (isViewIdling)
 			{
-//sp-08
-				CTime spr08(r6, kMilliseconds);
-				r6 = r8 = &r5->fTime;
-//sp-08
-				spr00 = spr08 + r5->fTime;
-				if (r8 == NULL)
-					r8 = new CTime;
-				*r8 = spr00;
-//sp+08
-				if (sp18.fTime < r6)
+				if (msToNextIdle != 0)
 				{
 //sp-08
-					CTime spm00 = spr00 + sp10;
-					if (r6 == NULL)
-						r6 = new CTime;
-					*r6 = spr00;
+					CTime timeToNextIdle(msToNextIdle, kMilliseconds);
+//sp-08
+					// update time this view next wants viewIdleScript
+					r5->fTime = r5->fTime + timeToNextIdle;
+					if (r5->fTime < sp20Time)
+						r5->fTime = sp20Time + timeToNextIdle;
+				}
+				else
+				{
+					fIdlingViews->removeElementsAt(indx, 1);
+					isViewIdling = false;
 				}
 			}
-			else
+			if (isViewIdling)
 			{
-				x40->removeElementsAt(r8, 1);
-				r7 = NO;
-			}
-			if (r7)
-			{
-				if (sp18.fTime < r5->fTime)
-					sp18.fTime = r5->fTime;
+				if (sp20Time > r5->fTime)
+					sp20Time = r5->fTime;		// r5 is closer in time
 			}
 		}
 //sp+08
 	}
-	unlinkIdleView(sp08.fView);
+	unlinkIdleView(idling.fView);
 	if (!caretValid(NULL))
-		sp18 = sp20;
-	//sp-10
-	IdleViewInfo spr00;
-	spr00.fView = 0x7FFFFFFF;
-	spr00.fId = 0;
-	if (spr00 == sp18)
-	{
-		spr00.fTime = 0;
-		sp18 = spr00.fTime;
-	}
+		nextIdleTime = sp20Time;
 
-	return sp18;
-#endif
+//sp-10
+	if (nextIdleTime == CTime(kFarFuture))
+		nextIdleTime = CTime(0);
+	return nextIdleTime;
 }
 
 #pragma mark -
@@ -861,16 +910,29 @@ CRootView::idleViews(void)
 /*--------------------------------------------------------------------------------
 	P o p u p
 --------------------------------------------------------------------------------*/
+extern bool gInhibitPopup;
 
 void
 CRootView::setPopup(CView * inView, bool inShow)
 {
 	if (inShow)
 	{
-		RefVar	cmd(MakeCommand(aeDropChild, inView, 0x08000000));
-		gApplication->dispatchCommand(cmd);
+		if (fPopup != NULL && fPopup != inView)
+		{
+			if (inView)
+				SetFrameSlot(fPopup->fContext, SYMA(popup), inView->fContext);
+			else
+			{
+				RefVar	cmd(MakeCommand(aeDropChild, fPopup->fParent, (OpaqueRef)fPopup));
+				gApplication->dispatchCommand(cmd);
+				gInhibitPopup = true;
+				return;
+			}
+		}
+		if (inView)
+			fPopup = inView;
 	}
-	else if (inView == fPopup)	// remove it
+	else if (fPopup == inView)	// remove it
 	{
 		Ref	popup = GetFrameSlot(fPopup->fContext, SYMA(popup));
 		fPopup = NOTNIL(popup) ? (CView *)RefToAddress(GetFrameSlot(popup, SYMA(viewCObject))) : NULL;
@@ -947,27 +1009,27 @@ CRootView::dirtyCaret(void)
 	{
 		Rect	caretRect = getCaretRect();
 		smartInvalidate(&caretRect);
-		fIsCaretUp = NO;
+		fIsCaretUp = false;
 	}
 }
 
 
 #if defined(correct)
 void
-DrawCaretBits(const Rect * inRect, bool inArg2)
+DrawCaretBits(const Rect * inRect, bool invert)
 {
 	Rect  box = *inRect;
 	InsetRect(&box, 1, 1);
 	StartDrawing(NULL, NULL);
-	if (inArg2)
+	if (invert)
 	{
-		DrawBitmap(pixelmapObjectClassBits, inRect, srcCopy);
-		DrawBitmap(pixelmapObjectClassBitsMask, &box, srcXor);
+		DrawBitmap(caretBitsOutside, inRect, modeOr);
+		DrawBitmap(caretBitsInside, &box, modeBic);
 	}
 	else
 	{
-		DrawBitmap(pixelmapObjectClassBits, inRect, srcXor);
-		DrawBitmap(pixelmapObjectClassBitsMask, &box, srcCopy);
+		DrawBitmap(caretBitsOutside, inRect, modeBic);
+		DrawBitmap(caretBitsInside, &box, modeOr);
 	}
 	StopDrawing(NULL, NULL);
 }
@@ -999,7 +1061,7 @@ CRootView::drawCaret(Point inPt)
 	{
 		if (inPt.v == -32768)
 		{
-			fIsCaretUp = NO;
+			fIsCaretUp = false;
 			fCaretPt = inPt;
 			x90 = fCaretView;
 			return;
@@ -1008,6 +1070,7 @@ CRootView::drawCaret(Point inPt)
 		Rect visCaretRect = caretRect;
 
 #if defined(correct)
+		// copy screen bits under the caret into fCaret for restoration when the caret moves
 		GrafPtr thePort;
 		GetPort(&thePort);
 		Rect sp00 = thePort->portBits.bounds;
@@ -1028,12 +1091,12 @@ CRootView::drawCaret(Point inPt)
 #if defined(correct)
 		CRegionVar savedVisRgn(caretView->setupVisRgn());
 		narrowVisByIntersectingObscuringSiblingsAndUncles(caretView, &visCaretRect);
-		DrawCaretBits(&caretRect, NO);
+		DrawCaretBits(&caretRect, false);
 #else
 		CGContextDrawImage(quartz, MakeCGRect(caretRect), fCaret);
 #endif
 
-		fIsCaretUp = YES;
+		fIsCaretUp = true;
 		fCaretPt = inPt;
 		x90 = fCaretView;
 
@@ -1049,8 +1112,8 @@ bool
 CRootView::caretEnabled(void)
 {
 	if (fCaretView == NULL || x70 == NULL)
-		return NO;
-	return getRemoteWriting() ? YES : keyboardActive();
+		return false;
+	return getRemoteWriting() ? true : keyboardActive();
 }
 
 
@@ -1061,22 +1124,22 @@ CRootView::caretValid(Point * outPt)
 		outPt->v = -32768;
 
 	if (fHideCaretCount > 0)
-		return YES;
+		return true;
 
 	if (!caretEnabled())
-		return fIsCaretUp == NO;
+		return fIsCaretUp == false;
 
 	Point	caretPt = getCaretPoint();
 	if (outPt)
 		*outPt = caretPt;
 	if (caretPt.v == -32768
-	 && (fIsCaretUp == NO || fCaretPt.v == -32768))
-		return YES;
+	 && (fIsCaretUp == false || fCaretPt.v == -32768))
+		return true;
 
 	if (fCaretView->visibleDeep())
 		return fIsCaretUp && (x90 == fCaretView && *(long*)outPt == *(long*)&caretPt);
 
-	return YES;
+	return true;
 }
 
 
@@ -1087,7 +1150,7 @@ CRootView::checkForCaretRemoval(void)
 	 && fCaretView->derivedFrom(clEditView)
 	 && !TextOrInkWordsEnabled(fCaretView)
 	 && !keyboardActive())
-		setKeyView(NULL, 0, 0, NO);
+		setKeyView(NULL, 0, 0, false);
 }
 
 
@@ -1107,7 +1170,7 @@ CRootView::doCaretClick(CUnit * inUnit)
 			// Region twiddling stuff
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -1169,7 +1232,7 @@ CRootView::restoreBitsUnderCaret(void)
 		GetPort(&thePort);
 		thePort->visRgn = savedVisRgn;
 		DisposeRgn(caretRgn);
-*/		fIsCaretUp = NO;
+*/		fIsCaretUp = false;
 	}
 }
 
@@ -1182,10 +1245,10 @@ CRootView::caretViewGone(void)
 	{
 		RefVar	view(GetFrameSlot(selection, SYMA(view)));
 		RefVar	info(GetFrameSlot(selection, SYMA(info)));
-		setKeyViewSelection(GetView(view), info, NO);
+		setKeyViewSelection(GetView(view), info, false);
 	}
 	else
-		setKeyViewSelection(NULL, RA(NILREF), NO);
+		setKeyViewSelection(NULL, RA(NILREF), false);
 }
 
 
@@ -1214,13 +1277,13 @@ CRootView::unregisterKeyboard(RefArg inKbd)
 {
 	ArrayIndex kbdIndex = getKeyboardIndex(inKbd);
 	if (kbdIndex == kIndexNotFound)
-		return NO;
+		return false;
 
 	ArrayRemoveCount(fKeyboards, kbdIndex, 2);
 	if (fCaretView != NULL && fCaretView->derivedFrom(clParagraphView))
 		((CParagraphView *)fCaretView)->flushWordAtCaret();
 	checkForCaretRemoval();
-	return YES;
+	return true;
 }
 
 
@@ -1268,7 +1331,7 @@ bool
 CRootView::keyboardActive(void)
 {
 	if (gKeyboardConnected)
-		return YES;
+		return true;
 
 	if (NOTNIL(fKeyboards))
 	{
@@ -1276,10 +1339,10 @@ CRootView::keyboardActive(void)
 		for (ArrayIndex i = 1; i < count; i += 2)	// we’re examining the status slot
 		{
 			if ((RINT(GetArraySlot(fKeyboards, i)) & 0x04) != 0)
-				return YES;
+				return true;
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -1403,9 +1466,9 @@ CRootView::restoreKeyView(CView * inView)
 	ArrayIndex stackIndex;
 	CView * keyView = findRestorableKeyView(inView, &stackIndex);
 	if (keyView == NULL)
-		return NO;
-	setKeyViewSelection(keyView, GetArraySlot(fSelectionStack, stackIndex+1), YES);
-	return YES;
+		return false;
+	setKeyViewSelection(keyView, GetArraySlot(fSelectionStack, stackIndex+1), true);
+	return true;
 }
 
 
@@ -1447,7 +1510,7 @@ CRootView::activatePendingKeyView(void)
 {
 	CView * keyView = GetView(fPendingKeyView);
 	if (keyView)
-		setKeyViewSelection(keyView, fPendingKeyViewSelection, YES);
+		setKeyViewSelection(keyView, fPendingKeyViewSelection, true);
 	fPendingKeyView = NILREF;
 	fPendingKeyViewSelection = NILREF;
 }
@@ -1490,7 +1553,7 @@ CRootView::pushSelection(CView * inView, RefArg inInfo)
 {
 	int	count;
 
-	cleanSelectionStack(inView, YES);
+	cleanSelectionStack(inView, true);
 	count = Length(fSelectionStack);
 	SetLength(fSelectionStack, count + 2);
 	SetArraySlot(fSelectionStack, count, inView->fContext);
@@ -1504,7 +1567,7 @@ CRootView::popSelection(void)
 	if (Length(fSelectionStack) == 0)
 		return NILREF;
 
-	cleanSelectionStack(NULL, NO);
+	cleanSelectionStack(NULL, false);
 	RefVar	caretInfo;
 	int		count = Length(fSelectionStack);
 	if (count > 0)

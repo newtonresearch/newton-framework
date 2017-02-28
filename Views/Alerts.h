@@ -35,9 +35,9 @@ class CAlertEvent : public CEvent
 public:
 			CAlertEvent();
 
-	long		f08;
-	long		f0C;
-	void *	f10;
+	int			f08;
+	NewtonErr	fError;
+	void *		f10;
 // size+14
 };
 

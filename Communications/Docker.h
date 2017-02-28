@@ -104,7 +104,7 @@ private:
 	Timeout			fEzTimeout;	//+34
 	COptionArray	f38;
 	COption *		fBytesAvailableOption;	//+50
-	bool				f54;
+	bool				fIsAppleTalkOpen;			//+54
 //size+58
 };
 

@@ -41,6 +41,7 @@ extern "C" {
 ULong	SymbolHashFunction(const char * name);
 int	SymbolCompare(Ref sym1, Ref sym2);
 }
+extern CStore *	GetInternalStore(void);
 extern Ref		FourCharToSymbol(ULong inFourChar);
 extern unsigned long	RealClock(void);
 extern long		GetRandomSignature(void);
@@ -54,7 +55,7 @@ void				AskForFlush(bool inFlush);
 	P l a i n   C   S t o r e   F u n c t i o n   I n t e r f a c e
 ------------------------------------------------------------------------------*/
 
-static CStoreWrapper *
+CStoreWrapper *
 StoreWrapper(RefArg inRcvr)
 {
 	if (ISNIL(GetFrameSlot(inRcvr, SYMA(_proto))))
@@ -67,7 +68,7 @@ StoreFromWrapper(RefArg inRcvr)
 {
 	if (ISNIL(GetFrameSlot(inRcvr, SYMA(_proto))))
 		ThrowErr(exStore, kNSErrInvalidStore);
-	CStoreWrapper *	storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
+	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
 	return storeWrapper->store();
 }
 
@@ -75,7 +76,7 @@ StoreFromWrapper(RefArg inRcvr)
 Ref
 StoreAbort(RefArg inRcvr)
 {
-	CStoreWrapper *	storeWrapper = StoreWrapper(inRcvr);
+	CStoreWrapper * storeWrapper = StoreWrapper(inRcvr);
 	OSERRIF(storeWrapper->store()->abort());
 	return NILREF;
 }
@@ -83,7 +84,7 @@ StoreAbort(RefArg inRcvr)
 Ref
 StoreLock(RefArg inRcvr)
 {
-	CStoreWrapper *	storeWrapper = StoreWrapper(inRcvr);
+	CStoreWrapper * storeWrapper = StoreWrapper(inRcvr);
 	OSERRIF(storeWrapper->lockStore());
 	return MAKEBOOLEAN(storeWrapper->store()->isLocked());
 }
@@ -91,7 +92,7 @@ StoreLock(RefArg inRcvr)
 Ref
 StoreUnlock(RefArg inRcvr)
 {
-	CStoreWrapper *	storeWrapper = StoreWrapper(inRcvr);
+	CStoreWrapper * storeWrapper = StoreWrapper(inRcvr);
 	OSERRIF(storeWrapper->unlockStore());
 	return MAKEBOOLEAN(storeWrapper->store()->isLocked());
 }
@@ -127,7 +128,7 @@ StoreCardType(RefArg inRcvr)
 void
 CheckWriteProtect(RefArg inRcvr)
 {
-	CStoreWrapper *	storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
+	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
 	CheckWriteProtect(storeWrapper->store());
 }
 
@@ -157,7 +158,7 @@ StoreIsValid(RefArg inRcvr)
 			return TRUEREF;
 		for (int i = Length(gPackageStores) - 1; i >= 0; i--)
 		{
-			if (EQRef(inRcvr, GetArraySlot(gPackageStores, i)))
+			if (EQ(inRcvr, GetArraySlot(gPackageStores, i)))
 				return TRUEREF;
 		}
 	}
@@ -174,7 +175,7 @@ StoreGetPasswordKey(CStore * inStore)
 Ref
 StoreGetPasswordKey(RefArg inRcvr)
 {
-	CStoreWrapper *	storeWrapper = StoreWrapper(inRcvr);
+	CStoreWrapper * storeWrapper = StoreWrapper(inRcvr);
 	return StoreGetPasswordKey(storeWrapper->store());
 }
 
@@ -184,11 +185,19 @@ StoreHasPassword(RefArg inRcvr)
 	return MAKEBOOLEAN(NOTNIL(StoreGetPasswordKey(inRcvr)));
 }
 
+bool
+CheckStorePassword(CStore * inStore, RefArg inPassword)
+{ return true; }
+
 Ref
-StoreSetPassword(RefArg inRcvr, RefArg inArg2, RefArg inArg3)
+StoreSetPassword(RefArg inRcvr, RefArg inOldPassword, RefArg inNewPassword)
 {
-	CStoreWrapper *	storeWrapper = StoreWrapper(inRcvr);
-	/* INCOMPLETE */
+	CStoreWrapper * storeWrapper = StoreWrapper(inRcvr);	//r8
+	CStore * store = storeWrapper->store();
+	if (store != GetInternalStore() && CheckStorePassword(store, inOldPassword) == 0) {
+		CheckWriteProtect(store);
+		/* INCOMPLETE */
+	}
 	return NILREF;
 }
 
@@ -448,7 +457,7 @@ StoreGetSoupNames(RefArg inRcvr)
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
 	CSoupIndex soupIndex;
-	soupIndex.init(storeWrapper, RINT(GetFrameSlot(proto, RSYMnameIndex)), StoreGetDirSortTable(inRcvr));
+	soupIndex.init(storeWrapper, RINT(GetFrameSlot(proto, SYMA(nameIndex))), StoreGetDirSortTable(inRcvr));
 
 	RefVar	soupNames(MakeArray(0));
 	SKey	nameKey;
@@ -471,14 +480,14 @@ StoreGetSoupId(RefArg inRcvr, RefArg inName)
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
 	CSoupIndex soupIndex;
-	soupIndex.init(storeWrapper, RINT(GetFrameSlot(proto, RSYMnameIndex)), StoreGetDirSortTable(inRcvr));
+	soupIndex.init(storeWrapper, RINT(GetFrameSlot(proto, SYMA(nameIndex))), StoreGetDirSortTable(inRcvr));
 
 	SKey nameKey;
 	UniChar * name = GetUString(inName);
 	nameKey.set(Ustrlen(name)*sizeof(UniChar), name);
 
 	PSSId soupId;
-	if (soupIndex.find(&nameKey, NULL, (SKey *)&soupId, NO) == 0)
+	if (soupIndex.find(&nameKey, NULL, (SKey *)&soupId, false) == 0)
 		return soupId;
 
 	return 0;
@@ -518,7 +527,7 @@ StoreGetSoup(RefArg inRcvr, RefArg inName)
 
 		// soup name data is its id
 		PSSId soupId;
-		if (soupIndex.find(&nameKey, &nameKey, (SKey *)&soupId, NO) == 0)
+		if (soupIndex.find(&nameKey, &nameKey, (SKey *)&soupId, false) == 0)
 		{
 			// we found the persistent soup object; load it
 			soupObj = LoadPermObject(storeWrapper, soupId, NULL);
@@ -560,19 +569,29 @@ StoreGetSoup(RefArg inRcvr, RefArg inName)
 ------------------------------------------------------------------------------*/
 
 Ref
-StoreErase(RefArg inRcvr)
-{ return NILREF; }
+StoreNewObject(RefArg inRcvr, RefArg inSize)
+{
+	PSSId		objId;
+	size_t	size = RINT(inSize);
+	OSERRIF(StoreFromWrapper(inRcvr)->newObject(&objId, size));
+	return MAKEINT(objId);
+}
+
 
 Ref
-StoreNewObject(RefArg inRcvr)
-{ return NILREF; }
+StoreDeleteObject(RefArg inRcvr, RefArg inObjId)
+{
+	PSSId		objId = RINT(inObjId);
+	OSERRIF(StoreFromWrapper(inRcvr)->deleteObject(objId));
+	return NILREF;
+}
 
 
 Ref
 StoreGetObjectSize(RefArg inRcvr, RefArg inObjId)
 {
-	PSSId			objId = RINT(inObjId);
-	size_t		size;
+	PSSId		objId = RINT(inObjId);
+	size_t	size;
 	OSERRIF(StoreFromWrapper(inRcvr)->getObjectSize(objId, &size));
 	return MAKEINT(size);
 }
@@ -580,8 +599,8 @@ StoreGetObjectSize(RefArg inRcvr, RefArg inObjId)
 Ref
 StoreSetObjectSize(RefArg inRcvr, RefArg inObjId, RefArg inSize)
 {
-	PSSId			objId = RINT(inObjId);
-	size_t		size = RINT(inSize);
+	PSSId		objId = RINT(inObjId);
+	size_t	size = RINT(inSize);
 	OSERRIF(StoreFromWrapper(inRcvr)->setObjectSize(objId, size));
 	return NILREF;
 }
@@ -590,7 +609,7 @@ StoreSetObjectSize(RefArg inRcvr, RefArg inObjId, RefArg inSize)
 Ref
 StoreUsedSize(RefArg inRcvr)
 {
-	size_t		used, total;
+	size_t	used, total;
 	OSERRIF(StoreWrapper(inRcvr)->getStoreSizes(&used, &total));
 	return MAKEINT(used);
 }
@@ -599,13 +618,22 @@ StoreUsedSize(RefArg inRcvr)
 Ref
 StoreTotalSize(RefArg inRcvr)
 {
-	size_t		used, total;
+	size_t	used, total;
 	OSERRIF(StoreWrapper(inRcvr)->getStoreSizes(&used, &total));
 	return MAKEINT(total);
 }
 
-#pragma mark -
 
+Ref	StoreNewVBO(RefArg inRcvr, RefArg inArg2) { return NILREF; }
+Ref	StoreNewCompressedVBO(RefArg inRcvr, RefArg inArg2, RefArg inArg3, RefArg inArg4) { return NILREF; }
+Ref	StoreReadObject(RefArg inRcvr, RefArg inArg2, RefArg inArg3) { return NILREF; }
+Ref	StoreWriteObject(RefArg inRcvr, RefArg inArg2, RefArg inArg3, RefArg inArg4) { return NILREF; }
+Ref	StoreWriteWholeObject(RefArg inRcvr, RefArg inArg2, RefArg inArg3, RefArg inArg4) { return NILREF; }
+Ref	StoreRestorePackage(RefArg inRcvr) { return NILREF; }
+Ref	StoreRestoreSegmentedPackage(RefArg inRcvr, RefArg inArg2) { return NILREF; }
+
+
+#pragma mark -
 /*------------------------------------------------------------------------------
 	C S t o r e H a s h T a b l e
 ------------------------------------------------------------------------------*/
@@ -613,8 +641,8 @@ StoreTotalSize(RefArg inRcvr)
 PSSId
 CStoreHashTable::create(CStore * inStore)
 {
-	PSSId			tableId;
-	PSSId			table[kStoreHashTableSize];
+	PSSId		tableId;
+	PSSId		table[kStoreHashTableSize];
 	memset(table, 0, sizeof(table));
 	OSERRIF(inStore->newObject(&tableId, table, sizeof(table)));
 	return tableId;
@@ -636,7 +664,7 @@ CStoreHashTable::insert(ULong inHash, const char * inData, size_t inSize)
 	PSSId		objId = fTable[index];	// r1, sp00
 	size_t	prefixedSize = sizeof(short) + inSize;
 	int		offset = 0;	// r7
-	bool		weAlreadyHaveThisData = NO;	// r9
+	bool		weAlreadyHaveThisData = false;	// r9
 
 	if (objId == 0)
 	{
@@ -664,7 +692,7 @@ CStoreHashTable::insert(ULong inHash, const char * inData, size_t inSize)
 					OSERRIF(cacheStore.getDataPtr(offset + sizeof(uint16_t), inSize, &dataPtr));
 					if (memcmp(dataPtr, inData, inSize) == 0)
 					{
-						weAlreadyHaveThisData = YES;
+						weAlreadyHaveThisData = true;
 						break;
 					}
 				}
@@ -753,7 +781,7 @@ CStoreHashTableIterator::CStoreHashTableIterator(CStoreHashTable * inTable)
 	fTableEntrySize = 0;
 	fOffset = 0;
 	fSize = 0;
-	fDone = NO;
+	fDone = false;
 	next();
 }
 
@@ -771,7 +799,7 @@ CStoreHashTableIterator::next(void)
 				fIndex = 0;
 			else if (++fIndex == kStoreHashTableSize)
 			{
-				fDone = YES;
+				fDone = true;
 				return;
 			}
 			fId = fTable->fTable[fIndex];
@@ -803,7 +831,7 @@ CStoreHashTableIterator::getData(char * outData, size_t * ioSize)
 
 CStoreWrapper::CStoreWrapper(CStore * inStore)
 {
-	fIsLocked = NO;
+	fIsLocked = false;
 	fStore = inStore;
 	fMapTable = NULL;
 	fSymbolTable = NULL;
@@ -835,10 +863,10 @@ CStoreWrapper::~CStoreWrapper()
 void
 CStoreWrapper::dirty(void)
 {
-	AskForFlush(YES);
+	AskForFlush(true);
 	if (!fIsLocked)
 	{
-		fIsLocked = YES;
+		fIsLocked = true;
 		lockStore();
 	}
 }
@@ -848,7 +876,7 @@ CStoreWrapper::sparklingClean(void)
 {
 	if (fIsLocked)
 	{
-		fIsLocked = NO;
+		fIsLocked = false;
 		unlockStore();
 	}
 }
@@ -872,9 +900,9 @@ CStoreWrapper::addMap(SortedMapTag * inMap, bool inSoupEntry, ArrayIndex * ioNum
 	{
 		Ref	tag = inMap->ref;
 		ULong	symHash = SymbolHash(tag);
-		if (!(symHash == k_protoHash && SymbolCompare(tag, RSYM_proto) == 0)									// don’t add _proto slot
-		&&  (!inSoupEntry || !((symHash == k_uniqueIdHash && SymbolCompare(tag, RSYM_uniqueId) == 0)	// don’t add soup entry slots
-									|| (symHash == k_modTimeHash && SymbolCompare(tag, RSYM_modTime) == 0))))
+		if (!(symHash == k_protoHash && SymbolCompare(tag, SYMA(_proto)) == 0)									// don’t add _proto slot
+		&&  (!inSoupEntry || !((symHash == k_uniqueIdHash && SymbolCompare(tag, SYMA(_uniqueId)) == 0)	// don’t add soup entry slots
+									|| (symHash == k_modTimeHash && SymbolCompare(tag, SYMA(_modTime)) == 0))))
 		{
 			totalHash = (totalHash ^ symHash) >> *ioNumOfTags;	// should be ROR
 			const char * symName = SymbolName(tag);
@@ -1278,9 +1306,9 @@ CEphemeralTracker::findAndRemove(PSSId inId, CDynamicArray * inArray)
 	if ((i = find(inId, inArray)) != kIndexNotFound)
 	{
 		inArray->removeElementsAt(i, 1);
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 void

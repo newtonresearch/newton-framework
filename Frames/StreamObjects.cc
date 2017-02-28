@@ -33,8 +33,8 @@ struct LBStreamData
 
 CPrecedentsForWriting * gPrecedentsForWriting = NULL;
 CPrecedentsForReading * gPrecedentsForReading = NULL;
-bool							gPrecedentsForWritingUsed = YES;
-bool							gPrecedentsForReadingUsed = YES;
+bool							gPrecedentsForWritingUsed = true;
+bool							gPrecedentsForReadingUsed = true;
 
 
 /*------------------------------------------------------------------------------
@@ -408,13 +408,13 @@ PackSmallRect(RefArg inRect, ULong * outPackedRect)
 					if (ISINT(value) && (byteValue = RVALUE(value)) <= 255)
 					{
 						*outPackedRect = (*outPackedRect << 8) | byteValue;
-						return YES;
+						return true;
 					}
 				}
 			}
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -450,7 +450,7 @@ CObjectReader::CObjectReader(CPipe & inPipe)
 	:	fPipe(inPipe)
 {
 	fStore = NULL;
-	fAllowFunctions = YES;
+	fAllowFunctions = true;
 	setPrecedentsForReading();
 }
 
@@ -459,7 +459,7 @@ CObjectReader::CObjectReader(CPipe & inPipe, RefArg inStore)
 	:	fPipe(inPipe)
 {
 	fStore = NULL;
-	fAllowFunctions = YES;
+	fAllowFunctions = true;
 	setPrecedentsForReading();
 
 	CStoreWrapper *	wrapper;
@@ -473,7 +473,7 @@ CObjectReader::~CObjectReader()
 {
 	if (fPrecedents == gPrecedentsForReading)
 	{
-		gPrecedentsForReadingUsed = NO;
+		gPrecedentsForReadingUsed = false;
 		fPrecedents->reset();
 	}
 	else if (fPrecedents != NULL)
@@ -492,7 +492,7 @@ CObjectReader::setPrecedentsForReading(void)
 	else
 	{
 		fPrecedents = gPrecedentsForReading;
-		gPrecedentsForReadingUsed = YES;
+		gPrecedentsForReadingUsed = true;
 	}
 }
 
@@ -675,7 +675,7 @@ CObjectReader::scan(void)
 			}
 			fPipe.readChunk(BinaryData(obj), objSize, isEOF);
 #if defined(hasByteSwapping)
-			if (IsInstance(obj, RSYMstring))
+			if (IsInstance(obj, SYMA(string)))
 			{
 				// byte-swap unichars in the string
 				UniChar * s = (UniChar *)BinaryData(obj);
@@ -834,7 +834,7 @@ CObjectReader::readLargeBinary(void)
 		{
 			fPipe.readChunk(companderParms, lb.companderParmSize, isEOF);
 		}
-		err = CreateLargeObject(&id, fStore, &fPipe, lb.streamSize, NO,
+		err = CreateLargeObject(&id, fStore, &fPipe, lb.streamSize, false,
 				companderName,
 				companderParms, lb.companderParmSize,
 				NULL, lb.compressLB);
@@ -843,7 +843,7 @@ CObjectReader::readLargeBinary(void)
 	if (err != noErr)
 		ThrowErr(exFrames, err);
 
-	err = MapLargeObject(&addr, fStore, id, NO);
+	err = MapLargeObject(&addr, fStore, id, false);
 	if (err != noErr)
 	{
 		DeleteLargeObject(fStore, id);
@@ -928,7 +928,7 @@ CObjectWriter::CObjectWriter(RefArg inObj, CPipe & inPipe, bool inFollowProtos)
 	fObj = inObj;
 	fObjSize = 0;
 	fFollowProtos = inFollowProtos;
-	fCompressLB = NO;
+	fCompressLB = false;
 	if (gPrecedentsForWritingUsed)
 	{
 		if ((fPrecedents = new CPrecedentsForWriting) == NULL)
@@ -937,7 +937,7 @@ CObjectWriter::CObjectWriter(RefArg inObj, CPipe & inPipe, bool inFollowProtos)
 	else
 	{
 		fPrecedents = gPrecedentsForWriting;
-		gPrecedentsForWritingUsed = YES;
+		gPrecedentsForWritingUsed = true;
 	}
 }
 
@@ -946,7 +946,7 @@ CObjectWriter::~CObjectWriter()
 {
 	if (fPrecedents == gPrecedentsForWriting)
 	{
-		gPrecedentsForWritingUsed = NO;
+		gPrecedentsForWritingUsed = false;
 		fPrecedents->reset();
 	}
 	else if (fPrecedents != NULL)
@@ -957,7 +957,7 @@ CObjectWriter::~CObjectWriter()
 void
 CObjectWriter::setCompressLargeBinaries(void)
 {
-	fCompressLB = YES;
+	fCompressLB = true;
 }
 
 
@@ -1037,7 +1037,7 @@ CObjectWriter::prescan(void)
 				else if (IsArray(fObj))							// array
 				{
 					RefVar		arrayClass(ClassOf(fObj));
-					ArrayIndex	classSize = EQRef(arrayClass, RSYMarray) ? 0 : prescan(arrayClass);
+					ArrayIndex	classSize = EQ(arrayClass, SYMA(array)) ? 0 : prescan(arrayClass);
 					ArrayIndex	arraySize = 0;
 					for (ArrayIndex i = 0, numOfSlots = Length(fObj); i < numOfSlots; ++i)
 						arraySize += prescan(GetArraySlot(fObj, i));
@@ -1056,7 +1056,7 @@ CObjectWriter::prescan(void)
 			else								// binary
 			{
 				RefVar	binClass(ClassOf(fObj));
-				ArrayIndex	classSize = EQRef(binClass, RSYMstring) ? 0 : prescan(binClass);
+				ArrayIndex	classSize = EQ(binClass, SYMA(string)) ? 0 : prescan(binClass);
 				fObjSize = 1 + longToSize(Length(fObj)) + classSize + Length(fObj);
 			}
 		}
@@ -1178,7 +1178,7 @@ CObjectWriter::scan(void)
 				else if (IsArray(fObj))							// array
 				{
 					RefVar	arrayClass(ClassOf(fObj));
-					unsigned char	objType = EQRef(arrayClass, RSYMarray) ? kNSPlainArray : kNSArray;
+					unsigned char	objType = EQ(arrayClass, SYMA(array)) ? kNSPlainArray : kNSArray;
 					fPipe << objType;
 
 					ArrayIndex	i, numOfSlots = Length(fObj);
@@ -1200,12 +1200,12 @@ CObjectWriter::scan(void)
 				const char *	sym = SymbolName(fObj);
 				ArrayIndex	symLen = strlen(sym);
 				longToPipe(symLen);
-				fPipe.writeChunk(sym, symLen, NO);
+				fPipe.writeChunk(sym, symLen, false);
 			}
 			else								// binary
 			{
 				RefVar	binaryClass(ClassOf(fObj));
-				unsigned char	objType = EQRef(binaryClass, RSYMstring) ? kNSString : kNSBinaryObject;
+				unsigned char	objType = EQ(binaryClass, SYMA(string)) ? kNSString : kNSBinaryObject;
 				fPipe << objType;
 
 				void *	objPtr = BinaryData(fObj);
@@ -1216,7 +1216,7 @@ CObjectWriter::scan(void)
 					scan(binaryClass);
 #if defined(hasByteSwapping)
 				UniChar * s = NULL, buf[256];
-				if (IsInstance(fObj, RSYMstring))
+				if (IsInstance(fObj, SYMA(string)))
 				{
 					// byte-swap unichars in the string
 					if (objSize > (int)256 * sizeof(UniChar))
@@ -1237,7 +1237,7 @@ CObjectWriter::scan(void)
 					p[0] = BYTE_SWAP_LONG(p1);
 				}
 #endif
-				fPipe.writeChunk(objPtr, objSize, NO);
+				fPipe.writeChunk(objPtr, objSize, false);
 #if defined(hasByteSwapping)
 				if (s != NULL && objPtr != buf)
 					FreePtr((Ptr)objPtr);
@@ -1320,9 +1320,9 @@ CObjectWriter::writeLargeBinary(void)
 			fPipe << companderParmSize;
 			fPipe << (int)0;
 			if (companderName != NULL)
-				fPipe.writeChunk(companderName, companderNameSize, NO);
+				fPipe.writeChunk(companderName, companderNameSize, false);
 			if (companderParms != NULL)
-				fPipe.writeChunk(companderParms, companderParmSize, NO);
+				fPipe.writeChunk(companderParms, companderParmSize, false);
 			LOWrite(&fPipe, wrapper->store(), largeBinary->fId, fCompressLB, NULL);
 		}
 		on_unwind

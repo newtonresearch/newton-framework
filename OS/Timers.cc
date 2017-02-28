@@ -201,7 +201,7 @@ DisableAlarm1(void)
 	Set a timer interrupt.
 	SUPER MODE - accesses RTC hardware.
 	Args:		inTime		absolute time at which to fire
-	Return:	YES => alarm set
+	Return:	true => alarm set
 ----------------------------------------------------------------------------- */
 
 bool
@@ -232,14 +232,14 @@ SetAlarm(CTime & inTime)
 	}
 #else
 	CTime now(GetClock());
-printf("SetAlarm(%ld) now=%ld delta=%ld\n", (long)inTime,(long)now,(long)(inTime-now));
+//printf("SetAlarm(%ld) now=%ld delta=%ld\n", (long)inTime,(long)now,(long)(inTime-now));
 	if (inTime > now)
 	{
 		CTime delta = inTime - now;
 		// if alarm is more than 1µs away, set up interrupt
 		if (delta > CTime(1*kMicroseconds))
 		{
-printf(" ->SetPlatformAlarm(%ld)\n", (long)delta);
+//printf(" ->SetPlatformAlarm(%ld)\n", (long)delta);
 			SetPlatformAlarm(delta);
 			isSet = true;
 		}
@@ -311,7 +311,7 @@ CTimerEngine::alarm(void)
 	{
 		// nothing in the queue, disable the timer interrupt
 		ClearAlarmAtomic();
-printf("CTimerEngine::alarm() empty queue\n");
+//printf("CTimerEngine::alarm() empty queue\n");
 	}
 
 	else
@@ -325,7 +325,7 @@ printf("CTimerEngine::alarm() empty queue\n");
 				if (MASKTEST(msg->fFlags, kSMemMsgFlags_TimerMask) == kSMemMsgFlags_Timer)
 					msg->fFlags = MASKCLEAR(msg->fFlags, kSMemMsgFlags_TimerMask);
 				// fire the callback
-printf("CTimerEngine::alarm() callback sender=%d notify=%d\n", msg->fSendingPort,msg->fNotify);
+//printf("CTimerEngine::alarm() callback sender=%d notify=%d\n", msg->fSendingPort,msg->fNotify);
 				msg->fCallback(msg->fCallbackData);
 			}
 		} while ((msg = (CSharedMemMsg *)peek()) != NULL && !SetAlarmAtomic(msg->fExpiryTime));	// if alarms in the queue, reset timer interrupt
@@ -342,7 +342,7 @@ CTimerEngine::queueTimer(CSharedMemMsg * inMsg, Timeout inTimeout, void * inData
 
 	checkBeforeAdd(inMsg);
 	if (MASKTEST(inMsg->fFlags, kSMemMsgFlags_TimerMask) != 0)
-		return NO;	// message is already timed
+		return false;	// message is already timed
 	
 	inMsg->fCallbackData = inData;
 	inMsg->fCallback = inProc;
@@ -365,7 +365,7 @@ CTimerEngine::queueTimeout(CSharedMemMsg * inMsg)
 	bool	isQueued;
 
 	if (inMsg->fTimeout == kTimeOutImmediate)
-		return NO;
+		return false;
 	
 	inMsg->fCallbackData = inMsg;
 	inMsg->fCallback = (TimeoutProcPtr) QueueNotify;
@@ -407,7 +407,7 @@ CTimerEngine::queueDelay(CSharedMemMsg * inMsg)
 bool
 CTimerEngine::queue(CSharedMemMsg * inMsg)
 {
-	bool	isSet = YES;
+	bool	isSet = true;
 	CSharedMemMsg *	msg;
 
 	EnterAtomic();
@@ -419,7 +419,7 @@ CTimerEngine::queue(CSharedMemMsg * inMsg)
 			if (inMsg->fExpiryTime < msg->fExpiryTime)
 			{
 				// message will expire before this message in queue
-printf("CTimerEngine::queue() %d -> %d\n", inMsg->fSendingPort,inMsg->fNotify);
+//printf("CTimerEngine::queue() %d -> %d\n", inMsg->fSendingPort,inMsg->fNotify);
 				if (msg == peek())
 				{
 					if ((isSet = SetAlarmAtomic(inMsg->fExpiryTime)))	// intentional assignment
@@ -440,7 +440,7 @@ printf("CTimerEngine::queue() %d -> %d\n", inMsg->fSendingPort,inMsg->fNotify);
 	else
 	{
 		// queue is empty
-printf("CTimerEngine::queue() empty sender=%d notify=%d\n", inMsg->fSendingPort,inMsg->fNotify);
+//printf("CTimerEngine::queue() empty sender=%d notify=%d\n", inMsg->fSendingPort,inMsg->fNotify);
 		if ((isSet = SetAlarmAtomic(inMsg->fExpiryTime)))	// intentional assignment
 			// alarm was set OK, add message to the queue
 			addToFront(inMsg);
@@ -458,7 +458,7 @@ void
 CTimerEngine::remove(CSharedMemMsg * inMsg)
 {
 	EnterAtomic();
-	if (gTimerDeferred->removeFromQueue(inMsg) == NO)
+	if (gTimerDeferred->removeFromQueue(inMsg) == false)
 	{
 		// message wasn’t in the gTimerDeferred queue
 		if (inMsg == peek())
@@ -510,10 +510,10 @@ CRealTimeAlarm::init(ULong inTime, ObjectId inPortId, ObjectId inMsgId, void * i
 	fData = inData;
 	fDataSize = inDataSize;
 	fError = noErr;
-	fIsWakeUp = YES;
-	fIsHandler = NO;
-	fIsRelative = NO;
-	fIsEnabled = YES;
+	fIsWakeUp = true;
+	fIsHandler = false;
+	fIsRelative = false;
+	fIsEnabled = true;
 }
 
 
@@ -534,7 +534,7 @@ CRealTimeAlarm::init(ULong inTime, NewtonInterruptHandler inHandler, void * inDa
 {
 	fIsRelative = inRelative;
 	fIsWakeUp = inWakeUp;
-	fIsHandler = YES;
+	fIsHandler = true;
 	fHandler = inHandler;
 	fData = inData;
 	fError = noErr;
@@ -544,13 +544,13 @@ CRealTimeAlarm::init(ULong inTime, NewtonInterruptHandler inHandler, void * inDa
 		while (Swap(ioLock, 1) != 0)
 			;				// acquire lock
 		fTime = GetRealTimeClock() + inTime;
-		fIsEnabled = YES;
+		fIsEnabled = true;
 		*ioLock = 0;	// release lock
 	}
 	else
 	{
 		fTime = inTime;
-		fIsEnabled = YES;
+		fIsEnabled = true;
 	}
 }
 
@@ -641,10 +641,10 @@ CRealTimeClock::init(void)
 	for (ArrayIndex slot = 0; slot < kNumOfAlarms; slot++)
 	{
 		gAlarm[slot].fName = 0;
-		gAlarm[slot].fIsEnabled = NO;
+		gAlarm[slot].fIsEnabled = false;
 	}
 
-	fAlarmSet = NO;
+	fAlarmSet = false;
 	fChangingTime = 0;
 	fUpdatingAlarm = 0;
 	fFixUp = 0;
@@ -668,7 +668,7 @@ CRealTimeClock::setRealTimeClock(ULong inTime)
 		;	// acquire lock
 
 	ClearRealTimeClockAlarm();
-	fAlarmSet = NO;
+	fAlarmSet = false;
 
 	// keep writing the time to the RTC hardware until it’s set correctly
 	ULong oldTime = GetRealTimeClock();
@@ -751,7 +751,7 @@ CRealTimeClock::checkOut(ULong inName)
 	if (slot != kIndexNotFound)
 	{
 		gAlarm[slot].fName = 0;
-		gAlarm[slot].fIsEnabled = NO;
+		gAlarm[slot].fIsEnabled = false;
 	}
 	return noErr;
 }
@@ -789,7 +789,7 @@ CRealTimeClock::findSlot(ULong inName)
 ------------------------------------------------------------------------------*/
 
 NewtonErr
-CRealTimeClock::setAlarm(ULong inName, CTime inTime, ObjectId inPortId, ObjectId inMsgId, void * inData, long inDataSize, ULong inType)
+CRealTimeClock::setAlarm(ULong inName, CTime inTime, ObjectId inPortId, ObjectId inMsgId, void * inData, size_t inDataSize, ULong inType)
 {
 	ArrayIndex	slot = findSlot(inName);
 	if (slot == kIndexNotFound)
@@ -797,7 +797,7 @@ CRealTimeClock::setAlarm(ULong inName, CTime inTime, ObjectId inPortId, ObjectId
 
 	CRealTimeAlarm * rta = &gAlarm[slot];
 	rta->init(inTime.convertTo(kSeconds), inPortId, inMsgId, inData, inDataSize, inType);
-	if (primSetAlarm(rta->fTime) == NO)
+	if (primSetAlarm(rta->fTime) == false)
 		cleanUp();
 	return noErr;
 }
@@ -825,7 +825,7 @@ CRealTimeClock::setAlarm(ULong inName, ULong inTime, NewtonInterruptHandler inHa
 
 	CRealTimeAlarm * rta = &gAlarm[slot];
 	rta->init(inTime, inHandler, inData, inWakeUp, inRelative, &fChangingTime);
-	if (primSetAlarm(rta->fTime) == NO)
+	if (primSetAlarm(rta->fTime) == false)
 		cleanUp();
 	return noErr;
 }
@@ -834,7 +834,7 @@ CRealTimeClock::setAlarm(ULong inName, ULong inTime, NewtonInterruptHandler inHa
 /*------------------------------------------------------------------------------
 	Set the alarm.
 	Args:		inTime			time in seconds to execute the alarm
-	Return:	YES if successful
+	Return:	true if successful
 ------------------------------------------------------------------------------*/
 
 bool
@@ -848,24 +848,24 @@ CRealTimeClock::primSetAlarm(ULong inTime)
 		else
 		{
 			if (primRawSetAlarm(inTime))
-				return YES;
+				return true;
 			cleanUp();
 		}
 	}
-	return NO;
+	return false;
 }
 
 
 /*------------------------------------------------------------------------------
 	Set the alarm. Yes, really do it this time.
 	Args:		inTime			time in seconds to execute the alarm
-	Return:	YES if successful
+	Return:	true if successful
 ------------------------------------------------------------------------------*/
 
 bool
 CRealTimeClock::primRawSetAlarm(ULong inTime)
 {
-	bool wasSet = YES;
+	bool wasSet = true;
 
 	if (fAlarmSet && inTime < fCurrentAlarm)
 	{
@@ -873,10 +873,10 @@ CRealTimeClock::primRawSetAlarm(ULong inTime)
 		if (inTime > GetRealTimeClock())
 		{
 			fCurrentAlarm = inTime;
-			fAlarmSet = YES;
+			fAlarmSet = true;
 		}
 		else
-			wasSet = NO;
+			wasSet = false;
 	}
 
 	return wasSet;
@@ -896,7 +896,7 @@ CRealTimeClock::clearAlarm(ULong inName)
 	if (slot == kIndexNotFound)
 		return -1;
 
-	gAlarm[slot].fIsEnabled = NO;
+	gAlarm[slot].fIsEnabled = false;
 	cleanUp();
 	return noErr;
 }
@@ -934,7 +934,7 @@ CRealTimeClock::alarmStatus(ULong inName, bool * outActive, CTime * outAlarmTime
 /*------------------------------------------------------------------------------
 	Fire any alarms that are primed to go off now, but don’t wake the Newt.
 	Args:		--
-	Return:	YES
+	Return:	true
 ------------------------------------------------------------------------------*/
 
 bool
@@ -946,17 +946,17 @@ CRealTimeClock::checkAlarmsStaySleeping(void)
 
 	do
 	{
-		gotATime = NO;
+		gotATime = false;
 		for (int slot = 0; slot < kNumOfAlarms; slot++)
 		{
 			CRealTimeAlarm * rta = &gAlarm[slot];
 			if (rta->fIsEnabled && rta->fTime < now)
 			{
 				if (rta->fIsWakeUp)
-					return NO;
+					return false;
 
 				rta->fire(now);
-				fAlarmSet = NO;
+				fAlarmSet = false;
 			}
 			if (rta->fIsEnabled)
 			{
@@ -967,15 +967,15 @@ CRealTimeClock::checkAlarmsStaySleeping(void)
 				}
 				else
 				{
-					gotATime = YES;
+					gotATime = true;
 					nextAlarmTime = rta->fTime;
 				}
 			}
 		}
 		ClearRealTimeClockAlarm();
-	} while (gotATime && primRawSetAlarm(nextAlarmTime) == NO);
+	} while (gotATime && primRawSetAlarm(nextAlarmTime) == false);
 
-	return YES;
+	return true;
 }
 
 
@@ -999,11 +999,11 @@ CRealTimeClock::alarm(void)
 
 		ClearRealTimeClockAlarm();
 		GetRealTimeClock();	// sic
-		fAlarmSet = NO;
+		fAlarmSet = false;
 
 		do
 		{
-			gotATime = NO;
+			gotATime = false;
 			fFixUp = 0;
 			// step thru the timer table
 			for (ArrayIndex slot = 0; slot < kNumOfAlarms; ++slot)
@@ -1022,12 +1022,12 @@ CRealTimeClock::alarm(void)
 					}
 					else
 					{
-						gotATime = YES;
+						gotATime = true;
 						nextAlarmTime = rta->fTime;
 					}
 				}
 			}
-		} while (fFixUp || (gotATime && primRawSetAlarm(nextAlarmTime) == NO));
+		} while (fFixUp || (gotATime && primRawSetAlarm(nextAlarmTime) == false));
 
 		fUpdatingAlarm = 0;
 	} while (fFixUp);
@@ -1052,7 +1052,7 @@ struct RTCMessage
 	ObjectId	msgId;		// +14
 	ULong		type;			// +18
 	void *	obj;			// +1C
-	long		objSize;		// +20
+	size_t	objSize;		// +20
 	bool		isWakeUp;	// +24
 	bool		isHandler;	// +28
 	NewtonInterruptHandler	handler;	// +2C
@@ -1224,7 +1224,7 @@ CURealTimeAlarm::checkOut(ULong inName)
 ------------------------------------------------------------------------------*/
 
 NewtonErr
-CURealTimeAlarm::setAlarm(ULong inName, CTime inTime, ObjectId inPortId, ObjectId inMsgId, void * inData, long inDataSize, ULong inType)
+CURealTimeAlarm::setAlarm(ULong inName, CTime inTime, ObjectId inPortId, ObjectId inMsgId, void * inData, size_t inDataSize, ULong inType)
 {
 	RTCMessage * msg = (RTCMessage *)TaskSwitchedGlobals()->fParams;
 	msg->selector = kSetAlarmMessage;
@@ -1397,7 +1397,6 @@ CTime::convertTo(TimeUnits inUnits)
 }
 
 #pragma mark -
-
 /*------------------------------------------------------------------------------
 	P u b l i c   I n t e r f a c e   t o   C T i m e
 ------------------------------------------------------------------------------*/

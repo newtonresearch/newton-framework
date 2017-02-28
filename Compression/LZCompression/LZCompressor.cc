@@ -434,11 +434,11 @@ PROTOCOL_IMPL_SOURCE_MACRO(CLZCompressor)
 CLZCompressor *
 CLZCompressor::make(void)
 {
-	fMemFlag = YES;
+	fMemFlag = true;
 	fMaxNode = 512;
 	fAvailNode = (TTNode *)NewPtr(512*sizeof(TTNode));
 	if (fAvailNode == NULL)
-		fMemFlag = NO;
+		fMemFlag = false;
 	fBitStack = new CPushPopper;
 	return this;
 }
@@ -518,8 +518,8 @@ CLZCompressor::compressChunk(size_t * outSize, void * inDstBuf, size_t inDstLen,
 	size_t	doneSize;
 	size_t	srcUsed = 0;
 	size_t	srcRemaining;
-	bool		isFirstBlock = YES;
-	bool		isLastBlock = NO;
+	bool		isFirstBlock = true;
+	bool		isLastBlock = false;
 
 	if (!fMemFlag)
 		return kOSErrNoMemory;
@@ -529,12 +529,12 @@ CLZCompressor::compressChunk(size_t * outSize, void * inDstBuf, size_t inDstLen,
 		fNumNodes = 0;
 		if ((srcRemaining = inSrcLen - srcUsed) <= blockSize)
 		{
-			isLastBlock = YES;
+			isLastBlock = true;
 			blockSize = srcRemaining;
 		}
 		if (isFirstBlock)
 		{
-			isFirstBlock = NO;
+			isFirstBlock = false;
 			if (blockSize > 0)
 				compressBlock(&doneSize, dstPtr + sizeof(size_t), inDstLen, srcPtr, blockSize);
 			else
@@ -564,7 +564,7 @@ CLZCompressor::compressBlock(size_t * outSize, void * inDstBuf, size_t inDstLen,
 	size_t	literalLen = 0;	// r5
 	size_t	length = 0;			// r6
 
-	fFreeze = NO;
+	fFreeze = false;
 	for (ArrayIndex i = 0; i < 256; ++i)
 		fNode[i] = NULL;
 
@@ -582,7 +582,7 @@ CLZCompressor::compressBlock(size_t * outSize, void * inDstBuf, size_t inDstLen,
 	node->sibling = NULL;
 */
 	fBitStack->setWriteBuffer((UChar *)inDstBuf, 2*kSubPageSize);	// ignores inDstLen!
-	fBinaryFlag = YES;
+	fBinaryFlag = true;
 	fBitStack->pushBits(8, 0);
 	fBitStack->pushBits(8, fBinaryFlag);
 	fBitStack->pushBits(16, 0);
@@ -664,7 +664,7 @@ CLZCompressor::codeword_gen_bin(size_t inCopyLen, long inOffset, size_t inLitera
 	{
 		if (!fLitFlag)
 			inCopyLen--;
-		fLitFlag = YES;
+		fLitFlag = true;
 		encode_copy_length_bin_huff4(inCopyLen - 2);
 		encode_offset_bin(inOffset, inLen);
 	}
@@ -800,7 +800,7 @@ CLZCompressor::talloc(void)
 {
 	TTNode * node;
 	if (fNumNodes == fMaxNode - 1)
-		fFreeze = YES;
+		fFreeze = true;
 	node = &fAvailNode[fNumNodes++];	// no fNumNodes overflow chcking here!
 	node->start = 0;
 	node->level = 0;

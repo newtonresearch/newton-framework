@@ -19,7 +19,7 @@ CTimerElement::CTimerElement(CTimerQueue * inQ, ULong inRefCon)
 {
 	fQueue = inQ;
 	fDelta = kNoTimeout;
-	fPrimed = NO;
+	fPrimed = false;
 	fNext = NULL;
 	fRefCon = inRefCon;
 }
@@ -34,7 +34,7 @@ CTimerElement::~CTimerElement()
 /*--------------------------------------------------------------------------------
 	Prime the element to fire at a future time.
 	Args:		inDelta			offset to time to fire
-	Return:	YES => success
+	Return:	true => success
 --------------------------------------------------------------------------------*/
 
 bool
@@ -43,7 +43,7 @@ CTimerElement::prime(Timeout inDelta)
 	if (fQueue && inDelta)
 	{
 		if (fPrimed)
-			fQueue->dequeue(this, YES);
+			fQueue->dequeue(this, true);
 		fDelta = inDelta;
 		fQueue->calibrate();
 		fQueue->enqueue(this);
@@ -55,15 +55,15 @@ CTimerElement::prime(Timeout inDelta)
 /*--------------------------------------------------------------------------------
 	Cancel the element -- stop it from firing.
 	Args:		--
-	Return:	YES => success
+	Return:	true => success
 --------------------------------------------------------------------------------*/
 
 bool
 CTimerElement::cancel(void)
 {
 	if (fPrimed && fQueue)
-		fQueue->dequeue(this, YES);
-	return YES;
+		fQueue->dequeue(this, true);
+	return true;
 }
 
 
@@ -77,7 +77,7 @@ CTimerQueue::CTimerQueue()
 {
 	fHead = NULL;
 	fLastCalibrate = GetGlobalTime();
-	fTimeoutInProgress = NO;
+	fTimeoutInProgress = false;
 }
 
 
@@ -100,16 +100,16 @@ CTimerQueue::check(void)
 	{
 		calibrate();
 
-		fTimeoutInProgress = YES;
+		fTimeoutInProgress = true;
 		for (CTimerElement * element = fHead, * next; element != NULL; element = next)
 		{
 			if (element->fDelta > 4*kMicroseconds)
 				break;
 			next = element->fNext;
-			dequeue(element, NO);
+			dequeue(element, false);
 			element->timeout();
 		}
-		fTimeoutInProgress = NO;
+		fTimeoutInProgress = false;
 
 		if (fHead)
 			return fHead->fDelta;
@@ -140,7 +140,7 @@ CTimerQueue::cancel(ULong inRefCon)
 			else
 				fHead = element->fNext;
 			element->fNext = NULL;
-			element->fPrimed = NO;
+			element->fPrimed = false;
 			break;
 		}
 		prev = element;
@@ -183,9 +183,9 @@ CTimerQueue::enqueue(CTimerElement * inItem)
 			Timeout  delta = element->fDelta - inItem->fDelta;
 			inItem->fDelta = MAX(4*kMicroseconds, delta);
 		}
-		inItem->fPrimed = YES;
+		inItem->fPrimed = true;
 		element = inItem;
-printf("CTimerQueue::enqueue(item.delta = %d)\n", inItem->fDelta);
+//printf("CTimerQueue::enqueue(item.delta = %d)\n", inItem->fDelta);
 	}
 	return element;
 }
@@ -194,7 +194,7 @@ printf("CTimerQueue::enqueue(item.delta = %d)\n", inItem->fDelta);
 /*--------------------------------------------------------------------------------
 	Remove an element from the queue.
 	Args:		inItem			the item to remove
-				inAdjust			YES => account for the element’s timeout so that future elements still fire at the same time
+				inAdjust			true => account for the element’s timeout so that future elements still fire at the same time
 	Return:	the element
 --------------------------------------------------------------------------------*/
 
@@ -216,7 +216,7 @@ CTimerQueue::dequeue(CTimerElement * inItem, bool inAdjust)
 				else
 					fHead = element->fNext;
 				element->fNext = NULL;
-				element->fPrimed = NO;
+				element->fPrimed = false;
 				break;
 			}
 			prev = element;
@@ -298,7 +298,8 @@ CTimerPort::init(void)
 	XTRY
 	{
 		XFAIL(err = CUPort::init())
-		XFAILNOT(fQueue = new CTimerQueue, err = MemError();)
+		fQueue = new CTimerQueue;
+		XFAILIF(fQueue == NULL, err = MemError();)
 	}
 	XENDTRY;
 	return err;

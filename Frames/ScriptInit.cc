@@ -19,6 +19,7 @@
 
 #if !defined(correct)
 extern void			MakeROMResources(void);
+extern bool			EnableFramesFunctionProfiling(bool inEnable);
 #endif
 extern void			InitMagicPointerTables(void);
 extern void			InitSymbols(void);
@@ -29,6 +30,7 @@ extern void			InitQueries(void);
 
 extern Ref				gInheritanceFrame;
 extern const Ref *	gTagCache;
+extern ArrayIndex		gCurrentStackPos;
 
 
 #if 0
@@ -63,12 +65,12 @@ void
 InitObjects(void)
 {
 #if !defined(correct)
-	MakeROMResources();		// load NS data and C function pointers
+	MakeROMResources();		// load NS data
 #endif
 
-	gCurrentStackPos =		// some confusion over what this is
-	gNewtGlobals->lastId = 1;
-	gHeap = new CObjectHeap(InternalRAMInfo(kFramesHeapAlloc), YES);
+	gCurrentStackPos =
+	gNewtGlobals->stackPos = 1;
+	gHeap = new CObjectHeap(InternalRAMInfo(kFramesHeapAlloc), true);
 
 	AddGCRoot(&gFunctionFrame);
 	AddGCRoot(&(gVarFrame = AllocateFrame()));
@@ -100,7 +102,7 @@ void
 InitScriptGlobals(void)
 {
 //	Add all the (nil) slots we need to global vars
-	RefVar	newVars(Clone(gConstNSData->vars));
+	RefVar	newVars(Clone(RA(varsMapStarter)));		//gConstNSData->vars
 	CObjectIterator	varsIter(gVarFrame);
 	RefVar	tag, value;
 	for ( ; !varsIter.done(); varsIter.next())
@@ -120,7 +122,7 @@ InitScriptGlobals(void)
 	gTagCache = Slots(RA(slotCacheTable));
 
 //	Add extra global functions
-	CObjectIterator	funcIter(gConstNSData->externalFunctions);
+	CObjectIterator	funcIter(gConstNSData->externalFunctions);	//RA(gFunky)
 	for ( ; !funcIter.done(); funcIter.next())
 	{
 		tag = funcIter.tag();
@@ -137,11 +139,13 @@ InitScriptGlobals(void)
 	SetFrameSlot(RA(gVarFrame), SYMA(functions), RA(gFunctionFrame));
 	SetFrameSlot(RA(gVarFrame), SYMA(vars), RA(gVarFrame));
 // ••
+//SetFrameSlot(RA(gVarFrame), SYMA(trace), SYMA(functions));	// switch on function tracing
+//EnableFramesFunctionProfiling(true);
 
 //	Set up key vars
 	newton_try
 	{
-		DoBlock(gConstNSData->initGlobalsFunc, RA(NILREF));
+		DoBlock(RA(bootInitNSGlobals), RA(NILREF));		//gConstNSData->initGlobalsFunc
 	}
 	newton_catch(exRootException)
 	{ }
@@ -161,7 +165,7 @@ RunInitScripts(void)
 {
 	newton_try
 	{
-		DoBlock(gConstNSData->initScriptsFunc, RA(NILREF));
+		DoBlock(RA(bootRunInitScripts), RA(NILREF));		//gConstNSData->initScriptsFunc
 	}
 	newton_catch(exRootException)
 	{ }

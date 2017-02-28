@@ -606,7 +606,7 @@ NewFakeHandle(void * inAddr, size_t inSize)
 /*------------------------------------------------------------------------------
 	Determine whether a handle is genuine or fake.
 	Args:		inH			the handle in question
-	Return:	YES => it’s a fake
+	Return:	true => it’s a fake
 ------------------------------------------------------------------------------*/
 
 bool

@@ -135,7 +135,7 @@ DeleteEntryFromCache(RefArg inCache, RefArg inEntry)
 {
 	for (ArrayIndex i = 0, count = Length(inCache); i < count; ++i)
 	{
-		if (EQRef(GetArraySlot(inCache, i), inEntry))
+		if (EQ(GetArraySlot(inCache, i), inEntry))
 			SetArraySlot(inCache, i, RA(NILREF));
 	}
 }
@@ -314,7 +314,7 @@ CommonSoupAddEntry(RefArg inRcvr, RefArg inFrame, unsigned char inFlags)	// the 
 			if (uid >= nextUId)
 			{
 				nextUId = uid;
-				updateNextUId = YES;
+				updateNextUId = true;
 			}
 		}
 		if (updateNextUId)
@@ -322,11 +322,11 @@ CommonSoupAddEntry(RefArg inRcvr, RefArg inFrame, unsigned char inFlags)	// the 
 		if (NOTNIL(GetFrameSlot(soupIndexInfo, SYMA(lastUId))))
 		{
 			SetFrameSlot(soupIndexInfo, SYMA(lastUId), RA(NILREF));
-			SoupChanged(soupIndexInfo, NO);
+			SoupChanged(soupIndexInfo, false);
 			WriteFaultBlock(soupIndexInfo);
 		}
 		else
-			SoupChanged(soupIndexInfo, YES);
+			SoupChanged(soupIndexInfo, true);
 	}
 	cleanup
 	{
@@ -483,7 +483,7 @@ SoupAdd(RefArg inRcvr, RefArg inFrame)
 {
 	RefVar args(MakeArray(1));
 	SetArraySlot(args, 0, inFrame);
-	return DoMessage(inRcvr, SYMA(add), args);
+	return DoMessage(inRcvr, SYMA(Add), args);
 }
 
 
@@ -492,7 +492,7 @@ SoupAddWithUniqueID(RefArg inRcvr, RefArg inFrame)
 {
 	RefVar args(MakeArray(1));
 	SetArraySlot(args, 0, inFrame);
-	return DoMessage(inRcvr, SYMA(addWithUniqueId), args);
+	return DoMessage(inRcvr, SYMA(AddWithUniqueId), args);
 }
 
 

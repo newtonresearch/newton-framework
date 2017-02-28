@@ -28,6 +28,10 @@ Ref	FLFetch(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inStart, RefArg
 Ref	FLSearch(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inStart, RefArg inTest, RefArg inKey);
 
 Ref	FSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey);
+Ref	FInsertionSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey);
+Ref	FStableSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey);
+Ref	FQuickSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey);
+Ref	FShellSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey);
 
 Ref	FBFetch(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey);
 Ref	FBFetchRight(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey);
@@ -172,7 +176,7 @@ CGeneralizedTestFnVar::CGeneralizedTestFnVar(RefArg inTest, RefArg inKey, bool i
 
 	if (ISNIL(inKey))
 		fKeyType = kKeyNil;
-	else if (ISINT(inKey) || IsSymbol(inKey) || EQRef(ClassOf(inKey), RSYMpathExpr))
+	else if (ISINT(inKey) || IsSymbol(inKey) || EQ(ClassOf(inKey), SYMA(pathExpr)))
 	{
 		fKey = inKey;
 		fKeyType = kKeyPath;
@@ -332,7 +336,6 @@ QSUtil(Ref * inFirstElem, Ref * inLastElem, CGeneralizedTestFnVar & inTest)
 	{
 		lb = lbStack[sp];
 		ub = ubStack[sp];
-//L26
 		if ((ub - lb)  > 10)
 		{
 			// select pivot and exchange with last element
@@ -349,7 +352,6 @@ QSUtil(Ref * inFirstElem, Ref * inLastElem, CGeneralizedTestFnVar & inTest)
 				Exchange(left, right);
 				Exchange(leftValue, rightValue);
 			}
-//L74
 			pivotValue = inTest.applyKey(ub);
 			if (inTest.applyTest(pivotValue, rightValue) > 0)
 			{
@@ -357,28 +359,24 @@ QSUtil(Ref * inFirstElem, Ref * inLastElem, CGeneralizedTestFnVar & inTest)
 				Exchange(ub, right);
 				pivotValue = rightValue;
 			}
-//L92
 			else if (inTest.applyTest(pivotValue, leftValue) < 0)
 			{
 				// *ub < *left
 				Exchange(ub, left);
 				pivotValue = leftValue;
 			}
-//L106
 			// partition into two segments
 			while (left < right)
 			{
 				while (++left < right
 					&&  inTest.applyTest(pivotValue, left) > 0)
 					;
-//L124
 				while (--right > left
 					&&  inTest.applyTest(pivotValue, right) < 0)
 					;
 
 				Exchange(left, right);
 			}
-//L149
 			// pivot belongs in a[left]
 			Exchange(ub, left);
 			m = left;
@@ -394,7 +392,6 @@ QSUtil(Ref * inFirstElem, Ref * inLastElem, CGeneralizedTestFnVar & inTest)
 			}
 			else
 			{
-//L174
 				// 2nd segment is larger; stack it and move upper bound down to end of prev segment
 				lbStack[sp] = m + 1;
 				ubStack[sp] = ub;
@@ -403,7 +400,6 @@ QSUtil(Ref * inFirstElem, Ref * inLastElem, CGeneralizedTestFnVar & inTest)
 			}
 		}
 
-//L185
 		else
 		{
 			// for short segments do a (stable, in-place) bubble sort
@@ -411,7 +407,6 @@ QSUtil(Ref * inFirstElem, Ref * inLastElem, CGeneralizedTestFnVar & inTest)
 			Ref *		p;		// r6
 			for (p = lb; p <= ub; p++)
 			{
-//L190
 				a = inTest.applyKey(*p);
 				for (m = p - 1; m >= inFirstElem; Exchange(m, m+1), m--)
 				{
@@ -419,7 +414,6 @@ QSUtil(Ref * inFirstElem, Ref * inLastElem, CGeneralizedTestFnVar & inTest)
 						break;
 				}
 			}
-//L225
 		}
 	}
 }
@@ -458,7 +452,7 @@ QSort(RefArg ioArray, CGeneralizedTestFnVar & inTest)
 void
 SortArray(RefArg ioArray, RefArg inTest, RefArg inKey)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	QSort(ioArray, testFn);
 }
 
@@ -503,7 +497,7 @@ LSearch(RefArg inArray, RefArg inItem, RefArg inStart, RefArg inTest, RefArg inK
 		if (EQ(inTest, SYMA(_3D)))	// '=
 		{
 			for (arrayItem = arrayStart + startIndex; arrayItem < arrayEnd; arrayItem++)
-				if (EQRef(*arrayItem, inItem))
+				if (EQ(*arrayItem, inItem))
 				{
 					index = (arrayItem - arrayStart) / sizeof(Ref);
 					break;
@@ -518,7 +512,7 @@ LSearch(RefArg inArray, RefArg inItem, RefArg inStart, RefArg inTest, RefArg inK
 		Ref *	arrayStart = Slots(inArray);
 		Ref *	arrayEnd = arrayStart + arrayLen;
 		Ref *	arrayItem;
-		CGeneralizedTestFnVar testFn(inTest, inKey, YES);
+		CGeneralizedTestFnVar testFn(inTest, inKey, true);
 		for (arrayItem = arrayStart + startIndex; arrayItem < arrayEnd; arrayItem++)
 		{
 			if (testFn.applyTest(inItem, arrayItem) == kItemEqualCriteria)
@@ -638,11 +632,78 @@ BSearchRight(RefArg inArray, RefArg inItem, CGeneralizedTestFnVar & inTestFn)
 	S o r t e d   F u n c t i o n s
 ------------------------------------------------------------------------------*/
 
+
+void
+ShellSortUtil(RefArg ioArray, CGeneralizedTestFnVar & inTest, int inGap)
+{
+	if (!IsArray(ioArray))
+		ThrowBadTypeWithFrameData(kNSErrNotAnArray, ioArray);
+
+	LockRef(ioArray);
+	unwind_protect
+	{
+		// see http://faculty.simpson.edu/lydia.sinapova/www/cmsc250/LN250_Weiss/L12-ShellSort.htm
+		RefVar tmp;
+		RefVar a1;
+		Ref * a2;
+		Ref * slots = Slots(ioArray);
+		Ref * slotLimit = slots + Length(ioArray);
+		for (int gap = inGap; gap > 0; gap /= 3)
+		{
+			for (Ref * p = slots + gap; p < slotLimit; ++p)
+			{
+				tmp = *p;
+				a1 = inTest.applyKey(tmp);
+				a2 = p - gap;
+				for ( ; a2 >= slots; a2 -= gap)
+				{
+					if (inTest.applyTest(a1, a2) >= 0)
+						break;
+					a2[gap] = a2[0];
+				}
+				a2[gap] = tmp;
+			}
+		}
+	}
+	on_unwind
+	{
+		UnlockRef(ioArray);
+	}
+	end_unwind;
+}
+
+
+void
+MergeSort(RefArg ioArray, CGeneralizedTestFnVar & inTest)
+{
+	if (!IsArray(ioArray))
+		ThrowBadTypeWithFrameData(kNSErrNotAnArray, ioArray);
+
+	ArrayIndex arrayLen = Length(ioArray);
+	if (arrayLen < 4)
+		ShellSortUtil(ioArray, inTest, 1);	// just do an insertion sort
+	else
+	{
+		;
+		// INCOMPLETE
+	}
+}
+
+
+Ref
+FSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey)	// is a QuickSort
+{
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
+	QSort(ioArray, testFn);
+	return ioArray;
+}
+
+
 Ref
 FInsertionSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
-//	ShellSortUtil(ioArray, testFn, 1);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
+	ShellSortUtil(ioArray, testFn, 1);
 	return ioArray;
 }
 
@@ -650,17 +711,31 @@ FInsertionSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey)
 Ref
 FStableSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
-//	MergeSort(ioArray, testFn);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
+	MergeSort(ioArray, testFn);
 	return ioArray;
 }
 
 
 Ref
-FSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey)
+FQuickSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey)	// the generic Sort
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	QSort(ioArray, testFn);
+	return ioArray;
+}
+
+
+Ref
+FShellSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey)
+{
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
+// see http://www.sorting-algorithms.com/shell-sort
+	ArrayIndex n = Length(ioArray);
+	int h = 1;
+	while (h < n)
+		h = 3*h + 1;
+	ShellSortUtil(ioArray, testFn, h/3);
 	return ioArray;
 }
 
@@ -668,7 +743,7 @@ FSort(RefArg inRcvr, RefArg ioArray, RefArg inTest, RefArg inKey)
 Ref
 FBFetch(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	int index = BSearchLeft(inArray, inItem, testFn);
 	if (index < Length(inArray))
 	{
@@ -683,7 +758,7 @@ FBFetch(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKe
 Ref
 FBFetchRight(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	int index = BSearchRight(inArray, inItem, testFn);
 	if (index >= 0)
 	{
@@ -698,7 +773,7 @@ FBFetchRight(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg
 Ref
 FBFind(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	int index = BSearchLeft(inArray, inItem, testFn);
 	if (index < Length(inArray))
 	{
@@ -713,7 +788,7 @@ FBFind(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey
 Ref
 FBFindRight(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	int index = BSearchRight(inArray, inItem, testFn);
 	if (index >= 0)
 	{
@@ -728,7 +803,7 @@ FBFindRight(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg 
 Ref
 FBSearchLeft(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	return MAKEINT(BSearchLeft(inArray, inItem, testFn));
 }
 
@@ -736,7 +811,7 @@ FBSearchLeft(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg
 Ref
 FBSearchRight(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	return MAKEINT(BSearchRight(inArray, inItem, testFn));
 }
 
@@ -744,7 +819,7 @@ FBSearchRight(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefAr
 Ref
 FBInsert(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey, RefArg inUniqueOnly)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	RefVar key(testFn.applyKey(inItem));
 	int index = BSearchLeft(inArray, key, testFn);
 	if (NOTNIL(inUniqueOnly) && index < Length(inArray))
@@ -763,7 +838,7 @@ FBInsert(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inK
 Ref
 FBInsertRight(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey, RefArg inUniqueOnly)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	RefVar key(testFn.applyKey(inItem));
 	int index = BSearchRight(inArray, key, testFn);
 	if (NOTNIL(inUniqueOnly) && index >= 0)
@@ -782,7 +857,7 @@ FBInsertRight(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefAr
 Ref
 FBDelete(RefArg inRcvr, RefArg inArray, RefArg inItem, RefArg inTest, RefArg inKey, RefArg inCount)
 {
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);
 	int i, index = BSearchLeft(inArray, inItem, testFn);
 	int indexLimit = Length(inArray);
 	if (ISINT(inCount))
@@ -817,7 +892,7 @@ GenOrderedSetOp(RefArg inArray1, RefArg inArray2, RefArg inTest, RefArg inKey, i
 
 	int count, spB4, spB8, spBC, spC0;
 //sp-28
-	CGeneralizedTestFnVar testFn(inTest, inKey, NO);	// sp04
+	CGeneralizedTestFnVar testFn(inTest, inKey, false);	// sp04
 	RefVar theArray(MakeArray(inArg7));
 	LockRef(inArray1);
 	LockRef(inArray2);

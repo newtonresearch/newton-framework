@@ -99,7 +99,7 @@ Collapse(CDArray * ioPts)
 	Looking for a straight line:  ___
 	Args:		inPts			collapsed array of points
 				interp		interpretation record to complete
-	Return:	YES => straight line detected
+	Return:	true => straight line detected
 ----------------------------------------------------------------------------- */
 
 bool
@@ -112,9 +112,9 @@ TestLine(CDArray * inPts, UnitInterpretation * interp)
 		interp->angle = PtsToAngle(pt1, pt2);	// was GetSlope
 		interp->label = 4;
 		interp->score = 0;
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -131,7 +131,7 @@ Interpolate(FPoint * inPt1, FPoint * inPt2, float inRatio, FPoint * outPt)
 	Looking for a caret:  /\  or  /\_
 	Args:		inPts			collapsed array of points
 				interp		interpretation record to complete
-	Return:	YES => caret detected
+	Return:	true => caret detected
 ----------------------------------------------------------------------------- */
 
 bool
@@ -153,7 +153,7 @@ TestCarets(CDArray * ioPts, UnitInterpretation * interp)
 			{
 				// first stroke is shorter than the second by at least half
 				if (numOfPts == 4)
-					return NO;
+					return false;
 				// we’re going to add a point between 2 & 3
 				FPoint ptx;
 				Interpolate(&pt2, &pt3, d2/d1, &ptx);
@@ -182,7 +182,7 @@ TestCarets(CDArray * ioPts, UnitInterpretation * interp)
 				interp->label = 2;
 
 			else if (adtheta >= 100.0)
-				return NO;
+				return false;
 
 			else if (numOfPts == 3)
 				interp->label = 2;
@@ -198,12 +198,12 @@ TestCarets(CDArray * ioPts, UnitInterpretation * interp)
 					interp->label = 3;
 
 				else
-					return NO;
+					return false;
 			}
-			return YES;
+			return true;
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -211,12 +211,12 @@ TestCarets(CDArray * ioPts, UnitInterpretation * interp)
 	Looking for a scrub:  /\/\/
 	Args:		inPts			collapsed array of points
 				interp		interpretation record to complete
-	Return:	YES => scrub detected
+	Return:	true => scrub detected
 ----------------------------------------------------------------------------- */
 
 bool
 TestScrub(CDArray * inPts, FRect * inBox, UnitInterpretation * interp)
-{return NO;}
+{return false;}
 
 
 #pragma mark -
@@ -228,10 +228,10 @@ TestScrub(CDArray * inPts, FRect * inBox, UnitInterpretation * interp)
 CEdgeListDomain *
 CEdgeListDomain::make(CController * inController)
 {
-	CEdgeListDomain * domain;
+	CEdgeListDomain * domain = new CEdgeListDomain;
 	XTRY
 	{
-		XFAIL((domain = new CEdgeListDomain) == NULL)
+		XFAIL(domain == NULL)
 		XFAILIF(domain->iEdgeListDomain(inController) != noErr, domain->release(); domain = NULL;)
 	}
 	XENDTRY;
@@ -252,7 +252,7 @@ CEdgeListDomain::iEdgeListDomain(CController * inController)
 bool
 CEdgeListDomain::group(CRecUnit * inPiece, RecDomainInfo * info)
 {
-	bool isGrouped = NO;
+	bool isGrouped = false;
 	XTRY
 	{
 		CAreaList * areas = inPiece->getAreas();
@@ -266,7 +266,7 @@ CEdgeListDomain::group(CRecUnit * inPiece, RecDomainInfo * info)
 		newUnit->endSubs();
 		fController->newGroup(newUnit);
 
-		isGrouped = YES;
+		isGrouped = true;
 	}
 	XENDTRY;
 	return isGrouped;
@@ -353,10 +353,10 @@ CEdgeListDomain::findCorners(CRecUnit * inUnit)
 CEdgeListUnit *
 CEdgeListUnit::make(CRecDomain * inDomain, ULong inUnitType, CArray * inAreas)
 {
-	CEdgeListUnit * unit;
+	CEdgeListUnit * unit = new CEdgeListUnit;
 	XTRY
 	{
-		XFAIL((unit = new CEdgeListUnit) == NULL)
+		XFAIL(unit == NULL)
 		XFAILIF(unit->iEdgeListUnit(inDomain, inUnitType, inAreas) != noErr, unit->release(); unit = NULL;)
 	}
 	XENDTRY;

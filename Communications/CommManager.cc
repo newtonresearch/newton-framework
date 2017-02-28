@@ -12,16 +12,18 @@
 #include "VirtualMemory.h"
 #include "CMWorld.h"
 #include "CommManagerInterface.h"
+#include "Endpoint.h"
+#include "EndpointEvents.h"
 #include "Debugger.h"
 
-bool			GetCommManagerPort(CUPort * outPort);
+NewtonErr	GetCommManagerPort(CUPort * outPort);
 NewtonErr	InitializeCommHardware(void);
 NewtonErr	RegisterROMProtocols(void);
 NewtonErr	RegisterNetworkROMProtocols(void);
 NewtonErr	RegisterCommunicationsROMProtocols(void);
 
 
-Heap	gHALHeap;		// 0C100F7C
+Heap	gHALHeap;
 
 
 /*--------------------------------------------------------------------------------
@@ -39,10 +41,10 @@ InitializeCommManager(void)
 		InitializeCommHardware();
 
 		CUPort cmPort;
-		XFAILNOT(GetCommManagerPort(&cmPort), err = kCMErrAlreadyInitialized;)
+		XFAILIF(GetCommManagerPort(&cmPort) == noErr, err = kCMErrAlreadyInitialized;)
 
 		CCMWorld cmWorld;
-		XFAIL(err = cmWorld.init('cmgr', YES, 5*KByte))
+		XFAIL(err = cmWorld.init('cmgr', true, 5*KByte))
 
 		err = RegisterROMProtocols();
 	}
@@ -54,10 +56,10 @@ InitializeCommManager(void)
 /*--------------------------------------------------------------------------------
 	Ask the name server for the Communications Manager port.
 	Args:		outPort			the port
-	Return:	YES => we got it okay
+	Return:	error code
 --------------------------------------------------------------------------------*/
 
-bool
+NewtonErr
 GetCommManagerPort(CUPort * outPort)
 {
 	return GetOSPortFromName('cmgr', outPort);
@@ -73,9 +75,9 @@ GetCommManagerPort(CUPort * outPort)
 NewtonErr
 InitializeCommHardware(void)
 {
-	NewtonErr	err;
+	NewtonErr err;
 #if 0
-	Heap			saveHeap = GetHeap();
+	Heap saveHeap = GetHeap();
 	CHMOSerialVoyagerHardware	hw;	// +24
 
 	if ((err = NewVMHeap(0, 50000, &gHALHeap, 0)) == noErr)
@@ -87,7 +89,7 @@ InitializeCommHardware(void)
 			XFAILNOT(timer, err = kOSErrNoMemory;)
 			timer->init();
 
-			PTheSerChipRegistry *	serialRegistry = PTheSerChipRegistry::classInfo()->make();
+			PTheSerChipRegistry * serialRegistry = PTheSerChipRegistry::classInfo()->make();
 			if (serialRegistry)
 				serialRegistry->init();
 
@@ -97,7 +99,8 @@ InitializeCommHardware(void)
 
 			CSerialChipVoyager *	voyager;
 
-			XFAILNOT(voyager = CSerialChipVoyager::classInfo()->make(), err = MemError();)
+			voyager = CSerialChipVoyager::classInfo()->make();
+			XFAILIF(voyager == NULL, err = MemError();)
 			hw.f0C = 0x0F1C0000;
 			hw.f10 = 0;
 			hw.f18 = 0x00020000;
@@ -106,7 +109,8 @@ InitializeCommHardware(void)
 			if (voyager.initByOption(&hw.f00) != noErr)
 				voyager.delete();
 
-			XFAILNOT(voyager = CSerialChipVoyager::classInfo()->make(), err = MemError();)
+			voyager = CSerialChipVoyager::classInfo()->make();
+			XFAILIF(voyager == NULL, err = MemError();)
 			hw.f0C = 0x0F1D0000;
 			hw.f10 = 1;
 			hw.f14 = 'infr';
@@ -115,7 +119,8 @@ InitializeCommHardware(void)
 			if (voyager.initByOption(&hw.f00) != noErr)
 				voyager.delete();
 
-			XFAILNOT(voyager = CSerialChipVoyager::classInfo()->make(), err = MemError();)
+			voyager = CSerialChipVoyager::classInfo()->make();
+			XFAILIF(voyager == NULL, err = MemError();)
 			hw.f0C = 0x0F1E0000;
 			hw.f10 = 2;
 			hw.f14 = 'tblt';
@@ -124,7 +129,8 @@ InitializeCommHardware(void)
 			if (voyager.initByOption(&hw.f00) != noErr)
 				voyager.delete();
 
-			XFAILNOT(voyager = CSerialChipVoyager::classInfo()->make(), err = MemError();)
+			voyager = CSerialChipVoyager::classInfo()->make();
+			XFAILIF(voyager == NULL, err = MemError();)
 			hw.f0C = 0x0F1F0000;
 			hw.f10 = 3;
 			hw.f14 = 'mdem';
@@ -138,7 +144,7 @@ InitializeCommHardware(void)
 	}
 	if (FLAGTEST(gDebuggerBits, kDebuggerUseExtSerial))
 		InitSerialDebugging(1, 1, 'extr', 57600);
-	else if (FLAGTEST(gDebuggerBits, kDebuggerUseGeoPort)
+	else if (FLAGTEST(gDebuggerBits, kDebuggerUseGeoPort))
 		InitSerialDebugging(1, 1, 'gpdl', 57600);
 #else
 	err = noErr;
@@ -161,7 +167,9 @@ NewtonErr
 RegisterNetworkROMProtocols(void)
 {
 #if 0
+	// service
 	CAppleTalkService::classInfo()->registerProtocol();
+	// endpoint
 	CADSPEndpoint::classInfo()->registerProtocol();
 	CLocalTalkLink::classInfo()->registerProtocol();
 	CAppleTalkStack::classInfo()->registerProtocol();
@@ -174,23 +182,67 @@ NewtonErr
 RegisterCommunicationsROMProtocols(void)
 {
 #if 0
+	// services -- serial
 	CFaxService::classInfo()->registerProtocol();
 	CModemService::classInfo()->registerProtocol();
 	CMNPService::classInfo()->registerProtocol();
-	CAsync::classInfo()->registerProtocol();
-	CFramedAsync::classInfo()->registerProtocol();
-	CP3::classInfo()->registerProtocol();
-	CLocalTalk::classInfo()->registerProtocol();
-	CIrDA::classInfo()->registerProtocol();
-	CIR::classInfo()->registerProtocol();
-	CKeyboard::classInfo()->registerProtocol();
-	CTVRemote::classInfo()->registerProtocol();
-	CIRSniff::classInfo()->registerProtocol();
-	CIRProbe::classInfo()->registerProtocol();
+	CAsyncService::classInfo()->registerProtocol();
+	CFramedAsyncService::classInfo()->registerProtocol();
+	CP3ServiceService::classInfo()->registerProtocol();
+	CKeyboardService::classInfo()->registerProtocol();
+	// network
+	CLocalTalkService::classInfo()->registerProtocol();
+	// infra-red
+	CIrDAService::classInfo()->registerProtocol();
+	CIRService::classInfo()->registerProtocol();
+	CTVRemoteService::classInfo()->registerProtocol();
+	CIRSniffService::classInfo()->registerProtocol();
+	CIRProbeService::classInfo()->registerProtocol();
+	// endpoints
 	CSerialEndpoint::classInfo()->registerProtocol();
-	PMux::classInfo()->registerProtocol();
+	PMuxServiceStarter::classInfo()->registerProtocol();
 #endif
 	return noErr;
+}
+
+
+NewtonErr
+CMSendMessage(CCMEvent * inRequest, size_t inRequestSize, CCMEvent * outReply, size_t inReplySize)
+{
+	NewtonErr err;
+	XTRY
+	{
+		size_t size;
+		CUPort port;
+		XFAIL(err = GetCommManagerPort(&port))
+		XFAIL(err = port.sendRPC(&size, inRequest, inRequestSize, outReply, inReplySize))
+		err = outReply->f0C;
+	}
+	XENDTRY;
+	return err;
+}
+
+
+NewtonErr
+CMStartService(COptionArray * inOptions, CServiceInfo * inServiceInfo)
+{
+	return CMStartServiceInternal(inOptions, inServiceInfo);
+}
+
+
+NewtonErr
+CMStartServiceInternal(COptionArray * inOptions, CServiceInfo * outServiceInfo)
+{
+	CCMEvent reply;	//sp00 size+1C
+	CCMEvent request;	//sp1C size+14
+//	request(kCommManagerId);
+//	request.f08 = 2;
+//	request.f10 = inOptions;
+//
+	NewtonErr err = CMSendMessage(&request, sizeof(request), &reply, sizeof(reply));
+//	if (err == noErr)
+//		outServiceInfo = reply.f10;
+	return err;
 }
 
 
@@ -200,32 +252,32 @@ CMGetEndpoint(COptionArray * inOptions, CEndpoint ** outEndpoint, bool inHandleA
 	NewtonErr err = noErr;
 	*outEndpoint = NULL;
 
-#if 0
 	XTRY
 	{
-		CCMOEndpointName	epName;
+/*		CCMOEndpointName	defaultEpName;
 		COptionIterator iter(inOptions);
-		COption * epOption = iter.findOption(kCMOEndpointName);
-		*outEndpoint = MakeByName("CEndpoint", epOption ? epOption->label() : epName);	// hmm... need the name, not the label?
-		XFAILNOT(*outEndpoint, err = kCMErrNoEndPointExists;)
+		CCMOEndpointName * epOption = (CCMOEndpointName *)iter.findOption(kCMOEndpointName);
+		if (epOption == NULL)
+			epOption = &defaultEpName;
+		*outEndpoint = (CEndpoint *)MakeByName("CEndpoint", epOption->fClassName);
+		XFAILIF(*outEndpoint == NULL, err = kCMErrNoEndPointExists;)
 
 		CEndpointEventHandler * eventHandler = new CEndpointEventHandler(*outEndpoint, inHandleAborts);
-		XFAILNOT(eventHandler, err = kCMErrNoEndPointExists;)
+		XFAILIF(eventHandler == NULL, err = kCMErrNoEndPointExists;)
 
 		CServiceInfo info;
-		XFAIL(err = CMStartService(inOptions, &info))	// shouldnÕt we delete the eventHandler on error?
+		XFAILIF(err = CMStartService(inOptions, &info), delete eventHandler;)	// original doesnÕt delete the eventHandler
 
-		eventHandler->init();
+		eventHandler->init(info.getPortId(), info.getServiceId());
 		err = (*outEndpoint)->initBaseEndpoint(eventHandler);
-	}
+*/	}
 	XENDTRY;
-	XDOFAIL(err && *outEndpoint)
+	XDOFAIL(err)
 	{
-		(*outEndpoint)->destroy()
-		*outEndpoint = NULL;
+		if (*outEndpoint != NULL)
+			(*outEndpoint)->destroy(), *outEndpoint = NULL;
 	}
 	XENDFAIL;
-#endif
 
 	return err;
 }

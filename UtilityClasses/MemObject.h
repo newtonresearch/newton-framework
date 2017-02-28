@@ -50,7 +50,7 @@
 
 	Operations valid on Private blocks:
 
-		init(ULong size, Ptr buffer, bool makeShared = NO, ULong permissions = kSMemReadOnly)
+		init(ULong size, Ptr buffer, bool makeShared = false, ULong permissions = kSMemReadOnly)
 
 							intializes a CMemObject to the buffer supplied, you must
 							also pass in the size.  if you intend to "share" this memory
@@ -59,7 +59,7 @@
 							use kSMemReadOnly if you want the external client to only have
 							read access, use kSMemReadWrite to give full read/write permission
 
-		init(ULong size, bool makeShared = NO, ULong permissions = kSMemReadOnly)
+		init(ULong size, bool makeShared = false, ULong permissions = kSMemReadOnly)
 
 							basically same as init above, however all you need to supply
 							is the size, the allocation will be done automatically
@@ -103,8 +103,8 @@ public:
 						CMemObject();
 						~CMemObject();
 
-	NewtonErr		init(size_t inSize, Ptr inBuffer, bool inMakeShared = NO, ULong inPermissions = kSMemReadOnly);
-	NewtonErr		init(size_t inSize, bool inMakeShared = NO, ULong inPermissions = kSMemReadOnly);
+	NewtonErr		init(size_t inSize, Ptr inBuffer, bool inMakeShared = false, ULong inPermissions = kSMemReadOnly);
+	NewtonErr		init(size_t inSize, bool inMakeShared = false, ULong inPermissions = kSMemReadOnly);
 	long				make(ObjectId inSharedObjectId, CUMsgToken * inMsgToken = NULL);
 	NewtonErr		makeShared(ULong inPermissions = kSMemReadOnly);
 	void				destroy(void);

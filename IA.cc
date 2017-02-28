@@ -15,7 +15,7 @@
 #include "Unicode.h"
 #include "UStringUtils.h"
 #include "Strings.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "Funcs.h"
 #include "NewtonScript.h"
 #include "Dictionaries.h"
@@ -200,10 +200,10 @@ InitDSDictionary(RefArg inRcvr, RefArg inOptions)
 	gTrie = GetROMDictionary(2);
 /*
 	assistFrames is in ROM -- why add GC roots?
-	gDateFrame = GetFrameSlot(RA(assistFrames), SYMA(date));
+	gDateFrame = GetFrameSlot(RA(assistFrames), SYMA(Date));
 	AddGCRoot(&gDateFrame);
 
-	gTimeFrame = GetFrameSlot(RA(assistFrames), SYMA(time));
+	gTimeFrame = GetFrameSlot(RA(assistFrames), SYMA(Time));
 	AddGCRoot(&gTimeFrame);
 
 	gPhoneFrame = GetFrameSlot(RA(assistFrames), SYMA(parsed_phone));
@@ -604,16 +604,16 @@ MatchString(CDictionary * inTrie, UniChar * inStr, RefArg ioState)
 	{
 		objFrame = Clone(GetFrameSlot(RA(assistFrames), SYMA(lexical)));
 		lexDateFrame = objFrame;
-		SetFrameSlot(objFrame, SYMA(isa), GetFrameSlot(RA(assistFrames), SYMA(date)));
-		SetFrameSlot(objFrame, SYMA(date), MAKEINT(0));
+		SetFrameSlot(objFrame, SYMA(isa), GetFrameSlot(RA(assistFrames), SYMA(Date)));
+		SetFrameSlot(objFrame, SYMA(Date), MAKEINT(0));
 	}
 //sp-04
 
 	else if (NOTNIL(cLexTimeLookup(RA(NILREF), inStr)))
 	{
 		objFrame = Clone(GetFrameSlot(RA(assistFrames), SYMA(lexical)));
-		SetFrameSlot(objFrame, SYMA(isa), GetFrameSlot(RA(assistFrames), SYMA(time)));
-		SetFrameSlot(objFrame, SYMA(time), MAKEINT(0));
+		SetFrameSlot(objFrame, SYMA(isa), GetFrameSlot(RA(assistFrames), SYMA(Time)));
+		SetFrameSlot(objFrame, SYMA(Time), MAKEINT(0));
 	}
 //sp-04
 
@@ -815,24 +815,24 @@ DSTagString(RefArg inRcvr, RefArg inNames, RefArg inStr, RefArg ioState)
 					if (IsString(slot))
 					{
 						strClass = ClassOf(slot);
-						if (EQRef(iter.tag(), RSYMgroup))
+						if ((iter.tag(), SYMA(group)))
 							slotType = 4;
-						else if (EQRef(strClass, RSYMcompany))
+						else if (EQ(strClass, SYMA(company)))
 							slotType = 1;
-						else if (EQRef(strClass, RSYMstring_2Ecustom))
+						else if (EQ(strClass, SYMA(string_2Ecustom)))
 							slotType = 3;
-						else if (EQRef(iter.tag(), RSYMtitle))
+						else if (EQ(iter.tag(), SYMA(title)))
 							slotType = 5;
 					}
 					else
 					{
-						if (EQRef(iter.tag(), RSYMname))
+						if (EQ(iter.tag(), SYMA(name)))
 							slotType = 0;
-						else if (EQRef(iter.tag(), RSYMnames))
+						else if (EQ(iter.tag(), SYMA(names)))
 							slotType = 2;
 					}
 
-					if (slotType != -1 /*&& !EQRef(iter.tag(), SYMsortOn*/)	// sic
+					if (slotType != -1 /*&& !EQ(iter.tag(), SYMA(sortOn)*/)	// sic
 					{
 						switch (slotType)
 						{
@@ -921,6 +921,7 @@ DSTagString(RefArg inRcvr, RefArg inNames, RefArg inStr, RefArg ioState)
 	Return:	array of 'person tag
 				NILREF => not a person’s name
 ------------------------------------------------------------------------------*/
+extern Ref* RSSTRspace;
 
 Ref
 TagStringHelper(RefArg inNameFrame, RefArg inArg2)
@@ -934,7 +935,7 @@ TagStringHelper(RefArg inNameFrame, RefArg inArg2)
 	else if (ISNIL(lastName) || IsRichString(lastName))
 		fullName = firstName;
 	else
-		fullName = FStrConcat(RA(NILREF), FStrConcat(RA(NILREF), firstName, RA(STRspace)), lastName);
+		fullName = FStrConcat(RA(NILREF), FStrConcat(RA(NILREF), firstName, RA(space)), lastName);
 
 	if (NOTNIL(fullName))
 	{
@@ -957,7 +958,7 @@ TagStringHelper(RefArg inNameFrame, RefArg inArg2)
 Ref
 GetCardFileSoup(void)
 {
-	return GetUnionSoup(RA(cardFileSoupName));
+	return GetUnionSoup(RA(cardfileSoupName));
 }
 
 
@@ -1769,7 +1770,7 @@ FPhraseFilter(RefArg inRcvr, RefArg inStrs)
 {
 	if (NOTNIL(inStrs))
 	{
-		RefVar	badWords = MAKEMAGICPTR(270);
+		RefVar	badWords = RA(stopWordList);
 		RefVar	filteredStrs(MakeArray(0));
 		RefVar	str;
 		ArrayIndex	strLen;
@@ -1929,7 +1930,7 @@ FParseUtter(RefArg inRcvr, RefArg inString)
 	if (NOTNIL(taskFrame))
 	{
 		taskFrame = Clone(taskFrame);
-		SetFrameSlot(taskFrame, SYMA(parse), sp08);
+		SetFrameSlot(taskFrame, SYMA(Parse), sp08);
 		SetFrameSlot(taskFrame, SYMA(input), GetArraySlot(interpretation, 2));
 		SetFrameSlot(taskFrame, SYMA(raw), GetArraySlot(interpretation, 0));
 		SetFrameSlot(taskFrame, SYMA(score), MAKEINT(theScore));
@@ -2286,7 +2287,7 @@ FavorAction(RefArg inRcvr, RefArg inPhrase)
 	for (ArrayIndex i = 0, count = Length(inPhrase); i < count; ++i)
 	{
 		ancestors = CommonAncestors(RA(NILREF), gActionClass, GetArraySlot(inPhrase, i));
-		if (NOTNIL(ancestors) && EQRef(gActionClass, GetArraySlot(ancestors, 0)))
+		if (NOTNIL(ancestors) && EQ(gActionClass, GetArraySlot(ancestors, 0)))
 			return GetArraySlot(inPhrase, i);
 	}
 	return NILREF;
@@ -2300,7 +2301,7 @@ FavorObject(RefArg inRcvr, RefArg inPhrase)
 	for (ArrayIndex i = 0, count = Length(inPhrase); i < count; ++i)
 	{
 		ancestors = CommonAncestors(RA(NILREF), gObjectClass, GetArraySlot(inPhrase, i));
-		if (NOTNIL(ancestors) && EQRef(gObjectClass, GetArraySlot(ancestors, 0)))
+		if (NOTNIL(ancestors) && EQ(gObjectClass, GetArraySlot(ancestors, 0)))
 			return GetArraySlot(inPhrase, i);
 	}
 	return NILREF;

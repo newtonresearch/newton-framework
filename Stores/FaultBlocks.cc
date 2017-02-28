@@ -60,7 +60,7 @@ MakeFaultBlock(RefArg inHandler, CStoreWrapper * inStoreWrapper, PSSId inId, Ref
 /*------------------------------------------------------------------------------
 	Determine whether an object is a fault block.
 	Args:		inObj			Ref of the object
-	Return:	YES => is a fault block
+	Return:	true => is a fault block
 ------------------------------------------------------------------------------*/
 
 bool
@@ -93,7 +93,7 @@ ObjectPtr1(Ref inObj, long inTag, bool inDoFaultCheck)
 	{
 		gCached.ref = inObj;
 		oPtr = PTR(ForwardReference(inObj));
-		if (oPtr->flags & kObjSlotted
+		if (ISSLOTTED(oPtr)
 		&& ((FaultObject *)oPtr)->objClass == kFaultBlockClass)
 		{
 			gCached.ref = INVALIDPTRREF;

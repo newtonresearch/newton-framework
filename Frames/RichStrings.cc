@@ -93,7 +93,7 @@ CRichString::setNoStringData(void)
 {
 	fRefString = NILREF;
 	fUString = NULL;
-	fIsInky = NO;
+	fIsInky = false;
 
 	UniChar ch = kEndOfString;
 	setFormatAndLength(&ch, sizeof(UniChar));	// original says 0 length !!!!
@@ -105,7 +105,7 @@ CRichString::setStringData(RefArg inStrRef)
 {
 	fRefString = inStrRef;
 	fUString = NULL;
-	fIsInky = NO;
+	fIsInky = false;
 
 	setFormatAndLength(grabPtr(), Length(fRefString));	// Length() includes nul terminator
 	releasePtr();
@@ -117,7 +117,7 @@ CRichString::setUStringData(UniChar * inStr, ArrayIndex inSize)
 {
 	fRefString = NILREF;
 	fUString = inStr;
-	fIsInky = NO;
+	fIsInky = false;
 
 	setFormatAndLength(inStr, inSize);
 }
@@ -232,7 +232,7 @@ CRichString::getInkData(ArrayIndex inStart, ArrayIndex inCount, ArrayIndex * out
 	InkInfo * inkInfo = (InkInfo *)((Ptr) str + fOffsetToInk);	// point to first ink word info
 	ArrayIndex inkInfoOffset = 0;
 	ArrayIndex inkDataStart = 0;
-	bool isInkDataFound = NO;
+	bool isInkDataFound = false;
 
 	// search for ink from the start of the string
 	for (ArrayIndex i = 0; i < inStart + inCount; ++i)
@@ -246,7 +246,7 @@ CRichString::getInkData(ArrayIndex inStart, ArrayIndex inCount, ArrayIndex * out
 				// this is the range weÕre interested in
 				if (!isInkDataFound)
 				{
-					isInkDataFound = YES;
+					isInkDataFound = true;
 					inkDataStart = inkInfoOffset;
 					inkInfoOffset = 0;	// reset ink offset -- now weÕre measuring its length
 				}
@@ -758,7 +758,7 @@ CRichString::mungeRange(ArrayIndex inStart, ArrayIndex inCount, const CRichStrin
 	int txtDelta = (inSrcCount - inCount) * sizeof(UniChar);	// r7 number of bytes to insert(delete) in this string
 	int inkDelta = replInkCount - inkCount;	//sp04
 	int fmtDelta = 0;		//sp00
-	bool isInkinessChanged = NO;	// r0
+	bool isInkinessChanged = false;	// r0
 	ULong inkiness = format();	//r6
 	if (inkiness == 0)
 	{
@@ -768,7 +768,7 @@ CRichString::mungeRange(ArrayIndex inStart, ArrayIndex inCount, const CRichStrin
 			//...but want to insert ink
 			fmtDelta = 4;	// we will be adding a format word
 			inkiness = 1;	// and our format has become inky
-			isInkinessChanged = YES;
+			isInkinessChanged = true;
 		}
 	}
 	else
@@ -779,7 +779,7 @@ CRichString::mungeRange(ArrayIndex inStart, ArrayIndex inCount, const CRichStrin
 			//...but want to munge that ink away
 			fmtDelta = -4;	// we will be removing the format word
 			inkiness = 0;	// and our format has become plain
-			isInkinessChanged = YES;
+			isInkinessChanged = true;
 		}
 	}
 
@@ -825,13 +825,13 @@ CRichString::mungeRange(ArrayIndex inStart, ArrayIndex inCount, const CRichStrin
 //				if (isShrinking)
 //				{
 					memmove((Ptr)txEndPtr + txtDelta, txEndPtr, (strEndIndex - rangeEndIndex) * sizeof(UniChar));	// move text only
-//					isShrinking = NO;
+//					isShrinking = false;
 //				}
 //				else
 //				{
 					if (inkTxtDelta != 0)
 						memmove(inkInfoPtr + inkTxtDelta, inkInfoPtr, originalSize - fOffsetToInk);	// move ink only -- long aligned
-//					isShrinking = YES;
+//					isShrinking = true;
 //				}
 //			} while (sp00-- != 0);
 //sp+04  -1C
@@ -939,7 +939,7 @@ CRichString::verify(void)
 	{
 		ArrayIndex inkWordNo = 0;	// r7
 		ArrayIndex numOfRuns = 0;	// r8
-		bool isInTextRun = NO;		// r9
+		bool isInTextRun = false;		// r9
 
 		ArrayIndex index = 0;	// index into UniChar string
 		UniChar ch;
@@ -952,14 +952,14 @@ CRichString::verify(void)
 				XFAILIF(inkWordNoAtOffset(index) != inkWordNo, err = 2000 + index;)
 				inkWordNo++;
 				numOfRuns++;
-				isInTextRun = NO;
+				isInTextRun = false;
 			}
 			else
 			{
 				if (!isInTextRun)
 				{
 					numOfRuns++;
-					isInTextRun = YES;
+					isInTextRun = true;
 				}
 			}
 			XFAILIF(chPtr >= strEnd, err = 3000 + index;)

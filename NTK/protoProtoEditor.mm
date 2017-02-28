@@ -12,7 +12,7 @@
 #import <Cocoa/Cocoa.h>
 #import "Objects.h"
 #import "protoProtoEditor.h"
-#import "ROMSymbols.h"
+#import "RSSymbols.h"
 
 extern "C" {
 void		PrintObject(Ref obj, int indent);
@@ -34,9 +34,10 @@ extern Ref	MakeStringOfLength(const UniChar * str, ArrayIndex numChars);
 NSString *
 MakeNSString(RefArg inStr)
 {
-	if (IsString(inStr))
-		return [NSString stringWithCharacters: GetUString(inStr)
-												 length: (Length(inStr) - sizeof(UniChar))/sizeof(UniChar)];
+	if (IsString(inStr)) {
+		return [NSString stringWithCharacters:GetUString(inStr)
+												 length:(Length(inStr) - sizeof(UniChar))/sizeof(UniChar)];
+	}
 	return nil;
 }
 
@@ -53,17 +54,21 @@ MakeString(NSString * inStr)
 	RefVar s;
 	UniChar buf[128];
 	UniChar * str = buf;
-	ArrayIndex strLen = [inStr length];
-	if (strLen > 128)
+	ArrayIndex strLen = inStr.length;
+	if (strLen > 128) {
 		str = (UniChar *)malloc(strLen*sizeof(UniChar));
-	[inStr getCharacters: str];
+	}
+	[inStr getCharacters:str];
 	// NO LINEFEEDS!
-	for (UniChar * p = str; p < str + strLen; p++)
-		if (*p == 0x0A)
+	for (UniChar * p = str; p < str + strLen; p++) {
+		if (*p == 0x0A) {
 			*p = 0x0D;
+		}
+	}
 	s = MakeStringOfLength(str, strLen);
-	if (str != buf)
+	if (str != buf) {
 		free(str);
+	}
 	return s;
 }
 
@@ -79,7 +84,7 @@ Selection(RefArg inRcvr)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	return MakeString([[txView string] substringWithRange: [txView selectedRange]]);
+	return MakeString([txView.string substringWithRange:txView.selectedRange]);
 }
 
 
@@ -95,9 +100,9 @@ SelectionOffset(RefArg inRcvr)
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
 #if debugLevel > 0
-NSLog(@"SelectionOffset() -> %d", [txView selectedRange].location);
+NSLog(@"SelectionOffset() -> %d", txView.selectedRange.location);
 #endif
-	return MAKEINT([txView selectedRange].location);
+	return MAKEINT(txView.selectedRange.location);
 }
 
 
@@ -113,9 +118,9 @@ SelectionLength(RefArg inRcvr)
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
 #if debugLevel > 0
-NSLog(@"SelectionLength() -> %d", [txView selectedRange].length);
+NSLog(@"SelectionLength() -> %d", txView.selectedRange.length);
 #endif
-	return MAKEINT([txView selectedRange].length);
+	return MAKEINT(txView.selectedRange.length);
 }
 
 
@@ -169,7 +174,7 @@ TextString(RefArg inRcvr)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	return MakeString([txView string]);
+	return MakeString(txView.string);
 }
 
 
@@ -184,7 +189,7 @@ TextLength(RefArg inRcvr)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	return MAKEINT([[txView string] length]);
+	return MAKEINT(txView.string.length);
 }
 
 #pragma mark -
@@ -201,12 +206,11 @@ FindLine(RefArg inRcvr, RefArg inOffset)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSString * str = [txView string];
+	NSString * str = txView.string;
 	ArrayIndex target = RINT(inOffset);
-	ArrayIndex lineNumber, index, strLength = [str length];
-	for (index = 0, lineNumber = 0; index < strLength; lineNumber++)
-	{
-		NSRange lineRange = [str lineRangeForRange: NSMakeRange(index, 0)];
+	ArrayIndex lineNumber, index, strLength = str.length;
+	for (index = 0, lineNumber = 0; index < strLength; lineNumber++) {
+		NSRange lineRange = [str lineRangeForRange:NSMakeRange(index, 0)];
 		if (NSLocationInRange(target, lineRange))
 #if debugLevel > 0
 {NSLog(@"FindLine(%d) -> %d", target, lineNumber);
@@ -237,12 +241,11 @@ LineStart(RefArg inRcvr, RefArg inLine)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSString * str = [txView string];
+	NSString * str = txView.string;
 	ArrayIndex target = RINT(inLine);
-	ArrayIndex lineNumber, index, strLength = [str length];
-	for (index = 0, lineNumber = 0; index < strLength; lineNumber++)
-	{
-		NSRange lineRange = [str lineRangeForRange: NSMakeRange(index, 0)];
+	ArrayIndex lineNumber, index, strLength = str.length;
+	for (index = 0, lineNumber = 0; index < strLength; lineNumber++) {
+		NSRange lineRange = [str lineRangeForRange:NSMakeRange(index, 0)];
 		if (lineNumber == target)
 #if debugLevel > 0
 {NSLog(@"LineStart(%d) -> %d", target, lineRange.location);
@@ -271,11 +274,11 @@ NumberOfLines(RefArg inRcvr)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSString * str = [txView string];
-	ArrayIndex numberOfLines, index, strLength = [str length];
-	for (index = 0, numberOfLines = 0; index < strLength; numberOfLines++)
-		index = NSMaxRange([str lineRangeForRange: NSMakeRange(index, 0)]);
-
+	NSString * str = txView.string;
+	ArrayIndex numberOfLines, index, strLength = str.length;
+	for (index = 0, numberOfLines = 0; index < strLength; numberOfLines++) {
+		index = NSMaxRange([str lineRangeForRange:NSMakeRange(index, 0)]);
+	}
 #if debugLevel > 0
 NSLog(@"NumberOfLines() -> %d", numberOfLines);
 #endif
@@ -289,9 +292,8 @@ CharacterRangeAtLine(NSTextView * inView, NSUInteger inLine)
 	NSRange lineRange = NSMakeRange(0,0);
 
 	NSString * str = [inView string];
-	ArrayIndex lineIndex, charIndex, strLength = [str length];
-	for (charIndex = 0, lineIndex = 0; charIndex < strLength && lineIndex <= inLine; lineIndex++)
-	{
+	ArrayIndex lineIndex, charIndex, strLength = str.length;
+	for (charIndex = 0, lineIndex = 0; charIndex < strLength && lineIndex <= inLine; lineIndex++) {
 		lineRange = [str lineRangeForRange: NSMakeRange(charIndex, 0)];
 		charIndex = NSMaxRange(lineRange);
 	}
@@ -432,7 +434,7 @@ Peek(RefArg inRcvr, RefArg inOffset)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	return MAKECHAR([[txView string] characterAtIndex: RINT(inOffset)]);
+	return MAKECHAR([txView.string characterAtIndex: RINT(inOffset)]);
 }
 
 
@@ -467,8 +469,7 @@ int
 KeyModifiers(RefArg inKey)
 {
 	int modifiers = 0;
-	if (IsFrame(inKey))
-	{
+	if (IsFrame(inKey)) {
 		if (NOTNIL(GetFrameSlot(inKey, SYMA(shift))))
 			modifiers |= 1;
 		if (NOTNIL(GetFrameSlot(inKey, SYMA(control))))
@@ -487,22 +488,21 @@ GetKeyHandler(RefArg inRcvr, RefArg inKey)
 	RefVar keys(GetProtoVariable(inRcvr, SYMA(keys), NULL));
 	// look up inKey in keys
 	RefVar keyReqd;
-	if (IsFrame(inKey))
+	if (IsFrame(inKey)) {
 		keyReqd = GetFrameSlot(inKey, SYMA(key));
-	else
+	} else {
 		keyReqd = inKey;
-	
+	}
 	RefVar key, keyChar;
-	for (ArrayIndex i = 0, count = Length(keys); i < count; ++i)
-	{
+	for (ArrayIndex i = 0, count = Length(keys); i < count; ++i) {
 		key = GetArraySlot(keys, i++);
-		if (IsFrame(key))
+		if (IsFrame(key)) {
 			keyChar = GetFrameSlot(key, SYMA(key));
-		else
+		} else {
 			keyChar = key;
+		}
 		if (keyChar == keyReqd
-		&&  KeyModifiers(key) == KeyModifiers(inKey))
-		{
+		&&  KeyModifiers(key) == KeyModifiers(inKey)) {
 			// return associated symbol
 			return GetArraySlot(keys, i);
 		}
@@ -600,17 +600,17 @@ TokenStart(RefArg inRcvr, RefArg inOffset)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSString * str = [txView string];
+	NSString * str = txView.string;
 	ArrayIndex offset = RINT(inOffset);
 	// assert offset is in range of str
 	unichar charCode = [str characterAtIndex: offset];
 	int charClass = CharacterClass(charCode);
 
-	for ( ; offset > 0; offset--)
-	{
+	for ( ; offset > 0; offset--) {
 		charCode = [str characterAtIndex: offset-1];
-		if (CharacterClass(charCode) != charClass)
+		if (CharacterClass(charCode) != charClass) {
 			break;
+		}
 	}
 
 	return MAKEINT(offset);
@@ -630,17 +630,17 @@ TokenEnd(RefArg inRcvr, RefArg inOffset)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSString * str = [txView string];
-	ArrayIndex len = [str length], offset = RINT(inOffset);
+	NSString * str = txView.string;
+	ArrayIndex len = str.length, offset = RINT(inOffset);
 	// assert offset is in range of str
 	unichar charCode = [str characterAtIndex: offset];
 	int charClass = CharacterClass(charCode);
 
-	for ( ; offset < len-1; offset++)
-	{
+	for ( ; offset < len-1; offset++) {
 		charCode = [str characterAtIndex: offset+1];
-		if (CharacterClass(charCode) != charClass)
+		if (CharacterClass(charCode) != charClass) {
 			break;
+		}
 	}
 
 	return MAKEINT(offset<len?offset+1:len);

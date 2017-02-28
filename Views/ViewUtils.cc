@@ -8,12 +8,14 @@
 
 #include "DrawShape.h"
 #include "DrawText.h"
+#include "Geometry.h"
 
 #include "ObjHeader.h"
 #include "Objects.h"
+#include "Globals.h"
+#include "ROMResources.h"
 #include "Lookup.h"
 #include "Funcs.h"
-#include "Globals.h"
 #include "Arrays.h"
 #include "ListLoop.h"
 #include "Strings.h"
@@ -30,6 +32,7 @@
 #include "KeyboardView.h"
 #include "TextView.h"
 #include "ParagraphView.h"
+#include "PickView.h"
 #include "GaugeView.h"
 #include "ViewStubs.h"
 
@@ -176,7 +179,7 @@ BadWickedNaughtyNoot(int inErr)
 Ref
 MakeCommand(ULong inId, CResponder * inRcvr, OpaqueRef inArg)
 {
-	RefVar	cmd(Clone(RA(command)));
+	RefVar	cmd(Clone(RA(protoCommand)));
 	RefVar	rcvr;
 	if (inRcvr == gApplication)
 		rcvr = SYMA(application);
@@ -405,7 +408,7 @@ BuildView(CView * inView, RefArg inContext)
 		theView = new CEditView;
 		break;
 
-//	case cl78:
+//	case clContainerView:	// OS1
 
 	case clKeyboardView:
 		theView = new CKeyboardView;
@@ -446,14 +449,14 @@ BuildView(CView * inView, RefArg inContext)
 		theView = new CMathLineView;
 		break;
 
-//	case cl87:
+//	case clScheduleView:	// OS1
 
 	case clRemoteView:
 		theView = new CRemoteView;
 		break;
 
-//	case cl89:
-//	case cl90:
+//	case clTrainView,		// OS1
+//	case clDayView:		// OS1
 
 	case clPickView:
 		theView = new CPickView;
@@ -463,7 +466,7 @@ BuildView(CView * inView, RefArg inContext)
 		theView = new CGaugeView;
 		break;
 
-//	case cl93
+//	case clRepeatingView:	// OS1
 
 	case clPrintView:
 		theView = new CPrintView;
@@ -477,9 +480,7 @@ BuildView(CView * inView, RefArg inContext)
 		theView = new CSliderView;
 		break;
 
-	case cl97:
-		// this really does nothing
-		break;
+//	case clCharBoxView:		// OS1
 
 	case clTextView:
 		theView = new CTextView;
@@ -601,7 +602,7 @@ FExtractData(RefArg rcvr, RefArg inViews, RefArg inSepStr, RefArg inPrintLength)
 		if (thisView != prevView)
 		{
 			viewStny = GetProtoVariable(thisView, SYMA(viewStationery));
-			if (ISNIL(viewStny) || EQRef(viewStny, RSYMpara))
+			if (ISNIL(viewStny) || EQ(viewStny, SYMA(para)))
 			{
 				viewText = GetProtoVariable(thisView, SYMA(text));
 				if (NOTNIL(viewText))
@@ -634,9 +635,9 @@ FExtractData(RefArg rcvr, RefArg inViews, RefArg inSepStr, RefArg inPrintLength)
 		if (thisView != prevView)
 		{
 			viewStny = GetProtoVariable(thisView, SYMA(viewStationery));
-			if (NOTNIL(GetProtoVariable(thisView, SYMA(ink)))  ||  EQRef(viewStny, RSYMpoly))
+			if (NOTNIL(GetProtoVariable(thisView, SYMA(ink)))  ||  EQ(viewStny, SYMA(poly)))
 				viewText = PolygonDescription(thisView);
-			else if (ISNIL(viewStny)  ||  EQRef(viewStny, RSYMpara))
+			else if (ISNIL(viewStny)  ||  EQ(viewStny, SYMA(para)))
 				viewText = NILREF;
 			else
 				viewText = RSdataName;
@@ -738,7 +739,7 @@ FBuildContext(RefArg inRcvr, RefArg inTemplate)
 	CView * view = GetView(inRcvr);
 	if (view == NULL)
 		view = gRootView;
-	return view->buildContext(inTemplate, YES);
+	return view->buildContext(inTemplate, true);
 }
 
 
@@ -746,7 +747,7 @@ Ref
 CommonAddView(RefArg inRcvr, RefArg inParentView, RefArg inChildTemplate, RefArg inTag)
 {
 	CView * parentView = FailGetView(inRcvr, inParentView);
-	RefVar childContext(parentView->buildContext(inChildTemplate, YES));
+	RefVar childContext(parentView->buildContext(inChildTemplate, true));
 	CView * childView = NOTNIL(childContext) ? BuildView(parentView, childContext) : NULL;
 	if (childView)
 	{
@@ -857,7 +858,7 @@ FRefreshViews(RefArg inRcvr)
 Ref
 FOpenX(RefArg inRcvr)
 {
-	RealOpenX(inRcvr, NO);
+	RealOpenX(inRcvr, false);
 	return TRUEREF;
 }
 
@@ -865,23 +866,23 @@ FOpenX(RefArg inRcvr)
 bool
 RealOpenX(RefArg inRcvr, bool inHuh)
 {
-	bool		isOK = YES;
-	CView *	view = GetView(inRcvr);
+	bool isOK = true;
+	CView * view = GetView(inRcvr);
 	if (view)
 	{
-		if ((view->viewFlags & vVisible) == 0)
+		if (!FLAGTEST(view->viewFlags, vVisible))
 		{
-			RefVar	cmd(MakeCommand(aeShow, view, inHuh ? 0x00420000 : 0x08000000));
+			RefVar cmd(MakeCommand(aeShow, view, inHuh ? 0x00420000 : 0x08000000));
 			gApplication->dispatchCommand(cmd);
 		}
 		else
-			isOK = NO;
+			isOK = false;
 	}
 	else
 	{
-		RefVar	parent(GetProtoVariable(inRcvr, SYMA(_parent)));
+		RefVar parent(GetProtoVariable(inRcvr, SYMA(_parent)));
 		view = FailGetView(parent);
-		RefVar	cmd(MakeCommand(aeAddChild, view, inHuh ? 0x00420000 : 0x08000000));
+		RefVar cmd(MakeCommand(aeAddChild, view, inHuh ? 0x00420000 : 0x08000000));
 		CommandSetFrameParameter(cmd, inRcvr);
 		gApplication->dispatchCommand(cmd);
 	}
@@ -901,7 +902,7 @@ FCloseX(RefArg inRcvr)
 	CView *  view = GetView(inRcvr);
 	if (view)
 	{
-		if ((view->viewFlags & vIsInSetupForm) != 0
+		if (FLAGTEST(view->viewFlags, vIsInSetupForm)
 		&&  (view->viewFlags & 0x90000000) != 0x90000000)
 			view->setFlags(0x90000000);
 		else if ((view->viewFlags & 0x90000000) != 0x90000000)
@@ -1033,7 +1034,7 @@ FRedoChildrenX(RefArg inRcvr)
 		newton_try
 		{
 			view->removeAllViews();
-			view->addViews(NO);
+			view->addViews(false);
 			view->dirty();
 		}
 		cleanup
@@ -1066,7 +1067,7 @@ FSyncChildrenX(RefArg inRcvr)
 	{
 		newton_try
 		{
-			view->addViews(YES);
+			view->addViews(true);
 		}
 		cleanup
 		{
@@ -1259,11 +1260,11 @@ CommonBox(RefArg inRcvr, Rect * outBox)
 		if (FromObject(view->getProto(SYMA(viewBounds)), outBox))
 			view->justifyBounds(outBox);
 		else
-			return NO;
+			return false;
 	}
 	else
 		*outBox = view->viewBounds;
-	return YES;
+	return true;
 }
 
 
@@ -1504,7 +1505,7 @@ FSetHiliteNoUpdateX(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3)
 			else
 				view->removeAllHilites();
 		}
-		view->hiliteText(RINT(inArg1), RINT(inArg2) - RINT(inArg3), YES);
+		view->hiliteText(RINT(inArg1), RINT(inArg2) - RINT(inArg3), true);
 		return TRUEREF;
 	}
 	return NILREF;
@@ -1516,7 +1517,7 @@ FHiliteX(RefArg inRcvr, RefArg inDoIt)
 {
 	CView *  view = GetView(inRcvr);
 	if (view)
-		view->select(NOTNIL(inDoIt), NO);
+		view->select(NOTNIL(inDoIt), false);
 	return TRUEREF;
 }
 
@@ -1526,7 +1527,7 @@ FHiliteUniqueX(RefArg inRcvr, RefArg inDoIt)
 {
 	CView *  view = GetView(inRcvr);
 	if (view)
-		view->select(NOTNIL(inDoIt), YES);
+		view->select(NOTNIL(inDoIt), true);
 	return TRUEREF;
 }
 
@@ -1548,7 +1549,7 @@ FTrackHiliteX(RefArg inRcvr, RefArg inUnit)
 	if (NOTNIL(inUnit))
 	{
 		strok = StrokeFromRef(inUnit);
-		strok->inkOff(YES);
+		strok->inkOff(true);
 	}
 
 	if (ISNIL(GetVariable(inRcvr, SYMA(buttonPressedScript))))
@@ -1569,8 +1570,8 @@ FTrackHiliteX(RefArg inRcvr, RefArg inUnit)
 	Point viewMidPt = MidPoint(&view->viewBounds);
 	ArrayIndex count = 0;
 
-	bool isPressed, wasPressed = NO;
-	for (bool isStrokeDone = NO; !isStrokeDone; )
+	bool isPressed, wasPressed = false;
+	for (bool isStrokeDone = false; !isStrokeDone; )
 	{
 		Point strokPt;
 		if (strok)
@@ -1581,7 +1582,7 @@ FTrackHiliteX(RefArg inRcvr, RefArg inUnit)
 		if (isPressed != wasPressed)
 		{
 			isSelected = !isSelected;
-			view->select(isSelected, NO);
+			view->select(isSelected, false);
 			wasPressed = isPressed;
 		}
 		else
@@ -1599,7 +1600,7 @@ FTrackHiliteX(RefArg inRcvr, RefArg inUnit)
 		}
 		count++;
 		if ((strok && strok->isDone()) || (!strok && count == 2))
-			isStrokeDone = YES;
+			isStrokeDone = true;
 	}
 
 	BusyBoxSend(54);
@@ -1621,7 +1622,7 @@ FTrackButtonX(RefArg inRcvr, RefArg inUnit)
 	{
 		CView *  view = GetView(inRcvr);
 		if (view)
-			view->select(NO, NO);
+			view->select(false, false);
 	}
 	end_unwind;
 	return isClicked;
@@ -1682,7 +1683,7 @@ FDragX(RefArg inRcvr, RefArg inUnit, RefArg inDragBounds)
 {
 	CView *  view = FailGetView(inRcvr);
 	CStroke * strok = StrokeFromRef(inUnit);
-	strok->inkOff(YES);
+	strok->inkOff(true);
 	Rect bounds;
 	if (NOTNIL(inDragBounds))
 		FromObject(inDragBounds, &bounds);

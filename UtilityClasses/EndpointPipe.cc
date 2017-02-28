@@ -7,17 +7,18 @@
 */
 
 #include "EndpointPipe.h"
+#include "OSErrors.h"
 
 
 CEndpointPipe::CEndpointPipe()
 {
 	fEndpoint = NULL;
 	fTimeout = kNoTimeout;
-	fFraming = NO;
+	fFraming = false;
 	fCallback = NULL;
 	fNumOfBytesRead = 0;
 	fNumOfBytesWritten = 0;
-	isAborted = NO;
+	isAborted = false;
 }
 
 
@@ -30,10 +31,10 @@ CEndpointPipe::init(CEndpoint * inEndpoint, size_t inGetBufSize, size_t inPutBuf
 { /* this really does nothing */ }
 
 
-NewtonErr
-CEndpointPipe::init(CEndpoint * inEndpoint, size_t inGetBufSize, size_t inPutBufSize, Timeout inTimeout, bool inFraming, CPipeCallBack * inCalback)
+void
+CEndpointPipe::init(CEndpoint * inEndpoint, size_t inGetBufSize, size_t inPutBufSize, Timeout inTimeout, bool inFraming, CPipeCallback * inCallback)
 {
-	init(inGetBufSize, inPutBufSize);
+	CBufferPipe::init(inGetBufSize, inPutBufSize);
 	fEndpoint = inEndpoint;
 	fTimeout = inTimeout;
 	fFraming = inFraming;
@@ -51,7 +52,7 @@ CEndpointPipe::addToAppWorld(void)
 	if (isAborted)
 		ThrowErr(exPipe, kOSErrCallAborted);
 
-	if (err = fEndpoint->addToAppWorld())
+	if ((err = fEndpoint->addToAppWorld()) != noErr)
 		ThrowErr(exPipe, err);
 
 	return err;
@@ -68,7 +69,7 @@ CEndpointPipe::removeFromAppWorld(void)
 	if (isAborted)
 		ThrowErr(exPipe, kOSErrCallAborted);
 
-	if (err = fEndpoint->removeFromAppWorld())
+	if ((err = fEndpoint->removeFromAppWorld()) != noErr)
 		ThrowErr(exPipe, err);
 
 	return err;
@@ -101,7 +102,7 @@ CEndpointPipe::flushRead(void)
 
 	fGetBuf->reset();
 	fGetBuf->seek(0, kSeekFromEnd);
-	f0D = NO;
+	f0D = false;
 }
 
 
@@ -122,7 +123,8 @@ CEndpointPipe::flushWrite(void)
 	// send the buffer from its beginning
 	fPutBuf->seek(0, kSeekFromBeginning);
 	ULong flags = fFraming ? 2 : 0;
-	if (err = fEndpoint->nSnd(fPutBuf, flags, fTimeout))
+	NewtonErr err;
+	if ((err = fEndpoint->nSnd(fPutBuf, flags, fTimeout)) != noErr)
 	{
 		fPutBuf->seek(0, kSeekFromEnd);
 		ThrowErr(exPipe, err);
@@ -138,9 +140,9 @@ CEndpointPipe::abort(void)
 	if (fEndpoint)
 	{
 		if (fEndpoint->isPending(1))
-			fEndpoint->nAbort(YES);
+			fEndpoint->nAbort(true);
 	}
-	isAborted = YES;
+	isAborted = true;
 }
 
 
@@ -157,7 +159,7 @@ CEndpointPipe::overflow(void)
 	ULong bufSize = fPutBuf->getSize();
 	fPutBuf->seek(0, kSeekFromBeginning);
 	ULong flags = fFraming ? 3 : 1;
-	if (err = fEndpoint->nSnd(fPutBuf, flags, fTimeout))
+	if ((err = fEndpoint->nSnd(fPutBuf, flags, fTimeout)))
 	{
 		fPutBuf->seek(0, kSeekFromEnd);
 		ThrowErr(exPipe, err);
@@ -165,7 +167,7 @@ CEndpointPipe::overflow(void)
 	else
 		fNumOfBytesWritten += bufSize;
 	fPutBuf->reset();
-	if (fCallback && (err = fCallback->cbFunc(fNumOfBytesRead, fNumOfBytesWritten)))
+	if (fCallback && (err = fCallback->status(fNumOfBytesRead, fNumOfBytesWritten)) != noErr)
 		ThrowErr(exPipe, err);
 }
 
@@ -185,7 +187,7 @@ CEndpointPipe::underflow(long inArg1, bool & ioArg2)
 	if (inArg1 < fGetBuf->getSize())		// check this cmp
 		inArg1 = fGetBuf->getSize();
 
-	if (err = fEndpoint->nRcv(fGetBuf, inArg1, &flags, fTimeout))
+	if ((err = fEndpoint->nRcv(fGetBuf, inArg1, &flags, fTimeout)))
 	{
 		fGetBuf->seek(0, kSeekFromEnd);
 		ThrowErr(exPipe, err);
@@ -194,7 +196,7 @@ CEndpointPipe::underflow(long inArg1, bool & ioArg2)
 		fNumOfBytesRead += fGetBuf->getSize();
 	ioArg2 = ((flags & 0x01) == 0);
 	fGetBuf->seek(0, kSeekFromBeginning);
-	if (fCallback && (err = fCallback->cbFunc(fNumOfBytesRead, fNumOfBytesWritten)))
+	if (fCallback && (err = fCallback->status(fNumOfBytesRead, fNumOfBytesWritten)) != noErr)
 		ThrowErr(exPipe, err);
 }
 

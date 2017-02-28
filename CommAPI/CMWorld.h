@@ -20,6 +20,7 @@
 class CCMEvent : public CEvent
 {
 public:
+	int					f08;
 	NewtonErr			f0C;
 	CConnectedDevice	f10;
 };
@@ -136,6 +137,9 @@ public:
 	virtual NewtonErr	mainConstructor(void);
 	virtual void		mainDestructor(void);
 
+	CList *		serviceMessages(void);
+	CCMEventHandler *	eventHandler(void);
+
 	CAsyncServiceMessage *	matchPendingServiceMessage(CUMsgToken * inMsg);
 	void *			matchPendingStartInfo(CCMService * inService);
 	void			setDevice(CConnectedDevice * inDevice);
@@ -155,6 +159,12 @@ private:
 	ULong						fE0;		// last package
 //	size +E4
 };
+
+inline CList *		CCMWorld::serviceMessages(void)			{ return &f90; }
+inline CCMEventHandler *	CCMWorld::eventHandler(void)	{ return &f70; }
+
+
+#define gCommWorld static_cast<CCMWorld*>(GetGlobals())
 
 
 #endif	/* __CMWORLD_H */

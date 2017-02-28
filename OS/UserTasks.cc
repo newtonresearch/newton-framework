@@ -155,9 +155,9 @@ CUTask::getRegister(ULong inReg, ULong * outValue)
 
 CUTaskWorld::CUTaskWorld()
 {
-	fIsSpawned = NO;
-	fIsOwnedByParent = NO;
-	fWantResult = NO;
+	fIsSpawned = false;
+	fIsOwnedByParent = false;
+	fWantResult = false;
 }
 
 
@@ -171,8 +171,8 @@ CUTaskWorld::~CUTaskWorld()
 
 /*------------------------------------------------------------------------------
 	Start a child task.
-	Args:		inWantResultFromChild	YES => wait for task init ack before starting task
-				inWantOwnerShip			YES => we own the child task; NO => it’s independent
+	Args:		inWantResultFromChild	true => wait for task init ack before starting task
+				inWantOwnerShip			true => we own the child task; false => it’s independent
 				inStartTimeout				delay after which we give up if no start ack
 				inStackSize					stack size
 				inPriority					priority
@@ -216,8 +216,8 @@ CUTaskWorld::startTask(bool inWantResultFromChild, bool inWantOwnerShip, Timeout
 
 /*------------------------------------------------------------------------------
 	Start a child task in the global environment.
-	Args:		inWantResultFromChild	YES => wait for task init ack before starting task
-				inWantOwnerShip			YES => we own the child task; NO => it’s independent
+	Args:		inWantResultFromChild	true => wait for task init ack before starting task
+				inWantOwnerShip			true => we own the child task; false => it’s independent
 				inStartTimeout				delay after which we give up if no start ack
 				inStackSize					stack size
 				inPriority					priority
@@ -274,10 +274,10 @@ CUTaskWorld::taskEntry(size_t inDataSize, ObjectId inTaskId)
 	{
 		CUMsgToken token;
 		fChildTask = inTaskId;
-		fIsSpawned = YES;
+		fIsSpawned = true;
 		if (fWantResult)
 		//  wait for notification that task spawned successfully
-			XFAIL(err = fMotherPort.receive(NULL, NULL, 0, &token, NULL, kNoTimeout, kSpawnedTaskAckMsgType, NO, NO))
+			XFAIL(err = fMotherPort.receive(NULL, NULL, 0, &token, NULL, kNoTimeout, kSpawnedTaskAckMsgType, false, false))
 
 		err = taskConstructor();
 

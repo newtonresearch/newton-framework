@@ -99,7 +99,7 @@ CSerialNumberROM::getSystemSerialNumber(SerialNumber * outSerialNumber)
 			{
 				word = (word << 4) | nextXDigit(str);
 			}
-			outSerialNumber->word[j] = word;
+			outSerialNumber->word[j] = CANONICAL_LONG(word);
 		}
 		return noErr;
 	}
@@ -111,7 +111,7 @@ CSerialNumberROM::getSystemSerialNumber(SerialNumber * outSerialNumber)
 	P l a i n   C   I n t e r f a c e
 ----------------------------------------------------------------------------- */
 #include "Objects.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 extern "C" Ref		FGetSerialNumber(RefArg inRcvr);
 
 Ref

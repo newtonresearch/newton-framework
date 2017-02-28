@@ -160,6 +160,9 @@ public:
 	// call init for each type of system event you're interested in…
 	NewtonErr		init(ULong inSystemEvent, ULong inSendFilter = 0);
 
+	// handler
+	virtual	void	eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent);
+
 	// override to get all system events…
 	virtual void	anySystemEvents(CEvent * inEvent);
 
@@ -172,8 +175,6 @@ public:
 	virtual void	powerOffPending(CEvent * inEvent);
 
 private:
-	void			CEventHandlerProc(CUMsgToken * token, ULong *, CEvent * inEvent);
-
 	bool			fInited;
 };
 
@@ -203,7 +204,7 @@ public:
 	// Resets the iterator to begin again
 
 	bool	more(void);
-	// Returns YES if there are more elements to iterate over
+	// Returns true if there are more elements to iterate over
 
 	CEventHandler *	firstHandler(void);
 	// Resets the iterator to begin again and returns the first handler in the handler chain

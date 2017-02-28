@@ -65,7 +65,8 @@ inline TextOptions::TextOptions()  { memset(this, 0, sizeof(TextOptions)); }
 
 struct TextBoundsInfo
 {
-	int	x00;	// don’t really know
+	int		x00;		// don’t really know
+	float		width;	//+14
 };
 
 

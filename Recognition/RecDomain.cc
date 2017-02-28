@@ -96,10 +96,10 @@ CRecDomain::~CRecDomain()
 CRecDomain *
 CRecDomain::make(CController * inController, RecType inUnitType, const char * inName)
 {
-	CRecDomain * domain;
+	CRecDomain * domain = new CRecDomain;
 	XTRY
 	{
-		XFAIL((domain = new CRecDomain) == NULL)
+		XFAIL(domain == NULL)
 		XFAILIF(domain->iRecDomain(inController, inUnitType, inName) != noErr, domain->release(); domain = NULL;)
 	}
 	XENDTRY;
@@ -214,7 +214,7 @@ CRecDomain::addPieceType(RecType inSubtype)
 bool
 CRecDomain::group(CRecUnit * inPiece, RecDomainInfo * info)
 {
-	return NO;
+	return false;
 }
 
 
@@ -267,9 +267,9 @@ CRecDomain::setParameters(Ptr inParms)
 	if (fParameters != inParms)
 	{
 		fParameters = inParms;
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 

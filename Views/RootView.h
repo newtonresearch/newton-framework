@@ -16,14 +16,15 @@
 /*------------------------------------------------------------------------------
 	C V i e w S t u f f
 ------------------------------------------------------------------------------*/
+#define kNumOfLayers 3
 
 class CViewStuff
 {
 public:
 			CViewStuff() : fView(NULL) { }
 
-	CView *			fView;		// +00
-//	CRegionStruct	fRegion;		// +04
+	CView *	fView;		// +00
+	CRegionStruct	fInvalid;		// +04
 };
 
 
@@ -31,9 +32,9 @@ public:
 	I d l i n g I t e m
 ------------------------------------------------------------------------------*/
 
-struct IdlingItem
+struct IdlingView
 {
-	IdlingItem *	fNext;		// +00
+	IdlingView *	fNext;		// +00
 	CView *			fView;		// +04
 };
 
@@ -46,6 +47,9 @@ struct IdleViewInfo
 };
 
 
+#define kFarFuture 0x7FFFFFFF00000000
+
+
 /*------------------------------------------------------------------------------
 	C R o o t V i e w
 ------------------------------------------------------------------------------*/
@@ -56,15 +60,16 @@ class CRootView : public CView
 public:
 	VIEW_HEADER_MACRO
 
-							CRootView();
-	virtual				~CRootView();
+						CRootView();
+	virtual			~CRootView();
 
 //	Construction
-	virtual	void		init(RefArg inContext, CView * inView);
+	virtual	void	init(RefArg inContext, CView * inView);
 
-	virtual  bool		realDoCommand(RefArg inCmd);
+	virtual  bool	realDoCommand(RefArg inCmd);
 
 //	Idling
+	IdlingView *	getIdlingView(CView * inView);
 	void			addIdler(CView * inView, Timeout inTimeout, ULong inId);
 	ULong			removeIdler(CView * inView, ULong inId);
 	void			removeAllIdlers(CView * inView);
@@ -72,19 +77,18 @@ public:
 	CTime			idleViews(void);
 
 //	View manipulation
-	virtual void		dirty(const Rect * inRect = NULL);
-	void			invalidate(const CBaseRegion inRgn, CView * inView);
-	void			validate(const CBaseRegion inRgn);
+	virtual void	dirty(const Rect * inRect = NULL);
+	void			invalidate(const CBaseRegion& inRgn, CView * inView);
+	void			validate(const CBaseRegion& inRgn);
 	void			smartInvalidate(const Rect * inRect);
 	void			smartScreenDirty(const Rect * inRect);
 	bool			needsUpdate(void);
 	void			update(Rect * inRect = NULL);
 
-	virtual void		removeAllViews(void);
+	virtual void	removeAllViews(void);
 	void			forgetAboutView(CView * inView);
 	CView *		getCommonParent(CView * inView1, CView * inView2);
 	CView *		getFrontmostModalView(void);
-	IdlingItem *	getIdlingView(CView * inView);
 	CView *		getPopup(void) const;
 	void			setPopup(CView * inView, bool inShow);
 	bool			getRemoteWriting(void);
@@ -138,8 +142,8 @@ public:
 	Ref			popSelection(void);
 
 //	Drawing
-	void			realDraw(Rect * inRect);
-	void			postDraw(Rect * inRect);
+	void			realDraw(const Rect * inRect);
+	void			postDraw(Rect& inRect);
 
 //	Clipboard
 	void			addClipboard(RefArg, RefArg);
@@ -154,10 +158,12 @@ public:
 
 private:
 	CView *			fHilitedView;		// +30	view containing the hilite
-	CViewStuff *	x34;					// +34	array of 3
+	CViewStuff *	fLayer;				// +34	array of 3
 	Rect				fInkyRect;			// +38	rect dirtied by ink
-	CDynamicArray *	x40;				// or subclass - all subviews?
-	IdlingItem *	fIdlingList;		// +4C
+	CDynamicArray *	fIdlingViews;	// +40
+	ArrayIndex		x44;
+	ArrayIndex		x48;
+	IdlingView *	fIdlingList;		// +4C
 	CView *			fPopup;				// +50	popup view
 	RefStruct		fClipboardIcons;	// +54	array of clipboard icons
 	RefStruct		fClipboardViews;	// +58	array of clipboards
@@ -165,6 +171,7 @@ private:
 	RefStruct		fKeyboards;			// +60	array of registered keyboards
 	bool				fIsPassthruKeyboardConnected;	// +64
 	CView *			fCaretView;			// +68	view containing the caret
+	int				x6C;					// +6C
 	CView *			x70;					// just guessing it’s a CView
 	CView *			fDefaultButton;	// +74
 	CView *			fCaretSlip;			// +78

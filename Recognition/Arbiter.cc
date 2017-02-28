@@ -28,8 +28,8 @@ InitArbiterState(CArbiter * inArbiter)
 	inArbiter->f14 = CDArray::make(4, 0);
 	inArbiter->f18 = CDArray::make(4, 0);
 	inArbiter->f1C = CDArray::make(4, 0);
-	inArbiter->f20 = NO;
-	inArbiter->f21 = NO;
+	inArbiter->f20 = false;
+	inArbiter->f21 = false;
 	inArbiter->f24 = 0;
 	return noErr;
 }
@@ -87,10 +87,10 @@ int
 GetRecognitionCase(CRecArea * inArea)
 {
 	int theCase = 0;
-	bool r7 = NO;
-	bool r6 = NO;
-	bool r10 = NO;
-	bool r9 = NO;
+	bool r7 = false;
+	bool r6 = false;
+	bool r10 = false;
+	bool r9 = false;
 
 	ArrayIterator iter;
 	Assoc assoc, * assocPtr = (Assoc *)inArea->arbitrationTypes()->getIterator(&iter);
@@ -100,9 +100,9 @@ GetRecognitionCase(CRecArea * inArea)
 		if (IsOfType(assoc.fType, 'SCRB'))
 			theCase++;
 		else if (IsOfType(assoc.fType, 'GSHP'))
-			r7 = YES;
+			r7 = true;
 		else if (IsOfType(assoc.fType, 'WORD'))
-			r6 = YES;
+			r6 = true;
 		// guessing the original set r10, r9 appropriately -- CALC, CLMN?
 	}
 
@@ -155,7 +155,7 @@ ArbitrateEarly(BestMatch * inMatch)
 
 	if (IsOfType(unit->getType(), 'SCRB')
 	&&  OnlyStrokeWritten((CStrokeUnit *)unit->getSub(0)))
-		return YES;
+		return true;
 
 	if (unit->getType() == 'GSHP')
 	{
@@ -165,7 +165,7 @@ ArbitrateEarly(BestMatch * inMatch)
 			int r7 = 0;
 			int r6 = 0;
 			bool r10 = unit->testFlags(0x00100000);
-			bool r8 = YES;
+			bool r8 = true;
 			if (unit->interpretationCount() > 0)
 			{
 				switch (unit->getLabel(0))
@@ -184,13 +184,13 @@ ArbitrateEarly(BestMatch * inMatch)
 				case 12:
 					break;
 				default:
-					r8 = NO;
+					r8 = false;
 					break;
 				}
 				if (r10)
 				{
 					r6 = 20;
-					r8 = YES;
+					r8 = true;
 				}
 				if (r9 != NULL)
 				{
@@ -202,12 +202,12 @@ ArbitrateEarly(BestMatch * inMatch)
 					FRect box;
 					unit->getBBox(&box);
 					if (RectangleHeight(&box) >= 19.0  &&  RectangleWidth(&box) >= 19.0)
-						return YES;
+						return true;
 				}
 			}
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -265,7 +265,8 @@ CArbiter::make(CController * inController)
 	CArbiter * arbiter;
 	XTRY
 	{
-		XFAIL((arbiter = new CArbiter) == NULL)
+		arbiter = new CArbiter;
+		XFAIL(arbiter == NULL)
 		XFAILIF(arbiter->iArbiter(inController) != noErr, delete arbiter; arbiter = NULL;)	// original doesn’t bother
 		inController->registerArbiter(arbiter);
 	}
@@ -331,7 +332,7 @@ CArbiter::allUnitsPresent(CRecArea * inArea, BestMatch * inMatch)
 		XFAIL((matchPtr = (BestMatch *)f0C->addEntry()) == NULL)
 		*matchPtr = *inMatch;
 		XFAIL(ArbiterGetUnitStrokes(unit, f14))
-		int r5 = gatherUnits(inArea->getf14() - 1, YES, f0C);
+		int r5 = gatherUnits(inArea->getf14() - 1, true, f0C);
 		XFAIL(fController->controllerError())
 		f14->cutToIndex(0);
 		unit->unsetFlags(0x00800000);
@@ -505,7 +506,7 @@ CArbiter::arbitrateGraphicsWords(CArray * inArray)
 	{
 		ULong numOfWords = 0, numOfShapes = 0;
 		ULong wordScore = 0,  shapeScore = 0;
-		bool sp04 = YES,      sp08 = YES;
+		bool sp04 = true,      sp08 = true;
 		bool sp0C;
 
 		ArrayIterator iter;	// sp10
@@ -521,7 +522,7 @@ CArbiter::arbitrateGraphicsWords(CArray * inArray)
 				{
 					UnitInterpretation * interp = unit->getInterpretation(0);
 					wordScore += interp->score;
-					sp08 = NO;
+					sp08 = false;
 				}
 				else
 				{
@@ -534,7 +535,7 @@ CArbiter::arbitrateGraphicsWords(CArray * inArray)
 				if (!sp0C)
 				{
 					shapeScore += GetGraphicBiasedScore(unit);
-					sp04 = NO;
+					sp04 = false;
 				}
 				else
 				{
@@ -599,7 +600,7 @@ CArbiter::doArbitration(void)
 // sp-94
 	XTRY
 	{
-		bool r6 = NO;
+		bool r6 = false;
 		if (f04->count() > 0)
 		{
 			ArrayIterator iter;
@@ -617,7 +618,7 @@ CArbiter::doArbitration(void)
 					int r7 = r8->getf14();
 					if (match.x08 == 0  ||  r7 == 1)
 					{
-						r6 = YES;
+						r6 = true;
 						if (!unit->testFlags(0x00400000))
 						{
 							BestMatch * entry;
@@ -640,7 +641,7 @@ CArbiter::doArbitration(void)
 							fController->unsetFlags(0x40000000);
 						}
 						if (unit->testFlags(0x40000000))	// not really...
-							r6 = YES;
+							r6 = true;
 						bool r10 = waitingForOtherUnits(r8, &match);
 						XXFAIL(fController->controllerError())
 						if (r10)
@@ -650,11 +651,11 @@ CArbiter::doArbitration(void)
 //							r8 = arbitrateUnits(r8);
 							XXFAIL(fController->controllerError())
 							if (r8 == 0)
-								r6 = YES;
+								r6 = true;
 						}
 						if (r8)
 						{
-							r6 = YES;
+							r6 = true;
 							BestMatch sp40;
 							memcpy(&sp40, f10->getEntry(0), sizeof(BestMatch));
 							fController->setFlags(0x40000000);

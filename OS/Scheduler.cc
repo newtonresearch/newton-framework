@@ -59,10 +59,10 @@ StartScheduler(void)
 	{
 		DisableInterrupt(gSchedulerIntObj);
 		g0F182C00 = g0F181800 + 20 * kMilliseconds;
-		gSchedulerRunning = YES;
+		gSchedulerRunning = true;
 		QuickEnableInterrupt(gSchedulerIntObj);
 	}
-	gWantSchedulerToRun = NO;
+	gWantSchedulerToRun = false;
 }
 
 void
@@ -70,8 +70,8 @@ StopScheduler(void)
 {
 	if (gSchedulerRunning)
 		DisableInterrupt(gSchedulerIntObj);
-	gSchedulerRunning = NO;
-	gWantSchedulerToRun = NO;
+	gSchedulerRunning = false;
+	gWantSchedulerToRun = false;
 }
 
 
@@ -108,7 +108,7 @@ Scheduler(void)
 			if (gTaskEndTimeInvalid)
 			{
 				gFirstTaskEndTime = now;
-				gTaskEndTimeInvalid = NO;
+				gTaskEndTimeInvalid = false;
 			}
 			else if (gCurrentTimedTask != NULL)
 			{
@@ -135,12 +135,12 @@ Scheduler(void)
 	There is a dedicated scheduler timer interrupt.
 	This handles it.
 ------------------------------------------------------------------------------- */
-static bool gIsPreemptiveTimerInterrupt = NO;	// for DEBUG logging
+static bool gIsPreemptiveTimerInterrupt = false;	// for DEBUG logging
 
 void
 PreemptiveTimerInterruptHandler(void * inQueue)
 {
-gIsPreemptiveTimerInterrupt = YES;
+gIsPreemptiveTimerInterrupt = true;
 	WantSchedule();
 	gKernelScheduler->setCurrentTask(NULL);
 	g0F182C00 = g0F181800 + 20*kMilliseconds;
@@ -151,9 +151,9 @@ void
 WantSchedule(void)
 {
 	if (gHoldScheduleLevel == 0)
-		gDoSchedule = YES;
+		gDoSchedule = true;
 	else
-		gScheduleRequested = YES;
+		gScheduleRequested = true;
 }
 
 
@@ -170,8 +170,8 @@ AllowSchedule(void)
 	EnterAtomic();
 	if (--gHoldScheduleLevel == 0 && gScheduleRequested)
 	{
-		gScheduleRequested = NO;
-		gDoSchedule = YES;		
+		gScheduleRequested = false;
+		gDoSchedule = true;		
 	}
 	ExitAtomic();
 }
@@ -239,7 +239,7 @@ CScheduler::schedule(void)
 	&&  gCurrentTask != gIdleTask)
 	//	Add current task back onto end of queue
 		add(gCurrentTask);
-	gDoSchedule = NO;
+	gDoSchedule = false;
 
 //	Prepare to run the next highest priority task
 	CTask *	task = removeHighestPriority();
@@ -253,7 +253,7 @@ CScheduler::schedule(void)
 
 /*if (gIsPreemptiveTimerInterrupt)
 {
-	gIsPreemptiveTimerInterrupt = NO;
+	gIsPreemptiveTimerInterrupt = false;
 	printf("CScheduler::schedule() -> %p %c%c%c%c\n", task, task->fName>>24, task->fName>>16, task->fName>>8, task->fName);
 }*/
 //	Update the global task priority
@@ -285,7 +285,7 @@ CScheduler::add(CTask * inTask)
 
 //	May need to reprioritize
 	if (priority >= gTaskPriority)
-		gWantSchedulerToRun = YES;
+		gWantSchedulerToRun = true;
 }
 
 
@@ -320,7 +320,7 @@ CScheduler::remove(CTask * inTask)
 //printf("CScheduler::remove(task=%p)\n", inTask);
 			gCurrentTask = NULL;
 			WantSchedule();
-			gWantSchedulerToRun = YES;
+			gWantSchedulerToRun = true;
 		}
 		else
 		{
@@ -359,7 +359,7 @@ CScheduler::removeHighestPriority(void)
 		{
 			if (fTasks[priority].removeFromQueue(task, 0x00020000))
 			{
-				gWantSchedulerToRun = YES;
+				gWantSchedulerToRun = true;
 				if (fTasks[priority].peek() == NULL)
 				{
 					fPriorityMask &= ~BIT(priority);

@@ -56,7 +56,7 @@ Ref	FExitBreakLoop(RefArg inRcvr);
 
 ULong			gNewtConfig = 0x42;	// 000013FC
 
-bool			gPrintLiterals = NO;
+bool			gPrintLiterals = false;
 
 Ref			gREPContext;			// 0C101810
 int			gREPLevel;				// 0C101814
@@ -226,9 +226,6 @@ REPInit(void)
 	SetFrameSlot(RA(gVarFrame), SYMA(trace), RA(NILREF));
 	SetFrameSlot(RA(gVarFrame), SYMA(printDepth), MAKEINT(3));
 	SetFrameSlot(RA(gVarFrame), SYMA(prettyPrint), RA(TRUEREF));
-//	SetFrameSlot(RA(gVarFrame), SYMA(trace), SYMA(full));							// NOT ORIGINAL!
-//	SetFrameSlot(RA(gVarFrame), SYMA(printInstructions), RA(TRUEREF));		// NOT ORIGINAL!
-//	SetFrameSlot(RA(gVarFrame), MakeSymbol("showCodeBlocks"), RA(TRUEREF));	// NOT ORIGINAL!
 
 	gREPContext = gVarFrame;
 	AddGCRoot(&gREPContext);
@@ -465,11 +462,11 @@ REPExceptionNotify(Exception * inException)
 		}
 	}
 
-	else if ((str = GetFramesErrorString((NewtonErr)(unsigned long)inException->data)) != NULL)
+	else if ((str = GetFramesErrorString((NewtonErr)(long)inException->data)) != NULL)
 		gREPout->print(kExceptionErrorStr, str);
 
 	else
-		gREPout->print(kExceptionErrorCodeStr, (char *)inException->name, (NewtonErr)(unsigned long)inException->data);
+		gREPout->print(kExceptionErrorCodeStr, (char *)inException->name, (NewtonErr)(long)inException->data);
 }
 
 #pragma mark -
@@ -491,7 +488,7 @@ FBreakLoop(RefArg inRcvr)
 	gREPContext = inRcvr;
 	gREPLevel++;
 
-	bool		isDone = NO;
+	bool		isDone = false;
 	bool *	savedDone = gBreakLoopDone;
 	gBreakLoopDone = &isDone;
 
@@ -521,7 +518,7 @@ Ref
 FExitBreakLoop(RefArg inRcvr)
 {
 	if (gBreakLoopDone != NULL)
-		*gBreakLoopDone = YES;
+		*gBreakLoopDone = true;
 	else
 		ThrowErr(exInterpreter, kNSErrNotInBreakLoop);
 	return NILREF;
@@ -956,7 +953,7 @@ PNullInTranslator::idle(void)
 
 bool
 PNullInTranslator::frameAvailable(void)
-{ return NO; }
+{ return false; }
 
 Ref
 PNullInTranslator::produceFrame(int inLevel)
@@ -1050,7 +1047,7 @@ PNullOutTranslator::destroy(void)
 
 NewtonErr
 PNullOutTranslator::init(void * inArgs)
-{ fIsInBreakLoop = NO; return noErr; }
+{ fIsInBreakLoop = false; return noErr; }
 
 Timeout
 PNullOutTranslator::idle(void)
@@ -1058,7 +1055,7 @@ PNullOutTranslator::idle(void)
 	if (fIsInBreakLoop)
 	{
 		if (gBreakLoopDone != NULL)
-			*gBreakLoopDone = YES;
+			*gBreakLoopDone = true;
 	}
 	return kNoTimeout;
 }
@@ -1089,11 +1086,11 @@ PNullOutTranslator::flush(void)
 
 void
 PNullOutTranslator::enterBreakLoop(int inLevel)
-{ fIsInBreakLoop = YES; }
+{ fIsInBreakLoop = true; }
 
 void
 PNullOutTranslator::exitBreakLoop(void)
-{ fIsInBreakLoop = NO; }
+{ fIsInBreakLoop = false; }
 
 void
 PNullOutTranslator::stackTrace(void * interpreter)

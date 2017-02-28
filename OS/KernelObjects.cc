@@ -86,7 +86,7 @@ CMonitor *			gTheObjectManagerMonitor;	// 0C1016A4	+08
 NewtonErr
 InitGlobalWorld(void)
 {
-	gDoSchedule = NO;
+	gDoSchedule = false;
 	gKernelScheduler = new CScheduler();
 
 	gCopyTasks = new CDoubleQContainer(offsetof(CTask, fCopyQItem));
@@ -323,6 +323,9 @@ CObjectManager::monitorProc(int inSelector, ObjectMessage * ioMsg)
 
 	if (inSelector == kKill)
 	{
+if (owner->fName == 'newt') {
+	printf("Killing the newt task!\n");
+}
 		owner->fState |= 0x02;
 		fDeferredId = ownerId;
 	}
@@ -424,7 +427,7 @@ CObjectManager::monitorProc(int inSelector, ObjectMessage * ioMsg)
 
 		if (gTaskDestroyed)
 		{
-			gTaskDestroyed = NO;
+			gTaskDestroyed = false;
 			gObjectTable->scavengeAll();
 		}
 	}
@@ -472,7 +475,8 @@ ObjectAlloc(ObjectMessage * inMsg, size_t inSize, ObjectId inOwnerId, ObjectId *
 					XFAILNOT(task = (CTask *)IdToObj(kTaskType, inOwnerId), err = kOSErrBadObjectId;)
 					environment = task->fEnvironment;
 				}
-				XFAILNOT(task = new CTask, err = kOSErrCouldNotCreateObject;)
+				task = new CTask;
+				XFAILIF(task == NULL, err = kOSErrCouldNotCreateObject;)
 				taskId = gObjectTable->add(task, kTaskType, kSystemId);
 				XFAILIF(task->init(inMsg->request.task.proc,
 										 inMsg->request.task.stackSize,
@@ -501,8 +505,8 @@ ObjectAlloc(ObjectMessage * inMsg, size_t inSize, ObjectId inOwnerId, ObjectId *
 		case kObjectEnvironment:
 			XFAIL(inSize != MSG_SIZE(1))
 			{
-				CEnvironment * environment;
-				XFAILNOT(environment = new CEnvironment, err = kOSErrCouldNotCreateObject;)
+				CEnvironment * environment = new CEnvironment;
+				XFAILIF(environment == NULL, err = kOSErrCouldNotCreateObject;)
 				XFAILIF(environment->init(inMsg->request.environment.heap) != noErr, delete environment; err = kOSErrCouldNotCreateObject;)
 				err = RegisterObject(environment, kEnvironmentType, inOwnerId, outId);
 			}
@@ -520,7 +524,8 @@ ObjectAlloc(ObjectMessage * inMsg, size_t inSize, ObjectId inOwnerId, ObjectId *
 					XFAILNOT(monitor = (CMonitor *)IdToObj(kMonitorType, monId), err = kOSErrBadObjectId;)
 					XFAILNOT(monitor->isFaultMonitor(), err = kOSErrNotAFaultMonitor;)	// +44
 				}
-				XFAILNOT(domain = new CDomain, err = kOSErrCouldNotCreateObject;)
+				domain = new CDomain;
+				XFAILIF(domain == NULL, err = kOSErrCouldNotCreateObject;)
 				domId = gObjectTable->add(domain, kDomainType, inOwnerId);
 				XFAILIF(err = domain->init(monId,
 												inMsg->request.domain.rangeStart,
@@ -533,8 +538,8 @@ ObjectAlloc(ObjectMessage * inMsg, size_t inSize, ObjectId inOwnerId, ObjectId *
 		case kObjectSemList:
 			XFAIL(inSize < MSG_SIZE(1))
 			{
-				CSemaphoreOpList * semList;
-				XFAILNOT(semList = new CSemaphoreOpList, err = kOSErrCouldNotCreateObject;)
+				CSemaphoreOpList * semList = new CSemaphoreOpList;
+				XFAILIF(semList == NULL, err = kOSErrCouldNotCreateObject;)
 				XFAILIF(semList->init(inMsg->request.semList.opCount, inMsg->request.semList.ops) != noErr, delete semList; err = kOSErrCouldNotCreateObject;)
 				err = RegisterObject(semList, kSemListType, inOwnerId, outId);
 			}
@@ -543,8 +548,8 @@ ObjectAlloc(ObjectMessage * inMsg, size_t inSize, ObjectId inOwnerId, ObjectId *
 		case kObjectSemGroup:
 			XFAIL(inSize != MSG_SIZE(1))
 			{
-				CSemaphoreGroup * semGroup;
-				XFAILNOT(semGroup = new CSemaphoreGroup, err = kOSErrCouldNotCreateObject;)
+				CSemaphoreGroup * semGroup = new CSemaphoreGroup;
+				XFAILIF(semGroup == NULL, err = kOSErrCouldNotCreateObject;)
 				XFAILIF(semGroup->init(inMsg->request.semGroup.size) != noErr, delete semGroup; err = kOSErrCouldNotCreateObject;)
 				err = RegisterObject(semGroup, kSemGroupType, inOwnerId, outId);
 			}
@@ -556,8 +561,8 @@ ObjectAlloc(ObjectMessage * inMsg, size_t inSize, ObjectId inOwnerId, ObjectId *
 				CTask * task;
 				XFAILNOT(task = (CTask *)IdToObj(kTaskType, inOwnerId), err = kOSErrBadObjectId;)
 
-				CSharedMem * sharedMem;
-				XFAILNOT(sharedMem = new CSharedMem, err = kOSErrCouldNotCreateObject;)
+				CSharedMem * sharedMem = new CSharedMem;
+				XFAILIF(sharedMem == NULL, err = kOSErrCouldNotCreateObject;)
 				XFAILIF(sharedMem->init(task->fEnvironment) != noErr, delete sharedMem; err = kOSErrCouldNotCreateObject;)
 				err = RegisterObject(sharedMem, kSharedMemType, inOwnerId, outId);
 			}
@@ -569,8 +574,8 @@ ObjectAlloc(ObjectMessage * inMsg, size_t inSize, ObjectId inOwnerId, ObjectId *
 				CTask * task;
 				XFAILNOT(task = (CTask *)IdToObj(kTaskType, inOwnerId), err = kOSErrBadObjectId;)
 
-				CSharedMemMsg * sharedMemMsg;
-				XFAILNOT(sharedMemMsg = new CSharedMemMsg, err = kOSErrCouldNotCreateObject;)
+				CSharedMemMsg * sharedMemMsg = new CSharedMemMsg;
+				XFAILIF(sharedMemMsg == NULL, err = kOSErrCouldNotCreateObject;)
 				XFAILIF(sharedMemMsg->init(task->fEnvironment) != noErr, delete sharedMemMsg; err = kOSErrCouldNotCreateObject;)
 				err = RegisterObject(sharedMemMsg, kSharedMemMsgType, inOwnerId, outId);
 			}
@@ -581,19 +586,20 @@ ObjectAlloc(ObjectMessage * inMsg, size_t inSize, ObjectId inOwnerId, ObjectId *
 			{
 				ObjectId			envId, monId;
 				CEnvironment *	environment;
-				CMonitor *		monitor;
-				XFAILNOT(monitor = new CMonitor, err = kOSErrCouldNotCreateObject;)
+				CMonitor *		monitor = new CMonitor;
+				XFAILIF(monitor == NULL, err = kOSErrCouldNotCreateObject;)
 
 				if ((envId = inMsg->request.monitor.envId) != kNoId)
 				{
 					// look up environment from its id
-					XFAILNOT(environment = (CEnvironment *)IdToObj(kEnvironmentType, envId), err = kOSErrBadObjectId;)
+					environment = (CEnvironment *)IdToObj(kEnvironmentType, envId);
+					XFAILIF(environment == NULL, err = kOSErrBadObjectId;)
 				}
 				else
 				{
 					// get environment from owner task
-					CTask * task;
-					XFAILNOT(task = (CTask *)IdToObj(kTaskType, inOwnerId), err = kOSErrBadObjectId;)
+					CTask * task = (CTask *)IdToObj(kTaskType, inOwnerId);
+					XFAILIF(task == NULL, err = kOSErrBadObjectId;)
 					environment = task->fEnvironment;
 				}
 				monId = gObjectTable->add(monitor, kMonitorType, inOwnerId);
@@ -617,7 +623,7 @@ ObjectAlloc(ObjectMessage * inMsg, size_t inSize, ObjectId inOwnerId, ObjectId *
 					phys = new CPhys;
 				else
 					phys = new CLittlePhys;
-				XFAILNOT(phys, err = kOSErrCouldNotCreateObject;)
+				XFAILIF(phys == NULL, err = kOSErrCouldNotCreateObject;)
 				XFAILIF(phys->init(inMsg->request.phys.base,
 										 inMsg->request.phys.size,
 										 inMsg->request.phys.readOnly,
@@ -887,7 +893,7 @@ DeleteTask(CTask * inTask)
 	delete inTask;
 
 	gObjectTable->reassignOwnership(taskId, bequeathId);
-	gTaskDestroyed = YES;
+	gTaskDestroyed = true;
 	CheckCopyTask();
 }
 
@@ -1056,7 +1062,7 @@ CObjectTable::reassignOwnership(ObjectId inOwnerId, ObjectId inNewOwnerId)
 	Args:		--
 	Return:	the id
 ------------------------------------------------------------------------------*/
-static bool			gWrappedGlobalUniqueId = NO;	// 0C105540
+static bool			gWrappedGlobalUniqueId = false;	// 0C105540
 
 ObjectId
 CObjectTable::nextGlobalUniqueId(void)
@@ -1067,7 +1073,7 @@ static ObjectId	gNextGlobalUniqueId = 0;		// 0C105544
 	EnterAtomic();
 	uid = ++gNextGlobalUniqueId;
 	if (uid == 256)
-		gWrappedGlobalUniqueId = YES;
+		gWrappedGlobalUniqueId = true;
 	ExitAtomic();
 
 	return uid;
@@ -1112,7 +1118,7 @@ CObjectTable::newId(KernelTypes inType)
 /*------------------------------------------------------------------------------
 	Determine whether an object already exists in the table.
 	Args:		inId			the object’s id
-	Return:	YES if it exists
+	Return:	true if it exists
 ------------------------------------------------------------------------------*/
 
 bool
@@ -1122,10 +1128,10 @@ CObjectTable::exists(ObjectId inId)
 	for (CObject * obj = fObject[i]; obj != NULL; obj = obj->fNext)
 	{
 		if (obj->fId == inId)
-			return YES;
+			return true;
 	}
 
-	return NO;
+	return false;
 }
 
 
@@ -1255,7 +1261,7 @@ CObjectTableIterator::CObjectTableIterator(CObjectTable * inTable, ObjectId inId
 /*------------------------------------------------------------------------------
 	Set the iterator at a position.
 	Args:		inId				the object’s id
-	Return:	YES if the position was set successfully
+	Return:	true if the position was set successfully
 ------------------------------------------------------------------------------*/
 
 bool
@@ -1267,17 +1273,17 @@ CObjectTableIterator::setCurrentPosition(ObjectId inId)
 	do
 	{
 		if (!getThisLineNextEntry())
-			return NO;
+			return false;
 	} while (fId != kNoId && fId > inId);
 
-	return YES;
+	return true;
 }
 
 
 /*------------------------------------------------------------------------------
 	Update parameters for the next entry in the hash chain.
 	Args:		--
-	Return:	YES if there is an entry
+	Return:	true if there is an entry
 ------------------------------------------------------------------------------*/
 
 bool
@@ -1288,20 +1294,20 @@ CObjectTableIterator::getThisLineNextEntry(void)
 	{
 		// we found an object, its id is the iterator’s value
 		fId = (ObjectId)*fObject;
-		return YES;
+		return true;
 	}
 
 	// if we’re done, say so now
 	fId = kNoId;
 	if (fIsDone)
-		return NO;
+		return false;
 
 	// update the index - if wrapped to the beginning, we’re done
 	fIndex = (fIndex + 1) & kObjectTableMask;
 	if (fIndex == fInitialIndex)
-		fIsDone = YES;
+		fIsDone = true;
 
-	return YES;
+	return true;
 }
 
 

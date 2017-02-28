@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "FillSymbolTable(CPointerTable*):SymbolTable.cc">
+      </ContextState>
+      <ContextState
+         contextName = "CSymbolTable::find(char const*):SymbolTable.cc">
+      </ContextState>
+      <ContextState
+         contextName = "PlainCFuncName(int):ResMaker.cc">
+      </ContextState>
+      <ContextState
+         contextName = "CPointerTable::compare(CHashTableEntry*, CHashTableEntry*):SymbolTable.cc">
+         <PersistentStrings>
+            <PersistentString
+               value = "(CPointer *)inEntry2">
+            </PersistentString>
+            <PersistentString
+               value = "(CPointer *)inEntry1">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "CHashTable::lookup(CHashTableEntry*):SymbolTable.cc">
+         <PersistentStrings>
+            <PersistentString
+               value = "(CPointer *)entry">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "CPointerTable::find(unsigned int):SymbolTable.cc">
+      </ContextState>
+      <ContextState
+         contextName = "main:ResMaker.cc">
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

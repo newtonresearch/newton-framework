@@ -849,11 +849,11 @@ FFormattedNumberStr(RefArg inRcvr, RefArg inNum, RefArg inFmtStr)
 		if (err == noErr)
 			result = MakeString(str);
 		else if (err == -2)
-			result = Clone(RA(STRnTooLarge));
+			result = Clone(RA(errNumberTooLarge));
 		else if (err == -3)
-			result = Clone(RA(STRnTooSmall));
+			result = Clone(RA(errNumberTooSmall));
 	}
 	else
-		result = Clone(RA(STRnan));
+		result = Clone(RA(errNotANumber));
 	return result;
 }

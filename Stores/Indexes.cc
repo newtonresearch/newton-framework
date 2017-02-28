@@ -182,13 +182,13 @@ CSoupIndex::readInfo(void)
 	NewtonErr err;
 	XTRY
 	{
-		size_t infoSize;
-		XFAIL(err = store()->getObjectSize(fInfoId, &infoSize))
-		if (infoSize > sizeof(IndexInfo))
-			infoSize = sizeof(IndexInfo);
+		size_t theSize;
+		XFAIL(err = store()->getObjectSize(fInfoId, &theSize))
+		if (theSize > sizeof(IndexInfo))
+			theSize = sizeof(IndexInfo);
 		else
 			fInfo.x19 = 0;	// sic -- but just gonna read right over the top of it..?
-		err = store()->read(fInfoId, 0, &fInfo, infoSize);
+		err = store()->read(fInfoId, 0, &fInfo, theSize);
 	}
 	XENDTRY;
 	return err;
@@ -205,7 +205,8 @@ CSoupIndex::readInfo(void)
 void
 CSoupIndex::createFirstRoot(void)
 {
-	setRootNode(newNode()->id);
+	NodeHeader * rootNode = newNode();
+	setRootNode(rootNode->id);
 }
 
 
@@ -240,7 +241,7 @@ CSoupIndex::newNode(void)
 {
 	PSSId nodeId;
 	OSERRIF(store()->newObject(&nodeId, 0));
-	NodeHeader * theNode = fCache->rememberNode(this, nodeId, fInfo.nodeSize, NO, YES);
+	NodeHeader * theNode = fCache->rememberNode(this, nodeId, fInfo.nodeSize, false, true);
 	initNode(theNode, nodeId);
 	return theNode;
 }
@@ -264,7 +265,9 @@ CSoupIndex::initNode(NodeHeader * ioNode, PSSId inId)
 
 	// set up an empty key field
 	KeyField * kf = firstKeyField(ioNode);
-	kf->type = kf->length = 0;
+	kf->type = KeyField::kData;
+	kf->length = 0;
+
 	setNodeNo(ioNode, 0, 0);
 }
 
@@ -280,7 +283,7 @@ CSoupIndex::newDupNode(void)
 {
 	PSSId nodeId;
 	OSERRIF(store()->newObject(&nodeId, 0));
-	DupNodeHeader * theNode = (DupNodeHeader *)fCache->rememberNode(this, nodeId, fInfo.nodeSize, YES, YES);
+	DupNodeHeader * theNode = (DupNodeHeader *)fCache->rememberNode(this, nodeId, fInfo.nodeSize, true, true);
 	theNode->id = nodeId;
 	theNode->nextId = 0;
 	theNode->bytesRemaining = fInfo.nodeSize - 16;
@@ -303,29 +306,15 @@ CSoupIndex::newDupNode(void)
 void
 CSoupIndex::setNodeNo(NodeHeader * inNode, int inSlot, ULong inNodeNum)
 {
-	ULong * nodeNumPtr = ((ULong *)keyFieldAddr(inNode, inSlot)) - 1;
-	*nodeNumPtr = inNodeNum;	// need to handle misaligned pointer...
-#if 0
-//	...like this
-	char * sp00 = (char *)keyFieldAddr(inNode, inSlot) - 4;
-	union { char ch[4]; ULong ul; } sp04;
-	sp04.ul = inNodeNum;
-	if ((sp00 & 0x03) != 0)
-	{
-		*(sp00 + 0) = sp04.ch[0];	// byte endianness?
-		*(sp00 + 1) = sp04.ch[1];
-		*(sp00 + 2) = sp04.ch[2];
-		*(sp00 + 3) = sp04.ch[3];
-	}
-	else
-		*sp00 = inNodeNum;
-#endif
+	KeyField * kf = keyFieldAddr(inNode, inSlot);
+	ULong * nodeNumPtr = (ULong *)kf - 1;
+	*nodeNumPtr = inNodeNum;	// needs to handle misaligned pointer!
 }
 
 
 /*------------------------------------------------------------------------------
 	Set the root node, optionally creating it if it doesn’t exist.
-	Args:		inCreate		YES => create a root node if one doesn’t exist
+	Args:		inCreate		true => create a root node if one doesn’t exist
 	Return:	pointer to root node
 				NULL => we don’t have a root node
 ------------------------------------------------------------------------------*/
@@ -361,7 +350,7 @@ CSoupIndex::readANode(PSSId inId, PSSId inNextId)
 		// it’s not in the cache; read it from store
 		size_t itsSize;
 		OSERRIF(store()->getObjectSize(inId, &itsSize));
-		theNode = fCache->rememberNode(this, inId, fInfo.nodeSize, NO, NO);
+		theNode = fCache->rememberNode(this, inId, fInfo.nodeSize, false, false);
 		OSERRIF(store()->read(inId, 0, theNode, itsSize));
 		// move data to end of node buf
 		char * data = (char *)&theNode->keyFieldOffset[theNode->numOfSlots + 1];
@@ -394,7 +383,7 @@ CSoupIndex::readADupNode(PSSId inId)
 		// it’s not in the cache; read it from store
 		size_t itsSize;
 		OSERRIF(store()->getObjectSize(inId, &itsSize));
-		theNode = fCache->rememberNode(this, inId, fInfo.nodeSize, YES, NO);
+		theNode = fCache->rememberNode(this, inId, fInfo.nodeSize, true, false);
 		OSERRIF(store()->read(inId, 0, theNode, itsSize));
 	}
 	// set its id
@@ -537,7 +526,7 @@ CSoupIndex::destroy(void)
 		newton_try
 		{
 			NodeHeader * theNode;
-			if ((theNode = readRootNode(NO)) != NULL)
+			if ((theNode = readRootNode(false)) != NULL)
 				freeNodes(theNode);
 			setRootNode(0);
 		}
@@ -571,8 +560,8 @@ CSoupIndex::kfAssembleKeyField(KeyField * outField, void * inKey, void * inData)
 	if ((SKey::kOffsetToData + keyLen + SKey::kOffsetToData + dataLen) > kKeyFieldBufSize)
 		ThrowErr(exStore, kNSErrInternalError);
 
-	outField->type = 0;
-	outField->length = KeyField::kOffsetToData + keyLen + dataLen;
+	outField->type = KeyField::kData;
+	outField->length = KeyField::kOffsetToData + keyLen + dataLen;	// length includes (short) type/length header
 	memmove(outField->buf, inKey, keyLen);
 	if (dataLen)
 		memmove(outField->buf + keyLen, inData, dataLen);
@@ -628,7 +617,7 @@ CSoupIndex::kfNextDataAddr(KeyField * inField, void * inData, void ** outNextDat
 		size_t keyLen = kfSizeOfKey(inField->buf);
 		ALIGNkfSIZE(keyLen);
 		*outNextData = inField->buf + keyLen;
-		return YES;
+		return true;
 	}
 	char * data, * dataLimit = (char *)inField + inField->length - kSizeOfLengthWords;
 	size_t dataLen = kfSizeOfData(inData);
@@ -657,7 +646,7 @@ CSoupIndex::kfLastDataAddr(KeyField * inField)
 size_t
 CSoupIndex::kfDupCount(KeyField * inField)
 {
-	if (inField->type == 1)
+	if (inField->type == KeyField::kDupData)
 	{
 		char * nextDup = (char *)inField + inField->length;
 		short * dupCount = (short *)nextDup - 3;
@@ -669,7 +658,7 @@ CSoupIndex::kfDupCount(KeyField * inField)
 void
 CSoupIndex::kfSetDupCount(KeyField * inField, short inCount)
 {
-	if (inField->type == 1)
+	if (inField->type == KeyField::kDupData)
 	{
 		char * nextDup = (char *)inField + inField->length;
 		short * dupCount = (short *)nextDup - 3;
@@ -680,7 +669,7 @@ CSoupIndex::kfSetDupCount(KeyField * inField, short inCount)
 ULong
 CSoupIndex::kfNextDupId(KeyField * inField)
 {
-	if (inField->type == 1)
+	if (inField->type == KeyField::kDupData)
 	{
 		char * nextDup = (char *)inField + inField->length;
 		PSSId * nextDupId = (PSSId *)nextDup - 1;
@@ -705,7 +694,7 @@ CSoupIndex::kfInsertData(KeyField * ioField, void * inLocation, void * inData)
 {
 	size_t dataSize = kfSizeOfData(inData);
 	ALIGNkfSIZE(dataSize);
-	if (ioField->type == 1)
+	if (ioField->type == KeyField::kDupData)
 	{
 		char * fieldEnd = (char *)ioField + ioField->length;
 		memmove((char *)inLocation + dataSize, inLocation, fieldEnd - (char *)inLocation);	// open up a gap
@@ -720,7 +709,7 @@ CSoupIndex::kfDeleteData(KeyField * ioField, void * inData)
 {
 	size_t dataSize = kfSizeOfData(inData);
 	ALIGNkfSIZE(dataSize);
-	if (ioField->type == 1)
+	if (ioField->type == KeyField::kDupData)
 	{
 		char * fieldEnd = (char *)ioField + ioField->length;
 		char * dataEnd = (char *)inData + dataSize;
@@ -737,13 +726,13 @@ CSoupIndex::kfReplaceFirstData(KeyField * ioField, void * inData)
 	ALIGNkfSIZE(keySize);
 	size_t dataSize = kfSizeOfData(inData);
 	ALIGNkfSIZE(dataSize);
-	if (ioField->type == 0)
+	if (ioField->type == KeyField::kData)
 	{
 		// it’s a singleton
 		ioField->length = keySize + dataSize;				// update the size
 		memmove((char *)ioField + keySize, inData, dataSize);	// copy data into data space
 	}
-	else if (ioField->type == 1)
+	else if (ioField->type == KeyField::kDupData)
 	{
 		char * fieldData = (char *)ioField + keySize;
 		size_t fieldDataSize = kfSizeOfData(fieldData);
@@ -777,9 +766,9 @@ void
 CSoupIndex::kfConvertKeyField(int inArg1, KeyField * inField)
 {
 	//size_t theSize = kfSizeOfKey(inField->buf);	// unused
-	if (inField->type == 0 && inArg1 == 1)
+	if (inField->type == KeyField::kData && inArg1 == 1)
 	{
-		inField->type = 1;
+		inField->type = KeyField::kDupData;
 		inField->length += 6;	// sizeof(DupInfo) ?
 		kfSetDupCount(inField, 1);
 		kfSetNextDupId(inField, 0);
@@ -801,7 +790,7 @@ CSoupIndex::nextDupDataAddr(DupNodeHeader * inDupNode, void * inData, void ** ou
 	if (inData == NULL)
 	{
 		*outData = firstDupDataAddr(inDupNode);
-		return YES;
+		return true;
 	}
 	char * limit = ((char *)inDupNode) + inDupNode->bytesUsed;
 	size_t dataSize = kfSizeOfData(inData);
@@ -847,14 +836,14 @@ CSoupIndex::appendDupData(DupNodeHeader * inDupNode, void * inData)
 	size_t dataSize = kfSizeOfData(inData);
 	ALIGNkfSIZE(dataSize);
 	if (dataSize > inDupNode->bytesRemaining)
-		return NO;	// no room
+		return false;	// no room
 
 	memmove(p, inData, dataSize);
 
 	inDupNode->bytesRemaining -= dataSize;
 	inDupNode->bytesUsed += dataSize;
 	inDupNode->numOfSlots++;
-	return YES;
+	return true;
 }
 
 
@@ -865,7 +854,7 @@ CSoupIndex::prependDupData(DupNodeHeader * inDupNode, void * inData)
 	size_t dataSize = kfSizeOfData(inData);
 	ALIGNkfSIZE(dataSize);
 	if (dataSize > inDupNode->bytesRemaining)
-		return NO;	// no room
+		return false;	// no room
 
 	char * pEnd = p + dataSize;
 	char * limit = (char *)inDupNode + inDupNode->bytesUsed;
@@ -876,7 +865,7 @@ CSoupIndex::prependDupData(DupNodeHeader * inDupNode, void * inData)
 	inDupNode->bytesRemaining -= dataSize;
 	inDupNode->bytesUsed += dataSize;
 	inDupNode->numOfSlots++;
-	return YES;
+	return true;
 }
 
 
@@ -895,7 +884,7 @@ CSoupIndex::deleteDupData(DupNodeHeader * inDupNode, void * inData)
 	inDupNode->bytesRemaining += dataSize;
 	inDupNode->bytesUsed -= dataSize;
 	inDupNode->numOfSlots--;
-	return YES;
+	return true;
 }
 
 
@@ -920,23 +909,23 @@ void *
 CSoupIndex::findNextDupDataAddr(DupNodeHeader ** ioDupNode, void * inData, bool * outFound)
 {
 	PSSId dupId;
-	void * sp00;
-	while ((sp00 = findDupDataAddr(*ioDupNode, inData, NULL)) == 0)
+	void * dupDataAddr;
+	while ((dupDataAddr = findDupDataAddr(*ioDupNode, inData, NULL)) == 0)
 	{
 		if ((dupId = (*ioDupNode)->nextId) != 0)
 			*ioDupNode = readADupNode(dupId);
 		else
 		{
 			if (outFound != NULL)
-				*outFound = NO;
+				*outFound = false;
 			return NULL;
 		}
 	}
 
 	if (outFound != NULL)
-		*outFound = YES;
-	if (nextDupDataAddr(*ioDupNode, sp00, &sp00))
-		return sp00;
+		*outFound = true;
+	if (nextDupDataAddr(*ioDupNode, dupDataAddr, &dupDataAddr))
+		return dupDataAddr;
 	if ((dupId = (*ioDupNode)->nextId) != 0)
 	{
 		*ioDupNode = readADupNode(dupId);
@@ -952,24 +941,24 @@ CSoupIndex::findPriorDupDataAddr(DupNodeHeader ** ioDupNode, void * inData, bool
 	DupNodeHeader * priorDupNode;
 	void * priorData;
 	PSSId dupId;
-	void * sp00;
-	while (findDupDataAddr(*ioDupNode, inData, &sp00) == 0)
+	void * dupDataAddr;
+	while (findDupDataAddr(*ioDupNode, inData, &dupDataAddr) == 0)
 	{
-		priorData = sp00;
+		priorData = dupDataAddr;
 		priorDupNode = *ioDupNode;
 		if ((dupId = (*ioDupNode)->nextId) != 0)
 			*ioDupNode = readADupNode(dupId);
 		else
 		{
 			if (outFound != NULL)
-				*outFound = NO;
+				*outFound = false;
 			return NULL;
 		}
 	}
 
 	if (outFound != NULL)
-		*outFound = YES;
-	if (sp00 == NULL)
+		*outFound = true;
+	if (dupDataAddr == NULL)
 	{
 		if (priorData != NULL)
 		{
@@ -985,7 +974,8 @@ CSoupIndex::findPriorDupDataAddr(DupNodeHeader ** ioDupNode, void * inData, bool
 ULong
 CSoupIndex::leftNodeNo(NodeHeader * inNode, int inSlot)
 {
-	ULong * nodeNumPtr = ((ULong *)keyFieldAddr(inNode, inSlot)) - 1;
+	KeyField * kf = keyFieldAddr(inNode, inSlot);
+	ULong * nodeNumPtr = (ULong *)kf - 1;
 	return *nodeNumPtr;	// need to handle misaligned pointer
 }
 
@@ -993,7 +983,8 @@ CSoupIndex::leftNodeNo(NodeHeader * inNode, int inSlot)
 ULong
 CSoupIndex::rightNodeNo(NodeHeader * inNode, int inSlot)
 {
-	ULong * nodeNumPtr = ((ULong *)keyFieldAddr(inNode, inSlot+1)) - 1;
+	KeyField * kf = keyFieldAddr(inNode, inSlot+1);
+	ULong * nodeNumPtr = (ULong *)kf - 1;
 	return *nodeNumPtr;	// need to handle misaligned pointer
 }
 
@@ -1028,13 +1019,13 @@ CSoupIndex::firstKeyField(NodeHeader * inNode)
 KeyField *
 CSoupIndex::lastKeyField(NodeHeader * inNode)
 {
-	return keyFieldAddr(inNode, inNode->numOfSlots - 1);
+	return keyFieldAddr(inNode, lastSlotInNode(inNode));
 }
 
 char *
 CSoupIndex::keyFieldBase(NodeHeader * inNode)
 {
-	return (char *)&inNode->keyFieldOffset[inNode->numOfSlots + 1] + inNode->bytesRemaining;
+	return (char *)&inNode->keyFieldOffset[1 + inNode->numOfSlots] + inNode->bytesRemaining;
 }
 
 #pragma mark -
@@ -1044,7 +1035,7 @@ CSoupIndex::createNewRoot(KeyField * inField, ULong inArg2)
 {
 	NodeHeader * theNode = newNode();
 	putKeyIntoNode(inField, inArg2, theNode, 0);
-	setNodeNo(theNode, 0, fInfo.nodeSize);
+	setNodeNo(theNode, 0, fInfo.rootNodeId);
 	setRootNode(theNode->id);
 }
 
@@ -1063,7 +1054,7 @@ CSoupIndex::insertKey(KeyField * inField, NodeHeader * inNode, ULong * ioArg3, b
 	{
 		if (theId == 0)
 		{
-			*ioArg4 = YES;
+			*ioArg4 = true;
 			*ioArg3 = 0;
 		}
 		else
@@ -1075,14 +1066,14 @@ CSoupIndex::insertKey(KeyField * inField, NodeHeader * inNode, ULong * ioArg3, b
 			keyInNode(inField, inNode, &theId, &theSlot);
 			if (roomInNode(inNode, inField))
 			{
-				*ioArg4 = NO;
+				*ioArg4 = false;
 				changeNode(inNode);
 				putKeyIntoNode(inField, *ioArg3, inNode, theSlot);
 				fCache->dirtyNode(inNode);
 			}
 			else
 			{
-				*ioArg4 = YES;
+				*ioArg4 = true;
 				splitANode(inField, ioArg3, inNode, theSlot);
 			}
 		}
@@ -1130,13 +1121,13 @@ CSoupIndex::deleteKey(KeyField * inField, NodeHeader * inNode, bool * outArg3)
 {
 	PSSId theId;
 	int theSlot;
-	bool r9 = NO;
+	bool r9 = false;
 
 	if (keyInNode(inField, inNode, &theId, &theSlot))
 	{
 		if (theId == 0)
 		{
-			r9 = YES;
+			r9 = true;
 			if (fSavedKey->length != 0)
 				fSavedKey->length = 0;
 			else
@@ -1146,14 +1137,14 @@ CSoupIndex::deleteKey(KeyField * inField, NodeHeader * inNode, bool * outArg3)
 		}
 		else
 		{
-			r9 = YES;
+			r9 = true;
 			KeyField * r10 = keyFieldAddr(inNode, theSlot);
 			if (r10->type == KeyField::kDupData
 			&& ((kfDupCount(r10) > 1
 			  || kfNextDupId(r10) != 0)))
 			{
 				deleteTheKey(inNode, theSlot, inField);
-				*outArg3 = NO;
+				*outArg3 = false;
 			}
 			else
 			{
@@ -1165,7 +1156,7 @@ CSoupIndex::deleteKey(KeyField * inField, NodeHeader * inNode, bool * outArg3)
 				{
 					moveKey(fSavedKey, fLeafKey);
 					_BTRemoveKey(fLeafKey);
-					*outArg3 = NO;
+					*outArg3 = false;
 				}
 			}
 		}
@@ -1176,7 +1167,7 @@ CSoupIndex::deleteKey(KeyField * inField, NodeHeader * inNode, bool * outArg3)
 		{
 			if (fSavedKey->length != 0)
 			{
-				r9 = YES;
+				r9 = true;
 				fSavedKey->length = 0;
 				if (!(*outArg3 = nodeUnderflow(inNode)))
 					fCache->dirtyNode(inNode);
@@ -1206,10 +1197,10 @@ CSoupIndex::moveKey(KeyField * inFromField, KeyField * outToField)
 	if (fieldSize != 0)
 	{
 		memmove(outToField, inFromField, fieldSize);
-		return YES;
+		return true;
 	}
 	outToField->length = 0;
-	return NO;
+	return false;
 }
 
 
@@ -1282,7 +1273,9 @@ CSoupIndex::putKeyIntoNode(KeyField * inField, ULong inArg2, NodeHeader * ioNode
 
 	char * r10 = keyFieldBase(ioNode) - inField->length;
 	memmove(r10, inField, inField->length);
-	size_t numOfSlotsToMove = (ioNode->numOfSlots - inSlot) + 1;
+	int numOfSlotsToMove = (ioNode->numOfSlots - inSlot) + 1;
+if (numOfSlotsToMove <= 0)
+	printf("huh?\n");
 	// open up a gap for the offset
 	memmove(&ioNode->keyFieldOffset[inSlot+1], &ioNode->keyFieldOffset[inSlot], numOfSlotsToMove * sizeof(short));
 	// insert offset to new key
@@ -1301,15 +1294,15 @@ CSoupIndex::deleteKeyFromNode(NodeHeader * ioNode, int inSlot)
 		ThrowErr(exStore, kNSErrInternalError);
 
 	setNodeNo(ioNode, inSlot+1, leftNodeNo(ioNode, inSlot));
-	KeyField * r8 = keyFieldAddr(ioNode, inSlot);
-	size_t r6 = SKey::kOffsetToData + SKey::kOffsetToData + r8->length;
+	KeyField * kf = keyFieldAddr(ioNode, inSlot);
+	size_t r6 = SKey::kOffsetToData + SKey::kOffsetToData + kf->length;
 	char * r1 = keyFieldBase(ioNode);
 	short r9 = ioNode->keyFieldOffset[inSlot] + r6;
-	memmove(r1+r6, r1, (char *)r8-r1-(SKey::kOffsetToData + SKey::kOffsetToData));
+	memmove(r1+r6, r1, (char *)kf-r1-(SKey::kOffsetToData + SKey::kOffsetToData));
 	size_t numOfSlotsToMove = (ioNode->numOfSlots - inSlot) + 1;
 	memmove(&ioNode->keyFieldOffset[inSlot], &ioNode->keyFieldOffset[inSlot+1], numOfSlotsToMove * sizeof(short));
 	ioNode->numOfSlots--;
-	ioNode->bytesRemaining += (KeyField::kOffsetToData + SKey::kOffsetToData + SKey::kOffsetToData + r8->length);
+	ioNode->bytesRemaining += (KeyField::kOffsetToData + SKey::kOffsetToData + SKey::kOffsetToData + kf->length);
 	for (int slot = 0; slot < ioNode->numOfSlots; slot++)
 	{
 		short offset = ioNode->keyFieldOffset[slot];
@@ -1324,15 +1317,15 @@ CSoupIndex::keyInNode(KeyField * inKeyField, NodeHeader * inNode, PSSId * outId,
 {
 	// perform binary search for key
 	int cmp = 0;
-	int index = 0;	// r6
-	int firstIndex = 0;					// r8
-	int lastIndex = inNode->numOfSlots - 1;	// r7
+	int index = 0;
+	int firstIndex = 0;
+	int lastIndex = lastSlotInNode(inNode);
 	while (lastIndex >= firstIndex)
 	{
 		index = (firstIndex + lastIndex)/2;
 
-		KeyField * r2 = keyFieldAddr(inNode, index);
-		cmp = compareKeys(*(const SKey *)inKeyField->buf, *(const SKey *)r2->buf);
+		KeyField * kf = keyFieldAddr(inNode, index);
+		cmp = compareKeys(*(const SKey *)inKeyField->buf, *(const SKey *)kf->buf);
 
 		if (cmp > 0)
 		// key must be in higher range
@@ -1345,14 +1338,14 @@ CSoupIndex::keyInNode(KeyField * inKeyField, NodeHeader * inNode, PSSId * outId,
 		// got it!
 			*outSlot = index;
 			*outId = leftNodeNo(inNode, index);
-			return YES;
+			return true;
 		}	
 	}
 	if (cmp > 0)
 		index++;
 	*outSlot = index;
 	*outId = leftNodeNo(inNode, index);
-	return NO;
+	return false;
 }
 
 
@@ -1363,7 +1356,7 @@ CSoupIndex::findFirstKey(NodeHeader * inNode, KeyField * outKey)
 	while ((nodeNo = firstNodeNo(inNode)) != 0)
 		readANode(nodeNo, inNode->id);
 	moveKey(firstKeyField(inNode), outKey);
-	return YES;
+	return true;
 }
 
 
@@ -1377,7 +1370,7 @@ CSoupIndex::findLastKey(NodeHeader * inNode, KeyField * outKey)
 	moveKey(kf, outKey);
 	if (kf->type == KeyField::kDupData)
 		kfReplaceFirstData(outKey, lastDupDataAddr(kf, NULL));
-	return YES;
+	return true;
 }
 
 
@@ -1444,7 +1437,7 @@ CSoupIndex::mergeTwoNodes(KeyField * inField, NodeHeader * inNode1, NodeHeader *
 		if (isNode2Underflow)
 		{
 			int slot;
-			for (slot = 0; slot < inNode3->numOfSlots && nodeUnderflow(inNode2); slot++)
+			for (slot = 0; slot < inNode3->numOfSlots && nodeUnderflow(inNode2); ++slot)
 			{
 				putKeyIntoNode(keyFieldAddr(inNode3, 0), rightNodeNo(inNode3, 0), inNode2, inNode2->numOfSlots);
 				deleteKeyFromNode(inNode3, 0);
@@ -1456,7 +1449,7 @@ CSoupIndex::mergeTwoNodes(KeyField * inField, NodeHeader * inNode1, NodeHeader *
 		else
 		{
 			int slot;
-			for (slot = inNode2->numOfSlots - 1; slot > 0 && nodeUnderflow(inNode3); slot--)
+			for (slot = lastSlotInNode(inNode2); slot > 0 && nodeUnderflow(inNode3); --slot)
 			{
 				putKeyIntoNode(keyFieldAddr(inNode2, slot), rightNodeNo(inNode2, slot), inNode3, 0);
 				deleteKeyFromNode(inNode2, slot);
@@ -1467,7 +1460,7 @@ CSoupIndex::mergeTwoNodes(KeyField * inField, NodeHeader * inNode1, NodeHeader *
 		}
 		fCache->dirtyNode(inNode2);
 		fCache->dirtyNode(inNode3);
-		result = NO;
+		result = false;
 		insertAfterDelete(inField, inNode3->id, inNode1);
 	}
 	
@@ -1483,7 +1476,7 @@ CSoupIndex::splitANode(KeyField * inField, ULong * ioNo, NodeHeader * ioNode, in
 		putKeyIntoNode(inField, *ioNo, neoNode, 0);
 
 	int slot;
-	for (slot = ioNode->numOfSlots - 1; slot > 1 && nodeUnderflow(neoNode); slot--)
+	for (slot = lastSlotInNode(ioNode); slot > 1 && nodeUnderflow(neoNode); --slot)
 	{
 		putKeyIntoNode(keyFieldAddr(ioNode, slot), rightNodeNo(ioNode, slot), neoNode, 0);
 		changeNode(ioNode);
@@ -1491,7 +1484,7 @@ CSoupIndex::splitANode(KeyField * inField, ULong * ioNo, NodeHeader * ioNode, in
 		if (inSlot == slot)
 			putKeyIntoNode(inField, *ioNo, neoNode, 0);
 	}
-	if (inSlot > slot)
+	if (inSlot < slot)
 	{
 		changeNode(ioNode);
 		putKeyIntoNode(inField, *ioNo, ioNode, inSlot);
@@ -1693,7 +1686,7 @@ CSoupIndex::insertDupData(KeyField * inField, NodeHeader * inNode, int inSlot, U
 {
 	void * sp00;
 	char sp04[kKeyFieldBufSize];
-	*outSplit = NO;
+	*outSplit = false;
 	void * fieldData = kfFirstDataAddr(inField);
 	memmove(&sp04, fieldData, kfSizeOfData(fieldData));
 
@@ -1717,7 +1710,7 @@ CSoupIndex::insertDupData(KeyField * inField, NodeHeader * inNode, int inSlot, U
 	}
 	else
 	{
-		*outSplit = YES;
+		*outSplit = true;
 		splitANode(inField, outNodeNo, inNode, inSlot);
 	}
 }
@@ -1899,10 +1892,10 @@ int
 CSoupIndex::_BTEnterKey(KeyField * inField)
 {
 	ULong sp00;
-	bool sp04 = NO;
+	bool sp04 = false;
 	NodeHeader * theNode;
 	f_BTStatus = 0;
-	if ((theNode = readRootNode(YES)) != NULL
+	if ((theNode = readRootNode(true)) != NULL
 	&& insertKey(inField, theNode, &sp00, &sp04))
 	{
 		if (sp04)
@@ -1917,7 +1910,7 @@ CSoupIndex::_BTEnterKey(KeyField * inField)
 int
 CSoupIndex::_BTGetNextKey(KeyField * inField)
 {
-	NodeHeader * theNode = readRootNode(NO);
+	NodeHeader * theNode = readRootNode(false);
 	if (theNode != NULL)
 	{
 		int theSlot;
@@ -1933,7 +1926,7 @@ CSoupIndex::_BTGetNextKey(KeyField * inField)
 int
 CSoupIndex::_BTGetNextDupKey(KeyField * inField)
 {
-	NodeHeader * theNode = readRootNode(NO);
+	NodeHeader * theNode = readRootNode(false);
 	if (theNode != NULL)
 	{
 		int theSlot;
@@ -1950,7 +1943,7 @@ CSoupIndex::_BTGetNextDupKey(KeyField * inField)
 int
 CSoupIndex::_BTGetPriorKey(KeyField * inField)
 {
-	NodeHeader * theNode = readRootNode(NO);
+	NodeHeader * theNode = readRootNode(false);
 	if (theNode != NULL)		// not in the original
 	{
 		int sp00;
@@ -1966,7 +1959,7 @@ CSoupIndex::_BTGetPriorKey(KeyField * inField)
 int
 CSoupIndex::_BTGetPriorDupKey(KeyField * inField)
 {
-	NodeHeader * theNode = readRootNode(NO);
+	NodeHeader * theNode = readRootNode(false);
 	if (theNode != NULL)
 	{
 		int sp00;
@@ -1983,10 +1976,10 @@ CSoupIndex::_BTGetPriorDupKey(KeyField * inField)
 int
 CSoupIndex::_BTRemoveKey(KeyField * inField)
 {
-	bool sp00 = NO;
+	bool sp00 = false;
 	bool r5;
 	NodeHeader * theNode;
-	if ((theNode = readRootNode(NO)) != NULL
+	if ((theNode = readRootNode(false)) != NULL
 	&&  (r5 = deleteKey(inField, theNode, &sp00)))
 	{
 		if (sp00)
@@ -2279,7 +2272,7 @@ int
 CSoupIndex::findAndGetState(KeyField * inField, IndexState * outState)
 {
 	int status;
-	NodeHeader * rootNode = readRootNode(NO);
+	NodeHeader * rootNode = readRootNode(false);
 	outState->node = rootNode;
 	if (rootNode == NULL)
 		return 3;
@@ -2302,7 +2295,7 @@ CSoupIndex::findAndGetState(KeyField * inField, IndexState * outState)
 int
 CSoupIndex::findLastAndGetState(KeyField * inField, IndexState * outState)
 {
-	NodeHeader * rootNode = readRootNode(NO);
+	NodeHeader * rootNode = readRootNode(false);
 	outState->node = rootNode;
 	if (rootNode == NULL)
 		return 3;
@@ -2332,7 +2325,7 @@ CSoupIndex::findPriorAndGetState(KeyField * inField, bool inDoMove, IndexState *
 	if (status == 0)
 	{
 		if (inDoMove)
-			return moveUsingState(NO, 0, inField, outState);
+			return moveUsingState(false, 0, inField, outState);
 		if (outState->isDup)
 		{
 			KeyField * kf = keyFieldAddr(outState->node, outState->slot);
@@ -2341,7 +2334,7 @@ CSoupIndex::findPriorAndGetState(KeyField * inField, bool inDoMove, IndexState *
 	}
 	else if (status == 2)
 	{
-		status = moveUsingState(NO, 0, inField, outState);
+		status = moveUsingState(false, 0, inField, outState);
 		if (status == 0)
 			status = 2;
 	}
@@ -2357,7 +2350,7 @@ int
 CSoupIndex::moveAndGetState(bool inDoForward, int inArg2, KeyField * inField, IndexState * outState)
 {
 	int status;
-	NodeHeader * rootNode = readRootNode(NO);
+	NodeHeader * rootNode = readRootNode(false);
 	outState->node = rootNode;
 	if (rootNode == NULL)
 		return 3;
@@ -2394,7 +2387,7 @@ CSoupIndex::moveAndGetState(bool inDoForward, int inArg2, KeyField * inField, In
 			return 2;
 		else
 		{
-			outState->isDup = YES;
+			outState->isDup = true;
 			return 0;
 		}
 	}
@@ -2499,9 +2492,13 @@ CSoupIndex::add(SKey * inKey, SKey * inData)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
+	if (err == noErr)
+		fCache->commit(this);
+	else
+		fCache->abort(this);
 	return err;
 }
 
@@ -2529,7 +2526,7 @@ CSoupIndex::Delete(SKey * inKey, SKey * inData)
 	}
 	newton_catch_all
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	if (err == noErr)
@@ -2600,12 +2597,12 @@ CSoupIndex::find(SKey * inKey, SKey * outKey, SKey * outData, bool inArg4)
 		keyStrLen = 0;
 
 	int status = 0;		// r7
-	bool failed = NO;		// r10
+	bool failed = false;		// r10
 	newton_try
 	{
 		int slot;
 		NodeHeader * theNode;
-		if ((theNode = readRootNode(NO)) != NULL)
+		if ((theNode = readRootNode(false)) != NULL)
 		{
 			if (search(fKeyField, &theNode, &slot) == 0)
 				status = fKeyField->length == 0 ? 3 : 2;	// not found
@@ -2616,7 +2613,7 @@ CSoupIndex::find(SKey * inKey, SKey * outKey, SKey * outData, bool inArg4)
 	}
 	newton_catch_all
 	{
-		failed = YES;
+		failed = true;
 		fCache->abort(this);
 		status = (long)CurrentException()->data;;
 	}
@@ -2643,11 +2640,11 @@ int
 CSoupIndex::first(SKey * outKey, SKey * outData)
 {
 	int status;
-	bool failed = NO;
+	bool failed = false;
 	newton_try
 	{
 		NodeHeader * theNode;
-		if ((theNode = readRootNode(NO)) != NULL)
+		if ((theNode = readRootNode(false)) != NULL)
 		{
 			if (findFirstKey(theNode, fKeyField))
 				status = 0;
@@ -2659,7 +2656,7 @@ CSoupIndex::first(SKey * outKey, SKey * outData)
 	}
 	newton_catch_all
 	{
-		failed = YES;
+		failed = true;
 		fCache->abort(this);
 		status = (long)CurrentException()->data;;
 	}
@@ -2680,11 +2677,11 @@ int
 CSoupIndex::last(SKey * outKey, SKey * outData)
 {
 	int status;
-	bool failed = NO;
+	bool failed = false;
 	newton_try
 	{
 		NodeHeader * theNode;
-		if ((theNode = readRootNode(NO)) != NULL)
+		if ((theNode = readRootNode(false)) != NULL)
 		{
 			if (findLastKey(theNode, fKeyField))
 				status = 0;
@@ -2696,7 +2693,7 @@ CSoupIndex::last(SKey * outKey, SKey * outData)
 	}
 	newton_catch_all
 	{
-		failed = YES;
+		failed = true;
 		fCache->abort(this);
 		status = (long)CurrentException()->data;;
 	}
@@ -2719,7 +2716,7 @@ CSoupIndex::next(SKey * inKey, SKey * inData, int inArg3, SKey * outKey, SKey * 
 	kfAssembleKeyField(fKeyField, inKey, inData);
 
 	int status;
-	bool failed = NO;
+	bool failed = false;
 	newton_try
 	{
 		if (inArg3 == 1
@@ -2728,7 +2725,7 @@ CSoupIndex::next(SKey * inKey, SKey * inData, int inArg3, SKey * outKey, SKey * 
 	}
 	newton_catch_all
 	{
-		failed = YES;
+		failed = true;
 		fCache->abort(this);
 		status = (long)CurrentException()->data;;
 	}
@@ -2751,7 +2748,7 @@ CSoupIndex::prior(SKey * inKey, SKey * inData, int inArg3, SKey * outKey, SKey *
 	kfAssembleKeyField(fKeyField, inKey, inData);
 
 	int status;
-	bool failed = NO;
+	bool failed = false;
 	newton_try
 	{
 		if (inArg3 == 0
@@ -2760,7 +2757,7 @@ CSoupIndex::prior(SKey * inKey, SKey * inData, int inArg3, SKey * outKey, SKey *
 	}
 	newton_catch_all
 	{
-		failed = YES;
+		failed = true;
 		fCache->abort(this);
 		status = (long)CurrentException()->data;;
 	}
@@ -2824,7 +2821,7 @@ CSoupIndex::totalSize(void)
 		newton_try
 		{
 			NodeHeader * theNode;
-			if ((theNode = readRootNode(NO)) != NULL)
+			if ((theNode = readRootNode(false)) != NULL)
 				nodeSize(theNode, theSize);
 			setRootNode(0);
 		}
@@ -3024,7 +3021,7 @@ CUnionSoupIndex::search(bool inDoForward, SKey * inKey, SKey * inData, StopProcP
 				unionInfo->validity = kIsValid;
 				if (fNumOfSoupsInUnion == 1
 				||  soupIndex->compareKeys(*inKey, *unionInfo->kf->key()) == 0)
-					doMoveOn = NO;
+					doMoveOn = false;
 			}
 			else if (status == 3)
 			{
@@ -3038,13 +3035,13 @@ CUnionSoupIndex::search(bool inDoForward, SKey * inKey, SKey * inData, StopProcP
 
 			if (doMoveOn)
 			{
-				if ((status = moveToNextSoup(inDoForward, inArg8, inKey, NO)) != 0)
+				if ((status = moveToNextSoup(inDoForward, inArg8, inKey, false)) != 0)
 					break;
 				unionInfo = fIndexData + fSeqInUnion;
 				soupIndex = unionInfo->index;
 			}
 
-			if (inStopProc == 0
+			if (inStopProc == NULL
 			|| inStopProc(unionInfo->kf->key(), (SKey *)soupIndex->kfFirstDataAddr(unionInfo->kf), ioRefCon) != 0)
 				break;
 
@@ -3084,7 +3081,7 @@ CUnionSoupIndex::currentSoupGone(SKey * inKey, SKey * outKey, SKey * outData)
 	}
 	newton_catch_all
 	{
-		status = (NewtonErr)(unsigned long)CurrentException()->data;
+		status = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	return status;
@@ -3111,13 +3108,13 @@ CUnionSoupIndex::moveToNextSoup(bool inDoForward, int inArg2, SKey * inKey, bool
 		count = fNumOfSoupsInUnion - 1;
 	}
 
-	bool isWrappedAround = NO;
+	bool isWrappedAround = false;
 	for (int i = count - 1; i >= 0; --i)
 	{
 		if (++seq == fNumOfSoupsInUnion)
 		{
 			seq = 0;
-			isWrappedAround = YES;
+			isWrappedAround = true;
 		}
 
 		UnionIndexData * unionInfo = fIndexData + seq;	// r5
@@ -3161,28 +3158,28 @@ CUnionSoupIndex::moveToNextSoup(bool inDoForward, int inArg2, SKey * inKey, bool
 				if (inDoForward)
 				{
 					if (cmp > 0)
-						doUpdate = YES;
+						doUpdate = true;
 					else if (cmp != 0)
-						doUpdate = NO;
+						doUpdate = false;
 					else if (seq > fSeqInUnion)
-						doUpdate = YES;
+						doUpdate = true;
 					else
-						doUpdate = NO;
+						doUpdate = false;
 				}
 				else
 				{
 					if (cmp < 0)
-						doUpdate = YES;
+						doUpdate = true;
 					else if (cmp != 0)
-						doUpdate = NO;
+						doUpdate = false;
 					else if (seq < fSeqInUnion)
-						doUpdate = YES;
+						doUpdate = true;
 					else
-						doUpdate = NO;
+						doUpdate = false;
 				}
 			}
 			else
-				doUpdate = YES;
+				doUpdate = true;
 			if (doUpdate)
 			{
 				currentInfo = unionInfo;
@@ -3222,7 +3219,7 @@ CUnionSoupIndex::isValidState(SKey * inKey, SKey * inData)
 		CSoupIndex * index = unionInfo->index;
 
 		if (index->nodeCache()->modCount() != unionInfo->cacheState)
-			return NO;
+			return false;
 
 		if (fSeqInUnion == i)
 		{
@@ -3230,22 +3227,22 @@ CUnionSoupIndex::isValidState(SKey * inKey, SKey * inData)
 			size_t dataSize, keySize;
 
 			if (unionInfo->validity != kIsValid)
-				return NO;
+				return false;
 
 			data = index->kfFirstDataAddr(unionInfo->kf);
 			dataSize = index->kfSizeOfData(inData);
 			if (dataSize != index->kfSizeOfData(data))
-				return NO;
+				return false;
 
 			if (memcmp(data, inData, dataSize) != 0)
-				return NO;
+				return false;
 
 			keySize = index->kfSizeOfKey(inKey);
 			if (keySize != index->kfSizeOfKey(unionInfo->kf->key()))
-				return NO;
+				return false;
 
 			if (memcmp(unionInfo->kf->key(), inKey, keySize) != 0)
-				return NO;
+				return false;
 
 		}
 		else
@@ -3254,7 +3251,7 @@ CUnionSoupIndex::isValidState(SKey * inKey, SKey * inData)
 				index->fCache->reuse(index);
 		}
 	}
-	return YES;
+	return true;
 }
 
 void
@@ -3276,7 +3273,7 @@ CUnionSoupIndex::commit(void)
 ------------------------------------------------------------------------------*/
 
 void
-AlterIndexes(unsigned char inSelector, RefArg inSoup, RefArg inEntry, PSSId inId)
+AlterIndexes(bool inAdd, RefArg inSoup, RefArg inEntry, PSSId inId)
 {
 	RefVar spec(GetFrameSlot(inSoup, SYMA(_proto)));
 	RefVar indexes(GetFrameSlot(spec, SYMA(indexes)));
@@ -3289,7 +3286,7 @@ AlterIndexes(unsigned char inSelector, RefArg inSoup, RefArg inEntry, PSSId inId
 		{
 			RefVar sp04(GetEntryKey(inEntry, GetFrameSlot(indexDesc, SYMA(path))));
 			if (NOTNIL(sp04))
-				AlterTagsIndex(inSelector, *soupIndex, inId, sp04, inSoup, GetFrameSlot(indexDesc, SYMA(tags)));
+				AlterTagsIndex(inAdd, *soupIndex, inId, sp04, inSoup, GetFrameSlot(indexDesc, SYMA(tags)));
 		}
 		else
 		{
@@ -3297,10 +3294,10 @@ AlterIndexes(unsigned char inSelector, RefArg inSoup, RefArg inEntry, PSSId inId
 			SKey theKey;
 			if (GetEntrySKey(inEntry, indexDesc, &theKey, NULL))
 			{
-				if (inSelector == 0)
-					err = soupIndex->Delete(&theKey, (SKey *)&inId);
-				else
+				if (inAdd)
 					err = soupIndex->add(&theKey, (SKey *)&inId);
+				else
+					err = soupIndex->Delete(&theKey, (SKey *)&inId);
 				if (err != noErr)
 					ThrowErr(exStore, kNSErrInternalError);
 			}
@@ -3313,23 +3310,23 @@ bool
 PathsEqual(RefArg inPath1, RefArg inPath2)
 {
 	if (EQ(inPath1, inPath2))
-		return YES;
+		return true;
 
 	ULong tag;
 	if ((tag = RTAG(ObjectFlags(inPath1))) != RTAG(ObjectFlags(inPath2)))
-		return NO;
+		return false;
 	if (NOTREALPTR(tag))
-		return NO;
+		return false;
 
 	ArrayIndex count;
 	if ((count = Length(inPath1)) != Length(inPath2))
-		return NO;
+		return false;
 	for (ArrayIndex i = 0; i < count; ++i)
-		if (!EQRef(GetArraySlot(inPath1, i), GetArraySlot(inPath2, i)))
-			return NO;
-	if (!EQRef(ClassOf(inPath1), ClassOf(inPath2)))
-		return NO;
-	return YES;
+		if (!EQ(GetArraySlot(inPath1, i), GetArraySlot(inPath2, i)))
+			return false;
+	if (!EQ(ClassOf(inPath1), ClassOf(inPath2)))
+		return false;
+	return true;
 }
 
 
@@ -3338,12 +3335,12 @@ IndexPathsEqual(RefArg inPath1, RefArg inPath2)
 {
 	int i, count1, count2;
 
-	if (EQRef(ClassOf(inPath1), RSYMarray))
+	if (EQ(ClassOf(inPath1), SYMA(array)))
 		count1 = Length(inPath1);
 	else
 		count1 = 0;
 
-	if (EQRef(ClassOf(inPath2), RSYMarray))
+	if (EQ(ClassOf(inPath2), SYMA(array)))
 	{
 		count2 = Length(inPath2);
 		if (count1 == count2)
@@ -3351,9 +3348,9 @@ IndexPathsEqual(RefArg inPath1, RefArg inPath2)
 			for (i = count1 - 1; i >= 0; --i)
 			{
 				if (!PathsEqual(GetArraySlot(inPath1, i), GetArraySlot(inPath2, i)))
-					return NO;
+					return false;
 			}
-			return YES;
+			return true;
 		}
 	}
 	else
@@ -3362,7 +3359,7 @@ IndexPathsEqual(RefArg inPath1, RefArg inPath2)
 			return PathsEqual(inPath1, inPath2);
 	}
 	
-	return NO;
+	return false;
 }
 
 
@@ -3395,7 +3392,7 @@ UpdateIndexes(RefArg inSoup, RefArg inArg2, RefArg inArg3, PSSId inId, bool * ou
 	RefVar indexType;		// r5
 	SKey sp50;
 	SKey sp00;
-	bool isChanged = NO;	// r10
+	bool isChanged = false;	// r10
 	for (int count = Length(indexes), i = count - 1; i >= 0; --i)
 	{
 		indexDesc = GetArraySlot(indexes, i);
@@ -3430,7 +3427,7 @@ UpdateIndexes(RefArg inSoup, RefArg inArg2, RefArg inArg3, PSSId inId, bool * ou
 				}
 			}
 
-			isChanged = YES;
+			isChanged = true;
 			NewtonErr err = noErr;
 			XTRY
 			{
@@ -3460,14 +3457,14 @@ CompareSoupIndexes(RefArg inSpec1, RefArg inSpec2)
 	RefVar indexDesc;
 	int count = Length(indexes);
 	if (count != Length(GetFrameSlot(inSpec2, SYMA(indexes))))
-		return NO;
+		return false;
 	for (int i = count - 1; i >= 0; --i)
 	{
 		indexDesc = GetArraySlot(indexes, i);
 		if (ISNIL(IndexPathToIndexDesc(inSpec2, GetFrameSlot(indexDesc, SYMA(path)), NULL)))
-			return NO;
+			return false;
 	}
-	return YES;
+	return true;
 }
 
 
@@ -3548,7 +3545,7 @@ CopySoupIndexes(RefArg inFromSoup, RefArg inToSoup, PSSIdMapping * inIdMap, Arra
 		CSoupIndex * srcSoupIndex = GetSoupIndexObject(inFromSoup, RINT(GetFrameSlot(indexDesc, SYMA(index))));
 
 		parms.soupIndex = dstSoupIndex;
-		parms.isTagsIndex = EQRef(GetFrameSlot(indexDesc, SYMA(type)), RSYMtags);
+		parms.isTagsIndex = EQ(GetFrameSlot(indexDesc, SYMA(type)), SYMA(tags));
 
 		NewtonErr err;
 		if ((err = srcSoupIndex->search(1, NULL, NULL, CopyIndexStopFn, &parms, NULL, NULL)) < noErr)
@@ -3586,11 +3583,11 @@ NewIndexDesc(RefArg inSoup, RefArg inStore, RefArg indexSpec)
 	RefVar indexStructure(GetFrameSlot(indexSpec, SYMA(structure)));	// r8
 
 	// validate
-	bool isMultiSlot = NO;	// r9
-	if (EQ(indexStructure, SYMA(multislot)))
+	bool isMultiSlot = false;	// r9
+	if (EQ(indexStructure, SYMA(multiSlot)))
 	{
-		isMultiSlot = YES;
-		if (!(EQRef(ClassOf(indexPath), RSYMarray) && IsArray(indexType)))
+		isMultiSlot = true;
+		if (!(EQ(ClassOf(indexPath), SYMA(array)) && IsArray(indexType)))
 			ThrowErr(exStore, kNSErrBadIndexDesc);
 		if (Length(indexPath) != Length(indexType))
 			ThrowErr(exStore, kNSErrBadIndexDesc);
@@ -3666,7 +3663,7 @@ void
 IndexDescToIndexInfo(RefArg indexDesc, IndexInfo * outInfo)
 {
 	outInfo->dataType = kDataTypeNormal;
-	outInfo->x10 = EQRef(GetFrameSlot(indexDesc, SYMA(path)), RSYM_uniqueId) ? 0 : 2;
+	outInfo->x10 = EQ(GetFrameSlot(indexDesc, SYMA(path)), SYMA(_uniqueId)) ? 0 : 2;
 	outInfo->x14 = 0xFFFFFFFF;
 	outInfo->x18 = 0xFF;
 	outInfo->x19 = 0;
@@ -3733,7 +3730,7 @@ IndexEntries(RefArg inSoup, RefArg indexDesc)
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inSoup, SYMA(TStore));	// r9
 	RefVar tags;
 	RefVar path;
-	bool isTagSpec = EQRef(GetFrameSlot(indexDesc, SYMA(type)), RSYMtags);
+	bool isTagSpec = EQ(GetFrameSlot(indexDesc, SYMA(type)), SYMA(tags));
 	if (isTagSpec)
 	{
 		tags = GetFrameSlot(indexDesc, SYMA(tags));

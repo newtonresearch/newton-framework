@@ -83,11 +83,11 @@ public:
 	bool				fIsValidStroke;	// +00
 	CRecStroke *	fCurrentStroke;	// +04
 	CRecUnit *		fCurrentUnit;		// +08
-	long				f0C;
-	long				f10;
+	int				f0C;
+	int				f10;
 	int				fBlockCount;		// +14
 	int				fUnblockCount;		// +18
-	long				f1C;
+	int				f1C;
 	RefStruct *		f20;
 	ArrayIndex		f24;
 	CRecUnitList * f28;

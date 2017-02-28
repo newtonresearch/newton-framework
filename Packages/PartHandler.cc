@@ -19,6 +19,7 @@
 #include "PackageEvents.h"
 #include "MemoryPipe.h"
 #include "EndpointPipe.h"
+#include "PartPipe.h"
 #include "AppWorld.h"
 #include "NameServer.h"
 #include "Protocols.h"
@@ -37,43 +38,6 @@ extern void			VAddrToBase(VAddr * outBase, VAddr inAddr);
 extern void			FlushPackageCache(VAddr inAddr);
 
 extern Ref			gFunctionFrame;
-
-
-/* -----------------------------------------------------------------------------
-	C P a r t P i p e
------------------------------------------------------------------------------ */
-
-class CPartPipe : public CPipe
-{
-public:
-				CPartPipe();
-	virtual	~CPartPipe();
-
-	void		init(ObjectId inPortId, CShadowRingBuffer * inBuffer, bool inOwnBuffer);
-	void		setStreamSize(size_t inSize);
-
-	long		readSeek(long inOffset, int inSelector);
-	long		readPosition(void) const;
-	long		writeSeek(long inOffset, int inSelector);
-	long		writePosition(void) const;
-	void		readChunk(void * outBuf, size_t & ioSize, bool & outEOF);
-	void		writeChunk(const void * inBuf, size_t inSize, bool inFlush);
-	void		flushRead(void);
-	void		flushWrite(void);
-	void		reset(void);
-	void		overflow();
-	void		underflow(long, bool&);
-
-	void		seekEOF(void);
-	void		close(void);
-
-private:
-	CShadowRingBuffer *	f04;
-	bool			f08;
-	CUPort *		f0C;
-	size_t		f10;
-// size+14
-};
 
 
 /* -----------------------------------------------------------------------------
@@ -180,7 +144,7 @@ FramePartTopLevelFrame(void * inPart)
 ------------------------------------------------------------------------------*/
 
 CPartPipe::CPartPipe()
-	:	f0C(NULL), f04(NULL), f08(NO)
+	:	f0C(NULL), f04(NULL), f08(false)
 { }
 
 
@@ -356,8 +320,9 @@ CPipeApp::mainConstructor(void)
 	XTRY
 	{
 		XFAIL(err = CAppWorld::mainConstructor())
-		XFAILNOT(f70 = new CPipeEventHandler(&f74), err = kOSErrNoMemory;)
-		f70->init('pckm');
+		f70 = new CPipeEventHandler(&f74);
+		XFAILIF(f70 == NULL, err = kOSErrNoMemory;)
+		f70->init(kPackageEventId);
 	}
 	XENDTRY;
 
@@ -369,7 +334,7 @@ CPipeApp::mainConstructor(void)
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()->data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 	}
@@ -392,7 +357,7 @@ CPipeApp::mainDestructor(void)
 ------------------------------------------------------------------------------*/
 
 CPipeEvent::CPipeEvent()
-	:	CEvent('pckm')
+	:	CEvent(kPackageEventId)
 {
 	f08 = 0;
 	f0C = 0;
@@ -401,7 +366,7 @@ CPipeEvent::CPipeEvent()
 
 
 CPipeEvent::CPipeEvent(ULong inArg1, long inArg2, long inArg3)
-	:	CEvent('pckm')
+	:	CEvent(kPackageEventId)
 {
 	f08 = inArg1;
 	f0C = inArg2;
@@ -418,14 +383,14 @@ CPipeEventHandler::CPipeEventHandler(PipeInfo * info)
 {
 	f18 = 0x7FFFFFFF;
 	f14 = info;
-	f1C = NO;
+	f1C = false;
 }
 
 
 bool
 CPipeEventHandler::testEvent(CEvent * inEvent)
 {
-	return YES;
+	return true;
 }
 
 
@@ -451,12 +416,12 @@ CPkBaseEvent::CPkBaseEvent()
 	C P k R e g i s t e r E v e n t
 ------------------------------------------------------------------------------*/
 
-CPkRegisterEvent::CPkRegisterEvent(ULong inArg1, ULong inArg2)
+CPkRegisterEvent::CPkRegisterEvent(ULong inPartType, ObjectId inPortId)
 {
-	fEventCode = 'rgtr';
+	fEventCode = kRegisterPartHandlerEventId;
 	fEventErr = noErr;
-	f10 = inArg1;
-	f14 = inArg2;
+	fPartType = inPartType;
+	fPortId = inPortId;
 }
 
 
@@ -464,11 +429,11 @@ CPkRegisterEvent::CPkRegisterEvent(ULong inArg1, ULong inArg2)
 	C P k U n r e g i s t e r E v e n t
 ------------------------------------------------------------------------------*/
 
-CPkUnregisterEvent::CPkUnregisterEvent(ULong inArg1)
+CPkUnregisterEvent::CPkUnregisterEvent(ULong inPartType)
 {
-	fEventCode = 'urgr';
+	fEventCode = kUnregisterPartHandlerEventId;
 	fEventErr = noErr;
-	f10 = inArg1;
+	fPartType = inPartType;
 }
 
 
@@ -476,15 +441,15 @@ CPkUnregisterEvent::CPkUnregisterEvent(ULong inArg1)
 	C P k B e g i n L o a d E v e n t
 ------------------------------------------------------------------------------*/
 
-CPkBeginLoadEvent::CPkBeginLoadEvent(SourceType inType, const PartSource & inSource, ULong inArg3, ULong inArg4, bool inArg5)
+CPkBeginLoadEvent::CPkBeginLoadEvent(SourceType inType, const PartSource & inSource, ObjectId inArg3, ObjectId inArg4, bool inArg5)
 {
-	fEventCode = 'pkbl';
+	fEventCode = kBeginLoadPkgEventId;
 	fEventErr = noErr;
-	f2C = 0;
+	fUniqueId = 0;
 	f14 = inArg4;
 	f10 = inArg3;
-	f18 = inType;
-	f20 = inSource;
+	fSrcType = inType;
+	fSrc = inSource;
 	f28 = inArg5;
 }
 
@@ -493,11 +458,11 @@ CPkBeginLoadEvent::CPkBeginLoadEvent(SourceType inType, const PartSource & inSou
 	C P k R e m o v e E v e n t
 ------------------------------------------------------------------------------*/
 
-CPkRemoveEvent::CPkRemoveEvent(ULong inArg1, ULong inArg2, ULong inArg3)
+CPkRemoveEvent::CPkRemoveEvent(ObjectId inPkgId, ULong inArg2, ULong inArg3)
 {
-	fEventCode = 'pkrm';
+	fEventCode = kRemovePkgEventId;
 	fEventErr = noErr;
-	f10 = inArg1;
+	fPkgId = inPkgId;
 	f14 = inArg2;
 	f18 = inArg3;
 }
@@ -507,15 +472,15 @@ CPkRemoveEvent::CPkRemoveEvent(ULong inArg1, ULong inArg2, ULong inArg3)
 	C P k B a c k u p E v e n t
 ------------------------------------------------------------------------------*/
 
-CPkBackupEvent::CPkBackupEvent(long inArg1, ULong inArg2, bool inArg3, const PartSource & inArg4, ULong inArg5, ULong inArg6)
+CPkBackupEvent::CPkBackupEvent(ArrayIndex inSeq, ULong inArg2, bool inArg3, const PartSource & inArg4, ULong inArg5, ULong inArg6)
 {
-	fEventCode = 'pkbu';
+	fEventCode = kBackupPkgEventId;
 	fEventErr = noErr;
-	f10 = inArg1;
+	fIndex = inSeq;
 	f14 = inArg2;
 	f18 = inArg4;
-	f24 = inArg6;
 	f20 = inArg5;
+	f24 = inArg6;
 	f84 = inArg3;
 }
 
@@ -526,7 +491,7 @@ CPkBackupEvent::CPkBackupEvent(long inArg1, ULong inArg2, bool inArg3, const Par
 
 CPkPartInstallEvent::CPkPartInstallEvent(const PartId & inPartId, const ExtendedPartInfo & info, SourceType inType, const PartSource & inSource)
 {
-	fEventCode = 'prti';
+	fEventCode = kInstallPartEventId;
 
 	fPartId = inPartId;
 	fPartInfo = info;
@@ -551,7 +516,7 @@ CPkPartInstallEventReply::CPkPartInstallEventReply()
 
 CPkPartRemoveEvent::CPkPartRemoveEvent(PartId inPartId, long inArg2, ULong inArg3, long inArg4)
 {
-	fEventCode = 'prtr';
+	fEventCode = kRemovePartEventId;
 	fPartId = inPartId;
 	f18 = inArg2;
 	f1C = inArg3;
@@ -563,12 +528,12 @@ CPkPartRemoveEvent::CPkPartRemoveEvent(PartId inPartId, long inArg2, ULong inArg
 	C P k S a f e T o D e a c t i v a t e E v e n t
 ------------------------------------------------------------------------------*/
 
-CPkSafeToDeactivateEvent::CPkSafeToDeactivateEvent(ULong inArg1)
+CPkSafeToDeactivateEvent::CPkSafeToDeactivateEvent(ObjectId inArg1)
 {
-	fEventCode = 'pksc';
+	fEventCode = kSafeToDeactivatePkgEventId;
 	fEventErr = noErr;
-	f10 = inArg1;
-	f14 = NO;
+	fPkgId = inArg1;
+	fIsSafeToDeactivate = false;
 }
 
 
@@ -587,32 +552,28 @@ CPartEventHandler::testEvent(CEvent * inEvent)
 {
 	ULong evtCode = ((CPkBaseEvent *)inEvent)->fEventCode;
 
-	if (evtCode == 'pkbl'
-	||  evtCode == 'pkbu')
-		return NO;
+	if (evtCode == kBeginLoadPkgEventId
+	||  evtCode == kBackupPkgEventId)
+		return false;
 
-	if (evtCode == 'prti')
+	if (evtCode == kInstallPartEventId)
 		return ((CPkPartInstallEvent *)inEvent)->fPartInfo.type == fPartHandler->fType;
 
-	if (evtCode == 'prtr')
+	if (evtCode == kRemovePartEventId)
 		return ((CPkPartRemoveEvent *)inEvent)->f1C == fPartHandler->fType;
 }
 
 void
 CPartEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
 {
-	if (*inSize >= sizeof(CPkBaseEvent))
-	{
+	if (*inSize >= sizeof(CPkBaseEvent)) {
 		ULong evtCode = ((CPkBaseEvent *)inEvent)->fEventCode;
-		if (evtCode == 'prti')
-		{
+		if (evtCode == kInstallPartEventId) {
 			CPkPartInstallEvent * evt = (CPkPartInstallEvent *)inEvent;
 			evt->fPartInfo.info = evt->fInfo;
 			evt->fPartInfo.compressor = evt->fPartInfo.compressed ? evt->fCompressorName : "";
 			fPartHandler->install((CPkPartInstallEvent *)inEvent);
-		}
-		else if (evtCode == 'prtr')
-		{
+		} else if (evtCode == kRemovePartEventId) {
 			fPartHandler->remove((CPkPartRemoveEvent *)inEvent);
 		}
 	}
@@ -632,7 +593,7 @@ CPartHandler::CPartHandler()
 {
 	fEventHandler = NULL;
 	fType = 'none';
-	fInitFailed = YES;
+	fInitFailed = true;
 	fAsyncMessage = NULL;
 	fRegisterEvent = NULL;
 }
@@ -657,19 +618,19 @@ CPartHandler::init(ULong inType)
 	XTRY
 	{
 		fEventHandler = new CPartEventHandler(this);
-		XFAILNOT(fEventHandler, err = MemError();)
+		XFAILIF(fEventHandler == NULL, err = MemError();)
 		fAsyncMessage = new CUAsyncMessage;
-		XFAILNOT(fAsyncMessage, err = MemError();)
+		XFAILIF(fAsyncMessage == NULL, err = MemError();)
 		fRegisterEvent = new CPkRegisterEvent(fType, *gAppWorld->getMyPort());
-		XFAILNOT(fRegisterEvent, err = MemError();)
-		XFAIL(err = fAsyncMessage->init(YES))
+		XFAILIF(fRegisterEvent == NULL, err = MemError();)
+		XFAIL(err = fAsyncMessage->init(true))
 		XFAIL(err = fEventHandler->init(kPackageEventId))
 		err = registerPart();
 	}
 	XENDTRY;
 
 	if (err == noErr)
-		fInitFailed = NO;
+		fInitFailed = false;
 
 	return err;
 }
@@ -679,11 +640,11 @@ CPartHandler::init(ULong inType)
 NewtonErr
 CPartHandler::getBackupInfo(const PartId& inPartId, PartType inPartType, RemoveObjPtr inRemovePtr, PartInfo * outPartInfo, ULong inLastBackupDate, bool * outNeedsBackup)
 {
-	*outNeedsBackup = NO;
+	*outNeedsBackup = false;
 	outPartInfo->sizeInMemory = 0;
 	outPartInfo->size = 0;
 	outPartInfo->infoSize = 0;
-	outPartInfo->compressed = NO;
+	outPartInfo->compressed = false;
 	return noErr;
 }
 
@@ -701,13 +662,13 @@ CPartHandler::expand(void * outData, CPipe * inPipe, PartInfo * info)
 	NewtonErr err;
 	newton_try
 	{
-		bool isEOF = NO;
+		bool isEOF = false;
 		size_t size = info->size;
 		inPipe->readChunk(outData, size, isEOF);
 	}
 	newton_catch(exPipe)
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	return err;
@@ -725,7 +686,7 @@ CPartHandler::setRemoveObjPtr(RemoveObjPtr inObj)
 void
 CPartHandler::rejectPart(void)
 {
-	fAccept = NO;
+	fAccept = false;
 }
 
 
@@ -733,7 +694,7 @@ void
 CPartHandler::replyImmed(NewtonErr inErr)
 {
 	CPkPartInstallEventReply reply;
-	fReplied = YES;
+	fReplied = true;
 	reply.fEventErr = inErr;
 	reply.f14 = fAccept;
 	reply.f10 = fRemoveObjPtr;
@@ -761,7 +722,7 @@ CPartHandler::copy(void * outData)
 		CShadowRingBuffer * buf = new CShadowRingBuffer;
 		CPartPipe * pipe = new CPartPipe;
 		buf->init(fSource.stream.bufferId, 0, 0);
-		pipe->init(fSource.stream.messagePortId, buf, NO);
+		pipe->init(fSource.stream.messagePortId, buf, false);
 		err = expand(outData, pipe, fPartInfo);
 		delete pipe;
 		delete buf;
@@ -789,18 +750,18 @@ CPartHandler::install(CPkPartInstallEvent * installEvent)
 {
 	NewtonErr err;
 
-	fAccept = YES;
+	fAccept = true;
 	fSourceType = installEvent->fType;
 	fSource = installEvent->fSource;
 //	fSource.mem.buffer = (VAddr) &installEvent->fPartInfo;	huh?
-	fReplied = NO;
+	fReplied = false;
 	newton_try
 	{
 		err = install(installEvent->fPartId, fSourceType, &installEvent->fPartInfo);
 	}
 	newton_catch_all	// original says newton_catch(0)
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	if (!fReplied)
@@ -819,8 +780,8 @@ NewtonErr
 CPartHandler::registerPart(void)
 {
 	NewtonErr err;
-	CUPort pmPort(PackageManagerPortId());
-	err = pmPort.sendRPC(fAsyncMessage, fRegisterEvent, sizeof(CPkRegisterEvent), fRegisterEvent, sizeof(CPkRegisterEvent));
+	CUPort pkgMgr(PackageManagerPortId());
+	err = pkgMgr.sendRPC(fAsyncMessage, fRegisterEvent, sizeof(CPkRegisterEvent), fRegisterEvent, sizeof(CPkRegisterEvent));
 	Sleep(10*kMilliseconds);
 	return err;
 }
@@ -831,7 +792,7 @@ CPartHandler::unregisterPart(void)
 {
 	NewtonErr err;
 	CPkUnregisterEvent evt(fType);
-	CUPort pmPort(PackageManagerPortId());
+	CUPort pkgMgr(PackageManagerPortId());
 	size_t replySize;
 
 	XTRY
@@ -839,7 +800,7 @@ CPartHandler::unregisterPart(void)
 		XFAILNOT(fAsyncMessage, err = kOSErrNoMemory;)
 		XFAIL(err = fAsyncMessage->blockTillDone(NULL, NULL, NULL, NULL))
 		XFAIL(err = fRegisterEvent->fEventErr)
-		err = pmPort.sendRPC(&replySize, &evt, sizeof(CPkUnregisterEvent), &evt, sizeof(CPkUnregisterEvent));
+		err = pkgMgr.sendRPC(&replySize, &evt, sizeof(CPkUnregisterEvent), &evt, sizeof(CPkUnregisterEvent));
 		if (err == noErr)
 			err = evt.fEventErr;
 	}
@@ -860,7 +821,7 @@ CFramePartHandler::install(const PartId & inPartId, SourceType inSource, PartInf
 //	r4: r7 r6|r5 r10
 	NewtonErr err = noErr;
 	RefVar theFrame;
-	Ptr r8 = NULL;
+	Ptr src = NULL;
 
 	XTRY
 	{
@@ -872,14 +833,14 @@ CFramePartHandler::install(const PartId & inPartId, SourceType inSource, PartInf
 		}
 		else
 		{
-			r8 = getSourcePtr();
+			src = getSourcePtr();
 			if (info->compressed && strcmp(info->compressor, "streamed") == 0)
 			{
 				CBufferSegment buf;
-				buf.init(r8, info->size);
+				buf.init(src, info->size);
 
 				CMemoryPipe pipe;
-				pipe.init(&buf, NULL, NO);
+				pipe.init(&buf, NULL, false);
 
 				Ref data;
 				err = expand(&data, &pipe, info);
@@ -887,22 +848,22 @@ CFramePartHandler::install(const PartId & inPartId, SourceType inSource, PartInf
 			}
 			else
 			{
-				theFrame = FramePartTopLevelFrame(r8);
+				theFrame = FramePartTopLevelFrame(src);
 				XFAILIF(ISNIL(theFrame), err = kOSErrBadPackage;)
 				RefVar table(GetFrameSlot(theFrame, SYMA(_exportTable)));
 				if (NOTNIL(table))
-					InstallExportTables(table, r8);
-				if (r8 >= (Ptr)0x03800000)
+					InstallExportTables(table, src);
+				if (src >= (Ptr)0x03800000)
 				{
 					table = GetFrameSlot(theFrame, SYMA(_importTable));
 					if (NOTNIL(table))
 					{
 						VAddr addr;
-						if (IsInRDMSpace((VAddr)r8))
-							VAddrToBase(&addr, (VAddr)r8);
+						if (IsInRDMSpace((VAddr)src))
+							VAddrToBase(&addr, (VAddr)src);
 						else
 							addr = 0;
-						InstallImportTable(addr, table, r8, info->sizeInMemory);
+						InstallImportTable(addr, table, src, info->sizeInMemory);
 						FlushPackageCache(addr);
 					}
 				}
@@ -911,8 +872,8 @@ CFramePartHandler::install(const PartId & inPartId, SourceType inSource, PartInf
 		XFAILIF(ISNIL(theFrame) || !IsFrame(theFrame), err = kOSErrBadPackage;)
 
 		fContext = new RemoveObj;
-		XFAILNOT(fContext, err = MemError();)
-		fContext->x04 = r8;
+		XFAILIF(fContext == NULL, err = MemError();)
+		fContext->src = src;
 		XFAIL(err = installFrame(theFrame, inPartId, inSource, info))
 		setRemoveObjPtr((RemoveObjPtr)fContext);
 	}
@@ -927,12 +888,12 @@ CFramePartHandler::remove(const PartId & inPartId, PartType inType, RemoveObjPtr
 {
 	NewtonErr err;
 	RefVar context;
-	RefVar sp00;
+	RefVar removedExports;
 	RemoveObj * contextPtr = (RemoveObj *)inContext;
-	if (contextPtr->x04)
+	if (contextPtr->src)
 	{
-		sp00 = RemoveExportTables(contextPtr->x04);
-		RemoveImportTable(contextPtr->x04);
+		removedExports = RemoveExportTables(contextPtr->src);
+		RemoveImportTable(contextPtr->src);
 	}
 	context = contextPtr->obj;
 	delete contextPtr;
@@ -941,12 +902,12 @@ CFramePartHandler::remove(const PartId & inPartId, PartType inType, RemoveObjPtr
 	GC();
 	ICacheClear();
 
-	if (Length(sp00) > 0)
+	if (Length(removedExports) > 0)
 	{
 		newton_try
 		{
 			if (FrameHasSlot(gFunctionFrame, SYMA(ReportDeadUnitImports)))
-				NSCallGlobalFn(SYMA(ReportDeadUnitImports), sp00);
+				NSCallGlobalFn(SYMA(ReportDeadUnitImports), removedExports);
 		}
 		newton_catch_all
 		{ }
@@ -968,7 +929,7 @@ CFramePartHandler::expand(void * outData, CPipe * inPipe, PartInfo * info)
 	}
 	newton_catch(exPipe)
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	return err;
@@ -991,7 +952,7 @@ CFramePartHandler::setFrameRemoveObject(RefArg inObject)
 NewtonErr
 CFormPartHandler::installFrame(RefArg inPartFrame, const PartId & inPartId, SourceType inSource, PartInfo * info)
 {
-	RefArg context(Clone(RScanonicalFramePartSavedObject));
+	RefArg context(Clone(RA(canonicalFramePartSavedObject)));
 	setFrameRemoveObject(context);
 	return InstallPart(SYMA(form), inPartFrame, inPartId, inSource, info, context);
 }
@@ -1072,7 +1033,7 @@ CDictPartHandler::addDictionaries(RefArg, RefArg)
 NewtonErr
 CAutoScriptPartHandler::installFrame(RefArg inPartFrame, const PartId & inPartId, SourceType inSource, PartInfo * info)
 {
-	RefArg context(Clone(RScanonicalFramePartSavedObject));
+	RefArg context(Clone(RA(canonicalFramePartSavedObject)));
 	setFrameRemoveObject(context);
 	return InstallPart(SYMA(auto), inPartFrame, inPartId, inSource, info, context);
 }
@@ -1125,7 +1086,7 @@ CCommPartHandler::removeFrame(RefArg inContext, const PartId & inPartId, PartTyp
 		SetArraySlot(args, 0, commConfigs);
 		newton_try
 		{
-			DoBlock(GetFrameSlot(gFunctionFrame, SYMA(UnregCommConfigArray)), args);
+			DoBlock(GetFrameSlot(gFunctionFrame, SYMA(UnRegCommConfigArray)), args);
 		}
 		newton_catch(exFrames)
 		{

@@ -57,7 +57,8 @@ InitLicenseeDomain(void)
 		CDomainInfo info;
 		XFAIL(err = MemObjManager::findDomainId('LicD', &gLicenseeDomainInfo.domId))
 		XFAIL(err = MemObjManager::getDomainInfoByName('LicD', &info))
-		XFAILNOT(gLicenseeDomainInfo.sem = new CULockingSemaphore, err = -1;)
+		gLicenseeDomainInfo.sem = new CULockingSemaphore;
+		XFAILIF(gLicenseeDomainInfo.sem == NULL, err = -1;)
 		gLicenseeDomainInfo.sem->init();
 		gLicenseeDomainInfo.base = info.base();
 		gLicenseeDomainInfo.base2 = info.base();
@@ -140,7 +141,7 @@ BuildDomainsAndHeaps(ObjectId inEnvId)
 					// the domain has a heap - create a domain for the heap
 					XFAIL(err = NewHeapDomain(domain.base() / kSectionSize, domain.size() / kSectionSize, &domainId))
 					// add it to our environment
-					XFAIL(err = environment->add(domainId, domain.isReadOnly()/*manager*/, NO/*stack*/, NO/*heap*/))
+					XFAIL(err = environment->add(domainId, domain.isReadOnly()/*manager*/, false/*stack*/, false/*heap*/))
 
 					if (domain.hasGlobals())
 					{
@@ -286,7 +287,7 @@ BuildDomainsAndHeaps(ObjectId inEnvId)
 				{
 					XFAIL(err = MemObjManager::findEntryByName(kMemObjDomain, domain.name(), &domainEntry))
 					domainId = domainEntry.fId;
-					XFAIL(err = environment->add(domainId, NO/*manager*/, NO/*stack*/, NO/*heap*/))
+					XFAIL(err = environment->add(domainId, false/*manager*/, false/*stack*/, false/*heap*/))
 					options = kNHOpts_Persistent
 							  + (domain.isReadOnly() ? kNHOpts_ReadOnly : 0)
 							  + (domain.isCacheable() ? 0 : kNHOpts_NotCacheable);
@@ -899,7 +900,7 @@ CEnvironment::init(Heap inHeap)
 	fStackDomainId = kNoId;
 	fHeapDomainId = kNoId;
 	fRefCount = 0;
-	f24 = NO;
+	f24 = false;
 	gTheMemArchManager->addEnvironment(this);
 	return noErr;
 }
@@ -957,16 +958,16 @@ CEnvironment::hasDomain(CDomain * inDomain, bool * outHasDomain, bool * outIsMan
 	switch ((fDomainAccess >> (inDomain->fNumber * kDomainBits)) & kDomainMask)
 	{
 	case 0x01:
-		*outHasDomain = YES;
-		*outIsManager = NO;
+		*outHasDomain = true;
+		*outIsManager = false;
 		break;
 	case 0x03:
-		*outHasDomain = YES;
-		*outIsManager = YES;
+		*outHasDomain = true;
+		*outIsManager = true;
 		break;
 	default:
-		*outHasDomain = NO;
-		*outIsManager = NO;
+		*outHasDomain = false;
+		*outIsManager = false;
 		break;
 	}
 	return noErr;
@@ -989,7 +990,7 @@ CEnvironment::incrRefCount(void)
 /*------------------------------------------------------------------------------
 	Decrement the reference count for this environment.
 	Args:		--
-	Return:	YES if the environment is no longer referenced
+	Return:	true if the environment is no longer referenced
 ------------------------------------------------------------------------------*/
 
 bool
@@ -999,9 +1000,9 @@ CEnvironment::decrRefCount(void)
 	if (f24 && count == 0)
 	{
 		fOwnerId = kNoId;
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 

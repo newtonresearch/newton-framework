@@ -74,7 +74,7 @@ public:
 			  void			getBytes(CBufferList * inClientBuffer);
 			  void			getFramedBytes(CBufferList * inClientBuffer);
 			  void			getBytesImmediate(CBufferList * inClientBuffer, size_t inThreshold);
-			  void			getComplete(NewtonErr inResult, bool inEndOfFrame = NO, size_t inGetBytesCount = 0);
+			  void			getComplete(NewtonErr inResult, bool inEndOfFrame = false, size_t inGetBytesCount = 0);
 
 			  void			resArbReleaseStart(unsigned char*, unsigned char*);
 			  void			resArbClaimNotification(unsigned char*, unsigned char*);

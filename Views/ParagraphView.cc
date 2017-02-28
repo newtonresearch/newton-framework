@@ -118,7 +118,7 @@ CParagraphView::init(RefArg inProto, CView * inView)
 
 
 void
-CParagraphView::realDraw(Rect * inBounds)
+CParagraphView::realDraw(Rect& inRect)
 {}
 
 

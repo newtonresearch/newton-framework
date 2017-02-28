@@ -124,7 +124,7 @@ CObjectIterator::resetWithObject(RefArg inObj)
 }
 
 
-int
+bool
 CObjectIterator::next(void)
 {
 	ArrayIndex len = Length(fObj);
@@ -136,7 +136,7 @@ CObjectIterator::next(void)
 		fTag = ISNIL(fMapRef)	? MAKEINT(fIndex)
 										: GetTag(fMapRef, fIndex);
 		fValue = GetArraySlot(fObj, fIndex);
-		return YES;
+		return true;
 	}
 	else
 	{
@@ -150,7 +150,7 @@ CObjectIterator::next(void)
 			}
 		}
 		fValue = fTag = NILREF;
-		return NO;
+		return false;
 	}
 }
 
@@ -162,7 +162,7 @@ CObjectIterator::done(void)
 	if (fIncludeSiblings && NOTNIL(fMapRef))
 	{
 		if (fIndex < (int)fLength)
-			return NO;
+			return false;
 		return ISNIL(GetFrameSlot(fObj, SYMA(_proto)));
 	}
 	return fIndex >= (int)fLength;

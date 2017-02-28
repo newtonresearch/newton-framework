@@ -35,7 +35,8 @@ public:
 	ULong			endTime(void);
 
 	int			gestureAngle(void);
-	Point			gesturePoint(long);
+	Point			gesturePoint(ArrayIndex index);
+	ArrayIndex	countGesturePoints(void);	// was CountGesturePoints(CUnit *)
 
 	bool			isTap(void);
 	RecType		getType(void);
@@ -76,8 +77,8 @@ private:
 	
 	Rect					f28;
 	RefStruct			f30;
-	CView *				f34;
-	ULong					f38;	// actually bool?
+	CView *				fViewHit;		//+34
+	ULong					fViewHitFlags;	//+38
 // size +3C
 };
 

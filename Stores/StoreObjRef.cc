@@ -71,7 +71,7 @@ extern bool	IsValidPSSId(PSSId inId);
 bool
 StoreObjHeader::isValid(CFlashStore * inStore)
 {
-	return validity != (inStore->fVirginBits & 1)
+	return validity != (inStore->fVirginBits & 1)	// ie not virgin
 		 && IsValidPSSId(id);
 }
 
@@ -156,7 +156,7 @@ CStoreObjRef::cloneEmpty(int inState, CStoreObjRef & inObj, bool inArg3)
 NewtonErr
 CStoreObjRef::cloneEmpty(int inState, size_t inSize, CStoreObjRef & inObj, bool inArg4)
 {
-	return fStore->addObject(fObj.id, inState, inSize, inObj, inArg4, NO);
+	return fStore->addObject(fObj.id, inState, inSize, inObj, inArg4, false);
 }
 
 
@@ -235,7 +235,7 @@ CStoreObjRef::setSeparateTransaction(void)
 
 	CStoreObjRef obj(fStore->fVirginBits, fStore);
 	fStore->add(obj);
-	if ((err = clone(state(), obj, YES)) == noErr)
+	if ((err = clone(state(), obj, true)) == noErr)
 	{
 		dlete();
 //		this = obj;
@@ -375,19 +375,15 @@ UByte gObjectTransBitsToState[128] =
 
 unsigned int CStoreObjRef::transBits(void) const
 {
-#if 0
-	unsigned int bits = fObj.transBits ^ (fStore->fVirginBits & 0xFF); printf("transBits %d -> ",bits); return bits;
-#else
-	return fObj.transBits ^ (fStore->fVirginBits & 0xFF);
-#endif
+	unsigned int bits = fObj.transBits ^ (fStore->fVirginBits & 0xFF);
+PRINTF(("transBits %d -> ",bits));
+	return bits;
 }
 
 unsigned int CStoreObjRef::state(void) const
 {
-#if 0
-	unsigned int st = gObjectTransBitsToState[transBits()]; printf("state %d\n",st); return st;
-#else
-	return gObjectTransBitsToState[transBits()];
-#endif
+	unsigned int st = gObjectTransBitsToState[transBits()];
+PRINTF(("state %d\n",st));
+	return st;
 }
 

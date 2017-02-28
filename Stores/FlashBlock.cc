@@ -25,7 +25,7 @@
 	Is this log entry valid?
 	Check the signatures.
 	Args:		--
-	Return:	YES => log entry looks good
+	Return:	true => log entry looks good
 ----------------------------------------------------------------------------- */
 
 bool
@@ -41,7 +41,7 @@ SFlashLogEntry::isValid(ZAddr	inAddr)
 /* -----------------------------------------------------------------------------
 	Return the physical address/offset in flash of the log entry.
 	Args:		--
-	Return:	YES => signature is good
+	Return:	true => signature is good
 ----------------------------------------------------------------------------- */
 
 ZAddr
@@ -71,8 +71,8 @@ CFlashPhysBlock::init(CFlashStore * inStore, ZAddr inPhysAddr)
 	fBlockAddr = inPhysAddr;
 	fLogEntryOffset = 0;
 	fEraseCount = 1;
-	f14 = NO;
-	fIsReserved = NO;
+	f14 = false;
+	fIsReserved = false;
 }
 
 
@@ -82,8 +82,8 @@ CFlashPhysBlock::setInfo(SFlashBlockLogEntry * info)
 	fLogEntryOffset = info->physOffset();
 	fEraseCount = info->fEraseCount;
 	f04 = info->fLogicalAddr;
-	f14 = NO;
-	fIsReserved = NO;
+	f14 = false;
+	fIsReserved = false;
 PRINTF(("CFlashPhysBlock::setInfo(fLogEntryOffset=%08X, fEraseCount=%d, f04=%08X)\n", fLogEntryOffset,fEraseCount,f04));
 }
 
@@ -95,7 +95,7 @@ CFlashPhysBlock::setInfo(SFlashEraseLogEntry * info)
 	fEraseCount = info->f20;
 	f04 = kIllegalZAddr;
 	f14 = !info->f24;
-	fIsReserved = NO;
+	fIsReserved = false;
 PRINTF(("CFlashPhysBlock::setInfo(fLogEntryOffset=%08X, fEraseCount=%d, f14=%d) for SFlashEraseLogEntry\n", fLogEntryOffset,fEraseCount,f14));
 }
 
@@ -106,8 +106,8 @@ CFlashPhysBlock::setInfo(SReservedBlockLogEntry * info)
 	fLogEntryOffset = info->physOffset();
 	fEraseCount = info->fEraseCount;
 	f04 = info->f2C;
-	f14 = NO;
-	fIsReserved = YES;
+	f14 = false;
+	fIsReserved = true;
 PRINTF(("CFlashPhysBlock::setInfo(fLogEntryOffset=%08X, fEraseCount=%d, f04=%08X) for SReservedBlockLogEntry\n", fLogEntryOffset,fEraseCount,f04));
 }
 
@@ -144,7 +144,7 @@ ENTER_FUNC
 		SFlashEraseLogEntry logEntry;
 		logEntry.fPhysicalAddr = fBlockAddr;
 		logEntry.f20 = fEraseCount + 1;
-		logEntry.f24 = YES;
+		logEntry.f24 = true;
 		XFAIL(fStore->addLogEntryToPhysBlock('eblk', sizeof(SFlashEraseLogEntry), &logEntry, physAddr, NULL))
 		setInfo(&logEntry);
 
@@ -207,9 +207,9 @@ CFlashBlock::writeRootDirectory(ZAddr * outAddr)
 	NewtonErr err;
 PRINTF(("CFlashBlock::writeRootDirectory()\n"));
 ENTER_FUNC
-	CStoreObjRef obj(0, fStore);	// 0 should be fStore->fVirginBits, surely?
+	CStoreObjRef obj(fStore->fVirginBits, fStore);	// original says 0 for fStore->fVirginBits
 	fStore->add(obj);
-	err = addObject(kRootDirId, 0, rootDirSize(), obj, NO, NO);
+	err = addObject(kRootDirId, 0, rootDirSize(), obj, false, false);
 	if (outAddr)
 		*outAddr = obj.fObjectAddr;
 PRINTF(("-> %08X\n", obj.fObjectAddr));
@@ -252,8 +252,9 @@ ENTER_FUNC
 		{
 			// read object header
 			StoreObjHeader obj;
-			XFAILIF(err = nextObject(objAddr, &objAddr, YES), if (err == kStoreErrNoMoreObjects) err = noErr;)	// loop exit
+			XFAILIF(err = nextObject(objAddr, &objAddr, true), if (err == kStoreErrNoMoreObjects) err = noErr;)	// loop exit
 			XFAIL(err = readObjectAt(objAddr, &obj))
+PRINTF(("object = { id:%d, size:%d, x2:%d }%s\n", obj.id, obj.size, obj.x2, (obj.zapped==0)?" ZAPPED!":""));
 			// step to next
 			fNextObjAddr = objAddr + sizeof(StoreObjHeader) + LONGALIGN(obj.size);
 			// update zapped size
@@ -262,7 +263,7 @@ ENTER_FUNC
 			else
 			{
 				if (outHuh && obj.x2 == 2)
-					*outHuh = YES;
+					*outHuh = true;
 			}
 			// ensure next available id is valid
 			if (obj.id >= kFirstObjectId)
@@ -301,7 +302,7 @@ EXIT_FUNC
 
 
 NewtonErr
-CFlashBlock::lookup(PSSId inId, int inState, CStoreObjRef& ioObj, long * outArg4)
+CFlashBlock::lookup(PSSId inId, int inState, CStoreObjRef& ioObj, int * outArg4)
 {
 	if (isReserved())
 	{
@@ -322,7 +323,7 @@ CFlashBlock::lookup(PSSId inId, int inState, CStoreObjRef& ioObj, long * outArg4
 				inSize				object’s size
 				inObj					on return, valid store object ref
 				inArg5
-				inArg6				YES => pad objects to fill 4K -- for stress testing?
+				inArg6				true => pad objects to fill 4K -- for stress testing?
 	Return:	error code
 ----------------------------------------------------------------------------- */
 
@@ -622,12 +623,12 @@ CFlashBlock::extendDirBucket(ZAddr inAddr, ZAddr * outAddr)
 {
 	NewtonErr err;
 	// begin transaction
-	CStoreObjRef obj(0, fStore);
+	CStoreObjRef obj(fStore->fVirginBits, fStore);	// original says 0 for fStore->fVirginBits
 	fStore->add(obj);
 	XTRY
 	{
 		// add an object holding a bucket full of directory entries
-		XFAIL(err = addObject(kRootDirId, 0, bucketSize()*sizeof(SDirEnt), obj, NO, NO))
+		XFAIL(err = addObject(kRootDirId, 0, bucketSize()*sizeof(SDirEnt), obj, false, false))
 
 		// return its address/offset
 		ZAddr addr = obj.fObjectAddr + sizeof(StoreObjHeader);
@@ -728,12 +729,12 @@ CFlashBlock::nextObject(ZAddr inAddr, ZAddr * outAddr, bool inAllObjects)
 {
 	NewtonErr err;
 	StoreObjHeader obj;
-	bool tryThis = NO;
+	bool tryThis = false;
 	ZAddr addr = inAddr;
 	if ((addr & fStore->fBlockSizeMask) == 0)
 	{
 		addr = fFirstObjAddr + 4;
-		tryThis = YES;
+		tryThis = true;
 	}
 
 	// loop until we reach the end of the block
@@ -752,7 +753,7 @@ CFlashBlock::nextObject(ZAddr inAddr, ZAddr * outAddr, bool inAllObjects)
 			if (ISVIRGINBIT(obj.x61))
 			{
 				addr += (sizeof(StoreObjHeader) + LONGALIGN(obj.size));
-				tryThis = YES;
+				tryThis = true;
 			}
 			else
 				addr += 4;
@@ -792,7 +793,7 @@ CFlashBlock::startCompact(SCompactState * ioState)
 {
 	NewtonErr err = noErr;
 	bool isDone;
-	for (isDone = NO; !isDone; )
+	for (isDone = false; !isDone; )
 	{
 		newton_try
 		{
@@ -805,7 +806,7 @@ CFlashBlock::startCompact(SCompactState * ioState)
 			ioState->x1C = 0;
 			ioState->x24 = 0;
 			ioState->refCount = 1;
-			isDone = YES;
+			isDone = true;
 		}
 		newton_catch(exAbort)
 		{
@@ -822,12 +823,12 @@ CFlashBlock::continueCompact(SCompactState * ioState)
 {
 	NewtonErr err = noErr;
 	bool isDone;
-	for (isDone = NO; !isDone; )
+	for (isDone = false; !isDone; )
 	{
 		newton_try
 		{
 			err = realContinueCompact(ioState);
-			isDone = YES;
+			isDone = true;
 		}
 		newton_catch(exAbort)
 		{
@@ -855,7 +856,7 @@ bool
 CFlashBlock::isReserved(void)
 {
 	CFlashPhysBlock * block = physBlock();
-	return block ? block->isReserved() : NO;
+	return block ? block->isReserved() : false;
 }
 
 
@@ -863,7 +864,7 @@ PSSId
 CFlashBlock::nextPSSId(void)
 {
 	while (!IsValidPSSId(fAvailableId))
-		fAvailableId++;
+		++fAvailableId;
 	return fAvailableId;
 }
 
@@ -1022,7 +1023,7 @@ SCompactState::init(void)
 	Is this state valid?
 	Check the signatures.
 	Args:		--
-	Return:	YES => signature is good
+	Return:	true => signature is good
 ----------------------------------------------------------------------------- */
 
 bool
@@ -1035,7 +1036,7 @@ SCompactState::isValid(void)
 /* -----------------------------------------------------------------------------
 	Is compaction in progress?
 	Args:		--
-	Return:	YES => compaction in progress
+	Return:	true => compaction in progress
 ----------------------------------------------------------------------------- */
 
 bool

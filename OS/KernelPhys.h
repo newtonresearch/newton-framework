@@ -40,8 +40,8 @@ public:
 				CPhys();
 				~CPhys();
 
-	NewtonErr	init(PAddr inBase, size_t inSize, bool inReadOnly = NO, bool inCache = YES);
-	void			initState(PAddr inBase, size_t inSize, bool inReadOnly = NO, bool inCache = YES);
+	NewtonErr	init(PAddr inBase, size_t inSize, bool inReadOnly = false, bool inCache = true);
+	void			initState(PAddr inBase, size_t inSize, bool inReadOnly = false, bool inCache = true);
 
 	// Change any mappings associated with this phys…
 	NewtonErr	invalidate();			// to invalid

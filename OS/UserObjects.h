@@ -70,13 +70,13 @@ protected:
 	C U O b j e c t   I n l i n e s
 ------------------------------------------------------------------------------*/
 
-inline			CUObject::CUObject(ObjectId id)  { fObjectCreatedByUs = NO; fId = id; }
-inline			CUObject::CUObject(CUObject & inCopy)	{ fObjectCreatedByUs = NO; fId = inCopy.fId; }
+inline			CUObject::CUObject(ObjectId id)  { fObjectCreatedByUs = false; fId = id; }
+inline			CUObject::CUObject(CUObject & inCopy)	{ fObjectCreatedByUs = false; fId = inCopy.fId; }
 inline			CUObject::operator ObjectId()	const  { return fId; }
 inline void		CUObject::operator=(ObjectId id)  { copyObject(id); }
 inline void		CUObject::operator=(const CUObject & inCopy)  { copyObject(inCopy); }
 inline void		CUObject::copyObject(const CUObject & inCopy)  { copyObject(inCopy.fId); }
-inline void		CUObject::denyOwnership(void)  { fObjectCreatedByUs = NO; }
+inline void		CUObject::denyOwnership(void)  { fObjectCreatedByUs = false; }
 inline bool		CUObject::isExtPage(void)  { return ObjectType(fId) == kExtPhysType; }
 
 

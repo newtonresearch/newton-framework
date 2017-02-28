@@ -263,7 +263,7 @@ BuildMemObjDatabase(void)
 		if ((memInfo->framesHeapSize != 0 || memInfo->handlesHeapSize != 0)
 		 && (memInfo->flags & 0x01) != 0)
 		{
-			persistentEntry->init(memInfo->tag, YES, index++);
+			persistentEntry->init(memInfo->tag, true, index++);
 			persistentEntry++;
 			entryCount++;
 		}
@@ -319,7 +319,7 @@ InitKernelDomainAndEnvironment(void)
 	CDomainInfo info;
 	MemObjManager::getDomainInfoByName('krnl', &info);
 	domain->initWithDomainNumber(kNoId, info.base(), info.size(), kKernelDomainHeapDomainNumber);
-	env->add(domain, NO, NO, NO);
+	env->add(domain, false, false, false);
 
 	MemObjManager::registerEnvironmentId('krnl', environmentId);
 	MemObjManager::registerDomainId('krnl', domainId);
@@ -433,7 +433,7 @@ MemObjManager::findDomainId(ULong inName, ObjectId * outId)
 	Args:		inName			domain index
 				outInfo			pointer to info struct
 				outError			result
-	Return:	YES if successful; if NO then outError is set appropriately
+	Return:	true if successful; if false then outError is set appropriately
 ------------------------------------------------------------------------------*/
 
 bool
@@ -458,10 +458,10 @@ MemObjManager::getDomainInfo(ArrayIndex index, CDomainInfo * outInfo, NewtonErr 
 		if (err == kOSErrItemNotFound)
 			err = noErr;
 		*outError = err;
-		return NO;
+		return false;
 	}
 
-	return YES;
+	return true;
 }
 
 
@@ -610,10 +610,10 @@ MemObjManager::getEnvironmentInfo(ArrayIndex index, CEnvironmentInfo * outInfo, 
 		if (err == kOSErrItemNotFound)
 			err = noErr;
 		*outError = err;
-		return NO;
+		return false;
 	}
 
-	return YES;
+	return true;
 }
 
 
@@ -697,8 +697,8 @@ MemObjManager::primGetEnvDomainName(ULong inEnvName, ArrayIndex index, ULong * o
 					if (tagIndex == index)
 					{
 						*outName = *tagPtr;
-						*outIsManager = NO;
-						*outOK = YES;
+						*outIsManager = false;
+						*outOK = true;
 						return noErr;
 					}
 				}
@@ -711,18 +711,18 @@ MemObjManager::primGetEnvDomainName(ULong inEnvName, ArrayIndex index, ULong * o
 					if (tagIndex == index)
 					{
 						*outName = *tagPtr;
-						*outIsManager = YES;
-						*outOK = YES;
+						*outIsManager = true;
+						*outOK = true;
 						return noErr;
 					}
 				}
 			}
 
-			*outOK = NO;
+			*outOK = false;
 			return noErr;
 		}
 	}
-	*outOK = NO;
+	*outOK = false;
 	return kOSErrItemNotFound;
 }
 
@@ -812,11 +812,11 @@ MemObjManager::getPersistentRef(ArrayIndex index, CPersistentDBEntry ** outEntry
 	if (entry == NULL)
 	{
 		*outError = noErr;
-		return NO;
+		return false;
 	}
 
 	*outEntry = entry;
-	return YES;
+	return true;
 }
 
 
@@ -943,7 +943,7 @@ MemObjManager::entryLocByName(MemObjType inType, ULong inName)
 				index				its index
 				outObj			where to copy the object
 				outError			error code
-	Return:	YES if found
+	Return:	true if found
 ------------------------------------------------------------------------------*/
 
 bool
@@ -956,7 +956,7 @@ MemObjManager::findEntryByIndex(MemObjType inType, ArrayIndex index, void * outO
 		if ((err = primGetEntryByIndex(inType, index, outObj)) != noErr)
 		{
 			*outError = err;
-			return NO;
+			return false;
 		}
 	}
 
@@ -971,12 +971,12 @@ MemObjManager::findEntryByIndex(MemObjType inType, ArrayIndex index, void * outO
 			if (err == kOSErrItemNotFound)
 				err = noErr;
 			*outError = err;
-			return NO;
+			return false;
 		}
 		copyObject(inType, outObj, &msg->entry.object);
 	}
 
-	return YES;
+	return true;
 }
 
 

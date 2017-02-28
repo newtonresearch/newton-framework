@@ -57,6 +57,7 @@ Ref	FStrReplace(RefArg inRcvr, RefArg inStr, RefArg inSubstr, RefArg inReplaceme
 Ref	FSubStr(RefArg inRcvr, RefArg inStr, RefArg inStart, RefArg inCount);
 Ref	FTrimString(RefArg inRcvr, RefArg ioStr);
 Ref	FUpcase(RefArg inRcvr, RefArg ioStr);
+Ref	FStyledStrTruncate(RefArg inRcvr, RefArg inStr, RefArg inWidth, RefArg inFont);
 
 Ref	FStrHexDump(RefArg inRcvr, RefArg inData, RefArg inWidth);
 }
@@ -185,7 +186,7 @@ MakeStringObject(RefArg obj, UniChar * str, ArrayIndex * outLength, ArrayIndex i
 	UniChar		buf[64];
 	UniChar *	src;
 	ArrayIndex	length;
-	bool			result = YES;
+	bool			result = true;
 	RefVar		op;
 
 	if (IsString(obj))
@@ -215,7 +216,7 @@ MakeStringObject(RefArg obj, UniChar * str, ArrayIndex * outLength, ArrayIndex i
 			NumberString(CDouble(obj), src, 63, "%.15g");
 			length = Ustrlen(src);
 		}
-		else if (EQRef(ClassOf(obj), MakeSymbol("symbol")))
+		else if (EQ(ClassOf(obj), MakeSymbol("symbol")))
 		{
 			ConvertToUnicode(SymbolName(obj), src, 63);
 			length = Ustrlen(src);
@@ -223,7 +224,7 @@ MakeStringObject(RefArg obj, UniChar * str, ArrayIndex * outLength, ArrayIndex i
 		else
 		{
 			length = 0;
-			result = NO;
+			result = false;
 		}
 	}
 
@@ -249,7 +250,7 @@ MakeStringObject(RefArg obj, UniChar * str, ArrayIndex * outLength, ArrayIndex i
 Ref
 FGetRichString(RefArg inRcvr)
 {
-	return MakeRichString(GetProtoVariable(inRcvr, SYMA(text)), GetProtoVariable(inRcvr, SYMA(styles)), NO);
+	return MakeRichString(GetProtoVariable(inRcvr, SYMA(text)), GetProtoVariable(inRcvr, SYMA(styles)), false);
 }
 
 
@@ -272,8 +273,8 @@ FNumberStr(RefArg inRcvr, RefArg inNum)
 	Parameterize a string.
 	Args:		ioStr
 				ioOffset
-				inIgnore		YES => ignore placeholders (used in conditional phrases)
-				inSuppress	YES => don’t parse ^ placeholders, delete them
+				inIgnore		true => ignore placeholders (used in conditional phrases)
+				inSuppress	true => don’t parse ^ placeholders, delete them
 				inArgs
 	Return:	offset to last char parsed successfully
 ------------------------------------------------------------------------------*/
@@ -336,8 +337,8 @@ ParamStrParse(CRichString * ioStr, ArrayIndex ioOffset, bool inIgnore, bool inSu
 					else
 					{
 						// funny placeholder - skip past | | section
-						c1Offset = ParamStrParse(ioStr, ioOffset, YES, inSuppress, inArgs);
-						ioOffset = ParamStrParse(ioStr, c1Offset + 1, YES, inSuppress, inArgs);
+						c1Offset = ParamStrParse(ioStr, ioOffset, true, inSuppress, inArgs);
+						ioOffset = ParamStrParse(ioStr, c1Offset + 1, true, inSuppress, inArgs);
 					}
 					break;
 
@@ -423,7 +424,7 @@ FParamStr(RefArg inRcvr, RefArg inStr, RefArg inArgs)
 	{
 		for (ArrayIndex offset = 0; offset < richStr.length(); )
 		{
-			offset = ParamStrParse(&richStr, offset, NO, i == 3, inArgs);
+			offset = ParamStrParse(&richStr, offset, false, i == 3, inArgs);
 			if (offset < richStr.length())
 				offset++;
 		}
@@ -558,7 +559,7 @@ StrBeginsWith(RefArg str, RefArg prefix)
 {
 	CRichString	richStr(str);
 	CRichString	richPrefix(prefix);
-	bool			doesBegin = NO;
+	bool			doesBegin = false;
 
 	if (richStr.length() >= richPrefix.length())
 	{
@@ -604,7 +605,7 @@ StrCapitalizeWords(RefArg str)
 {
 	UniChar * text;
 	bool isDelimiter;
-	bool isInWord = NO;
+	bool isInWord = false;
 
 	if (!IsString(str))
 		ThrowBadTypeWithFrameData(kNSErrNotAString, str);
@@ -616,14 +617,14 @@ StrCapitalizeWords(RefArg str)
 		if (isInWord)
 		{
 			if (isDelimiter)
-				isInWord = NO;
+				isInWord = false;
 		}
 		else
 		{
 			if (!isDelimiter)
 			{
 				UpperCaseText(text, 1);
-				isInWord = YES;
+				isInWord = true;
 			}
 		}
 	}
@@ -662,7 +663,7 @@ bool
 StrEmpty(RefArg str)
 {
 	if (ISNIL(str))
-		return YES;
+		return true;
 
 	CRichString	richStr(str);
 	return richStr.length() == 0;
@@ -682,7 +683,7 @@ StrEndsWith(RefArg str, RefArg suffix)
 {
 	CRichString	richStr(str);
 	CRichString	richSuffix(suffix);
-	bool			doesEnd = NO;
+	bool			doesEnd = false;
 
 	if (richStr.length() >= richSuffix.length())
 	{
@@ -1010,7 +1011,7 @@ FFindStringInArray(RefArg inRcvr, RefArg inArray, RefArg inStr)
 		for (ArrayIndex i = 0, count = Length(inArray); i < count; ++i)
 		{
 			CRichString	richStr2(GetArraySlot(inArray, i));
-			if (richStr1.compareSubStringCommon(richStr2, 0, -1, YES) == 0)
+			if (richStr1.compareSubStringCommon(richStr2, 0, -1, true) == 0)
 				return MAKEINT(i);
 		}
 	}
@@ -1029,19 +1030,19 @@ RecurseFindStringInFrame(RefArg inSlot, RefArg ioPath, RefArg outResult, const C
 	{
 		CRichString	richStr(inSlot);
 		bool	sp28 = IsDelimiter(inStr.getChar(0));
-		bool	r8 = YES;
+		bool	r8 = true;
 		for (int i = 0, count = richStr.length() - inStr.length(); i <= count; ++i)
 		{
 			bool	isDelim = IsDelimiter(richStr.getChar(i));
 			if (isDelim)
 			{
-				r8 = YES;
+				r8 = true;
 				if (!sp28 && isDelim)
 					continue;
 			}
 			if (r8)
 			{
-				r8 = NO;
+				r8 = false;
 				if (richStr.compareSubStringCommon(inStr, i, inStr.length()) == 0)
 				{
 					found1 = TRUEREF;
@@ -1068,19 +1069,19 @@ RecurseFindStringInFrame(RefArg inSlot, RefArg ioPath, RefArg outResult, const C
 			{
 				CRichString	richStr(iter.value());
 				bool	sp2C = IsDelimiter(inStr.getChar(0));
-				bool	r10 = YES;
+				bool	r10 = true;
 				for (int i = 0, count = richStr.length() - inStr.length(); i <= count; ++i)
 				{
 					bool	isDelim = IsDelimiter(richStr.getChar(i));
 					if (isDelim)
 					{
-						r10 = YES;
+						r10 = true;
 						if (!sp2C && isDelim)
 							continue;
 					}
 					if (r10)
 					{
-						r10 = NO;
+						r10 = false;
 						if (richStr.compareSubStringCommon(inStr, i, inStr.length()) == 0)
 						{
 							RefVar	path;
@@ -1263,6 +1264,46 @@ FUpcase(RefArg inRcvr, RefArg ioStr)
 	StrUpcase(ioStr);
 	return ioStr;
 }
+
+
+#include "DrawText.h"
+#include "ViewFlags.h"
+extern int		MeasureTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo);
+
+const UniChar gEllipsis[] = { 0x2026, 0 };
+
+Ref
+FStyledStrTruncate(RefArg inRcvr, RefArg inStr, RefArg inWidth, RefArg inFont)
+{
+	CRichString str(inStr);
+	StyleRecord style;
+	CreateTextStyleRecord(inFont, &style);
+	float txWd = RINT(inWidth);
+	TextOptions options;
+	options.transferMode = modeOr;
+	options.width = txWd;
+	TextBoundsInfo boundsInfo;
+	// find how much of the string fits in the given width
+	ArrayIndex strLen = str.length();
+	ArrayIndex fitLen = MeasureRichString(str, 0, strLen, &style, gZeroFPoint, &options, &boundsInfo);
+	if (fitLen < strLen)
+	{
+		// doesn’t fit -- truncate string and append ellipsis
+		// measure width of ellipsis char
+		StyleRecord * stylePtr = &style;
+		MeasureTextOnce((void *)gEllipsis, 1, &stylePtr, NULL, gZeroFPoint, &options, &boundsInfo);
+		// reduce box width by that amount
+		options.width = txWd - boundsInfo.width;
+		ArrayIndex truncStrEnd = MeasureRichString(str, 0, str.length(), &style, gZeroFPoint, &options, &boundsInfo) + 1;
+		// truncate the str to fit the box
+		str.deleteRange(truncStrEnd, str.length() - truncStrEnd);
+		// append ellipsis
+		str.setChar(truncStrEnd-1, gEllipsis[0]);
+	}
+
+	return inStr;
+}
+
 
 #pragma mark -
 

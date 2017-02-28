@@ -6,6 +6,7 @@
 	Written by:	Newton Research Group.
 */
 
+#include "QDDrawing.h"
 #include "RootView.h"
 
 #include "Transformations.h"
@@ -127,7 +128,7 @@ CStroke::inkOn(void)
 void
 CStroke::inkOff(bool inArg1)
 {
-	inkOff(inArg1, YES);
+	inkOff(inArg1, true);
 }
 
 
@@ -155,8 +156,8 @@ CStroke::inkOff(bool inArg1, bool inHobbled)
 		{
 			if (!fStroke->testFlags(0x04000000))
 			{
-//				StartDrawing(NULL, &inkyRect);
-//				StopDrawing(NULL, &inkyRect);
+				StartDrawing(NULL, &inkyRect);
+				StopDrawing(NULL, &inkyRect);
 			}
 			else
 				gRootView->smartInvalidate(&inkyRect);
@@ -186,19 +187,7 @@ CStroke::invalidate(void)
 	{
 		Rect inkyRect;
 		getInkedRect(&inkyRect);
-#if 0
 		gRootView->smartInvalidate(&inkyRect);
-#endif
 	}
-}
-
-
-#pragma mark -
-/*--------------------------------------------------------------------------------
-	P l a i n   C   I n t e r f a c e
---------------------------------------------------------------------------------*/
-
-extern "C"
-{
 }
 

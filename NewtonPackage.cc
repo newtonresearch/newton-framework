@@ -9,6 +9,7 @@
 
 #include "Objects.h"
 #include "NewtonPackage.h"
+#include "PackageTypes.h"
 #include "ObjHeader.h"
 #include "Ref32.h"
 
@@ -27,8 +28,8 @@ typedef std::map<Ref32, Ref> RefMap;
 ----------------------------------------------------------------------------- */
 bool		IsObjClass(Ref obj, const char * inClassName);
 
-size_t	ScanRef(Ref32 inRef, ScanRefMap & ioMap, const char * inBaseAddr);
-Ref		CopyRef(Ref32 inRef, ArrayObject * &ioDstPtr, RefMap & ioMap, const char * inBaseAddr);
+size_t	ScanRef(Ref32 inRef, const char * inPartAddr, long inPartOffset, ScanRefMap & ioMap);
+Ref		CopyRef(Ref32 inRef, const char * inPartAddr, long inPartOffset, ArrayObject * &ioDstPtr, RefMap & ioMap);
 void		UpdateRef(Ref * inRefPtr, RefMap & inMap);
 #else
 void		FixUpRef(Ref * inRefPtr, char * inBaseAddr);
@@ -43,9 +44,21 @@ void		FixUpRef(Ref * inRefPtr, char * inBaseAddr);
 NewtonPackage::NewtonPackage(const char * inPkgPath)
 {
 	pkgFile = fopen(inPkgPath, "r");
+	pkgMem = NULL;
 	pkgDir = NULL;
 	relocationData = NULL;
-	part0Data = NULL;
+	part0Data.data = NULL;
+	pkgPartData = NULL;
+}
+
+
+NewtonPackage::NewtonPackage(void * inPkgData)
+{
+	pkgFile = NULL;
+	pkgMem = inPkgData;
+	pkgDir = NULL;
+	relocationData = NULL;
+	part0Data.data = NULL;
 	pkgPartData = NULL;
 }
 
@@ -74,7 +87,7 @@ NewtonPackage::~NewtonPackage()
 /* -----------------------------------------------------------------------------
 	Return the package directory.
 	Args:		--
-	Return:	package directory, platform byte-aligned; treat as read-only
+	Return:	package directory, platform byte-ordered; treat as read-only
 ----------------------------------------------------------------------------- */
 
 PackageDirectory *
@@ -82,20 +95,33 @@ NewtonPackage::directory(void)
 {
 	XTRY
 	{
-		XFAIL(pkgFile == NULL)
+		if (pkgMem != NULL) {
+			// package source is in memory
+			PackageDirectory * dir = (PackageDirectory *)pkgMem;
+			// verify signature
+			XFAIL(strncmp(dir->signature, kPackageMagicNumber, kPackageMagicLen) != 0)
+			// allocate for the directory + part entries
+			int pkgDirSize = CANONICAL_LONG(dir->directorySize);
+			pkgDir = (PackageDirectory *)malloc(pkgDirSize);
+			XFAIL(pkgDir == NULL)
+			memcpy(pkgDir, pkgMem, pkgDirSize);
+		} else {
+			// package source is a file
+			XFAIL(pkgFile == NULL)
 
-		PackageDirectory dir;
-		// read the directory
-		fread(&dir, sizeof(PackageDirectory), 1, pkgFile);
-		// verify signature
-		XFAIL(strncmp(dir.signature, "package", 7) != 0)
-		// allocate for the directory + part entries
-		int pkgDirSize = CANONICAL_LONG(dir.directorySize);
-		pkgDir = (PackageDirectory *)malloc(pkgDirSize);
-		XFAIL(pkgDir == NULL)
-		// read all that
-		fseek(pkgFile, 0, SEEK_SET);
-		fread(pkgDir, pkgDirSize, 1, pkgFile);
+			PackageDirectory dir;
+			// read the directory
+			fread(&dir, sizeof(PackageDirectory), 1, pkgFile);
+			// verify signature
+			XFAIL(strncmp(dir.signature, kPackageMagicNumber, kPackageMagicLen) != 0)
+			// allocate for the directory + part entries
+			int pkgDirSize = CANONICAL_LONG(dir.directorySize);
+			pkgDir = (PackageDirectory *)malloc(pkgDirSize);
+			XFAIL(pkgDir == NULL)
+			// read all that
+			fseek(pkgFile, 0, SEEK_SET);
+			fread(pkgDir, pkgDirSize, 1, pkgFile);
+		}
 
 #if defined(hasByteSwapping)
 		pkgDir->id = BYTE_SWAP_LONG(pkgDir->id);
@@ -112,8 +138,7 @@ NewtonPackage::directory(void)
 		pkgDir->numParts = BYTE_SWAP_LONG(pkgDir->numParts);
 
 		PartEntry * pe = pkgDir->parts;
-		for (int i = 0; i < pkgDir->numParts; ++i, ++pe)
-		{
+		for (int i = 0; i < pkgDir->numParts; ++i, ++pe) {
 			pe->offset = BYTE_SWAP_LONG(pe->offset);
 			pe->size = BYTE_SWAP_LONG(pe->size);
 			pe->size2 = pe->size;
@@ -124,14 +149,31 @@ NewtonPackage::directory(void)
 			pe->compressor.offset = BYTE_SWAP_SHORT(pe->compressor.offset);
 			pe->compressor.length = BYTE_SWAP_SHORT(pe->compressor.length);
 		}
+
+		// fix up name & copyright in directory data area
+		char * pkgData = (char *)pkgDir + sizeof(PackageDirectory) + pkgDir->numParts * sizeof(PartEntry);
+
+		if (pkgDir->name.length > 0) {
+			UniChar * s = (UniChar *)(pkgData + pkgDir->name.offset);
+			for (ArrayIndex i = 0, count = pkgDir->name.length / sizeof(UniChar); i < count; ++i, ++s)
+				*s = BYTE_SWAP_SHORT(*s);
+		}
+		if (pkgDir->copyright.length > 0) {
+			UniChar * s = (UniChar *)(pkgData + pkgDir->copyright.offset);
+			for (ArrayIndex i = 0, count = pkgDir->copyright.length / sizeof(UniChar); i < count; ++i, ++s)
+				*s = BYTE_SWAP_SHORT(*s);
+		}
 #endif
 
 		//	if it’s a "package1" with relocation info then read that relocation info
-		if ((pkgDir->signature[7] == '1') && (pkgDir->flags & kRelocationFlag) != 0)
-		{
-			// read relocation header
-			fseek(pkgFile, pkgDir->directorySize, SEEK_SET);
-			fread(&pkgRelo, sizeof(RelocationHeader), 1, pkgFile);
+		if ((pkgDir->signature[kPackageMagicLen] == '1') && FLAGTEST(pkgDir->flags, kRelocationFlag)) {
+			if (pkgMem != NULL) {
+				memcpy(&pkgRelo, (char *)pkgMem + pkgDir->directorySize, sizeof(RelocationHeader));
+			} else {
+				// read relocation header
+				fseek(pkgFile, pkgDir->directorySize, SEEK_SET);
+				fread(&pkgRelo, sizeof(RelocationHeader), 1, pkgFile);
+			}
 
 #if defined(hasByteSwapping)
 			pkgRelo.relocationSize = BYTE_SWAP_LONG(pkgRelo.relocationSize);
@@ -144,10 +186,15 @@ NewtonPackage::directory(void)
 			size_t relocationDataSize = pkgRelo.relocationSize - sizeof(RelocationHeader);
 			relocationData = (char *)malloc(relocationDataSize);
 			XFAILIF(relocationData == NULL, free(pkgDir); pkgDir = NULL;)
-			fread(relocationData, relocationDataSize, 1, pkgFile);
+			if (pkgMem != NULL) {
+				memcpy(relocationData, (char *)pkgMem + pkgDir->directorySize + sizeof(RelocationHeader), relocationDataSize);
+			} else {
+				fread(relocationData, relocationDataSize, 1, pkgFile);
+			}
 		}
-		else
+		else {
 			pkgRelo.relocationSize = 0;
+		}
 	}
 	XENDTRY;
 	return pkgDir;
@@ -157,19 +204,20 @@ NewtonPackage::directory(void)
 /* -----------------------------------------------------------------------------
 	Return part entry info.
 	Args:		inPartNo		the part number, typically 0
-	Return:	part info entry, platform byte-aligned; treat as read-only
+	Return:	part info entry, platform byte-ordered; treat as read-only
 ----------------------------------------------------------------------------- */
 
 const PartEntry *
 NewtonPackage::partEntry(ArrayIndex inPartNo)
 {
 	// load the directory if necessary
-	if (pkgDir == NULL)
+	if (pkgDir == NULL) {
 		directory();
-
+	}
 	// sanity check
-	if (inPartNo >= pkgDir->numParts)
+	if (inPartNo >= pkgDir->numParts) {
 		return NULL;
+	}
 
 	return &pkgDir->parts[inPartNo];
 }
@@ -185,81 +233,85 @@ NewtonPackage::partEntry(ArrayIndex inPartNo)
 	Return:	pointer to malloc()d Ref part data
 ----------------------------------------------------------------------------- */
 
-char *
+MemAllocation *
 NewtonPackage::partPkgData(ArrayIndex inPartNo)
 {
 	// load the directory if necessary
-	if (pkgDir == NULL)
+	if (pkgDir == NULL) {
 		directory();
-
+	}
 	// sanity check
-	if (inPartNo == 0 || inPartNo >= pkgDir->numParts)
+	if (inPartNo >= pkgDir->numParts) {
 		return NULL;
+	}
 
-	return pkgPartData[inPartNo];
+	return &pkgPartData[inPartNo];
 }
 
 
 /* -----------------------------------------------------------------------------
-	Return the top part Ref for a part in the package.
+	Return the part Ref for a part in the package.
 	Args:		inPartNo		the part number, typically 0
-	Return:	top part Ref
+	Return:	part Ref
 ----------------------------------------------------------------------------- */
 
 Ref
 NewtonPackage::partRef(ArrayIndex inPartNo)
 {
 	// load the directory if necessary
-	if (pkgDir == NULL)
+	if (pkgDir == NULL) {
 		directory();
-
+	}
 	// sanity check
-	if (inPartNo >= pkgDir->numParts)
+	if (inPartNo >= pkgDir->numParts) {
 		return NILREF;
+	}
 
 	// create the array of per-part partData pointers if necessary
 	if (pkgPartData == NULL) {
 		if (pkgDir->numParts == 1) {
 			pkgPartData = &part0Data;
 		} else {
-			pkgPartData = (char **)malloc(pkgDir->numParts*sizeof(char *));
+			pkgPartData = (MemAllocation *)malloc(pkgDir->numParts*sizeof(MemAllocation));
 		}
 	}
+
+	MemAllocation * pkgAllocation = pkgPartData + inPartNo;
+	pkgAllocation->data = NULL;
+	pkgAllocation->size = 0;
 
 	const PartEntry * thePart = partEntry(inPartNo);
 
 	// we can only handle NOS parts
 	if ((thePart->flags & kPartTypeMask) != kNOSPart) {
-		pkgPartData[inPartNo] = NULL;
 		return NILREF;
 	}
 
 	// read part into memory
 	char * partData;
 	size_t partSize = thePart->size;
-	partData = (char *)malloc(partSize);	// will leak if partRef called more than once
+	partData = (char *)malloc(partSize);	// will leak if partRef called more than once for the same partNo
 	if (partData == NULL)
 		return NILREF;
-	pkgPartData[inPartNo] = partData;
 
-	long baseOffset = pkgDir->directorySize + pkgRelo.relocationSize;
-	baseOffset = LONGALIGN(baseOffset);
-	fseek(pkgFile, baseOffset + thePart->offset, SEEK_SET);
-	fread(partData, partSize, 1, pkgFile);
+	long partOffset = LONGALIGN(pkgDir->directorySize + pkgRelo.relocationSize + thePart->offset);
+	if (pkgMem != NULL) {
+		memcpy(partData, (char *)pkgMem + partOffset, partSize);
+	} else {
+		fseek(pkgFile, partOffset, SEEK_SET);
+		fread(partData, partSize, 1, pkgFile);
+	}
 
 	// adjust any relocation info
 	if (pkgRelo.relocationSize != 0)
 	{
-// need to do this for THIS PART ONLY
-#if 0
 		long  delta = (long)partData - pkgRelo.baseAddress;
 		RelocationEntry *	set = (RelocationEntry *)relocationData;
-		for (ArrayIndex setNum = 0; setNum < pkgRelo.numEntries; ++setNum)
-		{
+#if 0
+		for (ArrayIndex setNum = 0; setNum < pkgRelo.numEntries; ++setNum) {
 			int32_t * p, * pageBase = (int32_t *)(partData + CANONICAL_SHORT(set->pageNumber) * pkgRelo.pageSize);
 			ArrayIndex offsetCount = CANONICAL_SHORT(set->offsetCount);
-			for (ArrayIndex offsetNum = 0; offsetNum < offsetCount; ++offsetNum)
-			{
+			for (ArrayIndex offsetNum = 0; offsetNum < offsetCount; ++offsetNum) {
 				p = pageBase + set->offsets[offsetNum];
 				*p = CANONICAL_LONG(*p) + delta;	// was -; but should be + surely?
 			}
@@ -275,12 +327,12 @@ NewtonPackage::partRef(ArrayIndex inPartNo)
 #if __LP64__
 /*
 	So, now:
-		partData = address of part file read into memory
-		baseOffset = offset into part of Ref data
-	Refs in the .pkg file are offsets into Ref data and need to be fixed up to run-time addresses
+		partData = address of part data read from pkg file
+		partOffset = offset into part of Ref data
+	Refs in the .pkg file are offsets into the file and need to be fixed up to run-time addresses
 */
 	ScanRefMap scanRefMap;
-	size_t part64Size = ScanRef(CANONICAL_LONG(REF(baseOffset)), scanRefMap, partData - baseOffset);
+	size_t part64Size = ScanRef(CANONICAL_LONG(REF(partOffset)), partData, partOffset, scanRefMap);
 	char * part64Data = (char *)malloc(part64Size);
 	if (part64Data == NULL) {
 		free(partData), partData = NULL;
@@ -290,18 +342,22 @@ NewtonPackage::partRef(ArrayIndex inPartNo)
 	ArrayObject * newRoot = (ArrayObject *)part64Data;
 	ArrayObject * dstPtr = newRoot;
 	RefMap map;
-	CopyRef(CANONICAL_LONG(REF(baseOffset)), dstPtr, map, partData - baseOffset);
+	CopyRef(CANONICAL_LONG(REF(partOffset)), partData, partOffset, dstPtr, map);
 	UpdateRef(newRoot->slot, map);	// Ref offsets -> addresses
 
 	// don’t need the 32-bit part data any more
 	free(partData);
 	// but we will need to free the 64-bit part data at some point
-	partData = part64Data;
+	pkgAllocation->data = part64Data;
+	pkgAllocation->size = part64Size;
 	// point to the 64-bit refs we want
 	return newRoot->slot[0];
 #else
+	pkgAllocation->data = partData;
+	pkgAllocation->size = partSize;
+
 	// fix up those refs from offsets to addresses, and do byte-swapping as appropriate
-	FixUpRef(pkgRoot->slot, partData - baseOffset);
+	FixUpRef(pkgRoot->slot, partData - partOffset);
 
 	// point to the refs we want
 	return pkgRoot->slot[0];
@@ -311,25 +367,21 @@ NewtonPackage::partRef(ArrayIndex inPartNo)
 
 #pragma mark -
 
-#define BYTE_SWAP_SIZE(n) (((n << 16) & 0x00FF0000) | (n & 0x0000FF00) | ((n >> 16) & 0x000000FF))
-#if defined(hasByteSwapping)
-#define CANONICAL_SIZE BYTE_SWAP_SIZE
-#else
-#define CANONICAL_SIZE(n) (n)
-#endif
-
 #if __LP64__
 /* -----------------------------------------------------------------------------
 	Pass 1: calculate space needed for 64-bit refs
 			  no modifications to Ref data
-	Refs are offsets from inBaseAddr and in big-endian byte-order
-	Args:		inRef				32-bit Ref -- offset from inBaseAddr
-				inBaseAddr		address of part data
+	Refs are offsets from the start of the .pkg file and in big-endian byte-order
+
+	Args:		inRef				32-bit Ref -- offset from start of .pkg file
+				inPartAddr		address of part data
+				inPartOffset	offset of part from start of .pkg file
+				ioMap				map of Refs we have encountered
 	Return:	memory requirement of 64-bit Ref
 ----------------------------------------------------------------------------- */
 
 size_t
-ScanRef(Ref32 inRef, ScanRefMap & ioMap, const char * inBaseAddr)
+ScanRef(Ref32 inRef, const char * inPartAddr, long inPartOffset, ScanRefMap & ioMap)
 {
 	Ref32 ref = CANONICAL_LONG(inRef);
 	if (ISREALPTR(ref)) {
@@ -339,17 +391,17 @@ ScanRef(Ref32 inRef, ScanRefMap & ioMap, const char * inBaseAddr)
 		}
 		ioMap.insert(ref);
 
-		ArrayObject32 * obj = (ArrayObject32 *)PTR(ref + inBaseAddr);
+		ArrayObject32 * obj = (ArrayObject32 *)(inPartAddr + ((long)PTR(ref) - inPartOffset));
 		size_t refSize = sizeof(ArrayObject);
 		// for frames, class is actually the map which needs fixing too; non-pointer refs may need byte-swapping anyway so we always need to do this
-		refSize += ScanRef(obj->objClass, ioMap, inBaseAddr);
+		refSize += ScanRef(obj->objClass, inPartAddr, inPartOffset, ioMap);
 
 		ArrayIndex objSize = CANONICAL_SIZE(obj->size);
 		//	if it’s a frame / array, step through each slot / element adding those
 		if ((obj->flags & kObjSlotted) != 0) {
 			Ref32 * refPtr = obj->slot;
 			for (ArrayIndex count = (objSize - sizeof(ArrayObject32)) / sizeof(Ref32); count > 0; --count, ++refPtr) {
-				refSize += sizeof(Ref) + ScanRef(*refPtr, ioMap, inBaseAddr);
+				refSize += sizeof(Ref) + ScanRef(*refPtr, inPartAddr, inPartOffset, ioMap);
 			}
 		} else {
 			refSize += (objSize - sizeof(BinaryObject32));
@@ -364,11 +416,11 @@ ScanRef(Ref32 inRef, ScanRefMap & ioMap, const char * inBaseAddr)
 /* -----------------------------------------------------------------------------
 	Pass 2: copy 32-bit package source -> 64-bit platform Refs
 			  adjust byte-order while we’re at it
-	Args:		ioSrcPtr			Refs are offsets from inBaseAddr and in big-endian byte-order
+	Args:		inRef			Refs are offsets from inPartAddr and in big-endian byte-order
+				inPartAddr
+				inPartOffset
 				ioDstPtr			platform-oriented Refs
 				ioMap
-				inBaseOffset
-				inBaseAddr
 	Return:	64-bit platform-endian Ref
 ----------------------------------------------------------------------------- */
 
@@ -379,7 +431,7 @@ IsSymClass(SymbolObject32 * inSym, const char * inClassName)
 	char * subName = inSym->name;
 	for ( ; *subName && *inClassName; subName++, inClassName++) {
 		if (tolower(*subName) != tolower(*inClassName)) {
-			return NO;
+			return false;
 		}
 	}
 	return (*inClassName == 0 && (*subName == 0 || *subName == '.'));
@@ -389,7 +441,7 @@ IsSymClass(SymbolObject32 * inSym, const char * inClassName)
 
 
 Ref
-CopyRef(Ref32 inRef, ArrayObject * &ioDstPtr, RefMap & ioMap, const char * inBaseAddr)
+CopyRef(Ref32 inRef, const char * inPartAddr, long inPartOffset, ArrayObject * &ioDstPtr, RefMap & ioMap)
 {
 	Ref32 srcRef = CANONICAL_LONG(inRef);
 	if (ISREALPTR(srcRef)) {
@@ -404,7 +456,7 @@ CopyRef(Ref32 inRef, ArrayObject * &ioDstPtr, RefMap & ioMap, const char * inBas
 		std::pair<Ref32, Ref> mapping = std::make_pair(srcRef, ref);
 		ioMap.insert(mapping);
 
-		ArrayObject32 * srcPtr = (ArrayObject32 *)PTR(inBaseAddr + srcRef);	// might not actually be an ArrayObject, but header/class are common to all pointer objects
+		ArrayObject32 * srcPtr = (ArrayObject32 *)(inPartAddr + ((long)PTR(srcRef) - inPartOffset));	// might not actually be an ArrayObject, but header/class are common to all pointer objects
 		size_t srcSize = CANONICAL_SIZE(srcPtr->size);
 		ArrayIndex count;
 		size_t dstSize;
@@ -423,14 +475,14 @@ CopyRef(Ref32 inRef, ArrayObject * &ioDstPtr, RefMap & ioMap, const char * inBas
 		//	update/align ioDstPtr to next object
 		ioDstPtr = (ArrayObject *)((char *)ioDstPtr + LONGALIGN(dstSize));
 		// for frames, class is actually the map which needs fixing too; non-slotted refs may need byte-swapping anyway so we always need to do this
-		dstPtr->objClass = CopyRef(srcPtr->objClass, ioDstPtr, ioMap, inBaseAddr);
+		dstPtr->objClass = CopyRef(srcPtr->objClass, inPartAddr, inPartOffset, ioDstPtr, ioMap);
 
 		if ((srcPtr->flags & kObjSlotted)) {
 			//	iterate over src slots; fix them up
 			Ref32 * srcRefPtr = srcPtr->slot;
 			Ref * dstRefPtr = dstPtr->slot;
 			for ( ; count > 0; --count, ++srcRefPtr, ++dstRefPtr) {
-				*dstRefPtr = CopyRef(*srcRefPtr, ioDstPtr, ioMap, inBaseAddr);
+				*dstRefPtr = CopyRef(*srcRefPtr, inPartAddr, inPartOffset, ioDstPtr, ioMap);
 			}
 		} else {
 			memcpy(dstPtr->slot, srcPtr->slot, dstSize - sizeof(ArrayObject));
@@ -442,7 +494,7 @@ CopyRef(Ref32 inRef, ArrayObject * &ioDstPtr, RefMap & ioMap, const char * inBas
 				SymbolObject * sym = (SymbolObject *)dstPtr;
 				sym->hash = BYTE_SWAP_LONG(sym->hash);
 //NSLog(@"'%s", sym->name);
-			} else if (ISPTR(srcClass) && (sym = ((SymbolObject32 *)PTR(inBaseAddr + srcClass))), sym->objClass == CANONICAL_LONG(kSymbolClass)) {
+			} else if (ISPTR(srcClass) && (sym = ((SymbolObject32 *)(inPartAddr + ((long)PTR(srcClass) - inPartOffset)))), sym->objClass == CANONICAL_LONG(kSymbolClass)) {
 				if (IsSymClass(sym, "string")) {
 					// string -- byte-swap UniChar characters
 					UniChar * s = (UniChar *)dstPtr->slot;
@@ -493,7 +545,7 @@ CopyRef(Ref32 inRef, ArrayObject * &ioDstPtr, RefMap & ioMap, const char * inBas
 	For pointer refs, fix up the class.
 	For slotted refs, fix up all slots recursively.
 
-	Args:		inRefPtr		pointer to ref to be fixed up = offset from inBaseAddr
+	Args:		inRefPtr		pointer to ref to be fixed up
 				ioMap			mapping of pointer Ref, pkg relative offset -> address
 	Return:	--
 ----------------------------------------------------------------------------- */
@@ -542,12 +594,12 @@ IsObjClass(Ref obj, const char * inClassName)
 		const char * subName = SymbolName(obj);
 		for ( ; *subName && *inClassName; subName++, inClassName++) {
 			if (tolower(*subName) != tolower(*inClassName)) {
-				return NO;
+				return false;
 			}
 		}
 		return (*inClassName == 0 && (*subName == 0 || *subName == '.'));
 	}
-	return NO;
+	return false;
 }
 #endif
 

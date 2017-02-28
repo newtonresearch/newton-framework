@@ -199,7 +199,7 @@ FlashStoreLookupCacheEntry::matches(PSSId inId, int inState)
 	if (inId == fId)
 	{
 		if (inState == fState)
-			return YES;
+			return true;
 		if (inState == 0)
 		{
 			switch (fState)
@@ -210,10 +210,10 @@ FlashStoreLookupCacheEntry::matches(PSSId inId, int inState)
 			case 11:
 			case 6:
 			case 13:
-				return YES;
+				return true;
 			}
 		}
 	}
-	return NO;
+	return false;
 }
 

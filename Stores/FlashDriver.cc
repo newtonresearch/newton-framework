@@ -25,7 +25,7 @@ CFlashDriver::initializeDriverData(CFlashRange& inRange, CMemoryAllocator&)
 
 bool
 CFlashDriver::identify(VAddr, ULong, SFlashChipInformation&)
-{ return NO; }
+{ return false; }
 
 void
 CFlashDriver::cleanUp(CMemoryAllocator&)
@@ -53,7 +53,7 @@ CFlashDriver::startErase(CFlashRange& inRange, PAddr inBlockAddr)
 
 bool
 CFlashDriver::isEraseComplete(CFlashRange& inRange, ULong, long&)
-{ return YES; }
+{ return true; }
 
 void
 CFlashDriver::lockBlock(CFlashRange& inRange, ULong)
@@ -91,7 +91,7 @@ CPseudoFlashDriver::identify(VAddr inAddr, ULong inLane, SFlashChipInformation& 
 	outInfo.x10 = 4*MByte;	// store size?
 	outInfo.x14 = 64*KByte;	// block size?
 
-	return YES;
+	return true;
 }
 
 NewtonErr

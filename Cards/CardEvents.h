@@ -9,8 +9,8 @@
 #if !defined(__CARDEVENTS_H)
 #define __CARDEVENTS_H 1
 
-#include "SystemEvents.h"
 #include "EventHandler.h"
+#include "SystemEvents.h"
 #include "UserPorts.h"
 #include "NewtonTime.h"
 #include "Protocols.h"

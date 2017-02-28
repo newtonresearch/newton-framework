@@ -45,25 +45,13 @@ CTask *			gCurrentTaskSaved = NULL;
 extern "C" void
 LogSwapOut(CTask * inTask)
 {
-	ULong taskName = inTask->fName;
-	char c1, c2, c3, c4;
-	c4 = taskName & 0xFF;  taskName >>= 8;
-	c3 = taskName & 0xFF;  taskName >>= 8;
-	c2 = taskName & 0xFF;  taskName >>= 8;
-	c1 = taskName & 0xFF;
-	printf("swapping out #%p %c%c%c%c\n", inTask, c1, c2, c3, c4);
+	printf("<- task #%p %c%c%c%c\n", inTask, (inTask->fName >> 24) & 0xFF, (inTask->fName >> 16) & 0xFF, (inTask->fName >> 8) & 0xFF, inTask->fName & 0xFF);
 }
 
 extern "C" void
 LogSwapIn(CTask * inTask)
 {
-	ULong taskName = inTask->fName;
-	char c1, c2, c3, c4;
-	c4 = taskName & 0xFF;  taskName >>= 8;
-	c3 = taskName & 0xFF;  taskName >>= 8;
-	c2 = taskName & 0xFF;  taskName >>= 8;
-	c1 = taskName & 0xFF;
-	printf("swapping in  #%p %c%c%c%c\n", inTask, c1, c2, c3, c4);
+	printf("task -> #%p %c%c%c%c\n", inTask, (inTask->fName >> 24) & 0xFF, (inTask->fName >> 16) & 0xFF, (inTask->fName >> 8) & 0xFF, inTask->fName & 0xFF);
 }
 
 
@@ -80,6 +68,7 @@ GetGlobals(void)
 void
 SwapInGlobals(CTask * inTask)
 {
+//LogSwapIn(inTask);
 	gCurrentTaskId = *inTask;
 	gCurrentGlobals = inTask->fGlobals;
 	gCurrentMonitorId = inTask->fMonitorId;
@@ -102,6 +91,14 @@ InitializeExceptionGlobals(ExceptionGlobals * inGlobals)
 void
 TaskKillSelf(void)
 {
+#if __LP64__
+//	we RETURN into this function so we need to adjust the stack
+//	we will never return from this anyway
+__asm__ (
+"		subq		$8, %rsp \n"
+"		subq		$8, %rbp \n"
+);
+#endif
 	MonitorDispatchSWI(GetPortSWI(kGetObjectPort), kKill, (OpaqueRef)gCurrentTaskId);
 	DebugStr("Task did not kill self properly!!!");
 }
@@ -444,8 +441,11 @@ CTask::init(TaskProcPtr inProc, size_t inStackSize, ObjectId inTaskId, ObjectId 
 		stackSize = LONGALIGN(inStackSize);
 		taskDataSize = sizeof(TaskGlobals) + LONGALIGN(dataSize);
 #if !defined(correct)
-		stackSize += sizeof(long)*64*KByte;	// add stack buffer since we don’t grow the stack automatically; idle task has zero stack size!
-//		taskDataSize += 256;		// add guard zone?
+#if __LP64__
+		stackSize *= 2;
+#endif
+		stackSize += sizeof(long)*16*KByte;	// add stack buffer since we don’t grow the stack automatically; idle task has zero stack size!
+//		taskDataSize += 256;		// add guard zone
 #endif
 
 		if (gOSIsRunning)
@@ -470,7 +470,7 @@ CTask::init(TaskProcPtr inProc, size_t inStackSize, ObjectId inTaskId, ObjectId 
 			fTaskData = ALIGN(fStackBase + stackSize, kABIStackAlignment);
 			fStackTop = fTaskData + taskDataSize;
 		}
-//printf("CTask::init(stackSize=%08X,name=%c%c%c%c) stack = #%08X - #%08X\n", inStackSize, inName >> 24, inName >> 16, inName >> 8, inName, fStackBase, fStackTop);
+//printf("CTask::init(stackSize=%08X,name=%c%c%c%c) stack=#%p-#%p...\n", (unsigned int)inStackSize, inName >> 24, inName >> 16, inName >> 8, inName, (void *)fStackBase, (void *)fStackTop);
 
 		// create shared memory
 		CSharedMem * mem = new CSharedMem;
@@ -579,8 +579,10 @@ CTask::init(TaskProcPtr inProc, size_t inStackSize, ObjectId inTaskId, ObjectId 
 		*--sp = 0;
 		*--sp = 0;
 		fRegister[kcTheFrame] = (VAddr)sp;	// rbp always 16-byte aligned
+//unsigned long * bp = sp;
 		*--sp = (VAddr) TaskKillSelf;			// task can never return
 		fRegister[kcTheStack] = (VAddr)sp;	// rsp
+//printf(" ...sp=#%p bp=#%p\n", sp, bp);
 #else
 #warning unknown processor!
 #endif
@@ -778,14 +780,14 @@ CTaskQueue::remove(KernelObjectState inState)
 	Remove a task from the queue.
 	Args:		inTask		the task to remove
 				inState		state bits to be masked out of the task
-	Return:	YES if task was removed
+	Return:	true if task was removed
 ------------------------------------------------------------------------------*/
 
 bool
 CTaskQueue::removeFromQueue(CTask * inTask, KernelObjectState inState)
 {
 	if (inTask == NULL || (inTask->fState & inState) == 0)
-		return NO;
+		return false;
 
 	CTask *	qNext = inTask->fTaskQItem.fNext;
 	CTask *	qPrev = inTask->fTaskQItem.fPrev;
@@ -815,5 +817,5 @@ CTaskQueue::removeFromQueue(CTask * inTask, KernelObjectState inState)
 	inTask->fTaskQItem.fNext = inTask->fTaskQItem.fPrev = NULL;
 	inTask->fState &= ~inState;
 	inTask->fContainer = NULL;
-	return YES;
+	return true;
 }

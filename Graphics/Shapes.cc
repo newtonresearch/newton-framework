@@ -7,11 +7,12 @@
 */
 
 #include "View.h"
+#include "Geometry.h"
 #include "DrawShape.h"
 #include "DrawText.h"
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Iterators.h"
 #include "Lookup.h"
 #include "Preference.h"
@@ -37,6 +38,9 @@ Ref	FMakeShape(RefArg inRcvr, RefArg inObj);
 ------------------------------------------------------------------------------*/
 
 extern void		GetStyleFontInfo(StyleRecord * inStyle, FontInfo * outFontInfo);
+extern bool		IsPrimShape(RefArg inObj);
+
+Ref	CommonMakePict(CView * inView, Rect& inRect, RefArg inArg3, RefArg inArg4);
 
 
 /*------------------------------------------------------------------------------
@@ -315,15 +319,142 @@ FMakeTextLines(RefArg inRcvr, RefArg inStr, RefArg inBox, RefArg inLineHeight, R
 Ref
 FMakeShape(RefArg inRcvr, RefArg inObj)
 {
-	RefVar	sp04;
+	RefVar	theShape;
 	RefVar	objClass(ClassOf(inObj));
+	Rect		bounds;
 
-	;
+	if (EQ(objClass, SYMA(polygonShape)))
+	{
+		CDataPtr objData(inObj);
+		newton_try
+		{
+			PolygonShape * poly = (PolygonShape *)(char *)objData;
+			Point * src = poly->points;
+			int numOfPoints = poly->size;
+			bool isRect = (numOfPoints == 0);	// no points in the poly => must be rectangular
+			if (isRect || numOfPoints == 10 || numOfPoints == 11)
+			{
+				theShape = AllocateBinary(isRect ? SYMA(rectangle) : SYMA(oval), sizeof(Rect));		// dunno how we can be so sure that 10/11 points => oval, but there you go
+				CDataPtr rectData(theShape);
+				Rect * rectPtr = (Rect *)(char *)rectData;
+				// reset polygon bounds
+				rectPtr->top = -32768;
+				rectPtr->bottom = -32768;
+				// iterate over polygon data, updating actual bounds
+				for (ArrayIndex i = 0; i < numOfPoints; ++i, ++src)
+				{
+					UnionRect(rectPtr, *src);
+				}
+			}
+			else
+			{
+				// create polygonData object
+				ArrayIndex polySize = sizeof(PolygonShape) + numOfPoints * sizeof(Point);
+				RefVar polyObj(AllocateBinary(SYMA(polygonData), polySize));
+				// point to its data
+				CDataPtr dataPts(polyObj);
+				PolygonShape * polyData = (PolygonShape *)(char *)dataPts;
+				polyData->size = polySize;
+				// reset polygon bounds
+				bounds.top = -32768;
+				bounds.bottom = -32768;
+				// copy polygon data, updating actual bounds
+				Point * dst = polyData->points;
+				for (ArrayIndex i = 0; i < numOfPoints; ++i, ++dst, ++src)
+				{
+					UnionRect(&bounds, *src);
+					*dst = *src;
+				}
+				polyData->bBox = bounds;
+				// create the shape
+				theShape = Clone(RA(canonicalPolygonShape));
+				SetFrameSlot(theShape, SYMA(data), polyObj);
+			}
+		}
+		cleanup
+		{
+			objData.~CDataPtr();
+		}
+		end_try;
+	}
+
+	else if (EQ(objClass, SYMA(picture)) && IsBinary(inObj))
+	{
+		// extract bounds from PictureShape
+		CDataPtr objData(inObj);
+		PictureShape * picData = (PictureShape *)(char *)objData;
+		memmove(&bounds, &picData->bBox, sizeof(Rect));
+
+		// create boundsRect object from that Rect
+		RefVar boundsObj(AllocateBinary(SYMA(boundsRect), sizeof(Rect)));
+		CDataPtr boundsData(boundsObj);
+		memmove((char *)boundsData, &bounds, sizeof(Rect));
+
+		// create the shape
+		theShape = Clone(RA(canonicalPictureShape));
+		SetFrameSlot(theShape, SYMA(bounds), boundsObj);
+		SetFrameSlot(theShape, SYMA(data), inObj);
+	}
+
+	else if (EQ(objClass, SYMA(frame)))
+	{
+		if (FrameHasSlot(inObj, SYMA(bits))
+		||  FrameHasSlot(inObj, SYMA(colorData)))
+		{
+			if (!FromObject(GetProtoVariable(inObj, SYMA(bounds)), &bounds))
+				ThrowErr(exGraf, -8801);
+			RefVar boundsObj(AllocateBinary(SYMA(boundsRect), sizeof(Rect)));
+			CDataPtr boundsData(boundsObj);
+			memmove((char *)boundsData, &bounds, sizeof(Rect));
+			theShape = Clone(RA(canonicalBitmapShape));
+			SetFrameSlot(theShape, SYMA(colorData), GetFrameSlot(inObj, SYMA(colorData)));
+			SetFrameSlot(theShape, SYMA(data), GetFrameSlot(inObj, SYMA(bits)));
+			SetFrameSlot(theShape, SYMA(bounds), boundsObj);
+			if (FrameHasSlot(inObj, SYMA(mask)))
+				SetFrameSlot(theShape, SYMA(mask), GetFrameSlot(inObj, SYMA(mask)));
+		}
+	}
+
+	else if (IsArray(inObj))
+	{
+		theShape = inObj;
+	}
+
+	else if (IsFrame(inObj) && FromObject(inObj, &bounds))
+	{
+		// create rectangle shape
+		theShape = AllocateBinary(SYMA(rectangle), sizeof(Rect));
+		CDataPtr shapeData(theShape);
+		memmove((char *)shapeData, &bounds, sizeof(Rect));
+	}
+
+	else if (IsPrimShape(inObj))
+	{
+		theShape = inObj;
+	}
+
+	else
+	{
+		CView * theView = GetView(inObj);
+		if (theView != NULL)
+		{
+			// create pict from view
+			theView->outerBounds(&bounds);
+			theShape = CommonMakePict(theView, bounds, RA(NILREF), RA(NILREF));
+		}
+	}
 	
-	return NILREF;
+	return theShape;
 }
 
 #pragma mark -
+
+Ref
+CommonMakePict(CView * inView, Rect& inRect, RefArg inArg3, RefArg inArg4)
+{
+	return NILREF;
+}
+
 
 #if 0
 void

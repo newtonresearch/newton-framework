@@ -123,7 +123,7 @@ public:
 	NewtonErr	writeRootDirectory(ZAddr * outAddr);
 	NewtonErr	setInfo(SFlashBlockLogEntry * info, bool*);
 	NewtonErr	setInfo(SReservedBlockLogEntry * info);
-	NewtonErr	lookup(PSSId inId, int inState, CStoreObjRef& ioObj, long*);
+	NewtonErr	lookup(PSSId inId, int inState, CStoreObjRef& ioObj, int*);
 
 	NewtonErr	addObject(PSSId inId, int inState, size_t inSize, CStoreObjRef& ioObj, bool inArg5, bool inArg6);
 	NewtonErr	zapObject(ZAddr inAddr);

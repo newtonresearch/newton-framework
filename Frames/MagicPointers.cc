@@ -133,7 +133,7 @@ InstallExportTables(RefArg inTable, void * inSource)
 	for (ArrayIndex i = 0, count = Length(inTable); i < count; ++i)
 	{
 		item = GetArraySlot(inTable, i);
-		char * name = SymbolName(GetFrameSlot(item, SYMA(name)));
+		const char * name = SymbolName(GetFrameSlot(item, SYMA(name)));
 		MPExportItem * exportItem = (MPExportItem *)NewPtr(sizeof(MPExportItem) + strlen(name) + 1);
 		THROWNOT(exportItem, exOutOfMemory, kOSErrNoMemory);	
 		newton_try
@@ -147,7 +147,7 @@ InstallExportTables(RefArg inTable, void * inSource)
 			RefVar objects(GetFrameSlot(item, SYMA(objects)));
 			exportItem->numOfObjects = Length(objects);
 			exportItem->objects = exportItem->f08 = Slots(objects);
-			exportItem->f0C = NO;
+			exportItem->f0C = false;
 
 			THROWNOT(gMPExportList->insert(exportItem) == noErr, exOutOfMemory, kOSErrNoMemory);	
 			FulfillPendingImports(exportItem, NILREF);
@@ -310,7 +310,7 @@ FCurrentExports(RefArg rcvr)
 		SetFrameSlot(item, SYMA(major), MAKEINT(src->majorVersion));
 		SetFrameSlot(item, SYMA(minor), MAKEINT(src->minorVersion));
 		SetFrameSlot(item, SYMA(refCount), MAKEINT(src->refCount));
-//		SetFrameSlot(item, SYMA(exportTable), REF(src->objects - SIZEOF_ARRAYOBJECT));
+//		SetFrameSlot(item, SYMA(exportTable), REF(src->objects - SIZEOF_ARRAYOBJECT(0)));
 		SetArraySlot(exports, i, item);
 	}
 	return exports;
@@ -327,7 +327,7 @@ FCurrentImports(RefArg rcvr)
 	{
 		MPImportItem * src = (MPImportItem *)gMPImportList->at(i);
 		item = Clone(RA(canonicalCurrentImport));
-		SetFrameSlot(item, SYMA(importTable), src->f0C);
+		SetFrameSlot(item, SYMA(ImportTable), src->f0C);
 		SetFrameSlot(item, SYMA(client), GetEntryFromLargeObjectVAddr((VAddr)src->f00));
 		SetArraySlot(imports, i, item);
 	}

@@ -8,7 +8,7 @@
 
 #include "CMWorld.h"
 
-bool		gSCPDevicePackageBusy = NO;		// 0C100B64
+bool		gSCPDevicePackageBusy = false;		// 0C100B64
 
 
 /* -----------------------------------------------------------------------------
@@ -42,13 +42,13 @@ CCMWorld::mainConstructor(void)
 	{
 		XFAIL(err = CAppWorld::mainConstructor())
 
-		XFAIL(err = f70.init('comg'))
+		XFAIL(err = f70.init(kCommManagerId))
 
 		CCMSystemEventHandler * evtHandler = new CCMSystemEventHandler;
-		XFAILNOT(evtHandler, err = kOSErrNoMemory;)	// original doesn’t FAIL
-		XFAIL(err = evtHandler->init('pwon'))
-		XFAIL(err = evtHandler->init('pwof'))
-		err = evtHandler->init('aliv');
+		XFAILIF(evtHandler == NULL, err = kOSErrNoMemory;)	// original doesn’t FAIL
+		XFAIL(err = evtHandler->init(kSysEvent_PowerOn))
+		XFAIL(err = evtHandler->init(kSysEvent_PowerOff))
+		err = evtHandler->init(kSysEvent_AppAlive);
 	}
 	XENDTRY;
 	return err;
@@ -67,13 +67,11 @@ CCMWorld::matchPendingServiceMessage(CUMsgToken * inMsg)
 {
 	CListIterator iter(&f90);
 	CAsyncServiceMessage * item;
-#if 0
 	for (item = (CAsyncServiceMessage *)iter.firstItem(); iter.more(); item = (CAsyncServiceMessage *)iter.nextItem())
 	{
 		if (item->match(inMsg))
 			return item;
 	}
-#endif
 	return NULL;
 }
 
@@ -83,13 +81,13 @@ CCMWorld::matchPendingStartInfo(CCMService * inService)
 {
 	CListIterator iter(&fA8);
 	void * item;
-#if 0
 	for (item = (void *)iter.firstItem(); iter.more(); item = (void *)iter.nextItem())
 	{
+#if 0
 		if (item->f18 == inService)
 			return item;
-	}
 #endif
+	}
 	return NULL;
 }
 
@@ -115,7 +113,7 @@ CCMWorld::SCPCheck(ULong inArg1)
 {
 	if (gSCPDevicePackageBusy)
 	{
-		gSCPDevicePackageBusy = NO;
+		gSCPDevicePackageBusy = false;
 		return 1;
 	}
 	return SCPLoad(500*kMilliseconds, 2, kSCPLoadAnyDevice, NULL, inArg1);
@@ -133,11 +131,12 @@ CCMWorld::SCPLoad(ULong inWaitPeriod, ULong inNumOfTries, ULong inFilter, CUMsgT
 		// we’re not interested in the Serial Comms Protocol right now
 
 		CSCPLoader sp00;	// CAppWorld, size+9C
-		XFAIL(err = sp00.init('scpl', YES, kSpawnedTaskStackSize))
+		XFAIL(err = sp00.init('scpl', true, kSpawnedTaskStackSize))
 
 		CUPort loaderPort;
 		XFAIL(err = GetSCPLoaderPort(&loaderPort))
-		XFAILNOT(fD8 = new CCMSCPAsyncMessage, err = kOSErrNoMemory;)
+		fD8 = new CCMSCPAsyncMessage;
+		XFAILIF(fD8 == NULL, err = kOSErrNoMemory;)
 		XFAIL(err = fD8->init(*gCommWorld->getMyPort(), &f70))
 		if (inToken)
 			fD8->setToken(inToken);
@@ -163,7 +162,7 @@ CCMWorld::SCPLoad(ULong inWaitPeriod, ULong inNumOfTries, ULong inFilter, CUMsgT
 
 CCMSCPAsyncMessage::CCMSCPAsyncMessage()
 {
-	f50 = NO;
+	f50 = false;
 }
 
 
@@ -173,7 +172,7 @@ CCMSCPAsyncMessage::init(ObjectId inPortId, CEventHandler * inHandler)
 	NewtonErr err;
 	XTRY
 	{
-		XFAIL(err = CUAsyncMessage::init(YES))
+		XFAIL(err = CUAsyncMessage::init(true))
 		XFAIL(err = setCollectorPort(inPortId))
 		err = setUserRefCon((OpaqueRef)inHandler);
 	}
@@ -188,7 +187,7 @@ CCMSCPAsyncMessage::setToken(CUMsgToken * inToken)
 	if (inToken)
 	{
 		f54 = *inToken;
-		f50 = YES;
+		f50 = true;
 	}
 }
 
@@ -221,7 +220,7 @@ CICHandler::init(ObjectId inPortId)
 	NewtonErr err;
 	XTRY
 	{
-//		LockHeapRange((VAddr)this, (VAddr)(this+1), NO);
+//		LockHeapRange((VAddr)this, (VAddr)(this+1), false);
 
 		f14 = inPortId;
 
@@ -230,14 +229,16 @@ CICHandler::init(ObjectId inPortId)
 //		f1C.f08 = 9;
 
 		f04.fEventClass = kNewtEventClass;
-		f04.fEventId = 'idle';
+		f04.fEventId = kIdleEventId;
 //		f04.f08 = 'ic  ';
 
-		XFAILNOT(f00 = new CUAsyncMessage, err = kOSErrNoMemory;)
-		XFAIL(err = f00->init(NO))
+		f00 = new CUAsyncMessage;
+		XFAILIF(f00 == NULL, err = kOSErrNoMemory;)
+		XFAIL(err = f00->init(false))
 
-		XFAILNOT(f30 = new CUAsyncMessage, err = kOSErrNoMemory;)
-		XFAIL(err = f30->init(NO))
+		f30 = new CUAsyncMessage;
+		XFAILIF(f30 == NULL, err = kOSErrNoMemory;)
+		XFAIL(err = f30->init(false))
 
 #if defined(correct)
 		f18 = 0;
@@ -314,7 +315,8 @@ CCMEventHandler::init(EventId inEventId, EventClass inEventClass)
 	NewtonErr err;
 	XTRY
 	{
-		XFAILNOT(fInterconnectHandler = new CICHandler, err = kOSErrNoMemory;)
+		fInterconnectHandler = new CICHandler;
+		XFAILIF(fInterconnectHandler == NULL, err = kOSErrNoMemory;)
 		XFAIL(err = fInterconnectHandler->init(*gCommWorld->getMyPort()))
 		err = CEventHandler::init(inEventId, inEventClass);
 	}
@@ -393,7 +395,7 @@ NewtonErr
 CCMEventHandler::setLastPackage(CCMEvent * inEvent)
 {
 #if defined(correct)
-	gCommWorld->setLastPackage(inEvent->f14, inEvent->f10);
+	gCommWorld->setLastPackage(inEvent->f14, inEvent->f10);	// inEvent->fConnectedDevice.fLastConnectTime ?
 #endif
 	inEvent->f0C = 0;
 	gCommWorld->eventSetReply(0x10);

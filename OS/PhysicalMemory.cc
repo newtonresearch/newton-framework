@@ -132,10 +132,10 @@ ROMBanksAreSplit(void)
 	ULong *  bank2 = 4*MByte;
 	for (ArrayIndex i = 63; i > 0; --i)
 		if (*bank1++  != *bank2++)
-			return NO;
-	return YES;
+			return false;
+	return true;
 #else
-	return NO;
+	return false;
 #endif
 }
 
@@ -791,7 +791,7 @@ GetNextKernelVAddr(void)
 {
 	VAddr	base = GetKernelDomainHeapBase();
 	VAddr	limit = base + GetKernelDomainHeapSize();
-	bool	beenRoundAlready = NO;
+	bool	beenRoundAlready = false;
 
 	do
 	{
@@ -800,7 +800,7 @@ GetNextKernelVAddr(void)
 		{
 			if (beenRoundAlready)
 				Reboot(kOSErrSorrySystemError);
-			beenRoundAlready = YES;
+			beenRoundAlready = true;
 			gNextKernelVAddr = base;
 		}
 	} while (VtoP(gNextKernelVAddr) != kIllegalPAddr);
@@ -927,7 +927,7 @@ MapInKernelGlobals(VAddr inVAddr, int inSize, ULong inPerm, ULong inPageIndex,
 			firstSubPage = PAGEOFFSET(inVAddr) / kSubPageSize;
 			perm = MapTable(lastSubPage, firstSubPage);
 			mappedSize = SizeTable(lastSubPage, firstSubPage) * kSubPageSize;
-			XFAIL(err = AddPgPAndPermWithPageTable(GetPrimaryTablePhysBase(), TRUNC(inVAddr,kPageSize), perm | inPerm, GetPhysPage(inPageIndex), YES))
+			XFAIL(err = AddPgPAndPermWithPageTable(GetPrimaryTablePhysBase(), TRUNC(inVAddr,kPageSize), perm | inPerm, GetPhysPage(inPageIndex), true))
 			inVAddr += mappedSize;
 			inSize -= mappedSize;
 			inPageIndex++;
@@ -1068,20 +1068,20 @@ InitCGlobals(const MemInit * inMap)
 #if 0
 	// initialize flash memory
 	size_t	length;
-	bool		r9 = NO;
-	bool		r8 = NO;
+	bool		r9 = false;
+	bool		r8 = false;
 	ULong *	someSortOfConfig = PrimLastRExConfigEntry('ctim', &length);
 	if (*someSortOfConfig == 1)
 	{
 		if (*(someSortOfConfig + 1) != 0)
 		{
 			g0F280000 = *(someSortOfConfig + 1);
-			r9 = YES;
+			r9 = true;
 		}
 		if (*(someSortOfConfig + 2) != 0)
 		{
 			g0F280400 = *(someSortOfConfig + 2);
-			r8 = YES;
+			r8 = true;
 		}
 	}
 //98
@@ -1196,7 +1196,7 @@ VMemInit(void)
 
 	for ( ; numOfMapPages != 0; numOfMapPages--)
 	{
-		RememberMappingUsingPAddr(gNextKernelVAddr, 0xFF, CRAMTable::getPPage(gNextPageIndex, gGlobalsThatLiveAcrossReboot.fBank), YES);
+		RememberMappingUsingPAddr(gNextKernelVAddr, 0xFF, CRAMTable::getPPage(gNextPageIndex, gGlobalsThatLiveAcrossReboot.fBank), true);
 		gNextKernelVAddr += kPageSize;
 		gNextPageIndex++;
 	}

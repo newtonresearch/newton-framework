@@ -39,7 +39,7 @@ class CUPhys : public CUObject
 public:
 					CUPhys(ObjectId id = 0);
 	void			operator=(const CUPhys & inCopy);
-	NewtonErr	init(PAddr inBase, size_t inSize, bool inReadOnly = NO, bool inCache = YES);
+	NewtonErr	init(PAddr inBase, size_t inSize, bool inReadOnly = false, bool inCache = true);
 
 	// change any mappings associated with this phys
 	NewtonErr	invalidate();			// to invalid

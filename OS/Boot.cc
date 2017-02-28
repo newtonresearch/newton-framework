@@ -123,7 +123,6 @@ extern NewtonErr	InitDomainsAndEnvironments(void);
 extern void			InitTime(void);
 extern void			StartTime(void);
 extern void			InitRealTimeClock(void);
-extern NewtonErr	InitializeCommManager(void);
 
 
 /*------------------------------------------------------------------------------
@@ -421,7 +420,7 @@ PersistentRecovery(void)
 void
 PostCGlobalsHWInit(void)
 {
-	gHasVoyagerRevBD = YES;
+	gHasVoyagerRevBD = true;
 
 #if defined(correct)
 	if (g0F183000 & 0x04000000)
@@ -459,7 +458,7 @@ PowerOffAndReboot(NewtonErr inError)
 	PowerOffSystem();
 	ClearInterruptBits(0xFFFFFFFF);
 #endif
-	Reboot(inError, 0, YES);
+	Reboot(inError, 0, true);
 	ExitFIQAtomic();
 }
 
@@ -488,7 +487,7 @@ Reboot(NewtonErr inError, ULong inRebootType, bool inSafe)
 
 		if (inSafe && gRebootProtectCount == 0)
 		{
-			gWantReboot = YES;
+			gWantReboot = true;
 			ExitFIQAtomic();
 		}
 		else if (gGlobalsThatLiveAcrossReboot.fUnsuccessfulBootCount <= kMaxUnsuccessfulBootCount)
@@ -734,7 +733,7 @@ L20	LDR	R0, [g0F183C00]
 	bootInfo->ptr = bankInfo;
 	bootInfo->num = 23;
 	CopyRAMTableToKernelArea(bootInfo);
-	InitTheMMUTables(YES, NO, (ramBank1Size != 0) ? (PAddr) g8MegContinuousTableStart : (PAddr) g8MegContinuousTableStartFor4MbK, pGlobals);
+	InitTheMMUTables(true, false, (ramBank1Size != 0) ? (PAddr) g8MegContinuousTableStart : (PAddr) g8MegContinuousTableStartFor4MbK, pGlobals);
 /*
 		MOV	R0, #&00000055
 		ORR	R0, R0, #&00005500
@@ -866,7 +865,7 @@ OSBoot(void)
 	task = new CTask();
 	gIdleTask = task;
 	RegisterObject(task, kTaskType, kSystemId, NULL);
-	task->init((TaskProcPtr) OSBoot, 0, kNoId, kNoId, kIdleTaskPriority, kIdleEventId, environment);
+	task->init((TaskProcPtr) OSBoot, 0, kNoId, kNoId, kIdleTaskPriority, 'idle', environment);
 
 	gCurrentTask = gIdleTask;
 	SwapInGlobals(gIdleTask);
@@ -879,7 +878,7 @@ OSBoot(void)
 // Start the timer and tablet, and kick the scheduler into action.
 	StartTime();
 	TabBoot();
-	gCountTaskTime = NO;	// correct => YES; collect processor usage stats
+	gCountTaskTime = false;	// correct => true; collect processor usage stats
 	StopScheduler();
 	StartScheduler();
 
@@ -932,7 +931,7 @@ UserBoot(void)
 	MemObjManager::findHeapRef('user', &gSkiaHeapBase);	// never referenced
 	InitROMDomainManager();
 
-	gOSIsRunning = YES;
+	gOSIsRunning = true;
 	
 	CTime now = CURealTimeAlarm::time();
 	srand(now.convertTo(kSeconds));
@@ -980,7 +979,7 @@ InitialKSRVTask(void)
 
 		XFAIL(MemObjManager::findEnvironmentId('user', &envId))	// user environment
 		CLoader worldLoader;
-		worldLoader.init('drvl', YES, kSpawnedTaskStackSize, kUserTaskPriority, envId);
+		worldLoader.init('drvl', true, kSpawnedTaskStackSize, kUserTaskPriority, envId);
 	}
 	XENDTRY;
 

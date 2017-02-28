@@ -169,16 +169,16 @@ SafeEntryAdd(RefArg inRcvr, RefArg inFrame, RefArg inId, unsigned char inFlags)
 {
 	RefVar entry;
 
-	bool r6 = ((inFlags & 0x01) != 0);
+	bool r6 = FLAGTEST(inFlags, 0x01);
 	if (r6)
 		entry = inFrame;
 	else
 		entry = EnsureEntryInternal(inFrame);
 
-	if (inFlags & 0x02)
+	if (FLAGTEST(inFlags, 0x02))
 		SetFrameSlot(entry, SYMA(_modTime), MAKEINT(RealClock() & 0x1FFFFFFF));
 
-	if (inFlags & 0x04)
+	if (FLAGTEST(inFlags, 0x04))
 		SetFrameSlot(entry, SYMA(_uniqueId), inId);
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(TStore));
@@ -186,8 +186,8 @@ SafeEntryAdd(RefArg inRcvr, RefArg inFrame, RefArg inId, unsigned char inFlags)
 	bool sp00r;	// hasLargeBinaries?
 	StorePermObject(entry, storeWrapper, storageId, NULL, &sp00r);
 	if (sp00r)
-		r6 = YES;
-	AlterIndexes(1, inRcvr, entry, storageId);
+		r6 = true;
+	AlterIndexes(true, inRcvr, entry, storageId);
 	if (IsFaultBlock(entry))
 	{
 		FaultObject * fb = (FaultObject *)NoFaultObjectPtr(entry);
@@ -242,7 +242,7 @@ EntryChangeCommon(RefArg inEntry, int inSelector)
 	CheckWriteProtect(storeWrapper->store());
 //sp-08
 	bool	r7;
-	bool	sp0C = NO;
+	bool	sp0C = false;
 	RefVar proto(GetFrameSlot(soupObj, SYMA(_proto)));	// sp08
 	if (ISNIL(proto))
 		ThrowErr(exStore, kNSErrInvalidEntry);
@@ -254,7 +254,7 @@ EntryChangeCommon(RefArg inEntry, int inSelector)
 		RefVar spm00(LoadPermObject(storeWrapper, id, &largeObjectsRead));
 //sp-04
 		if ((inSelector & 0x01)	// !verbatim
-		&& !EQRef(GetFrameSlot(frame, SYMA(_uniqueId)), GetFrameSlot(spm00, SYMA(_uniqueId))))
+		&& !EQ(GetFrameSlot(frame, SYMA(_uniqueId)), GetFrameSlot(spm00, SYMA(_uniqueId))))
 		{
 			SetFrameSlot(frame, SYMA(_uniqueId), GetFrameSlot(spm00, SYMA(_uniqueId)));
 		}
@@ -275,7 +275,7 @@ EntryChangeCommon(RefArg inEntry, int inSelector)
 			}
 			sp0C = (inSelector & 0x04) != 0;
 			r7 = UpdateIndexes(soupObj, frame, spm00, id, &sp0C);
-			SoupChanged(proto, YES);
+			SoupChanged(proto, true);
 		}
 		newton_catch_all
 		{
@@ -388,7 +388,7 @@ EntryRemoveFromSoup(RefArg inEntry)
 		newton_try
 		{
 //sp-04
-			AlterIndexes(NO, soupObj, entry, id);
+			AlterIndexes(false, soupObj, entry, id);
 			DeleteEntryFromCache(GetFrameSlot(soupObj, SYMA(cache)), inEntry);
 			ReplaceObject(inEntry, NOTNIL(frame) ? frame : entry);
 			DeletePermObject(storeWrapper, id);
@@ -399,7 +399,7 @@ EntryRemoveFromSoup(RefArg inEntry)
 				SetFrameSlot(proto, SYMA(lastUId), nextUId);
 				WriteFaultBlock(proto);
 			}
-			SoupChanged(proto, YES);
+			SoupChanged(proto, true);
 		}
 		newton_catch_all
 		{
@@ -581,7 +581,7 @@ EntrySize(RefArg inEntry)
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inEntry);
 	if (ISNIL(obj->store))
 		return RINT(ForwardEntryMessage(inEntry, SYMA(EntrySize)));
-	return EntrySize(RINT(obj->id), (CStoreWrapper *)obj->store, YES);
+	return EntrySize(RINT(obj->id), (CStoreWrapper *)obj->store, true);
 }
 
 
@@ -594,7 +594,7 @@ EntrySizeWithoutVBOs(RefArg inEntry)
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inEntry);
 	if (ISNIL(obj->store))
 		return RINT(ForwardEntryMessage(inEntry, SYMA(EntrySize)));
-	return EntrySize(RINT(obj->id), (CStoreWrapper *)obj->store, NO);
+	return EntrySize(RINT(obj->id), (CStoreWrapper *)obj->store, false);
 }
 
 
@@ -666,23 +666,23 @@ EntryDirty1(ObjHeader * inObj, EntryDirtyLink * inLink)
 	EntryDirtyLink * link;
 	for (link = inLink; link != NULL; link = link->next)
 		if (link->obj == inObj)
-			return NO;
+			return false;
 
-	if (inObj->flags & kObjDirty)
-		return YES;
+	if (ISDIRTY(inObj))
+		return true;
 
-	if (inObj->flags & kObjSlotted)
+	if (ISSLOTTED(inObj))
 	{
 		EntryDirtyLink aLink = { inLink, inObj };
 		for (ArrayIndex i = 0, count = ARRAYLENGTH(inObj); i < count; ++i)
 		{
 			Ref r = ((ArrayObject *)inObj)->slot[i];
 			if (ISREALPTR(r) && EntryDirty1(ObjectPtr(r), &aLink))
-				return YES;
+				return true;
 		}
 	}
 
-	return NO;
+	return false;
 }
 
 
@@ -695,7 +695,7 @@ EntryDirty(Ref inEntry)
 		&&  NOTNIL(((FaultObject *)NoFaultObjectPtr(inEntry))->object))
 			return EntryDirty1(ObjectPtr(inEntry), NULL);
 	}
-	return NO;
+	return false;
 }
 
 
@@ -718,14 +718,14 @@ EntryValid(RefArg inEntry)
 		if (ISNIL(storeWrapper))	// yup
 			return NOTNIL(ForwardEntryMessage(inEntry, SYMA(EntryValid)));
 		if (IsValidStore(storeWrapper->store()))
-			return YES;
+			return true;
 		for (int i = Length(gPackageStores) - 1; i >= 0; i--)
 		{
 			if (storeWrapper == (CStoreWrapper *)GetFrameSlot(GetArraySlot(gPackageStores, i), SYMA(store)))
-				return YES;
+				return true;
 		}
 	}
-	return NO;
+	return false;
 }
 
 #pragma mark -
@@ -804,8 +804,8 @@ MakeEntryAlias(RefArg inEntry)
 
 	if (gNeedsInternalSignatures)
 	{
-		if (EQRef(GetFrameSlot(soup, SYMA(storeObj)), GetArraySlot(gStores, 0)))
-			gNeedsInternalSignatures = NO;
+		if (EQ(GetFrameSlot(soup, SYMA(storeObj)), GetArraySlot(gStores, 0)))
+			gNeedsInternalSignatures = false;
 	}
 
 	RefVar	alias(AllocateArray(SYMA(alias), 4));
@@ -819,7 +819,7 @@ MakeEntryAlias(RefArg inEntry)
 bool
 IsEntryAlias(RefArg inEntry)
 {
-	return IsFaultBlock(inEntry) && EQRef(ClassOf(inEntry), RSYMalias);
+	return IsFaultBlock(inEntry) && EQ(ClassOf(inEntry), SYMA(alias));
 }
 
 
@@ -841,7 +841,7 @@ ResolveEntryAliasInStores(RefArg inRcvr, RefArg inStores)
 				PSSId entryId;
 				CSoupIndex * soupIndex = GetSoupIndexObject(soup, 0);
 				entryIdKey = (int)RINT(GetArraySlot(inRcvr, 2));
-				if (soupIndex->find(&entryIdKey, NULL, (SKey *)&entryId, NO) == noErr)
+				if (soupIndex->find(&entryIdKey, NULL, (SKey *)&entryId, false) == noErr)
 					return GetEntry(soup, entryId);
 				else
 					break;
@@ -870,13 +870,13 @@ ResolveEntryAlias(RefArg inRcvr)
 bool
 CompareAliasAndEntry(RefArg inRcvr, RefArg inEntry)
 {
-	bool isSame = NO;
+	bool isSame = false;
 	if (IsSoupEntry(inEntry)
 	&&  EntryUniqueId(inEntry) == RINT(GetArraySlot(inRcvr, 2)))
 	{
 		RefVar theSoup(EntrySoup(inEntry));
 		if (EQ(SoupGetSignature(EntrySoup(inEntry)), GetArraySlot(inRcvr, 1)))
-			isSame = YES;
+			isSame = true;
 	}
 	return isSame;
 }

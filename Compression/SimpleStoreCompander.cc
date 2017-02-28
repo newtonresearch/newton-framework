@@ -256,7 +256,7 @@ CSimpleStoreCompander *
 CSimpleStoreCompander::make(void)
 {
 	fStore = NULL;
-	fIsReadOnly = NO;
+	fIsReadOnly = false;
 	return this;
 }
 
@@ -334,7 +334,7 @@ CSimpleStoreCompander::write(size_t inOffset, char * inBuf, size_t inBufLen, VAd
 NewtonErr
 CSimpleStoreCompander::doTransactionAgainst(int inArg1, ULong inArg2)
 {
-	return LODefaultDoTransaction(fStore, fRootId, fChunksId, inArg1, YES);
+	return LODefaultDoTransaction(fStore, fRootId, fChunksId, inArg1, true);
 }
 
 

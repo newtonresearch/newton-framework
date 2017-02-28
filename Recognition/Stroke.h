@@ -19,10 +19,10 @@
 class CStroke
 {
 public:
-				CStroke(CRecStroke * inStroke, bool);
+				CStroke(CRecStroke * inStroke, bool inTakeStrokeOwnership);
 				~CStroke(void);
 
-	static CStroke * make(CRecStroke * inStroke, bool);
+	static CStroke * make(CRecStroke * inStroke, bool inTakeStrokeOwnership);
 
 	size_t	count(void);
 	bool		isDone(void);

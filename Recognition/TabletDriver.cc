@@ -26,7 +26,7 @@ extern "C" void	ExitAtomic(void);
 ----------------------------------------------------------------------------- */
 
 ULong		gTabPenDownDebounceTime = kFastSampleInterval;			// 0C100B30
-bool		gTabEnbPenDownAtPenUp = NO;		// 0C100B34
+bool		gTabEnbPenDownAtPenUp = false;		// 0C100B34
 ULong		gTabPostnSamErrRange;				// 0C100B38
 ULong		gTabPressSamErrRange;				// 0C100B3C
 ULong		gTabLoopObserve;						// 0C100B40
@@ -34,7 +34,7 @@ ULong		gTabLoopSampleTime;					// 0C100B44
 ULong		gTabPenDownMin;						// 0C100B48
 ULong		gTabPenPressMaxDelta;				// 0C100B4C
 ULong		gTabPenDownSampMin;					// 0C100B50
-ULong		gTabSkipD2Detect = YES;				// 0C100B54
+ULong		gTabSkipD2Detect = true;				// 0C100B54
 
 
 /* -----------------------------------------------------------------------------
@@ -112,7 +112,7 @@ NewtonErr
 CResistiveTablet::init(const Rect & inRect)
 {
 #if defined(correct)
-	LockHeapRange(this, this + sizeof(this), NO);
+	LockHeapRange(this, this + sizeof(this), false);
 	dumpRegs();
 	InitADC();
 	fADC = GetADCObject();
@@ -137,7 +137,7 @@ CResistiveTablet::init(const Rect & inRect)
 
 	f14 = 0;
 	f78 = 0;
-	fIsCalibrating = NO;
+	fIsCalibrating = false;
 
 	setOrientation(2);	// kPortraitFlip?
 
@@ -415,7 +415,7 @@ CResistiveTablet::handleSample(void)
 			if (InsertTabletSample(kPenDownSample, 0) == noErr)
 			{
 				d2Detect();
-				fIsPenUp = NO;
+				fIsPenUp = false;
 			}
 			fSampleInterval = kSlowSampleInterval;
 		}
@@ -480,13 +480,13 @@ bool
 CResistiveTablet::d2Detect(void)
 {
 	if (gTabSkipD2Detect)
-		return YES;
+		return true;
 
-	bool status = YES;
+	bool status = true;
 	if (f48.x == 99999)
 	{
 		f58.x = 99999;
-		status = NO;
+		status = false;
 	}
 	else
 	{
@@ -499,7 +499,7 @@ CResistiveTablet::d2Detect(void)
 		if (f58.x == 99999)
 		{
 			if (ddX > 100 || ddY > 100)
-				status = NO;
+				status = false;
 		}
 		else
 		{
@@ -512,7 +512,7 @@ CResistiveTablet::d2Detect(void)
 					InsertTabletSample(kPenDownSample, 0);
 					penUp();
 				}
-				return NO;
+				return false;
 			}
 		}
 		f58.x = ++ddX;
@@ -545,7 +545,7 @@ CResistiveTablet::penUp(void)
 	if (gTabEnbPenDownAtPenUp)
 		enablePenDownInt();
 	fState = 0;
-	fIsPenUp = YES;
+	fIsPenUp = true;
 	fSampleInterval = kSlowSampleInterval;
 	f48.x = 99999;
 }

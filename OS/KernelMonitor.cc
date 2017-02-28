@@ -52,7 +52,7 @@ CMonitor::CMonitor()
 	fMsgId = kNoId;
 	fSuspended = 0;
 	fMonitorTaskId = kNoId;
-	fIsCopying = NO;
+	fIsCopying = false;
 }
 
 
@@ -79,9 +79,9 @@ CMonitor::~CMonitor()
 				inStackSize
 				inContext				context in which code runs
 				inEnvironment
-				inFaultMonitor			YES => monitor is a fault monitor
+				inFaultMonitor			true => monitor is a fault monitor
 				inName
-				inRebootProtected		YES => Reboot() should wait for monitor to complete
+				inRebootProtected		true => Reboot() should wait for monitor to complete
 	Return:	error code
 ------------------------------------------------------------------------------*/
 
@@ -97,7 +97,8 @@ CMonitor::init(MonitorProcPtr inProc, size_t inStackSize, void * inContext, CEnv
 		fProc = inProc;
 
 		// create the monitor task
-		XFAILNOT(fMonitorTask = new CTask, err = kOSErrCouldNotCreateObject;)
+		fMonitorTask = new CTask;
+		XFAILIF(fMonitorTask == NULL, err = kOSErrCouldNotCreateObject;)
 
 		// add it to the object table
 		fMonitorTaskId = gObjectTable->add(fMonitorTask, kTaskType, kSystemId);
@@ -111,8 +112,8 @@ CMonitor::init(MonitorProcPtr inProc, size_t inStackSize, void * inContext, CEnv
 		fProcContext = inContext;
 
 		// create a shared memory message
-		CSharedMemMsg * msg;
-		XFAILNOT(msg = new CSharedMemMsg, err = kOSErrCouldNotCreateObject;)
+		CSharedMemMsg * msg = new CSharedMemMsg;
+		XFAILIF(msg == NULL, err = kOSErrCouldNotCreateObject;)
 		XFAILIF(msg->init(inEnvironment) != noErr, delete msg; msg = NULL; err = kOSErrCouldNotCreateObject;)
 		RegisterObject(msg, kSharedMemMsgType, fId, &fMsgId);
 		XFAILIF(fMsgId == kNoId, err = kOSErrCouldNotCreateObject;)
@@ -164,7 +165,7 @@ CMonitor::acquire(void)
 /*------------------------------------------------------------------------------
 	Suspend the monitor.
 	Args:		inFlags					new suspension state
-	Return:	YES	if no calling task
+	Return:	true	if no calling task
 ------------------------------------------------------------------------------*/
 
 bool
@@ -180,9 +181,9 @@ CMonitor::suspend(ULong inFlags)
 			ScheduleTask(aTask);
 			--fQueueCount;
 		}
-		return NO;
+		return false;
 	}
-	return YES;
+	return true;
 }
 
 
@@ -244,7 +245,7 @@ CMonitor::release(NewtonErr inResult)
 	Copy registers from given task and schedule it. We actually run
 	MonitorEntryGlue which calls a CTask member function with the right args.
 	Args:		inTask					task to be executed in monitor
-	Return:	YES	if monitor task is ready to run
+	Return:	true	if monitor task is ready to run
 ------------------------------------------------------------------------------*/
 
 bool
@@ -259,7 +260,7 @@ CMonitor::setUpEntry(CTask * inTask)
 	{
 		setResult(inTask, noErr);
 		--fQueueCount;
-		return NO;
+		return false;
 	}
 	else
 		fMonitorTask->fRegister[kMonSelector] = inTask->fRegister[kMonSelector];
@@ -310,7 +311,7 @@ CMonitor::setUpEntry(CTask * inTask)
 		ScheduleTask(fMonitorTask);
 	}
 
-	return YES;
+	return true;
 }
 
 
@@ -443,7 +444,7 @@ MonitorThrowKernelGlue(char * inName, void * inData, void * inDestructor)
 			monitor->setCallerRegister(kParm1, (unsigned long) inData);			// need to stack these for __i386__
 			monitor->setCallerRegister(kParm2, (unsigned long) inDestructor);
 			monitor->setCallerRegister(kcThePC, (unsigned long) Throw);
-			monitor->release((NewtonErr)(unsigned long)inName);	// huh?? unknown Newton error?
+			monitor->release((NewtonErr)(long)inName);	// huh?? unknown Newton error?
 		}
 		else
 			Reboot(kOSErrSorrySystemError);

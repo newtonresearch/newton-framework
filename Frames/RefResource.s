@@ -51,7 +51,7 @@
 		.long		kHeaderSize + 4 + _len + kFlagsBinary ;\
 		Ref		0, 0x55552
 #define StringObj(_len) \
-		.long		kHeaderSize + (_len<<1) + kFlagsBinary ;\
+		.long		kHeaderSize + ((_len+1)<<1) + kFlagsBinary ;\
 		Ref		0, MAKEPTR(SYMstring)
 
 #define NILREF 2
@@ -86,47 +86,11 @@ SYM##name: \
 /* ----------------------------------------------------------------
 	Strings.
 ---------------------------------------------------------------- */
-
-STRdrawing:
-		StringObj(8)
-		.short	'D','r','a','w','i','n','g',0
-		.align	2
-
-STRnan:
-		StringObj(13)
-		.short	'N','o','t',' ','a',' ','n','u','m','b','e','r',0
-		.align	2
-
-STRnTooLarge:
-		StringObj(17)
-		.short	'N','u','m','b','e','r',' ','t','o','o',' ','l','a','r','g','e',0
-		.align	2
-
-STRnTooSmall:
-		StringObj(17)
-		.short	'N','u','m','b','e','r',' ','t','o','o',' ','s','m','a','l','l',0
-		.align	2
-
-STRextrasSoupName:
-		StringObj(9)
-		.short	'P','a','c','k','a','g','e','s',0
-		.align	2
+		.globl	SYMstring
 
 STRspace:
-		StringObj(2)
-		.short	' ',0
-		.align	2
-
-STRuPackageNeedsCardAlertText:
-		StringObj(117)
-		.short	'T','h','e',' ','p','a','c','k','a','g','e',' ','"','^','0','"',' ','s','t','i','l','l',' ','n','e','e','d','s',' ','t','h','e',' ','c','a','r','d',' ','y','o','u',' ','r','e','m','o','v','e','d','.',' '
-		.short	'P','l','e','a','s','e',' ','i','n','s','e','r','t',' ','i','t',' ','n','o','w',',',' ','o','r',' ','i','n','f','o','r','m','a','t','i','o','n',' ','o','n',' ','t','h','e',' ','c','a','r','d',' ','m','a','y',' ','b','e',' ','d','a','m','a','g','e','d','.',0
-		.align	2
-
-
-inkName:
-		StringObj(11)
-		.short	' ','-','s','k','e','t','c','h','-',' ',0
+		StringObj(1)
+		.short	' '
 		.align	2
 
 
@@ -191,7 +155,6 @@ _clicks:
 	Frames.
 ---------------------------------------------------------------- */
 
-#define DEFFRAME(name, ref)
 #define DEFFRAME1(name, tag1, value1) \
 name##Map: \
 		FrameMapObj(1) ;\
@@ -269,6 +232,13 @@ name##Map: \
 name: \
 		FrameObj(17, name##Map) ;\
 		Ref		value1, value2, value3, value4, value5, value6, value7, value8, value9, value10, value11, value12, value13, value14, value15, value16, value17
+#define DEFFRAME19(name, tag1, value1, tag2, value2, tag3, value3, tag4, value4, tag5, value5, tag6, value6, tag7, value7, tag8, value8, tag9, value9, tag10, value10, tag11, value11, tag12, value12, tag13, value13, tag14, value14, tag15, value15, tag16, value16, tag17, value17, tag18, value18, tag19, value19) \
+name##Map: \
+		FrameMapObj(19) ;\
+		Ref		MAKEPTR(SYM##tag1), MAKEPTR(SYM##tag2), MAKEPTR(SYM##tag3), MAKEPTR(SYM##tag4), MAKEPTR(SYM##tag5), MAKEPTR(SYM##tag6), MAKEPTR(SYM##tag7), MAKEPTR(SYM##tag8), MAKEPTR(SYM##tag9), MAKEPTR(SYM##tag10), MAKEPTR(SYM##tag11), MAKEPTR(SYM##tag12), MAKEPTR(SYM##tag13), MAKEPTR(SYM##tag14), MAKEPTR(SYM##tag15), MAKEPTR(SYM##tag16), MAKEPTR(SYM##tag17), MAKEPTR(SYM##tag18), MAKEPTR(SYM##tag19) ;\
+name: \
+		FrameObj(19, name##Map) ;\
+		Ref		value1, value2, value3, value4, value5, value6, value7, value8, value9, value10, value11, value12, value13, value14, value15, value16, value17, value18, value19
 #define DEFPROTOFRAME10(name, tag1, value1, tag2, value2, tag3, value3, tag4, value4, tag5, value5, tag6, value6, tag7, value7, tag8, value8, tag9, value9, tag10, value10) \
 name##Map: \
 		FrameMapProtoObj(10) ;\
@@ -277,7 +247,6 @@ name: \
 		FrameObj(10, name##Map) ;\
 		Ref		value1, value2, value3, value4, value5, value6, value7, value8, value9, value10
 #include "FrameDefs.h"
-#undef DEFFRAME
 #undef DEFFRAME1
 #undef DEFFRAME2
 #undef DEFFRAME3
@@ -290,6 +259,7 @@ name: \
 #undef DEFFRAMEX
 #undef DEFFRAME10
 #undef DEFFRAME17
+#undef DEFFRAME19
 #undef DEFPROTOFRAME10
 
 
@@ -322,14 +292,7 @@ _R##name: \
 		Ref		MAKEPTR(##name) ;\
 _RS##name: \
 		Ref		_R##name
-#define DEFMPSTR(name, str) \
-		.globl	_RS##name ;\
-_R##name: \
-		Ref		str ;\
-_RS##name: \
-		Ref		_R##name
-#include "StringDefs.h"
-#undef DEFMPSTR
+DEFSTR(STRspace)
 #undef DEFSTR
 
 
@@ -337,12 +300,6 @@ _RS##name: \
 		.globl	_RS##name ;\
 _R##name: \
 		Ref		MAKEPTR(name) ;\
-_RS##name: \
-		Ref		_R##name
-#define DEFFRAME(name, ref) \
-		.globl	_RS##name ;\
-_R##name: \
-		Ref		ref ;\
 _RS##name: \
 		Ref		_R##name
 #define DEFFRAME1(name, tag1, value1) \
@@ -411,6 +368,12 @@ _R##name: \
 		Ref		MAKEPTR(name) ;\
 _RS##name: \
 		Ref		_R##name
+#define DEFFRAME19(name, tag1, value1, tag2, value2, tag3, value3, tag4, value4, tag5, value5, tag6, value6, tag7, value7, tag8, value8, tag9, value9, tag10, value10, tag11, value11, tag12, value12, tag13, value13, tag14, value14, tag15, value15, tag16, value16, tag17, value17, tag18, value18, tag19, value19) \
+		.globl	_RS##name ;\
+_R##name: \
+		Ref		MAKEPTR(name) ;\
+_RS##name: \
+		Ref		_R##name
 #define DEFPROTOFRAME10(name, tag1, value1, tag2, value2, tag3, value3, tag4, value4, tag5, value5, tag6, value6, tag7, value7, tag8, value8, tag9, value9, tag10, value10) \
 		.globl	_RS##name ;\
 _R##name: \
@@ -423,7 +386,6 @@ DEFARRAY(_clickSong)
 DEFARRAY(_clicks)
 #include "FrameDefs.h"
 #undef DEFARRAY
-#undef DEFFRAME
 #undef DEFFRAME1
 #undef DEFFRAME2
 #undef DEFFRAME3
@@ -434,5 +396,6 @@ DEFARRAY(_clicks)
 #undef DEFFRAME7
 #undef DEFFRAME10
 #undef DEFFRAME17
+#undef DEFFRAME19
 #undef DEFPROTOFRAME10
 

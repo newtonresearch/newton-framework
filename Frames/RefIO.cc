@@ -9,6 +9,7 @@
 #include "Objects.h"
 #include "RefIO.h"
 #include "StreamObjects.h"
+#include "Unicode.h"
 
 DeclareException(exTranslator, exRootException);
 
@@ -41,7 +42,7 @@ long
 FlattenRefSize(RefArg inRef)
 {
 	CPipe *	nilPipe = NULL;
-	CObjectWriter	writer(inRef, *nilPipe, YES);
+	CObjectWriter	writer(inRef, *nilPipe, true);
 	writer.setCompressLargeBinaries();
 	return writer.size();
 }
@@ -50,7 +51,7 @@ FlattenRefSize(RefArg inRef)
 void
 FlattenRef(RefArg inRef, CPipe & inPipe)
 {
-	CObjectWriter	writer(inRef, inPipe, YES);
+	CObjectWriter	writer(inRef, inPipe, true);
 	writer.setCompressLargeBinaries();
 	writer.write();
 }
@@ -88,6 +89,77 @@ UnflattenFile(const char * inFilename)
 	return obj;
 }
 
+#if defined(forNTK)
+/*------------------------------------------------------------------------------
+	Read a data file into a binary object.
+	Args:		inRcvr
+				inFilename
+				inClass
+	Return:	the object
+------------------------------------------------------------------------------*/
+
+extern "C" Ref
+FLoadDataFile(RefArg inRcvr, RefArg inFilename, RefArg inClass)
+{
+	RefVar obj;
+	newton_try
+	{
+		char filename[256];
+		ConvertFromUnicode(GetUString(inFilename), filename, 255);
+
+		FILE * fd;
+		if ((fd = fopen(filename, "r")) == NULL) {
+			ThrowErr(exPipe, -1);
+		}
+		fseek(fd, 0, SEEK_END);
+		size_t dataSize = ftell(fd);
+		fseek(fd, 0, SEEK_SET);
+		obj = AllocateBinary(inClass, dataSize);
+		CDataPtr p(obj);
+		fread((char *)p, 1, dataSize, fd);
+		fclose(fd);
+	}
+	newton_catch_all
+	{
+		obj = NILREF;
+	}
+	end_try;
+	return obj;
+}
+
+
+/*------------------------------------------------------------------------------
+	Read a stream file.
+	Args:		inRcvr
+				inFilename
+	Return:	the streamed object
+------------------------------------------------------------------------------*/
+
+extern "C" Ref
+FReadStreamFile(RefArg inRcvr, RefArg inFilename)
+{
+	RefVar obj;
+	newton_try
+	{
+		char filename[256];
+		ConvertFromUnicode(GetUString(inFilename), filename, 255);
+
+		CStdIOPipe pipe(filename, "r");
+		CObjectReader reader(pipe);
+		obj = reader.read();
+	}
+	newton_catch_all
+	{
+		obj = NILREF;
+	}
+	end_try;
+	return obj;
+}
+#else
+extern "C" Ref
+FReadStreamFile(RefArg inRcvr, RefArg inFilename) { return NILREF; }		// lose this when we build RefData correctly 
+
+#endif
 
 #pragma mark -
 /*------------------------------------------------------------------------------
@@ -106,13 +178,13 @@ PFlattenPtr::translate(void * inContext, CPipeCallback * ioCallback)
 	{
 		FlattenPtrParms * parms = (FlattenPtrParms *)inContext;
 		CPtrPipe pipe;
-		CObjectWriter writer(parms->ref, pipe, NO);
+		CObjectWriter writer(parms->ref, pipe, false);
 		ArrayIndex ptrSize = parms->offset + writer.size();
 		ptr = NewPtr(ptrSize);
 		if (ptr == NULL)
 			ThrowErr(exTranslator, MemError());
 
-		pipe.init(ptr, ptrSize, NO, ioCallback);
+		pipe.init(ptr, ptrSize, false, ioCallback);
 		if (parms->offset > 0)
 			pipe.writeSeek(parms->offset, -1/*kSeekFromBeginning*/);
 		newton_try
@@ -144,7 +216,7 @@ PUnflattenPtr::translate(void * inContext, CPipeCallback * ioCallback)
 	{
 		UnflattenPtrParms * parms = (UnflattenPtrParms *)inContext;
 		CPtrPipe pipe;
-		pipe.init(parms->ptr, parms->ptrSize, NO, ioCallback);
+		pipe.init(parms->ptr, parms->ptrSize, false, ioCallback);
 
 		CObjectReader reader(pipe, parms->options);
 		obj = reader.read();
@@ -169,7 +241,7 @@ PFlattenRef::translate(void * inContext, CPipeCallback * ioCallback)
 	{
 		FlattenRefParms * parms = (FlattenRefParms *)inContext;
 		CRefPipe pipe;
-		CObjectWriter writer(parms->ref, pipe, NO);
+		CObjectWriter writer(parms->ref, pipe, false);
 		pipe.initSink(writer.size(), parms->store, ioCallback);
 
 		writer.write();
@@ -198,7 +270,7 @@ PUnflattenRef::translate(void * inContext, CPipeCallback * ioCallback)
 
 		CObjectReader reader(pipe, parms->options);
 		if (parms->disallowFunctions)
-			reader.setFunctionsAllowed(NO);
+			reader.setFunctionsAllowed(false);
 		newton_try
 		{
 			obj = reader.read();
@@ -233,7 +305,7 @@ PStreamOutRef::translate(void * inContext, CPipeCallback * ioCallback)
 		CEndpointPipe pipe;
 		pipe.init(parms->ep, 0, 512, parms->timeout, parms->framing, ioCallback);
 
-		CObjectWriter	writer(parms->ref, pipe, NO);
+		CObjectWriter	writer(parms->ref, pipe, false);
 		if (ioCallback != NULL)
 			ioCallback->f04 = writer.size();
 		writer.write();

@@ -20,7 +20,7 @@ InitCardServices(void)
 		CCardDomains domains;	// sp29E8
 		CCardServer server;		// sp00
 		XFAIL(err = domains.init())
-		err = server.init('cdsv', YES, kSpawnedTaskStackSize);
+		err = server.init('cdsv', true, kSpawnedTaskStackSize);
 	}
 	XENDTRY;
 	return err;

@@ -15,10 +15,10 @@
 
 CMemObject::CMemObject()
 {
-	fFlags.internal = YES;
+	fFlags.internal = true;
 	fFlags.createdMemory=
 	fFlags.shared =
-	fFlags.useToken = NO;
+	fFlags.useToken = false;
 	fSharedMemoryObject = 0;
 	fSize = 0;
 	fBuffer = NULL;
@@ -37,7 +37,7 @@ CMemObject::init(size_t inSize, Ptr inBuffer, bool inMakeShared, ULong inPermiss
 
 	fSize = inSize;
 	fBuffer = inBuffer;
-	fFlags.internal = YES;
+	fFlags.internal = true;
 	if (inMakeShared)
 		err = makeShared(inPermissions);
 	return err;
@@ -56,12 +56,12 @@ CMemObject::make(ObjectId inSharedObjectId, CUMsgToken * inMsgToken)
 	CUSharedMem	huh(inSharedObjectId);	// doesn’t appear to be used
 	
 	fSharedMemoryObject = inSharedObjectId;
-	fFlags.internal = NO;
-	fFlags.shared = YES;
+	fFlags.internal = false;
+	fFlags.shared = true;
 	if (inMsgToken)
 	{
 		fSharedMemoryToken = *inMsgToken;
-		fFlags.useToken = YES;
+		fFlags.useToken = true;
 	}
 	return fSharedMemoryObject.getSize(&fSize);
 }
@@ -77,7 +77,7 @@ CMemObject::makeShared(ULong inPermissions)
 	if (err == noErr)
 		err = fSharedMemoryObject.setBuffer(fBuffer, fSize, inPermissions);
 	if (err == noErr)
-		fFlags.shared = YES;
+		fFlags.shared = true;
 	return err;
 }
 

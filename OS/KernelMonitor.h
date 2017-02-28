@@ -22,7 +22,7 @@ public:
 					CMonitor();
 					~CMonitor();
 
-	NewtonErr	init(MonitorProcPtr, size_t inStackSize, void * inContext, CEnvironment * inEnvironment, bool inFaultMonitor, ULong inName, bool inRebootProtected = NO);
+	NewtonErr	init(MonitorProcPtr, size_t inStackSize, void * inContext, CEnvironment * inEnvironment, bool inFaultMonitor, ULong inName, bool inRebootProtected = false);
 	NewtonErr	acquire(void);
 	bool			suspend(ULong inFlags);
 	void			release(NewtonErr inResult);

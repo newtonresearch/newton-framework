@@ -27,9 +27,9 @@ DisposeCBits(void * inData)
 CBits::CBits()
 {
 	fBitsPort = NULL;
-	fIsDirty = NO;
+	fIsDirty = false;
 	fPixMap.baseAddr = NULL;
-	fIsPixMapCreatedByUs = YES;
+	fIsPixMapCreatedByUs = true;
 
 	long	stackItem;
 	if ((Ptr)this > (Ptr) &stackItem)	// ie on stack
@@ -54,10 +54,10 @@ bool
 CBits::init(const Rect * inBounds)
 {
 	if (EmptyRect(inBounds))
-		return NO;
+		return false;
 
 	fPixMap.baseAddr = (Ptr) NewHandle(initBitMap(inBounds, &fPixMap));	// NOTE NewHandle deprecated
-	fIsDirty = NO;
+	fIsDirty = false;
 	return fPixMap.baseAddr != NULL;
 }
 
@@ -65,7 +65,7 @@ void
 CBits::init(const PixelMap * inPixmap)
 {
 	fPixMap = *inPixmap;
-	fIsDirty = fIsPixMapCreatedByUs = NO;
+	fIsDirty = fIsPixMapCreatedByUs = false;
 }
 
 size_t
@@ -97,7 +97,7 @@ CBits::cleanUp(void)
 		if (fIsPixMapCreatedByUs)
 		{
 			DisposeHandle((Handle)fPixMap.baseAddr);
-			fIsPixMapCreatedByUs = NO;
+			fIsPixMapCreatedByUs = false;
 		}
 		fPixMap.baseAddr = NULL;
 	}
@@ -127,7 +127,7 @@ void
 CBits::endDrawing(void)
 {
 	if (gSlowMotion)
-		copyFromScreen(&fPixMap.bounds, &fPixMap.bounds, srcCopy, NULL);
+		copyFromScreen(&fPixMap.bounds, &fPixMap.bounds, modeCopy, NULL);
 
 	if (fBitsPort)
 	{
@@ -148,7 +148,7 @@ CBits::draw(const Rect * inSrcBounds, const Rect * inDstBounds, long inTransferM
 	GrafPtr	thePort;
 	GetPort(&thePort);
 	CopyBits(&fPixMap, &thePort->portBits, inSrcBounds, inDstBounds, inTransferMode, inMaskRgn);
-	fIsDirty = YES;
+	fIsDirty = true;
 }
 
 void
@@ -157,7 +157,7 @@ CBits::copyFromScreen(const Rect * inSrcBounds, const Rect * inDstBounds, long i
 	GrafPtr	thePort;
 	GetPort(&thePort);
 	CopyBits(&thePort->portBits, &fPixMap, inSrcBounds, inDstBounds, inTransferMode, inMaskRgn);
-	fIsDirty = YES;
+	fIsDirty = true;
 }
 
 void
@@ -261,7 +261,7 @@ CSaveScreenBits::~CSaveScreenBits(void)
 bool
 CSaveScreenBits::allocateBuffers(Rect * inBounds)
 {
-	bool	isAllocated = YES;
+	bool	isAllocated = true;
 	Rect	bounds;
 
 	newton_try
@@ -286,7 +286,7 @@ CSaveScreenBits::allocateBuffers(Rect * inBounds)
 	}
 	newton_catch(exRootException)
 	{
-		isAllocated = NO;
+		isAllocated = false;
 	}
 	end_try;
 
@@ -297,7 +297,7 @@ CSaveScreenBits::allocateBuffers(Rect * inBounds)
 void
 CSaveScreenBits::saveScreenBits(void)
 {
-//	CopyBits(&GetCurrentPort()->portBits, &fPixMap, NULL, NULL, srcCopy, NULL);
+//	CopyBits(&GetCurrentPort()->portBits, &fPixMap, NULL, NULL, modeCopy, NULL);
 }
 
 
@@ -308,5 +308,5 @@ CSaveScreenBits::restoreScreenBits(Rect * inBounds, RgnHandle inMask)
 	 || (inBounds->bottom < fPixMap.bounds.bottom && inBounds->right < fPixMap.bounds.right))
 		SectRect(inBounds, &fPixMap.bounds, inBounds);
 
-//	CopyBits(&fPixMap, &GetCurrentPort()->portBits, inBounds, inBounds, srcCopy, inMask);
+//	CopyBits(&fPixMap, &GetCurrentPort()->portBits, inBounds, inBounds, modeCopy, inMask);
 }

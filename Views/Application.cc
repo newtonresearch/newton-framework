@@ -9,9 +9,9 @@
 #include "RootView.h"
 #include "Application.h"
 
-#include "Objects.h"
-#include "Arrays.h"
 #include "Globals.h"
+#include "Arrays.h"
+#include "ROMResources.h"
 #include "Funcs.h"
 #include "NewtonScript.h"
 #include "NewtWorld.h"
@@ -22,6 +22,10 @@
 ------------------------------------------------------------------------------*/
 
 extern "C" {
+Ref	FPostAndDo(RefArg inRcvr, RefArg inCmd);
+Ref	FPostCommand(RefArg inRcvr, RefArg inCmd, RefArg inArg);
+Ref	FPostCommandParam(RefArg inRcvr, RefArg inCmd, RefArg inArg, RefArg inArg2);
+
 Ref	FAddDeferredCall(RefArg inRcvr, RefArg inMsg, RefArg inArg);
 Ref	FAddDeferredSend(RefArg inRcvr, RefArg inTarget, RefArg inMsg, RefArg inArg);
 Ref	FAddDelayedCall(RefArg inRcvr, RefArg inMsg, RefArg inArg, RefArg inTime);
@@ -110,7 +114,7 @@ CApplication::init(void)
 	fRedoStack = MakeArray(0);
 	fNewUndo = false;
 	fRedo = false;
-	fIdleTime = 1;
+	fIdleTime = CTime(1);
 }
 
 
@@ -190,7 +194,7 @@ CApplication::doCommand(RefArg inCmd)
 			RefVar cmdFunc(GetArraySlot(cmdFrame, 0));
 			RefVar cmdArg(GetArraySlot(cmdFrame, 1));
 			CommandSetResult(inCmd, noErr);
-			if (EQRef(ClassOf(cmdFrame), RSYMundo))
+			if (EQ(ClassOf(cmdFrame), SYMA(undo)))
 			{
 				if (IsFunction(cmdFunc))
 					DoBlock(cmdFunc, cmdArg);
@@ -310,9 +314,9 @@ Ref
 CApplication::getUndoState(void)
 {
 	if (NOTNIL(NSCallGlobalFn(SYMA(GetUserConfig), SYMA(undoRedo))) && fRedo)
-		return RSYMundoRedo;
+		return SYMA(undoRedo);
 	else
-		return RSYMundo;
+		return SYMA(undo);
 }
 
 
@@ -323,12 +327,18 @@ CApplication::getUndoState(void)
 void
 CApplication::updateNextIdleTime(CTime inNextTime)
 {
-	if (inNextTime != CTime(0)
-	&& (fIdleTime == CTime(0) || fIdleTime != inNextTime))
+#if 1
+	if ((inNextTime != CTime(0) && fIdleTime == CTime(0))		// no existing idle time, just set it
+	||	 (inNextTime != CTime(0) && inNextTime < fIdleTime))	// next idle wanted sooner than atm
+#else
+// surely we MUST be able to cancel idle by zeroing fIdleTime?
+	if (fIdleTime == CTime(0)		// no existing idle time, just set it
+	||	 inNextTime < fIdleTime)	// next idle wanted sooner than atm
+#endif
 	{
 		fIdleTime = inNextTime;
+printf("CApplication::updateNextIdleTime(%lld)\n", (int64_t)fIdleTime);
 	}
-printf("CApplication::updateNextIdleTime() -> %ld\n", (long)fIdleTime);
 }
 
 
@@ -356,7 +366,7 @@ CApplication::addDelayedAction(RefArg inRcvr, RefArg inFunc, RefArg inArg, RefAr
 	SetArraySlot(fDelayedActions, 2 + index, inArg);
 	if (ISINT(inTime))
 	{
-		RefVar actionTime(AllocateBinary(SYMA(time), sizeof(CTime)));
+		RefVar actionTime(AllocateBinary(SYMA(Time), sizeof(CTime)));
 		CDataPtr timeData(actionTime);
 		*((CTime *)(Ptr)timeData) = TimeFromNow(RINT(inTime) * kMilliseconds);
 		SetArraySlot(fDelayedActions, 3 + index, actionTime);
@@ -542,13 +552,97 @@ FHandleUnit(RefArg inRcvr, RefArg inCmd, RefArg inUnit)
 {
 	CResponder * responder = FailGetResponder(inRcvr, RA(NILREF));
 	CUnit * unit = UnitFromRef(inUnit);
-	int cmdId = RINT(inCmd);
+	ULong cmdId = RINT(inCmd);
 	return MAKEBOOLEAN(gApplication->dispatchCommand(MakeCommand(cmdId, responder, (long)unit)));
 }
 
+
+Ref
+FPostAndDo(RefArg inRcvr, RefArg inCmd)
+{
+	gApplication->dispatchCommand(inCmd);
+	return TRUEREF;
+}
+
+
+Ref
+FPostCommand(RefArg inRcvr, RefArg inView, RefArg inCmd)
+{
+	CResponder * responder = FailGetResponder(inRcvr, inView);
+	ULong cmdId;
+	if (IsString(inCmd))
+		cmdId = *(ULong *)(char *)CDataPtr(inCmd);
+	else
+		cmdId = RINT(inCmd);
+	if (cmdId != 0)
+		gApplication->dispatchCommand(MakeCommand(cmdId, responder, 0x08000000));
+	return TRUEREF;
+}
+
+
+Ref
+FPostCommandParam(RefArg inRcvr, RefArg inView, RefArg inCmd, RefArg inArg)
+{
+	CResponder * responder = FailGetResponder(inRcvr, inView);
+	ULong cmdId;
+	if (ISINT(inCmd) && (cmdId = RVALUE(inCmd)) != 0)
+	{
+		if (ISINT(inArg))
+			gApplication->dispatchCommand(MakeCommand(cmdId, responder, inArg));
+		else
+		{
+			RefVar cmd(MakeCommand(cmdId, responder, 0x08000000));
+			CommandSetFrameParameter(cmd, inArg);
+			gApplication->dispatchCommand(cmd);
+		}
+	}
+	return TRUEREF;
+}
+
+
+#include "StrokeCentral.h"
+
+extern CTime gTickleTime;		// 0C100D04
+extern CTime gLastIOEvent;		// 0C100D0C
+extern CTime gLastPenupTime;	// 0C100D14
+extern CTime gLastWakeupTime;	// 0C104C4C
+
 Ref
 FEventPause(RefArg inRcvr, RefArg inArg)
-{ return NILREF; }
+{
+	CTime now(GetGlobalTime());
+
+	if (NOTNIL(GetFrameSlot(RA(gVarFrame), SYMA(ioBusy))))
+		gLastIOEvent = now;
+
+	CTime mostRecentEvent;
+	if (NOTNIL(inArg))
+	{
+		gTickleTime = now;
+		mostRecentEvent = gTickleTime;
+	}
+	else
+	{
+#if defined(correct)
+		int penUpTicks = gStrokeWorld.f10;
+		if (penUpTicks)
+			gLastPenupTime = now - CTime((Ticks() - penUpTicks)/60, kSeconds);
+
+		mostRecentEvent = gLastPenupTime;
+		if (gLastIOEvent > mostRecentEvent)
+			mostRecentEvent = gLastIOEvent;
+		if (gLastWakeupTime > mostRecentEvent)
+			mostRecentEvent = gLastWakeupTime;
+		if (gTickleTime > mostRecentEvent)
+			mostRecentEvent = gTickleTime;
+#else
+		mostRecentEvent = now;
+#endif
+	}
+
+	CTime delta(now - mostRecentEvent);
+	return MAKEINT(delta.convertTo(kSeconds));
+}
 
 #pragma mark -
 

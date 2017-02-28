@@ -12,7 +12,8 @@
 #if !defined(__QDDRAWING_H)
 #define __QDDRAWING_H 1
 
-#include "QDGeometry.h"
+#include "QDTypes.h"
+#include "Geometry.h"
 
 
 typedef void (*OffsetFunc)(ShapePtr, short, short);
@@ -21,11 +22,11 @@ typedef void (*FillFunc)(ShapePtr);
 
 
 // don’t think we need these, but they’re frequently used in the original
-extern void		StartDrawing(PixelMap * inPixmap, Rect * inBounds);
-extern void		StopDrawing(PixelMap * inPixmap, Rect * inBounds);
+extern void		StartDrawing(NativePixelMap * inPixmap, Rect * inBounds);
+extern void		StopDrawing(NativePixelMap * inPixmap, Rect * inBounds);
 
 // might need this while you’re drawing
-extern void		BusyBoxSend(int inCmd);
+extern void		BusyBoxSend(int inSelector);
 
 
 extern void		LineNormal(void);
@@ -58,9 +59,6 @@ extern void		FillRgn(RegionShape * inShape);
 
 extern void		StrokeArc(WedgeShape * inShape, short inArc1, short inArc2);
 extern void		FillArc(WedgeShape * inShape, short inArc1, short inArc2);
-
-extern Ptr		GetPixelMapBits(PixelMap * pixmap);
-extern Ptr		GetPixelMapBits(NativePixelMap * pixmap);
 
 
 #endif	/* __QDDRAWING_H */

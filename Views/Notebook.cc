@@ -8,7 +8,7 @@
 #include "Quartz.h"
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Arrays.h"
 #include "Lookup.h"
 #include "Funcs.h"
@@ -36,8 +36,6 @@
 extern "C" {
 Ref	FLoadFontCache(RefArg inRcvr);
 }
-extern bool			EnableFramesFunctionProfiling(bool inEnable);
-
 extern void			InitPrintDrivers(void);
 extern void			InitFontLoader(void);
 extern void			InitScriptGlobals(void);
@@ -91,7 +89,7 @@ CNotebook::init(void)
 	CApplication::init();
 
 	gRootView = new CRootView;
-	gRootView->init(RA(rootProto), NULL);
+	gRootView->init(RA(viewRoot), NULL);
 
 	InitLibrarian();
 }
@@ -123,7 +121,7 @@ CNotebook::initToolbox(void)
 	}
 
 	drawSplashScreen();
-	FPlaySoundIrregardless(RA(NILREF), RA(bootSound));		// ROM_bootSound via RS
+	FPlaySoundIrregardless(RA(NILREF), RA(bootSound));
 
 	InitPrintDrivers();
 	InitFontLoader();
@@ -180,13 +178,13 @@ CNotebook::initInker(void)
 	Args:		--
 	Return:	--
 ------------------------------------------------------------------------------*/
-extern void		QDStartDrawing(PixelMap * inPixmap, Rect * inBounds);
-extern void		QDStopDrawing(PixelMap * inPixmap, Rect * inBounds);
+extern void		QDStartDrawing(NativePixelMap * inPixmap, Rect * inBounds);
+extern void		QDStopDrawing(NativePixelMap * inPixmap, Rect * inBounds);
 
 const UniChar*	kSplashStrings[4] =
 {
 	(const UniChar *)"N\000e\000w\000t\000o\000n\000 \000\000",
-	(const UniChar *)"\251\0002\0000\0000\0004\000-\0002\0000\0001\0004\000\000",
+	(const UniChar *)"\251\0002\0000\0000\0004\000-\0002\0000\0001\0005\000\000",
 	(const UniChar *)"N\000e\000w\000t\000o\000n\000 \000R\000e\000s\000e\000a\000r\000c\000h\000 \000G\000r\000o\000u\000p\000.\000\000",
 	(const UniChar *)"A\000l\000l\000 \000r\000i\000g\000h\000t\000s\000 \000r\000e\000s\000e\000r\000v\000e\000d\000.\000\000"
 };
@@ -212,7 +210,7 @@ CNotebook::drawSplashScreen(void)
 	CSplashScreenInfo * licenseeInfo = DrawSplashGraphic(&isSplashed, &box);
 	if (!isSplashed)
 		// no licensee splash -- show Newton logo
-		DrawPicture(RA(bootLogoBitmap), &box, vjCenterH + vjCenterV);
+		DrawPicture(RA(bootLogoBitmap), &box, vjCenterH + vjCenterV, modeCopy);
 
 	//	draw the splash text strings
 	UniChar			strBuf[128], * str;
@@ -291,8 +289,6 @@ DrawUnicodeText(str, Ustrlen(str), &box, gWhiteColor, vjCenterH);
 			styles - ROM_fontSystem9Bold
 			options - justification, transfer mode?, line spacing?
 			rect into which to draw
-
-		CGContextSetTextMatrix(quartz, CGAffineTransformIdentity);
 */
 
 	}
@@ -329,8 +325,8 @@ CNotebook::run(void)
 bool
 CNotebook::needsIdle(void)
 {
-	return fIdleTime != CTime(0)
-		 && fIdleTime < GetGlobalTime();
+if (fIdleTime != CTime(0) && fIdleTime < GetGlobalTime()) printf("CNotebook::needsIdle() fIdleTime=%lld\n", (int64_t)fIdleTime);
+	return fIdleTime != CTime(0) && fIdleTime < GetGlobalTime();
 }
 
 
@@ -346,7 +342,7 @@ CNotebook::idle(void)
 	CApplication::idle();
 
 	gRecognitionManager.idle();
-	gRootView->idleViews();
+	fIdleTime = gRootView->idleViews();
 	updateNextIdleTime(gRecognitionManager.nextIdle());
 }
 

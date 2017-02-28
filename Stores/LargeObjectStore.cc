@@ -159,14 +159,14 @@ FillChunkArray(CStore * inStore, PSSId inObjId, PSSId inChunksId, CPipe * inPipe
 		// create the required compander
 		compander = (CStoreCompander *)MakeByName("CStoreCompander", inCompanderName);
 		XFAILNOT(compander, err = kOSErrNoMemory;)
-		XFAIL(err = compander->init(inStore, inObjId, inCompanderParmsId, NO, NO))
+		XFAIL(err = compander->init(inStore, inObjId, inCompanderParmsId, false, false))
 
 		// fill the chunks object we already have on store
 		XFAIL(err = inStore->getObjectSize(inChunksId, &numOfChunks))
 		// convert size of array to number of entries
 		numOfChunks /= sizeof(PSSId);
 
-		bool		isEOF = NO;
+		bool		isEOF = false;
 		size_t	sizeDone = 0;
 		size_t	sizeRemaining = inSize;
 		size_t	cbSizeDone = 0;
@@ -185,7 +185,7 @@ FillChunkArray(CStore * inStore, PSSId inObjId, PSSId inChunksId, CPipe * inPipe
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;;
+				err = (NewtonErr)(long)CurrentException()->data;;
 			}
 			end_try;
 			XFAIL(err)
@@ -258,7 +258,7 @@ PRINTF(("FillChunkArrayCompressed(id=%u,size=%lu)\n", inChunksId,inSize));
 		// convert size of array to number of entries
 		numOfChunks /= sizeof(PSSId);
 
-		bool		isEOF = NO;
+		bool		isEOF = false;
 		size_t	sizeDone = 0;
 		size_t	cbSizeDone = 0;
 		LOCallbackInfo	cbInfo;
@@ -280,7 +280,7 @@ DumpHex(chunk, chunkSize);
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;
+				err = (NewtonErr)(long)CurrentException()->data;
 			}
 			end_try;
 			XFAIL(err)
@@ -756,7 +756,7 @@ LODefaultCreateFromCompressed(PSSId * outId, CStore * inStore, CPipe * inPipe, s
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()->data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 		XFAIL(err)
@@ -813,7 +813,7 @@ LODefaultDuplicate(PSSId * outId, CStore * inStore, PSSId inId, CStore * intoSto
 {
 	NewtonErr	err;
 	if ((err = FlushLargeObject(inStore, inId)) == noErr)
-		err = DuplicatePackageData(inStore, inId, intoStore, outId, YES);
+		err = DuplicatePackageData(inStore, inId, intoStore, outId, true);
 	return err;
 }
 
@@ -911,12 +911,12 @@ LODefaultStreamSize(CStore * inStore, PSSId inId, bool inCompressed)
 		}
 		else
 		{
-			bool	isMapped = NO;
+			bool	isMapped = false;
 			VAddr addr;
 			if ((err = StoreToVAddr(&addr, inStore, inId)) != noErr)
 			{
-				XFAIL(err = MapLargeObject(&addr, inStore, inId, YES))
-				isMapped = YES;
+				XFAIL(err = MapLargeObject(&addr, inStore, inId, true))
+				isMapped = true;
 			}
 			sizeOfStream = ObjectSize(addr);
 			if (isMapped)
@@ -941,19 +941,19 @@ LODefaultBackup(CPipe * inPipe, CStore * inStore, PSSId inId, bool inCompressed,
 	NewtonErr	err = noErr;	// sp20
 	VAddr			addr;				// sp1C
 	size_t		objSize;			// sp18
-	bool			isMapped = NO;	// sp14
+	bool			isMapped = false;	// sp14
 	char *		chunk;
 	size_t		numOfChunks;
 
 	XTRY
 	{
 		chunk = new char[0x0520];
-		XFAILNOT(chunk, err = MemError();)
+		XFAILIF(chunk == NULL, err = MemError();)
 
 		if ((err = StoreToVAddr(&addr, inStore, inId)) != noErr)
 		{
-			XFAIL(err = MapLargeObject(&addr, inStore, inId, YES))
-			isMapped = YES;
+			XFAIL(err = MapLargeObject(&addr, inStore, inId, true))
+			isMapped = true;
 		}
 		objSize = ObjectSize(addr);
 		if (inCompressed)
@@ -969,7 +969,7 @@ LODefaultBackup(CPipe * inPipe, CStore * inStore, PSSId inId, bool inCompressed,
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;
+				err = (NewtonErr)(long)CurrentException()->data;
 			}
 			end_try;
 			XFAIL(err)
@@ -994,11 +994,11 @@ LODefaultBackup(CPipe * inPipe, CStore * inStore, PSSId inId, bool inCompressed,
 					newton_try
 					{
 						*inPipe << objSize;
-						inPipe->writeChunk(chunk, objSize, NO);
+						inPipe->writeChunk(chunk, objSize, false);
 					}
 					newton_catch(exPipe)
 					{
-						err = (NewtonErr)(unsigned long)CurrentException()->data;
+						err = (NewtonErr)(long)CurrentException()->data;
 					}
 					end_try;
 					XFAIL(err)
@@ -1019,11 +1019,11 @@ LODefaultBackup(CPipe * inPipe, CStore * inStore, PSSId inId, bool inCompressed,
 		{
 			newton_try
 			{
-				inPipe->writeChunk((const void *)addr, objSize, NO);
+				inPipe->writeChunk((const void *)addr, objSize, false);
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;
+				err = (NewtonErr)(long)CurrentException()->data;
 			}
 			end_try;
 		}

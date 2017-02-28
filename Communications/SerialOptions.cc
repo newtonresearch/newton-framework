@@ -20,9 +20,9 @@ CCMOFramingParms:: CCMOFramingParms()
 
 	fEscapeChar = kDefaultFramingChar;
 	fEOMChar = kDefaultEOMChar;
-	fDoHeader = YES;
-	fDoPutFCS = YES;
-	fDoGetFCS = YES;
+	fDoHeader = true;
+	fDoPutFCS = true;
+	fDoGetFCS = true;
 }
 
 #pragma mark -

@@ -46,7 +46,7 @@ public:
 					~CCompiler();
 
 	Ref			compile(void);
-	void			parse(void);	// FOR DEBUG
+	ExprAST *	parse(void);	// FOR DEBUG
 
 	ArrayIndex	lineNo(void) const;
 	void			error(NewtonErr inErr);
@@ -55,6 +55,7 @@ public:
 private:
 	// the lexer
 	int			getToken(void);
+	int			peekToken(void);
 	int			consumeToken(void);
 	void			PrintToken(int inToken);	// FOR DEBUG
 
@@ -152,6 +153,8 @@ private:
 	CInputStream *		stream;			// +08
 	UniChar		theChar;					//			lexer input -- char last read from the stream
 	Token			theToken;				//			lexer output -- transitioning from the yylval global
+	Token			tokenQueue[2];			//			lexer peek-ahead(1)
+	ArrayIndex	tokenQueueIndex;
 	int			stackSize;				//	+0C	yystacksize, yacc stack size
 	RefStruct	yaccStack;				// +10
 	Ref *			vStack;					// +14	parser value stack
@@ -163,8 +166,6 @@ private:
 	Token			stackedToken;			// +2C
 //	RefStruct	stackedTokenValue;	// +30
 };
-
-inline ArrayIndex CCompiler::lineNo(void) const { return lineNumber; }
 
 
 /*------------------------------------------------------------------------------
@@ -239,20 +240,11 @@ private:
 	C F u n c t i o n S t a t e   I n l i n e s
 ------------------------------------------------------------------------------*/
 
-inline	ArrayIndex		CFunctionState::curPC(void) const
-{ return fPC; }
-
-inline	void				CFunctionState::setNext(CFunctionState * inLink)
-{ fNext = inLink; }
-
-inline	CFunctionState *	CFunctionState::context(void)
-{ return fScope; }
-
-inline		Ref		CFunctionState::argFrame(void)
-{ return fArgFrame; }
-
-inline		Ref		CFunctionState::varLocs(void)
-{ return fVarLocs; }
+inline	ArrayIndex	CFunctionState::curPC(void) const		{ return fPC; }
+inline	void			CFunctionState::setNext(CFunctionState * inLink)	{ fNext = inLink; }
+inline	CFunctionState *	CFunctionState::context(void)		{ return fScope; }
+inline	Ref			CFunctionState::argFrame(void)			{ return fArgFrame; }
+inline	Ref			CFunctionState::varLocs(void)				{ return fVarLocs; }
 
 
 /*------------------------------------------------------------------------------
@@ -279,17 +271,11 @@ private:
 	C C o m p i l e r   I n l i n e s
 ------------------------------------------------------------------------------*/
 
-inline	ArrayIndex	CCompiler::curPC(void) const
-{ return func->curPC(); }
-
-inline	ArrayIndex	CCompiler::emitPlaceholder(void)
-{ return func->emitPlaceholder(); }
-
-inline	void			CCompiler::emit(Opcode a, int b)
-{ func->emit(a,b); }
-
-inline	void			CCompiler::backpatch(ArrayIndex inPC, Opcode a, int b)
-{ func->backpatch(inPC, a, b); }
+inline	ArrayIndex	CCompiler::curPC(void) const				{ return func->curPC(); }
+inline	ArrayIndex	CCompiler::emitPlaceholder(void)			{ return func->emitPlaceholder(); }
+inline	void			CCompiler::emit(Opcode a, int b)			{ func->emit(a,b); }
+inline	void			CCompiler::backpatch(ArrayIndex inPC, Opcode a, int b)	{ func->backpatch(inPC, a, b); }
+inline	ArrayIndex	CCompiler::lineNo(void) const				{ return lineNumber; }
 
 
 #endif	/* __COMPILER_H */

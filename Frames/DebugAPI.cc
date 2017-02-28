@@ -22,7 +22,7 @@
 char	gFnIndentStr[kFnIndentStrLen+1] = "                                                                                ";
 int	gFnDepth = 0;
 
-bool	gAccurateStackTrace = NO;			//		 0C105468
+bool	gAccurateStackTrace = false;			//		 0C105468
 
 
 /* -----------------------------------------------------------------------------
@@ -92,7 +92,21 @@ CNSDebugAPI::~CNSDebugAPI()
 ArrayIndex
 FunctionStackSize(RefArg inFunc)
 {
-	
+	RefVar fnClass = ClassOf(inFunc);
+
+	if (EQ(fnClass, SYMA(_function)))
+	{
+		ArrayIndex argCount = RINT(GetArraySlot(inFunc, kFunctionNumArgsIndex));
+		return (argCount >> 16) /* number of locals */ + (argCount & 0xFFFF) /* number of args */;
+	}
+
+	else if (IsNativeFunction(inFunc))
+		return GetFunctionArgCount(inFunc);
+
+	else if (EQ(fnClass, SYMA(CodeBlock)))		// Newton 1.x does not stack args
+		return 0;
+
+	return kIndexNotFound;
 }
 
 
@@ -171,7 +185,7 @@ CNSDebugAPI::locals(ArrayIndex index)
 	Ref funcObj = state->func;
 	Ref funcClass = ClassOf(funcObj);
 
-	if (EQRef(funcClass, RSYM_function))
+	if (EQ(funcClass, SYMA(_function)))
 	{
 		ArrayIndex numArgs = RINT(GetArraySlotRef(funcObj, kFunctionNumArgsIndex));
 		ArrayIndex numLocals = (numArgs >> 16) + (numArgs & 0xFFFF);
@@ -190,7 +204,7 @@ CNSDebugAPI::locals(ArrayIndex index)
 		return localsArray;
 	}
 
-	else if (EQRef(funcClass, RSYMCodeBlock))
+	else if (EQ(funcClass, SYMA(CodeBlock)))
 	{
 		ArrayIndex numLocals = Length(state->locals) - kArgFrameArgIndex;
 		RefVar localsArray(MakeArray(numLocals));
@@ -210,7 +224,7 @@ CNSDebugAPI::getVar(ArrayIndex index, ArrayIndex inVarIndex)
 	Ref funcObj = state->func;
 	Ref funcClass = ClassOf(funcObj);
 
-	if (EQRef(funcClass, RSYM_function))
+	if (EQ(funcClass, SYMA(_function)))
 	{
 		ArrayIndex numArgs = RINT(GetArraySlotRef(funcObj, kFunctionNumArgsIndex));
 		ArrayIndex numVars = (numArgs >> 16) + (numArgs & 0xFFFF);
@@ -226,7 +240,7 @@ CNSDebugAPI::getVar(ArrayIndex index, ArrayIndex inVarIndex)
 		return *(fInterpreter->dataStack.base + (RVALUE(state->stackFrame) >> 6) + inVarIndex);
 	}
 
-	else if (EQRef(funcClass, RSYMCodeBlock))
+	else if (EQ(funcClass, SYMA(CodeBlock)))
 	{
 		if (inVarIndex >= Length(state->locals) - kArgFrameArgIndex)
 			ThrowExFramesWithBadValue(kNSErrOutOfRange, MAKEINT(inVarIndex));
@@ -244,7 +258,7 @@ CNSDebugAPI::setVar(ArrayIndex index, ArrayIndex inVarIndex, RefArg inVar)
 	Ref funcObj = state->func;
 	Ref funcClass = ClassOf(funcObj);
 
-	if (EQRef(funcClass, RSYM_function))
+	if (EQ(funcClass, SYMA(_function)))
 	{
 		ArrayIndex numArgs = RINT(GetArraySlotRef(funcObj, kFunctionNumArgsIndex));
 		ArrayIndex numVars = (numArgs >> 16) + (numArgs & 0xFFFF);
@@ -260,7 +274,7 @@ CNSDebugAPI::setVar(ArrayIndex index, ArrayIndex inVarIndex, RefArg inVar)
 		*(fInterpreter->dataStack.base + (RVALUE(state->stackFrame) >> 6) + inVarIndex) = inVar;
 	}
 
-	else if (EQRef(funcClass, RSYMCodeBlock))
+	else if (EQ(funcClass, SYMA(CodeBlock)))
 	{
 		if (inVarIndex >= Length(state->locals) - kArgFrameArgIndex)
 			ThrowExFramesWithBadValue(kNSErrOutOfRange, MAKEINT(inVarIndex));
@@ -395,7 +409,7 @@ REPStackTrace(void * interpreter)
 						REPprintf("\n");
 					}
 
-					if (EQRef(ClassOf(theFunc), RSYMCodeBlock))
+					if (EQ(ClassOf(theFunc), SYMA(CodeBlock)))
 					{
 						// it’s a Newton1 CodeBlock
 						//sp-08
@@ -446,6 +460,7 @@ REPStackTrace(void * interpreter)
 /* -----------------------------------------------------------------------------
 	D i s a s s e m b l y
 ----------------------------------------------------------------------------- */
+#if 1		// #ifdef hasDisasm		I think it’s fun always to be able to Disassemble, no?
 
 const char * simpleInstrs[] =
 {
@@ -518,30 +533,31 @@ Disassemble(RefArg inFunc)
 {
 	Ref funcClass = ClassOf(inFunc);
 
-	if (!(EQRef(funcClass, RSYMCodeBlock) || EQRef(funcClass, RSYM_function)))
+	if (!(EQ(funcClass, SYMA(CodeBlock)) || EQ(funcClass, SYMA(_function)))) {
 		ThrowMsg("not a codeblock");
+	}
 
 	RefVar instructions(GetArraySlot(inFunc, kFunctionInstructionsIndex));
 	RefVar literals(GetArraySlot(inFunc, kFunctionLiteralsIndex));
 	RefVar args(GetArraySlot(inFunc, kFunctionArgFrameIndex));
 	RefVar debugInfo;
-	if (Length(inFunc) > kFunctionDebugIndex)
+	if (Length(inFunc) > kFunctionDebugIndex) {
 		debugInfo = GetArraySlot(inFunc, kFunctionDebugIndex);
-	if (!EQRef(ClassOf(debugInfo), MakeSymbol("dbg1")))
+	}
+	if (!EQ(ClassOf(debugInfo), MakeSymbol("dbg1"))) {
 		debugInfo = NILREF;
+	}
 
 	CDataPtr instrData(instructions);
 	unsigned char * instrPtr = (unsigned char *)instrData;
 	ArrayIndex instrLen = 0;
-	bool is_function = EQRef(funcClass, RSYM_function);
-	for (ArrayIndex i = 0, count = Length(instructions); i < count; i += instrLen, instrPtr += instrLen)
-	{
+	bool is_function = EQ(funcClass, SYMA(_function));
+	for (ArrayIndex i = 0, count = Length(instructions); i < count; i += instrLen, instrPtr += instrLen) {
 		REPprintf("%4d: ", i);
 		instrLen = PrintInstruction(is_function, instrPtr, literals, args, debugInfo);
 		REPprintf("\n");
 	}
 }
-
 
 
 /*------------------------------------------------------------------------------
@@ -561,55 +577,54 @@ PrintInstruction(bool in_function, unsigned char * instruction, RefArg inLiteral
 	ArrayIndex		instrLen = 1;
 	unsigned int	opCode = *instruction >> 3;
 	unsigned int	b = *instruction & 0x07;
-	if (b == 7)
-	{
+	if (b == 7) {
 		b = (*(instruction + 1) << 8) + *(instruction + 2);
 		instrLen = 3;
+		REPprintf("%02X %04X  ", *instruction, b);
+	} else {
+		REPprintf("%02X       ", *instruction);
 	}
 
-	if (opCode == kOpcodeSimple)
-	{
+	if (opCode == kOpcodeSimple) {
 		REPprintf("%s", simpleInstrs[b]);
-	}
-	else
-	{
+	} else {
 		REPprintf("%s ", paramInstrs[opCode]);
 
-		if (opCode == kOpcodePush || opCode == kOpcodeFindVar || opCode == kOpcodeFindAndSetVar)
+		if (opCode == kOpcodePush || opCode == kOpcodeFindVar || opCode == kOpcodeFindAndSetVar) {
 			PrintObject(GetArraySlot(inLiterals, b), 0);
 
-		else if (opCode == kOpcodePushConstant)
+		} else if (opCode == kOpcodePushConstant) {
 			PrintObject(b, 0);
 
-		else if (opCode == kOpcodeGetVar || opCode == kOpcodeSetVar)
-		{
-			if (in_function)
-			{
+		} else if (opCode == kOpcodeGetVar || opCode == kOpcodeSetVar || opCode == kOpcodeIncrVar) {
+			if (in_function) {
 				const char * literalName = NULL;
-				if (NOTNIL(inDebugInfo))
-				{
+				if (NOTNIL(inDebugInfo)) {
 					ArrayIndex debugNamesBaseIndex = RINT(GetArraySlot(inDebugInfo, 0)) + 1;
 					ArrayIndex literalNameIndex = debugNamesBaseIndex + b - 3;
 					RefVar literal(GetArraySlot(inDebugInfo, literalNameIndex));
-					if (NOTNIL(literal))
+					if (NOTNIL(literal)) {
 						literalName = SymbolName(literal);
+					}
 				}
-				if (literalName)
+				if (literalName) {
 					REPprintf("%ld [%s]", b, literalName);
-				else
+				} else {
 					REPprintf("%ld", b);
-			}
-			else
+				}
+			} else {
 				REPprintf("%ld [%s]", b, SymbolName(GetTag(((FrameObject *)ObjectPtr(inArgs))->map, b)));
-		}
+			}
 
-		else if (opCode == 24)										// freq-func
+		} else if (opCode == kOpcodeFreqFunc) {
 			REPprintf("%ld [%s/%ld]", b, gFreqFuncInfo[b].name, gFreqFuncInfo[b].numOfArgs);
 
-		else
+		} else {
 			REPprintf("%ld", b);
+		}
 	}
 
 	return instrLen;
 }
+#endif
 

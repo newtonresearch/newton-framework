@@ -186,8 +186,8 @@ RegisterInterrupt(InterruptObject ** outIntObj, ULong inSourceMask, void * inQue
 		*outIntObj = NULL;
 
 		// create new interrupt object
-		InterruptObject * interrupt;
-		XFAILNOT(interrupt = new InterruptObject, err = kIntErrCouldNotCreateInterrupt;)
+		InterruptObject * interrupt = new InterruptObject;
+		XFAILIF(interrupt == NULL, err = kIntErrCouldNotCreateInterrupt;)
 
 		// pack new interrupt object with parms given
 		XFAILIF(err = PackInterruptObject(interrupt, inSourceMask, inQueue, inHandler), delete interrupt;)
@@ -235,14 +235,14 @@ RegisterAdditionalInterrupt(InterruptObject ** ioQueue, ULong inSourceMask, void
 	{
 		*ioQueue = NULL;
 
-		InterruptObject * interrupt;
-		XFAILNOT(interrupt = new InterruptObject, err = kIntErrCouldNotCreateInterrupt;)
+		InterruptObject * interrupt = new InterruptObject;
+		XFAILIF(interrupt == NULL, err = kIntErrCouldNotCreateInterrupt;)
 
 		XFAILIF(err = PackInterruptObject(interrupt, inSourceMask, inQueue, inHandler), delete interrupt;)
 		XFAILIF(err = CheckEnables(interrupt, inFlags), delete interrupt;)
 
-		InterruptObject * additionalInterrupt;
-		XFAILNOT(additionalInterrupt = new InterruptObject, delete interrupt; err = kIntErrCouldNotCreateInterrupt;)
+		InterruptObject * additionalInterrupt = new InterruptObject;
+		XFAILIF(additionalInterrupt == NULL, delete interrupt; err = kIntErrCouldNotCreateInterrupt;)
 
 		XFAILIF(err = PackInterruptObject(additionalInterrupt, interrupt->x00, 0, HLevel2Handler), delete interrupt; delete additionalInterrupt;)
 

@@ -98,7 +98,7 @@ static void	ConvertFromUnicodeFunc_Segmented16(const UniChar * inStr, void * out
 Ref
 InitUnicode(void)
 {
-	RefVar		tables(gConstNSData->sortTables);
+	RefVar		tables(RA(sortTables));
 	ArrayIndex	count;
 	if (NOTNIL(tables) && (count = Length(tables)) > 0)
 	{
@@ -106,18 +106,16 @@ InitUnicode(void)
 			gSortTables.addSortTable((const CSortingTable *)BinaryData(GetArraySlot(tables, i)), false);
 	}
 
-	Ref	mp6 = MAKEMAGICPTR(6);
-	Ref *	RSmp6 = &mp6;
-	gASCIIBreakTable = BinaryData(RA(mp6));
+	gASCIIBreakTable = BinaryData(RA(asciiBreak));
 	InstallBuiltInEncodings();
 	gASCIItoUnicodeTable = (const UniChar *)gUnicode.toUnicode[kMacRomanEncoding].map->charCodes;
 
-	gUnicode.charClass = BinaryData(GetFrameSlot(MAKEMAGICPTR(283), SYMA(charClass)));
-	gUnicode.typeList = BinaryData(GetFrameSlot(MAKEMAGICPTR(283), SYMA(typeList)));
-	gUnicode.upperDeltas = BinaryData(GetFrameSlot(MAKEMAGICPTR(283), SYMA(upperList)));
-	gUnicode.lowerDeltas = BinaryData(GetFrameSlot(MAKEMAGICPTR(283), SYMA(lowerList)));
-	gUnicode.upperNoMarkDeltas = BinaryData(GetFrameSlot(MAKEMAGICPTR(283), SYMA(upperNoMarkList)));
-	gUnicode.noMarkDeltas = BinaryData(GetFrameSlot(MAKEMAGICPTR(283), SYMA(noMarkList)));
+	gUnicode.charClass = BinaryData(GetFrameSlot(RA(unicode), SYMA(charClass)));
+	gUnicode.typeList = BinaryData(GetFrameSlot(RA(unicode), SYMA(typeList)));
+	gUnicode.upperDeltas = BinaryData(GetFrameSlot(RA(unicode), SYMA(upperList)));
+	gUnicode.lowerDeltas = BinaryData(GetFrameSlot(RA(unicode), SYMA(lowerList)));
+	gUnicode.upperNoMarkDeltas = BinaryData(GetFrameSlot(RA(unicode), SYMA(upperNoMarkList)));
+	gUnicode.noMarkDeltas = BinaryData(GetFrameSlot(RA(unicode), SYMA(noMarkList)));
 
 	gUnicodeInited = true;
 	gHasUnicode = true;
@@ -149,7 +147,7 @@ AllocateEarlyStuff(void)
 Ref
 InstallBuiltInEncodings(void)
 {
-	RefVar		encodings(GetFrameSlot(MAKEMAGICPTR(283), SYMA(charEncodings)));
+	RefVar		encodings(GetFrameSlot(RA(unicode), SYMA(charEncodings)));
 	ArrayIndex	count = Length(encodings);
 	for (ArrayIndex i = 0; i < count; ++i)
 	{
@@ -183,22 +181,22 @@ GetMappingInfo(void * data, EncodingMap * outMap, ProcPtr * outMapFunction)
 {
 	UShort * table = (UShort *)data;
 
-	outMap->formatID = *table++;
+	outMap->formatID = CANONICAL_SHORT(*table); ++table;
 
 	if (outMap->formatID == 0)
 	{
-		outMap->unicodeTableSize = *table++;
-		outMap->revision = *table++;
-		outMap->tableInfo = *table++;
+		outMap->unicodeTableSize = CANONICAL_SHORT(*table); ++table;
+		outMap->revision = CANONICAL_SHORT(*table); ++table;
+		outMap->tableInfo = CANONICAL_SHORT(*table); ++table;
 
 		outMap->charCodes = table;
 		*outMapFunction = (ProcPtr) ConvertToUnicodeFunc_Contiguous8;
 	}
 	else if (outMap->formatID == 4)
 	{
-		outMap->revision = *table++;
-		outMap->tableInfo = *table++;
-		outMap->unicodeTableSize = *table++;
+		outMap->revision = CANONICAL_SHORT(*table); ++table;
+		outMap->tableInfo = CANONICAL_SHORT(*table); ++table;
+		outMap->unicodeTableSize = CANONICAL_SHORT(*table); ++table;
 
 		outMap->endCodes = (UniChar *)table;
 		table += outMap->unicodeTableSize;
@@ -334,8 +332,10 @@ ConvertToUnicodeFunc_Contiguous8(const void * inStr, UniChar * outStr, void * ma
 	unsigned char ch;
 	const unsigned char * p = (const unsigned char *)inStr;
 	UniChar * s = outStr;
-	for ( ; numChars > 0 && (ch = *p++) != kEndOfString; numChars--)
-		*s++ = ((UniChar *)((EncodingMap *)map)->charCodes)[ch];
+	for ( ; numChars > 0 && (ch = *p) != kEndOfString; --numChars, ++p, ++s) {
+		*s = ((UniChar *)((EncodingMap *)map)->charCodes)[ch];
+		*s = BYTE_SWAP_SHORT(*s);
+	}
 	*s = kEndOfString;
 }
 

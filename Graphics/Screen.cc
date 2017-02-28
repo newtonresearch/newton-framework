@@ -7,7 +7,7 @@
 
 	Newton (QuickDraw)
 	all drawing is done into the screenÕs GrafPort (bitmap)
-	which is blitted to the LCD bitmap @ ~33fps (actually only dirty rect is blited)
+	which is blitted to the LCD bitmap @ ~33fps (actually only dirty rect is blitted)
 
 	Quartz
 	all drawing is done into a windowÕs quartz context (presumably off-screen bitmap)
@@ -17,8 +17,16 @@ so...
 	at some point we could create a quartz context for each child view of the root, making app views more manageable
 alternatively...
 	create a CGLayer and draw into its context
+		NSGraphicsContext * windowContext = window.graphicsContext;
+		CGLayerRef qLayer = CGLayerCreateWithContext((CGContextRef)windowContext.graphicsPort, window.contentView.frame.size, NULL);
+		CGContextRef qContext = CGLayerGetContext(qLayer);
+		//draw into qContext
 	screen task should blit that into windowÕs context
-	forFramework, must continue to draw into quartz context
+		void CGContextDrawLayerAtPoint(windowContext, CGPointZero, qLayer);
+	although in reality we should probably
+		StopDrawing() -> set needsDisplay on the contentView
+		contentView:drawRect -> blit layer
+	forFramework, must continue to draw into bitmap context
 */
 
 #include "Quartz.h"
@@ -31,10 +39,12 @@ alternatively...
 
 #include "Screen.h"
 #include "ScreenDriver.h"
+#include "ViewFlags.h"
 #include "QDDrawing.h"
 #include "Tablet.h"
 
 extern void SetEmptyRect(Rect * r);
+extern void WeAreDirty(void);
 
 
 /* -----------------------------------------------------------------------------
@@ -56,9 +66,11 @@ Ref	FLockScreen(RefArg inRcvr, RefArg inDoIt);
 ------------------------------------------------------------------------------*/
 
 const ScreenParams gScreenConstants =		// was qdConstants 00380BCC
-{	{ 0, 5, 4, 0, 3 },
-	{ 0, 3, 2, 0, 1 },
-	{ 0, 0x1F, 0x0F, 0, 0x07 } };
+{	{ 0, 5, 4, 0, 3, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },	// xShift[bitsPerPixel]
+	{ 0, 3, 2, 0, 1 },	// depthShift
+	{ 0x00000000, 0x00000001, 0x00000003, 0x0000000F, 0x000000FF, 0x0000FFFF, 0xFFFFFFFF },	// pixelMask
+	{ 0, 0x1F, 0x0F, 0, 0x07, 0, 0, 0, 0x03, 0, 0, 0, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },	// xMask
+	{ 0, 1, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0 } };	// maskIndex[bitsPerPixel]
 
 NativePixelMap	gScreenPixelMap;				// was qd.pixmap
 
@@ -390,7 +402,7 @@ SetGrafInfo(int inSelector, int inValue)
 		if (gScreen.driver)
 			gScreen.driver->setFeature(4, inValue);
 		SetupScreenPixelMap();
-		memset(GetPixelMapBits(&gScreenPixelMap), 0, (gScreenPixelMap.bounds.bottom - gScreenPixelMap.bounds.top) * gScreenPixelMap.rowBytes);
+		memset(PixelMapBits(&gScreenPixelMap), 0, (gScreenPixelMap.bounds.bottom - gScreenPixelMap.bounds.top) * gScreenPixelMap.rowBytes);
 		break;
 
 	case kGrafBacklight:
@@ -591,7 +603,7 @@ UpdateHardwareScreen(void)
 
 	// only bother if the dirty area is actually on-screen
 	if (SectRect(&gScreen.dirtyBounds, &gScreenPixelMap.bounds, &r))
-		BlitToScreens(&gScreenPixelMap, &r, &r, 0);	// srcCopy
+		BlitToScreens(&gScreenPixelMap, &r, &r, modeCopy);
 	// it's no longer dirty
 	SetEmptyRect(&gScreen.dirtyBounds);
 }
@@ -610,45 +622,49 @@ UpdateHardwareScreen(void)
 void
 BlitToScreens(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * inDstBounds, int inTransferMode)
 {
-/*
 	gScreen.driver->blit(inPixmap, inSrcBounds, inDstBounds, inTransferMode);
 
 	if (gScreen.auxDriver)
 		gScreen.auxDriver->blit(inPixmap, inSrcBounds, inDstBounds, inTransferMode);
-*/
+
+#if !defined(forFramework)
+	WeAreDirty();
+#endif
 }
 
 #pragma mark -
 
 void
-StartDrawing(PixelMap * inPixmap, Rect * inBounds)
+StartDrawing(NativePixelMap * inPixmap, Rect * inBounds)
 {
 	if (inPixmap == NULL)
 #if defined(correct)
 		inPixmap = &GetCurrentPort()->portBits;
 #else
-		/*inPixmap = &gScreenPixelMap*/;
+		inPixmap = &gScreenPixelMap;
 #endif
 
 #if !defined(forFramework)
-	if (GetPixelMapBits(inPixmap) == GetPixelMapBits(&gScreenPixelMap))
+	if (PixelMapBits(inPixmap) == PixelMapBits(&gScreenPixelMap))
+		// drawing direct onto screen
 		gScreen.semaphore->semOp(gScreen.f24, kWaitOnBlock);
 #endif
 }
 
 
 void
-StopDrawing(PixelMap * inPixmap, Rect * inBounds)
+StopDrawing(NativePixelMap * inPixmap, Rect * inBounds)
 {
 	if (inPixmap == NULL)
 #if defined(correct)
 		inPixmap = &GetCurrentPort()->portBits;
 #else
-//		inPixmap = &gScreenPixelMap;
+		inPixmap = &gScreenPixelMap;
 #endif
 
-	if (GetPixelMapBits(inPixmap) == GetPixelMapBits(&gScreenPixelMap))
+	if (PixelMapBits(inPixmap) == PixelMapBits(&gScreenPixelMap))
 	{
+		// drawing direct onto screen
 		if (inBounds)
 		{
 			Rect	bbox = *inBounds;
@@ -667,23 +683,21 @@ StopDrawing(PixelMap * inPixmap, Rect * inBounds)
 		gScreen.semaphore->semOp(gScreen.f28, kNoWaitOnBlock);
 #endif
 	}
-
-//	CGContextFlush(quartz);
 }
 
 
 void
-QDStartDrawing(PixelMap * inPixmap, Rect * inBounds)
+QDStartDrawing(NativePixelMap * inPixmap, Rect * inBounds)
 {
 	if (inPixmap == NULL)
 #if defined(correct)
 		inPixmap = &GetCurrentPort()->portBits;
 #else
-		/*inPixmap = &gScreenPixelMap*/;
+		inPixmap = &gScreenPixelMap;
 #endif
 
 #if !defined(forFramework)
-	if (GetPixelMapBits(inPixmap) == GetPixelMapBits(&gScreenPixelMap))
+	if (PixelMapBits(inPixmap) == PixelMapBits(&gScreenPixelMap))
 		//	weÕre drawing to the display so acquire a lock
 		gScreen.lock->acquire(kWaitOnBlock);
 #endif
@@ -691,16 +705,16 @@ QDStartDrawing(PixelMap * inPixmap, Rect * inBounds)
 
 
 void
-QDStopDrawing(PixelMap * inPixmap, Rect * inBounds)
+QDStopDrawing(NativePixelMap * inPixmap, Rect * inBounds)
 {
 	if (inPixmap == NULL)
 #if defined(correct)
 		inPixmap = &GetCurrentPort()->portBits;
 #else
-//		inPixmap = &gScreenPixelMap;
+		inPixmap = &gScreenPixelMap;
 #endif
 
-	if (GetPixelMapBits(inPixmap) == GetPixelMapBits(&gScreenPixelMap))
+	if (PixelMapBits(inPixmap) == PixelMapBits(&gScreenPixelMap))
 	{
 		bool	isAnythingToDraw = !EmptyRect(&gScreen.dirtyBounds);
 		if (inBounds)
@@ -715,6 +729,8 @@ QDStopDrawing(PixelMap * inPixmap, Rect * inBounds)
 			gScreen.semaphore->semOp(gScreen.f2C, kWaitOnBlock);
 		//	weÕre drawing to the display so release the lock
 		gScreen.lock->release();
+printf("QDStopDrawing() -- ");
+		WeAreDirty();
 #endif
 	}
 }

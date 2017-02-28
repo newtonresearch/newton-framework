@@ -33,7 +33,7 @@ void
 CFlashTracker::reset(void)
 {
 	fIndex = 0;
-	fIsFull = NO;
+	fIsFull = false;
 	fLockCount = 0;
 }
 
@@ -45,7 +45,7 @@ CFlashTracker::add(PSSId inId)
 	{
 		fList[fIndex++] = inId;
 		if (fIndex >= fSize)
-			fIsFull = YES;
+			fIsFull = true;
 	}
 }
 

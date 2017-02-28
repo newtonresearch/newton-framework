@@ -20,7 +20,7 @@ class CApplication;
 
 struct NewtGlobals
 {
-	int				lastId;			// +00	was short
+	ArrayIndex		stackPos;		// +00
 	CInterpreter *	interpreter;	// +04
 	VAddr				stackTop;		// +08
 //	GrafPtr			graf;				// +0C

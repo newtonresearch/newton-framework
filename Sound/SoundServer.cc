@@ -6,29 +6,22 @@
 	Written by:	Newton Research Group, 2007.
 */
 
-// DON’T USE MAC MEMORY FUNCTIONS
-#define __MACMEMORY__ 1
-#define __QDTYPES_H 1
-
-#include <AudioUnit/AUComponent.h>
-#include <AudioUnit/AudioOutputUnit.h>
-#include <AudioUnit/AudioUnitProperties.h>
-#include <AudioUnit/AudioUnitParameters.h>
-#include <AudioUnit/AudioCodec.h>
-
 #include "SoundServer.h"
-#include "SoundDriver.h"
 #include "SoundErrors.h"
-//#include "VirtualMemory.h"
+#include "MuLawCodec.h"
+#include "IMACodec.h"
+#include "GSMCodec.h"
 #include "DTMFCodec.h"
+#include "SystemEvents.h"
+#include "Power.h"
 
 
 /* -----------------------------------------------------------------------------
 	D a t a
 ----------------------------------------------------------------------------- */
 
-CUPort *			gSoundPort = NULL;			// 0C101B10	was gSndPort
-CSoundDriver *	gSoundDriver = NULL;		// 0C101B14	was gSndDriver
+CUPort *			gSoundPort = NULL;		// 0C101B10	was gSndPort
+PSoundDriver *	gSoundDriver = NULL;		// 0C101B14	was gSndDriver
 ULong				gMaxFilterNodes;			// 0C101B18
 ULong				gNumFilterNodes;			// 0C101B1C
 
@@ -40,87 +33,21 @@ ULong				gNumFilterNodes;			// 0C101B1C
 void
 InitializeSound(void)
 {
-//	IOPowerOff(25);
-//	IOPowerOff(24);
+	IOPowerOff(25);
+	IOPowerOff(24);
+
 	RegisterSoundHardwareDriver();
 
+	// create the sound server task
 	CSoundServer soundServer;
-	soundServer.init('sndm', YES, kSpawnedTaskStackSize, kSoundTaskPriority, kNoId);
+	soundServer.init('sndm', true, kSpawnedTaskStackSize, kSoundTaskPriority, kNoId);
 
-//	CMuLawCodec::classInfo()->registerProtocol();
-//	CIMACodec::classInfo()->registerProtocol();
-//	CGSMCodec::classInfo()->registerProtocol();
+	CMuLawCodec::classInfo()->registerProtocol();
+	CIMACodec::classInfo()->registerProtocol();
+	CGSMCodec::classInfo()->registerProtocol();
 	CDTMFCodec::classInfo()->registerProtocol();
 
 	gMaxFilterNodes = 6;		// was (gMainCPUType == 3) ? 6 : 0;
-}
-
-
-#pragma mark -
-/*------------------------------------------------------------------------------
-	A u d i o   U n i t
-	We use the AudioUnit in
-		CSoundServer::start() and
-		CSoundServer::scheduleNode()
-------------------------------------------------------------------------------*/
-
-AudioUnit	gOutputUnit;
-
-OSStatus
-MyRenderCallback(	void * inRefCon,
-						AudioUnitRenderActionFlags * ioActionFlags,
-						const AudioTimeStamp * inTimeStamp,
-						UInt32 inBusNumber,
-						UInt32 inNumberFrames,
-						AudioBufferList * ioData )
-{
-	size_t			amtReqd = ioData->mBuffers[0].mDataByteSize;
-	size_t			amtDone;
-	size_t			dataSize;
-	CodecBlock		codecParms;
-	CSoundCodec *	codec = (CSoundCodec *)inRefCon;
-
-	amtDone = ioData->mBuffers[0].mDataByteSize;
-	codec->produce(ioData->mBuffers[0].mData, &amtDone, &dataSize, &codecParms);
-	ioData->mBuffers[0].mDataByteSize = (UInt32)amtDone;
-
-	if (amtDone < amtReqd)
-	{
-		// zero the remainder of the buffer
-		memset((char *)ioData->mBuffers[0].mData + amtDone, 0, amtReqd - amtDone);
-	}
-	else if (amtDone == 0)
-		*ioActionFlags |= kAudioUnitRenderAction_OutputIsSilence;
-
-	return noErr;
-}
-
-
-OSStatus
-SimpleRenderCallback(void * inRefCon,
-							AudioUnitRenderActionFlags * ioActionFlags,
-							const AudioTimeStamp * inTimeStamp,
-							UInt32 inBusNumber,
-							UInt32 inNumberFrames,
-							AudioBufferList * ioData )
-{
-	CodecBlock *	codecParms = (CodecBlock *)inRefCon;
-
-	unsigned		amtReqd = ioData->mBuffers[0].mDataByteSize;
-	unsigned		amtDone = MIN(amtReqd, codecParms->dataSize - codecParms->x00);
-
-	memcpy(ioData->mBuffers[0].mData, (char *)codecParms->data + codecParms->x00, amtDone);
-	if (amtDone < amtReqd)
-	{
-		// zero the remainder of the buffer
-		memset((char *)ioData->mBuffers[0].mData + amtDone, 0, amtReqd - amtDone);
-	}
-	else if (amtDone == 0)
-		*ioActionFlags |= kAudioUnitRenderAction_OutputIsSilence;
-
-	codecParms->x00 += amtDone;
-
-	return noErr;
 }
 
 
@@ -129,31 +56,39 @@ SimpleRenderCallback(void * inRefCon,
 	C S o u n d S e r v e r
 ----------------------------------------------------------------------------- */
 
+/* -----------------------------------------------------------------------------
+	Constructor.
+----------------------------------------------------------------------------- */
+
 CSoundServer::CSoundServer()
 {
 	fOutputRequest = NULL;
 	fInputRequest = NULL;
-	f78 = 0;
+	fUID = 0;
 	fB8 = NULL;
 	fBC = 0;
 	fC0 = 0;
-	fC4 = 0;
+	fOutputChannels = NULL;
 	fC8 = NULL;
 	fCC = NULL;
 	fD0 = 0;
 	fD4 = 0;
 	fD8 = 0;
-	fDC = 0;
+	fInputChannels = NULL;
 	fE0 = NULL;
 	fE4 = NULL;
 	fE8 = 0;
 	fEC = 0;
 	fF0 = 0;
 	fF4 = 0;
-	fF8 = 0;
-	fFC = 0;
+	fDecompressorChannels = NULL;
+	fCompressorChannels = NULL;
 }
 
+
+/* -----------------------------------------------------------------------------
+	Destructor.
+----------------------------------------------------------------------------- */
 
 CSoundServer::~CSoundServer()
 { }
@@ -164,6 +99,11 @@ CSoundServer::getSizeOf(void) const
 { return sizeof(CSoundServer); }
 
 
+/* -----------------------------------------------------------------------------
+	App world constructor.
+	Create the driver and sound sample buffers.
+----------------------------------------------------------------------------- */
+
 NewtonErr
 CSoundServer::mainConstructor(void)
 {
@@ -171,38 +111,48 @@ CSoundServer::mainConstructor(void)
 	XTRY
 	{
 		XFAIL(err = CAppWorld::mainConstructor())
-#if 0
-		gSoundDriver = (CSoundDriver *)MakeByName("CSoundDriver", "CMainSoundDriver");
+
+		gSoundDriver = (PSoundDriver *)MakeByName("PSoundDriver", "PMainSoundDriver");
 		if (gSoundDriver == NULL)
-			gSoundDriver = (CSoundDriver *)MakeByName("CSoundDriver", "CCirrusSoundDriver");
+			gSoundDriver = (PSoundDriver *)MakeByName("PSoundDriver", "PCirrusSoundDriver");
 		XFAILNOT(gSoundDriver, err = kSndErrGeneric;)
+
+#if defined(correct)
 		LockPtr((Ptr)gSoundDriver);
 
-		XFAILNOT(fB8 = NewPtr(0x0EA0), err = MemError();)
-		XFAILNOT(fC8 = NewWiredPtr(0x0EA0), err = MemError();)
-		XFAILNOT(fCC = NewWiredPtr(0x0EA0), err = MemError();)
+		// assume the driver ALWAYS has SoundOutput capability
+		fB8 = NewPtr(0x0EA0);
+		XFAILIF(fB8 == NULL, err = MemError();)
+		fC8 = NewWiredPtr(0x0EA0);
+		XFAILIF(fC8 == NULL, err = MemError();)
+		fCC = NewWiredPtr(0x0EA0);
+		XFAILIF(fCC == NULL, err = MemError();)
 		gSoundDriver->setOutputBuffers((VAddr)fC8, 0x0EA0, (VAddr)fCC, 0x0EA0);
-		gSoundDriver->setOutputCallbackProc(MemberFunctionCast(SoundCallbackProcPtr, this, &CSoundServer::soundOutputIH), this);
+		gSoundDriver->setOutputCallbackProc(MemberFunctionCast(SoundDriverCallbackProcPtr, this, &CSoundServer::soundOutputIH), this);
 		if (gSoundDriver->classInfo()->getCapability("SoundInput"))
 		{
-			XFAILNOT(fE0 = NewWiredPtr(0x0EA0), err = MemError();)
-			XFAILNOT(fE4 = NewWiredPtr(0x0EA0), err = MemError();)
+			fE0 = NewWiredPtr(0x0EA0);
+			XFAILIF(fE0 == NULL, err = MemError();)
+			fE4 = NewWiredPtr(0x0EA0);
+			XFAILIF(fE4 == NULL, err = MemError();)
 			gSoundDriver->setInputBuffers((VAddr)fE0, 0x0EA0, (VAddr)fE4, 0x0EA0);
+			gSoundDriver->setInputCallbackProc(MemberFunctionCast(SoundDriverCallbackProcPtr, this, &CSoundServer::soundInputIH), this);
 		}
-		gSoundDriver->setInputCallbackProc(MemberFunctionCast(SoundCallbackProcPtr, this, &CSoundServer::soundInputIH), this);
-
+#endif
 		gSoundDriver->powerOutputOff();
 		gSoundDriver->powerInputOff();
-#endif
+
 		XFAIL(err = fSoundEventHandler.init(this))
 		XFAIL(err = fPowerEventHandler.init(this))
 
 		gSoundPort = getMyPort();
-		XFAILNOT(fOutputRequest = new SoundRequest, err = MemError();)
-		XFAIL(err = fOutputRequest->msg.init(NO))
+		fOutputRequest = new SoundRequest;
+		XFAILIF(fOutputRequest == NULL, err = MemError();)
+		XFAIL(err = fOutputRequest->msg.init(false))
 		fOutputRequest->req.fSelector = kSndScheduleOutput;
-		XFAILNOT(fInputRequest = new SoundRequest, err = MemError();)
-		XFAIL(err = fInputRequest->msg.init(NO))
+		fInputRequest = new SoundRequest;
+		XFAILIF(fInputRequest == NULL, err = MemError();)
+		XFAIL(err = fInputRequest->msg.init(false))
 		fInputRequest->req.fSelector = kSndScheduleInput;
 	}
 	XENDTRY;
@@ -210,14 +160,45 @@ CSoundServer::mainConstructor(void)
 }
 
 
+/* -----------------------------------------------------------------------------
+	App world destructor.
+	Free the buffers.
+----------------------------------------------------------------------------- */
+
 void
 CSoundServer::mainDestructor(void)
 {
 	stopAll();
-	// INCOMPLETE
+
+	for (CSoundChannel * channel = fOutputChannels; channel != NULL; channel = channel->next())
+		delete channel;
+	for (CSoundChannel * channel = fInputChannels; channel != NULL; channel = channel->next())
+		delete channel;
+	for (CSoundChannel * channel = fCompressorChannels; channel != NULL; channel = channel->next())
+		delete channel;
+	for (CSoundChannel * channel = fDecompressorChannels; channel != NULL; channel = channel->next())
+		delete channel;
+
+	gSoundDriver->destroy(), gSoundDriver = NULL;
+	gSoundPort = NULL;
+
+	if (fOutputRequest)
+		delete fOutputRequest;
+	FreePtr(fC8), fC8 = NULL;
+	FreePtr(fCC), fCC = NULL;
+
+	if (fInputRequest)
+		delete fInputRequest;
+	FreePtr(fE0), fE0 = NULL;
+	FreePtr(fE4), fE4 = NULL;
+
 	CAppWorld::mainDestructor();
 }
 
+
+/* -----------------------------------------------------------------------------
+	App world main event loop.
+----------------------------------------------------------------------------- */
 
 void
 CSoundServer::theMain(void)
@@ -228,243 +209,691 @@ CSoundServer::theMain(void)
 }
 
 
+/* -----------------------------------------------------------------------------
+	Set the input device.
+	Args:		inChannelId
+				inDeviceNo
+	Return:	error code
+----------------------------------------------------------------------------- */
+
 NewtonErr
 CSoundServer::setInputDevice(ULong inChannelId, int inDeviceNo)
 {
-//	findChannel(inChannelId)->f2C =  inDeviceNo;
+	findChannel(inChannelId)->fDevice = inDeviceNo;
 	return noErr;
 }
 
+
+/* -----------------------------------------------------------------------------
+	Set the output device.
+	Args:		inChannelId
+				inDeviceNo
+	Return:	error code
+----------------------------------------------------------------------------- */
 
 NewtonErr
 CSoundServer::setOutputDevice(ULong inChannelId, int inDeviceNo)
 {
-//	findChannel(inChannelId)->f2C =  inDeviceNo;
+	findChannel(inChannelId)->fDevice = inDeviceNo;
 	return noErr;
 }
 
-NewtonErr
-CSoundServer::setInputVolume(int)
-{ return noErr; }
+
+/* -----------------------------------------------------------------------------
+	Set the input volume.
+	Args:		inVolume
+	Return:	error code
+----------------------------------------------------------------------------- */
 
 NewtonErr
-CSoundServer::setOutputVolume(int)
-{ return noErr; }
+CSoundServer::setInputVolume(int inVolume)
+{
+	if (gSoundDriver->classInfo()->getCapability("SoundInput"))
+	{
+		if (inVolume != gSoundDriver->inputVolume())
+			gSoundDriver->inputVolume(inVolume);
+		return noErr;
+	}
+	return kSndErrBadConfiguration;
+}
+
+
+/* -----------------------------------------------------------------------------
+	Set the output volume.
+	Args:		inVolume
+	Return:	error code
+----------------------------------------------------------------------------- */
+
+NewtonErr
+CSoundServer::setOutputVolume(float inVolume)
+{
+	if (inVolume != fOutputVolume)
+	{
+		gSoundDriver->outputVolume(inVolume);
+		fOutputVolume = inVolume;
+	}
+	return noErr;
+}
+
+
+#pragma mark Channels
+/* -----------------------------------------------------------------------------
+	Generate a unique sound channel id.
+	Args:		--
+	Return:	the sound channel id
+----------------------------------------------------------------------------- */
+
+ULong
+CSoundServer::uniqueId(void)
+{
+	do {
+		if (++fUID == 0) fUID = 1;
+	} while (findChannel(fUID) != NULL);
+	return fUID;
+}
+
+
+/* -----------------------------------------------------------------------------
+	Find a sound channel.
+	Args:		inChannelId
+	Return:	the sound channel
+				NULL => no channel for that id
+----------------------------------------------------------------------------- */
 
 CSoundChannel *
 CSoundServer::findChannel(ULong inChannelId)
-{ return NULL; }
+{
+	for (CSoundChannel * channel = fOutputChannels; channel != NULL; channel = channel->next())
+		if (channel->fId == inChannelId)
+			return channel;
+	for (CSoundChannel * channel = fDecompressorChannels; channel != NULL; channel = channel->next())
+		if (channel->fId == inChannelId)
+			return channel;
+	for (CSoundChannel * channel = fInputChannels; channel != NULL; channel = channel->next())
+		if (channel->fId == inChannelId)
+			return channel;
+	for (CSoundChannel * channel = fCompressorChannels; channel != NULL; channel = channel->next())
+		if (channel->fId == inChannelId)
+			return channel;
+	return NULL;
+}
 
+
+/* -----------------------------------------------------------------------------
+	Start a sound channel.
+	Args:		inChannelId
+				inToken
+	Return:	error code
+----------------------------------------------------------------------------- */
 
 NewtonErr
 CSoundServer::startChannel(ULong inChannelId, CUMsgToken * inToken)
 {
-#if 1
-	AudioOutputUnitStart(gOutputUnit);
-#endif
-	return noErr;
+	NewtonErr err = kSndErrChannelIsClosed;
+	CSoundChannel * channel = findChannel(inChannelId);
+	if (channel != NULL)
+	{
+		CSoundChannel * targetChannel = NULL;
+		if (FLAGTEST(channel->fFlags, 0x20) || FLAGTEST(channel->fFlags, 0x10))	// has output/input codec
+		{
+			if (FLAGTEST(channel->fFlags, 0x08))
+			{
+				targetChannel = channel;
+				channel = findChannel(((CCodecChannel *)channel)->f200);
+			}
+			else if (channel->f0C == 0)
+				channel = findChannel(((CCodecChannel *)channel)->f200);
+		}
+
+
+		if (channel != NULL && (!FLAGTEST(channel->fFlags, 0x04) || FLAGTEST(channel->fFlags, 0x08)))
+		{
+			err = channel->start(inToken);
+			if (err == noErr)
+			{
+				if (FLAGTEST(channel->fFlags, 0x01))
+					startOutput(channel->fDevice);
+				else if (FLAGTEST(channel->fFlags, 0x02))
+					startInput(channel->fDevice);
+				else if (FLAGTEST(channel->fFlags, 0x20))
+					startDecompressor(channel->fDevice);
+				else if (FLAGTEST(channel->fFlags, 0x10))
+					startCompressor(channel->fDevice);
+			}
+		}
+
+
+		if (targetChannel)
+		{
+			// we have a codec feeding this channel; wait until the codec has generated some samples for us
+			if (err == kSndErrNoSamples)
+				err = noErr;
+			targetChannel->pause(NULL);
+		}
+	}
+	return err;
 }
+
+
+/* -----------------------------------------------------------------------------
+	Pause a sound channel.
+	Args:		inChannelId
+				ioReply
+	Return:	error code
+----------------------------------------------------------------------------- */
 
 NewtonErr
 CSoundServer::pauseChannel(ULong inChannelId, CUSoundNodeReply * ioReply)
-{ return noErr; }
+{
+	NewtonErr err = kSndErrChannelIsClosed;
+	CSoundChannel * channel = findChannel(inChannelId);
+	if (channel != NULL)
+	{
+		bool hasCodec = false;
+		CSoundChannel * targetChannel;
+		if (FLAGTEST(channel->fFlags, 0x20) || FLAGTEST(channel->fFlags, 0x10))	// has output/input codec
+		{
+			if (FLAGTEST(channel->fFlags, 0x04))
+				hasCodec = true;
+			targetChannel = findChannel(((CCodecChannel *)channel)->f200);
+		}
+		else
+		{
+			// targeting the channel directly
+			targetChannel = channel;
+		}
+
+		if (targetChannel)
+		{
+			err = noErr;
+			if (hasCodec)
+			{
+				channel->pause(ioReply);
+				targetChannel->pause(NULL);
+			}
+			else
+				targetChannel->pause(ioReply);
+		}
+	}
+	return err;
+}
+
+
+/* -----------------------------------------------------------------------------
+	Stop a sound channel.
+	Args:		inChannelId
+				ioReply
+	Return:	error code
+----------------------------------------------------------------------------- */
 
 NewtonErr
 CSoundServer::stopChannel(ULong inChannelId, CUSoundNodeReply * ioReply)
 {
-#if 1
-	AudioOutputUnitStop(gOutputUnit);
-#endif
-	return noErr;
+	NewtonErr err = kSndErrChannelIsClosed;
+	CSoundChannel * channel = findChannel(inChannelId);
+	if (channel != NULL)
+	{
+		if (FLAGTEST(channel->fFlags, 0x20) || FLAGTEST(channel->fFlags, 0x10))	// has output/input codec
+		{
+			if (!FLAGTEST(channel->fFlags, 0x04))
+				channel = findChannel(((CCodecChannel *)channel)->f200);
+		}
+
+		if (channel)
+		{
+			err = noErr;
+			channel->stop(ioReply, kSndErrChannelIsClosed);
+			if (FLAGTEST(channel->fFlags, 0x02) || FLAGTEST(channel->fFlags, 0x10))	// is input/codec channnel
+			{
+				if (allInputChannelsEmpty())
+				{
+					gSoundDriver->stopInput();
+					gSoundDriver->powerInputOff();
+				}
+			}
+		}
+	}
+	return err;
 }
+
+
+/* -----------------------------------------------------------------------------
+	Close a sound channel.
+	Args:		inChannelId
+	Return:	error code
+----------------------------------------------------------------------------- */
 
 NewtonErr
 CSoundServer::closeChannel(ULong inChannelId)
-{ return noErr; }
+{
+	CSoundChannel * queue, * channel, * prevChannel;
+	queue = fOutputChannels;
+	for (prevChannel = NULL, channel = queue; channel != NULL; prevChannel = channel, channel = channel->next())
+		if (channel->fId == inChannelId)
+			break;
+	if (channel == NULL)
+	{
+		queue = fInputChannels;
+		for (prevChannel = NULL, channel = queue; channel != NULL; prevChannel = channel, channel = channel->next())
+			if (channel->fId == inChannelId)
+				break;
+	}
+	if (channel == NULL)
+	{
+		queue = fDecompressorChannels;
+		for (prevChannel = NULL, channel = queue; channel != NULL; prevChannel = channel, channel = channel->next())
+			if (channel->fId == inChannelId)
+				break;
+	}
+	if (channel == NULL)
+	{
+		queue = fCompressorChannels;
+		for (prevChannel = NULL, channel = queue; channel != NULL; prevChannel = channel, channel = channel->next())
+			if (channel->fId == inChannelId)
+				break;
+	}
+	if (channel != NULL)
+	{
+		// stop it
+		channel->stop(NULL, kSndErrChannelIsClosed);
+		// unthread it from its queue
+		if (prevChannel)
+			prevChannel->fNext = channel->next();
+		else
+			queue = channel->next();
+		// delete it
+		delete channel;
+	}
+	return noErr;
+}
 
 
-CodecBlock		codecParms;
+bool
+CSoundServer::allInputChannelsEmpty(void)
+{
+	for (CSoundChannel * channel = fInputChannels; channel != NULL; channel = channel->next())
+	{
+		if (FLAGTEST(channel->fFlags, 0x04) && channel->f0C != 0 && !FLAGTEST(channel->fFlags, 0x08))
+			return false;
+	}
+	return true;
+}
+
+bool
+CSoundServer::allOutputChannelsEmpty(void)
+{
+	for (CSoundChannel * channel = fOutputChannels; channel != NULL; channel = channel->next())
+	{
+		if (FLAGTEST(channel->fFlags, 0x04) && channel->f0C != 0 && !FLAGTEST(channel->fFlags, 0x08))
+			return false;
+	}
+	return true;
+}
+
+
+#pragma mark Nodes
 
 NewtonErr
 CSoundServer::scheduleNode(CUSoundNodeRequest * inRequest, CUMsgToken * inToken)
 {
-#if defined(correct)
-	CSoundChannel * chanl;
-	if ((chanl = findChannel(inRequest->fChannel)) == NULL)
-		return kSndErrChannelIsClosed;
-	return chanl->schedule(inRequest, inToken);
-
-#else
-	NewtonErr err;
-	XTRY
-	{
-	//	set up CSoundCodec; will pass it to renderer
-		codecParms.data = inRequest->fSound.data;
-		codecParms.dataSize = inRequest->fSound.dataSize;
-		codecParms.dataType = k16Bit;
-		codecParms.comprType = kSampleLinear;
-		codecParms.sampleRate = inRequest->fSound.sampleRate;
-
-		int bytesPerSample;
-		if (inRequest->fSound.codec == NULL)
-		{
-			// we have a simpleSound
-			bytesPerSample = 1;
-		}
-		else
-		{
-			bytesPerSample = 2;
-			inRequest->fSound.codec->reset(&codecParms);
-		}
-
-		// Open the default output unit
-		AudioComponent comp;
-		AudioComponentDescription desc;
-		desc.componentType = kAudioUnitType_Output;
-		desc.componentSubType = kAudioUnitSubType_DefaultOutput;
-		desc.componentManufacturer = kAudioUnitManufacturer_Apple;
-		desc.componentFlags = 0;
-		desc.componentFlagsMask = 0;
-		XFAILNOT(comp = AudioComponentFindNext(NULL, &desc), err = -1;)
-		XFAIL(err = AudioComponentInstanceNew(comp, &gOutputUnit))
-
-		// Set output unit’s stream format
-		AudioStreamBasicDescription format;
-		format.mSampleRate = inRequest->fSound.sampleRate;
-		format.mFormatID = kAudioFormatLinearPCM;
-		format.mFormatFlags = (kAudioFormatFlagIsSignedInteger \
-							/*		| kAudioFormatFlagIsBigEndian \		*/
-									| kAudioFormatFlagIsPacked \
-									| kAudioFormatFlagIsNonInterleaved);
-		format.mBytesPerPacket = bytesPerSample;
-		format.mFramesPerPacket = 1;
-		format.mBytesPerFrame = bytesPerSample;
-		format.mChannelsPerFrame = 1;
-		format.mBitsPerChannel = 8 * bytesPerSample;
-		XFAIL(err = AudioUnitSetProperty(gOutputUnit,
-							kAudioUnitProperty_StreamFormat,
-							kAudioUnitScope_Input,
-							0,
-							&format,
-							sizeof(AudioStreamBasicDescription)))
-
-		// Initialize unit
-		XFAIL(err = AudioUnitInitialize(gOutputUnit))
-
-		// Set up a callback function to generate input for the output unit
-		AURenderCallbackStruct renderer;
-		if (inRequest->fSound.codec == NULL)
-		{
-			renderer.inputProc = SimpleRenderCallback;
-			renderer.inputProcRefCon = &codecParms;
-			codecParms.x00 = 0;
-		}
-		else
-		{
-			renderer.inputProc = MyRenderCallback;
-			renderer.inputProcRefCon = inRequest->fSound.codec;
-		}
-		XFAIL(err = AudioUnitSetProperty(gOutputUnit,
-							kAudioUnitProperty_SetRenderCallback, 
-							kAudioUnitScope_Input,
-							0, 
-							&renderer, 
-							sizeof(AURenderCallbackStruct)))
-
-	}
-	XENDTRY;
+	NewtonErr err = kSndErrChannelIsClosed;
+	CSoundChannel * channel = findChannel(inRequest->fChannel);
+	if (channel != NULL)
+		err = channel->schedule(inRequest, inToken);
 	return err;
-#endif
 }
 
 
 NewtonErr
-CSoundServer::cancelNode(CUSoundNodeRequest*)
-{ return noErr; }
+CSoundServer::cancelNode(CUSoundNodeRequest * inRequest)
+{
+	NewtonErr err = kSndErrChannelIsClosed;
+	CSoundChannel * channel = findChannel(inRequest->fChannel);
+	if (channel != NULL)
+		err = channel->cancel(inRequest);
+	return err;
+}
+
+#pragma mark Input
 
 void
 CSoundServer::scheduleInputBuffer(int)
 {}
 
-NewtonErr
-CSoundServer::openInputChannel(ULong * outChannelId, ULong)
-{
-	*outChannelId = 1;
-	return noErr;
-}
+
+/* -----------------------------------------------------------------------------
+	Open a sound input channel.
+	Args:		outChannelId		id of channel opened
+				inForDeviceNo		id of device requiring input
+	Return:	error code
+----------------------------------------------------------------------------- */
 
 NewtonErr
-CSoundServer::openCompressorChannel(ULong * outChannelId, ULong)
+CSoundServer::openInputChannel(ULong * outChannelId, ULong inForDeviceNo)
 {
-	*outChannelId = 1;
-	return noErr;
+	NewtonErr err = kSndErrBadConfiguration;
+	XTRY
+	{
+		// sanity check
+		XFAIL(gSoundDriver->classInfo()->getCapability("SoundInput") == NULL)
+		*outChannelId = 0;
+		// create codec channel
+		SoundDriverInfo info;
+		gSoundDriver->getSoundHardwareInfo(&info);
+		CDMAChannel * channel = new CDMAChannel(uniqueId(), info);
+		XFAILIF(channel == NULL, err = MemError();)
+		channel->fFlags |= 0x02;
+		// set target channel info
+		channel->fDevice = inForDeviceNo;
+		// thread channel onto head of list
+		channel->fNext = fInputChannels;
+		fInputChannels = channel;
+		// finally set return id
+		*outChannelId = channel->fId;
+		err = noErr;
+	}
+	XENDTRY;
+	return err;
 }
+
+
+/* -----------------------------------------------------------------------------
+	Start input sound channel.
+	Args:		inDeviceNo
+	Return:	--
+----------------------------------------------------------------------------- */
 
 void
-CSoundServer::startCompressor(int)
+CSoundServer::startInput(int inDeviceNo)
+{
+	if (!gSoundDriver->inputIsRunning() && !allInputChannelsEmpty())
+	{
+		fInputRequest->msg.abort();
+		fInputRequest->req.fValue = 0;
+		fF4 = false;
+		gSoundDriver->scheduleInputBuffer(fF0, 0x0EA0);
+		gSoundDriver->powerInputOn(inDeviceNo);
+		if (!gSoundDriver->inputIsEnabled())
+			gSoundDriver->startInput();
+		gSoundDriver->scheduleInputBuffer(1 - fF0, 0x0EA0);
+	}
+}
+
+
+/* -----------------------------------------------------------------------------
+	Stop input sound channels.
+	Args:		inDeviceNo
+	Return:	--
+----------------------------------------------------------------------------- */
+
+void
+CSoundServer::stopInput(int inDeviceNo)
+{
+	for (CSoundChannel * channel = fInputChannels; channel != NULL; channel = channel->next())
+		channel->stop(NULL, kSndErrNotPlayed);
+
+	if (inDeviceNo)
+	{
+		gSoundDriver->stopInput();
+		gSoundDriver->powerInputOff();
+	}
+}
+
+
+/* -----------------------------------------------------------------------------
+	Open a compressor sound channel.
+	Args:		outChannelId		id of channel opened
+				inForChannelId		id of input channel requiring compression
+	Return:	error code
+----------------------------------------------------------------------------- */
+
+NewtonErr
+CSoundServer::openCompressorChannel(ULong * outChannelId, ULong inForChannelId)
+{
+	NewtonErr err = kSndErrBadConfiguration;
+	XTRY
+	{
+		// sanity check
+		XFAIL(gSoundDriver->classInfo()->getCapability("SoundInput") == NULL)
+		*outChannelId = 0;
+		// create codec channel
+		SoundDriverInfo info;
+		gSoundDriver->getSoundHardwareInfo(&info);
+		CCodecChannel * channel = new CCodecChannel(uniqueId(), info);
+		XFAILIF(channel == NULL, err = MemError();)
+		channel->fFlags |= 0x10;
+		// set target channel info
+		channel->f200 = inForChannelId;
+		channel->f204 = findChannel(inForChannelId);
+		// thread channel onto head of list
+		channel->fNext = fCompressorChannels;
+		fCompressorChannels = channel;
+		// finally set return id
+		*outChannelId = channel->fId;
+		err = noErr;
+	}
+	XENDTRY;
+	return err;
+}
+
+
+/* -----------------------------------------------------------------------------
+	Start compressor input sound channels.
+	Nothing to do here.
+	Args:		inDeviceNo
+	Return:	--
+----------------------------------------------------------------------------- */
+
+void
+CSoundServer::startCompressor(int inDeviceNo)
 { /* this really does nothing */ }
 
-void
-CSoundServer::stopCompressor(int)
-{}
+
+/* -----------------------------------------------------------------------------
+	Stop compressor input sound channels.
+	Args:		inDeviceNo
+	Return:	--
+----------------------------------------------------------------------------- */
 
 void
-CSoundServer::startInput(int)
-{}
-
-void
-CSoundServer::stopInput(int)
-{}
+CSoundServer::stopCompressor(int inDeviceNo)
+{
+	for (CSoundChannel * channel = fCompressorChannels; channel != NULL; channel = channel->next())
+		channel->stop(NULL, kSndErrNotPlayed);
+}
 
 int
 CSoundServer::soundInputIH(void)
 { return 0; }
 
+
+#pragma mark Output
+
+void
+CSoundServer::prepOutputChannels(void)
+{ /* only used by fillDMABuffer() */ }
+
+
+/* -----------------------------------------------------------------------------
+	Open a sound output channel.
+	Args:		outChannelId		id of channel opened
+				inForDeviceNo		id of device requiring output
+	Return:	error code
+----------------------------------------------------------------------------- */
+
+NewtonErr
+CSoundServer::openOutputChannel(ULong * outChannelId, ULong inForDeviceNo)
+{
+	NewtonErr err = kSndErrBadConfiguration;
+	XTRY
+	{
+		// sanity check
+		XFAIL(gSoundDriver->classInfo()->getCapability("SoundOutput") == NULL)
+		*outChannelId = 0;
+		// create codec channel
+		SoundDriverInfo info;
+		gSoundDriver->getSoundHardwareInfo(&info);
+		CDMAChannel * channel = new CDMAChannel(uniqueId(), info);
+		XFAILIF(channel == NULL, err = MemError();)
+		channel->fFlags |= 0x01;
+		// set target channel info
+		channel->fDevice = inForDeviceNo;
+		// thread channel onto head of list
+		channel->fNext = fOutputChannels;
+		fOutputChannels = channel;
+		// finally set return id
+		*outChannelId = channel->fId;
+		err = noErr;
+	}
+	XENDTRY;
+	return err;
+}
+
+
+/* -----------------------------------------------------------------------------
+	Schedule a sound channel buffer for output.
+	Args:		--
+	Return:	--
+----------------------------------------------------------------------------- */
+
 void
 CSoundServer::scheduleOutputBuffer(void)
 {}
 
-void
-CSoundServer::prepOutputChannels(void)
-{}
 
-NewtonErr
-CSoundServer::openOutputChannel(ULong * outChannelId, ULong)
+/* -----------------------------------------------------------------------------
+	Start output sound channel.
+	Args:		inDeviceNo
+	Return:	--
+----------------------------------------------------------------------------- */
+
+void
+CSoundServer::startOutput(int inDeviceNo)
 {
-	*outChannelId = 1;
-	return noErr;
+	if (!gSoundDriver->outputIsRunning() && !allOutputChannelsEmpty())
+	{
+		fOutputRequest->msg.abort();
+		fOutputRequest->req.fValue = 0;
+#if 0
+		ArrayIndex bufIndex = fillDMABuffer();
+		ArrayIndex bufSize = fD0[bufIndex];
+		if (bufSize > 0)
+		{
+			gSoundDriver->powerOutputOn(inDeviceNo);
+			gSoundDriver->scheduleOutputBuffer(bufIndex, bufSize);
+			if (!gSoundDriver->outputIsEnabled())
+			{
+				if (gSoundDriver->startOutput())	// ie if error?
+				{
+					bufIndex = fillDMABuffer();
+					gSoundDriver->scheduleOutputBuffer(bufIndex, fD0[bufIndex]);
+				}
+			}
+		}
+#endif
+	}
 }
 
-NewtonErr
-CSoundServer::openDecompressorChannel(ULong * outChannelId, ULong)
+
+/* -----------------------------------------------------------------------------
+	Stop output sound channels.
+	Args:		inDeviceNo
+	Return:	--
+----------------------------------------------------------------------------- */
+
+void
+CSoundServer::stopOutput(int inDeviceNo)
 {
-	*outChannelId = 1;
-	return noErr;
+	for (CSoundChannel * channel = fOutputChannels; channel != NULL; channel = channel->next())
+		channel->stop(NULL, kSndErrNotPlayed);
+
+	if (inDeviceNo)
+	{
+		gSoundDriver->stopOutput();
+		gSoundDriver->powerOutputOff();
+	}
 }
 
-void
-CSoundServer::startDecompressor(int)
-{}
+
+/* -----------------------------------------------------------------------------
+	Open a decompressor sound channel.
+	Args:		outChannelId		id of channel opened
+				inForChannelId		id of output channel requiring decompression
+	Return:	error code
+----------------------------------------------------------------------------- */
+
+NewtonErr
+CSoundServer::openDecompressorChannel(ULong * outChannelId, ULong inForChannelId)
+{
+	NewtonErr err = kSndErrBadConfiguration;
+	XTRY
+	{
+		// sanity check
+		XFAIL(gSoundDriver->classInfo()->getCapability("SoundOutput") == NULL)
+		*outChannelId = 0;
+		// create codec channel
+		SoundDriverInfo info;
+		gSoundDriver->getSoundHardwareInfo(&info);
+		CCodecChannel * channel = new CCodecChannel(uniqueId(), info);
+		XFAILIF(channel == NULL, err = MemError();)
+		channel->fFlags |= 0x20;
+		// set target channel info
+		channel->f200 = inForChannelId;
+		channel->f204 = findChannel(inForChannelId);
+		// thread channel onto head of list
+		channel->fNext = fDecompressorChannels;
+		fDecompressorChannels = channel;
+		// finally set return id
+		*outChannelId = channel->fId;
+		err = noErr;
+	}
+	XENDTRY;
+	return err;
+}
+
+
+/* -----------------------------------------------------------------------------
+	Start a decompressor output sound channel.
+	Nothing to do here.
+	Args:		inDeviceNo
+	Return:	--
+----------------------------------------------------------------------------- */
 
 void
-CSoundServer::stopDecompressor(int)
-{}
+CSoundServer::startDecompressor(int inDeviceNo)
+{ /* this really does nothing */ }
+
+
+/* -----------------------------------------------------------------------------
+	Stop a decompressor output sound channel.
+	Args:		inDeviceNo
+	Return:	--
+----------------------------------------------------------------------------- */
 
 void
-CSoundServer::startOutput(int)
-{}
+CSoundServer::stopDecompressor(int inDeviceNo)
+{
+	for (CSoundChannel * channel = fDecompressorChannels; channel != NULL; channel = channel->next())
+		channel->stop(NULL, kSndErrNotPlayed);
+}
 
-void
-CSoundServer::stopOutput(int)
-{}
 
 int
 CSoundServer::soundOutputIH(void)
 { return 0; }
 
-NewtonErr
+
+void
 CSoundServer::stopAll(void)
-{ return noErr; }
+{
+	stopCompressor(1);
+	stopDecompressor(1);
+	stopOutput(1);
+	stopInput(1);
+}
+
+
+#pragma mark DMA
 
 void
 CSoundServer::fillDMABuffer(void)
@@ -473,18 +902,6 @@ CSoundServer::fillDMABuffer(void)
 void
 CSoundServer::emptyDMABuffer(int)
 {}
-
-bool
-CSoundServer::allInputChannelsEmpty(void)
-{ return YES; }
-
-bool
-CSoundServer::allOutputChannelsEmpty(void)
-{ return YES; }
-
-ULong
-CSoundServer::uniqueId(void)
-{ return 0; }
 
 
 #pragma mark -
@@ -536,8 +953,9 @@ CSoundServerHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEv
 		switch (request->fSelector)
 		{
 		case kSndStop:
-			err = fServer->stopAll();
-			break;
+			fServer->stopAll();
+			deferReply();
+			return;
 		case kSndOpenOutputChannel:
 			err = fServer->openOutputChannel(&reply.fChannel, request->fValue);
 			break;
@@ -596,10 +1014,12 @@ CSoundServerHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEv
 			err = fServer->setOutputDevice(request->fChannel, request->fChannel);
 			break;
 		case kSndSetVolume:
-			err = fServer->setOutputVolume(request->fValue);
+			// Watch that float does not get silently converted to int!
+			err = fServer->setOutputVolume(*(float *)&request->fValue);
 			break;
 		case kSndGetVolume:
-//			reply.fValue = gSoundDriver->outputVolume();
+			// Watch that float does not get silently converted to int!
+			*(float *)&reply.fValue = gSoundDriver->outputVolume();
 			err = noErr;
 			break;
 		default:
@@ -627,7 +1047,7 @@ NewtonErr
 CSoundPowerHandler::init(CSoundServer * inServer)
 {
 	fServer = inServer;
-	return CSystemEventHandler::init('pwof');
+	return CSystemEventHandler::init(kSysEvent_PowerOff);
 }
 
 

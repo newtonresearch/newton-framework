@@ -19,9 +19,9 @@ InitAlertManager(void)
 	NewtonErr err;
 	XTRY
 	{
-		CAlertManager * alertMgr;
-		XFAILNOT(alertMgr = new CAlertManager, err = kOSErrNoMemory;)
-		err = alertMgr->init('alrt', YES, kSpawnedTaskStackSize);
+		CAlertManager * alertMgr = new CAlertManager;
+		XFAILIF(alertMgr == NULL, err = kOSErrNoMemory;)
+		err = alertMgr->init('alrt', true, kSpawnedTaskStackSize);
 	}
 	XENDTRY;
 	return err;
@@ -65,7 +65,7 @@ CAlertManager::mainConstructor(void)
 		XFAIL(err = CAppWorld::mainConstructor())
 		f88 = getMyPort();
 		XFAIL(f70.init(this))
-		fA4.init(NO);
+		fA4.init(false);
 	}
 	XENDTRY;
 	return err;
@@ -78,7 +78,7 @@ CAlertManager::mainConstructor(void)
 --------------------------------------------------------------------------------*/
 
 CAlertEvent::CAlertEvent()
-	:	CEvent('alrt'), f0C(0), f08(1), f10(NULL)
+	:	CEvent('alrt'), fError(noErr), f08(1), f10(NULL)
 { }
 
 
@@ -102,7 +102,7 @@ CAlertEventHandler::init(CAlertManager * inMgr)
 	{
 		fManager = inMgr;
 		XFAIL(err = CEventHandler::init('alrt'))
-		err = initIdler(200, kMilliseconds, 0, YES);
+		err = initIdler(200, kMilliseconds, 0, true);
 	}
 	XENDTRY;
 	return err;
@@ -113,12 +113,14 @@ CAlertEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEve
 {
 	XTRY
 	{
+		CAlertEvent * alertEvent = (CAlertEvent *)inEvent;
 		CAlertDialog * currentAlert;
 		void * r5;
 
-		((CAlertEvent *)inEvent)->f0C = noErr;
-		XFAILNOT(r5 = ((CAlertEvent *)inEvent)->f10, ((CAlertEvent *)inEvent)->f0C = kOSErrBadParameters;)
-		XFAIL(((CAlertEvent *)inEvent)->f08 != 1)
+		alertEvent->fError = noErr;
+		r5 = alertEvent->f10;
+		XFAILIF(r5 == NULL, alertEvent->fError = kOSErrBadParameters;)
+		XFAIL(alertEvent->f08 != 1)
 #if defined(correct)
 		if ((currentAlert = (CAlertDialog *)fManager->f8C.at(0)) == NULL
 		||  memcmp(r5, currentAlert, r5->f18) != 0)
@@ -126,7 +128,7 @@ CAlertEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEve
 			CAlertDialog * newAlert;
 			XFAIL((newAlert = (CAlertDialog *)NewPtr(r5->f18)) == NULL)
 			memmove(newAlert, r5, r5->f18);
-			((CAlertEvent *)inEvent)->f0C = fManager->f8C.insertAt(0, newAlert);
+			alertEvent->fError = fManager->f8C.insertAt(0, newAlert);
 			if (currentAlert)
 				currentAlert->removeAlert();
 			newAlert->displayAlert();
@@ -145,8 +147,8 @@ void
 CAlertEventHandler::idleProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
 {
 	CAlertDialog * currentAlert;
-	bool r7 = YES;
-	bool r6 = YES;
+	bool r7 = true;
+	bool r6 = true;
 	ULong sp00;
 #if defined(correct)
 	while ((currentAlert = (CAlertDialog *)fManager->f8C.at(0)) != NULL)
@@ -157,12 +159,12 @@ CAlertEventHandler::idleProc(CUMsgToken * inToken, size_t * inSize, CEvent * inE
 			if (currentAlert->f0C != 0)
 			{
 				currentAlert->displayAlert();
-				r6 = YES;
+				r6 = true;
 			}
 			else if (!currentAlert->checkAlertDone(&sp00))
 			{
 				currentAlert->displayAlert();
-				r6 = YES;
+				r6 = true;
 			}
 		}
 		if (!currentAlert->checkAlertDone(&sp00))
@@ -171,11 +173,11 @@ CAlertEventHandler::idleProc(CUMsgToken * inToken, size_t * inSize, CEvent * inE
 		if (r6)
 		{
 			currentAlert->removeAlert();
-			r6 = NO;
+			r6 = false;
 		}
 
 		fManager->f8C.remove(currentAlert);
-		r7 = NO;
+		r7 = false;
 	}
 
 	if (currentAlert)
@@ -185,7 +187,7 @@ CAlertEventHandler::idleProc(CUMsgToken * inToken, size_t * inSize, CEvent * inE
 	{
 		char info[0x1C];
 		GetGrafInfo(0, info);
-		fManager->fB4.f04 = 'idle';
+		fManager->fB4.f04 = kIdleEventId;
 		fManager->fB4.f08 = 'draw';
 		gNewtPort->send(...);
 	}

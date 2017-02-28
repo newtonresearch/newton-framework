@@ -91,7 +91,7 @@ NArray::NArray()
 	fAllocatedCount = 0;
 	fArrayStorage = NULL;	
 	fIter = NULL;
-	fAllowShrinkage = YES;
+	fAllowShrinkage = true;
 }
 
 

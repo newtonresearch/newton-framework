@@ -11,6 +11,8 @@
 #define __GSMCODEC_H 1
 
 #include "SoundCodec.h"
+#include "gsm.h"
+
 
 /*------------------------------------------------------------------------------
 	G S M C o d e c
@@ -39,9 +41,9 @@ private:
 	UChar *		fComprBuffer;		// +18
 	size_t		fComprBufLength;	// +1C
 	ULong			fComprBufOffset;	// +20
-	long			f24;
-	long			f28;
-	long			f2C;
+	int			fComprType;			// +24
+	float			fSampleRate;		// +28
+	int			fDataType;			// +2C
 //size +3C
 };
 

@@ -7,13 +7,16 @@
 */
 
 #include "Quartz.h"
+#include "Geometry.h"
 #include "QDDrawing.h"
 #include "DrawShape.h"
+#include "DrawText.h"
 #include "KeyboardView.h"
+#include "KeyboardKeys.h"
 #include "RootView.h"
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Funcs.h"
 #include "Arrays.h"
 #include "Strings.h"
@@ -35,7 +38,7 @@ extern "C" {
 Ref	FKeyboardConnected(RefArg inRcvr);
 Ref	FCommandKeyboardConnected(RefArg inRcvr);
 Ref	FRegisterOpenKeyboard(RefArg inRcvr, RefArg inKybd);
-Ref	FUnregisterOpenKeyboard(RefArg inRcvr, RefArg inKybd);
+Ref	FUnregisterOpenKeyboard(RefArg inRcvr);
 
 Ref	FAddKeyCommand(RefArg inRcvr, RefArg inCmd);
 Ref	FAddKeyCommands(RefArg inRcvr, RefArg inCmds);
@@ -47,136 +50,135 @@ Ref	FSetKeyView(RefArg inRcvr, RefArg inView, RefArg inOffset);
 
 Ref	FGetCaretBox(RefArg inRcvr);
 Ref	FKeyIn(RefArg inRcvr, RefArg inArg1, RefArg inArg2);
-Ref	FPostKeyString(RefArg inRcvr, RefArg inArg1, RefArg inArg2);
+Ref	FPostKeyString(RefArg inRcvr, RefArg inView, RefArg inStr);
 Ref	FGetKeyView(RefArg inRcvr);
 Ref	FNextKeyView(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3);
 Ref	FRestoreKeyView(RefArg inRcvr, RefArg inArg);
 
-Ref	FPickViewKeyDown(RefArg inRcvr, RefArg inArg1, RefArg inArg2);
 Ref	FIsKeyDown(RefArg inRcvr, RefArg inArg1, RefArg inArg2);
-Ref	FTranslateKey(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3);
-Ref	FIsCommandKeystroke(RefArg inRcvr, RefArg inArg1, RefArg inArg2);
+Ref	FTranslateKey(RefArg inRcvr, RefArg inKeyCode, RefArg inModifiers, RefArg inState);
+Ref	FIsCommandKeystroke(RefArg inRcvr, RefArg inKeyCode, RefArg inModifiers);
 Ref	FFindKeyCommand(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3);
 Ref	FSendKeyMessage(RefArg inRcvr, RefArg inArg1, RefArg inArg2);
 Ref	FMatchKeyMessage(RefArg inRcvr, RefArg inArg1, RefArg inArg2);
-Ref	FGatherKeyCommands(RefArg inRcvr, RefArg inArg);
+Ref	FGatherKeyCommands(RefArg inRcvr, RefArg inView);
 Ref	FCategorizeKeyCommands(RefArg inRcvr, RefArg inArg);
 Ref	FHandleKeyEvents(RefArg inRcvr, RefArg inArg);
-Ref	FInRepeatedKeyCommand(RefArg inRcvr);
 Ref	FClearHardKeymap(RefArg inRcvr);
 Ref	FGetTrueModifiers(RefArg inRcvr);
 }
 
 
-void AddKeyCommand(RefArg inView, RefArg inCmd)
+void
+AddKeyCommand(RefArg inView, RefArg inCmd)
 {}
 
-void AddKeyCommands(RefArg inView, RefArg inCmds)
+void
+AddKeyCommands(RefArg inView, RefArg inCmds)
 {}
 
-void BlockKeyCommand(CView * inView, RefArg inCmd)
+void
+BlockKeyCommand(CView * inView, RefArg inCmd)
 {}
 
 
-#pragma mark -
-
-Ref
-FKeyboardConnected(RefArg inRcvr)
+int
+CountOnes(ULong x)
 {
-	return MAKEBOOLEAN(gRootView->keyboardConnected());
+	int x1 = (x >> 1) & 0xDB6DB6DB;
+	x = x - x1;
+	x = x - ((x1 >> 1) & 0xDB6DB6DB);
+	x = (x + (x >> 3)) & 0xC71C71C7;
+	x = x + (x >>  6);
+	x = x + (x >> 12);
+	x = x + (x >> 24);
+	return x & 0x0000003F;
 }
 
-
-Ref
-FCommandKeyboardConnected(RefArg inRcvr)
+ArrayIndex
+FindKeyCommandInArray(RefArg inArray, UniChar inChar, ULong inModifiers, int * outNumOfModifiersFound, bool * outIsExactMatch)
 {
-	return MAKEBOOLEAN(gRootView->commandKeyboardConnected());
-}
-
-
-Ref
-FRegisterOpenKeyboard(RefArg inRcvr, RefArg inKybd)
-{
-	gRootView->registerKeyboard(inRcvr, RINT(inKybd));
-	return NILREF;
-}
-
-
-Ref
-FUnregisterOpenKeyboard(RefArg inRcvr)
-{
-	return MAKEBOOLEAN(gRootView->unregisterKeyboard(inRcvr));
-}
-
-
-
-Ref
-FAddKeyCommand(RefArg inRcvr, RefArg inCmd)
-{
-	AddKeyCommand(inRcvr, inCmd);
-	return NILREF;
-}
-
-
-Ref
-FAddKeyCommands(RefArg inRcvr, RefArg inCmds)
-{
-	AddKeyCommands(inRcvr, inCmds);
-	return NILREF;
-}
-
-
-Ref
-FBlockKeyCommand(RefArg inRcvr, RefArg inCmd)
-{
-	CView *  view = GetView(inRcvr);
-	if (view)
-		BlockKeyCommand(view, inCmd);
-	return NILREF;
-}
-
-
-Ref
-FSetKeyView(RefArg inRcvr, RefArg inView, RefArg inOffset)
-{
-	CView *  view = NULL;
-	if (NOTNIL(inView))
-		view = GetView(inView);
-
-	if (ISINT(inOffset) || ISNIL(inOffset))
+// r5: r1 r4 xx r8
+	UniChar ch = inChar;
+	RefVar keyCmd;
+	ArrayIndex index = kIndexNotFound;
+	int numOfBitsMatched = -1;
+	if (outIsExactMatch != NULL)
+		*outIsExactMatch = false;
+	for (ArrayIndex i = 0, count = Length(inArray); i < count; ++i)
 	{
-		RefVar	info(Clone(RA(canonicalParaCaretInfo)));
-		SetFrameSlot(info, SYMA(offset), MAKEINT(NOTNIL(inOffset) ? RINT(inOffset) : 0));
-		SetFrameSlot(info, SYMA(length), MAKEINT(0));
-		gRootView->setKeyViewSelection(view, info, YES);
+		keyCmd = GetArraySlot(inArray, i);
+		if (NOTNIL(keyCmd))
+		{
+			Ref ch = GetFrameSlot(keyCmd, SYMA(char));
+			if (RCHAR(ch) == ch)
+			{
+				ULong modifiers = KeyCommandModifiers(keyCmd);
+				if (modifiers == inModifiers)		// we have the reqd modifiers
+				{
+					index = i;
+					numOfBitsMatched = CountOnes(inModifiers);
+					if (outIsExactMatch != NULL)
+						*outIsExactMatch = true;
+					break;
+				}
+				else if ((modifiers & inModifiers) == modifiers)	// we have SOME of the reqd modifiers
+				{
+					int numBits = CountOnes(modifiers);
+					if (numBits > numOfBitsMatched)
+						numOfBitsMatched = numBits;
+				}
+			}
+		}
 	}
-	else
-		gRootView->setKeyViewSelection(view, inOffset, YES);
-
-	return NILREF;
+	if (outNumOfModifiersFound != NULL)
+		*outNumOfModifiersFound = numOfBitsMatched;
+	return index;
 }
 
-
-Ref	FGetCaretBox(RefArg inRcvr) { return NILREF; }
-Ref	FKeyIn(RefArg inRcvr, RefArg inArg1, RefArg inArg2) { return NILREF; }
-Ref	FPostKeyString(RefArg inRcvr, RefArg inArg1, RefArg inArg2) { return NILREF; }
-Ref	FGetKeyView(RefArg inRcvr) { return NILREF; }
-Ref	FNextKeyView(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3) { return NILREF; }
-Ref	FRestoreKeyView(RefArg inRcvr, RefArg inArg) { return NILREF; }
-
-Ref	FPickViewKeyDown(RefArg inRcvr, RefArg inArg1, RefArg inArg2) { return NILREF; }
-Ref	FIsKeyDown(RefArg inRcvr, RefArg inArg1, RefArg inArg2) { return NILREF; }
-Ref	FTranslateKey(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3) { return NILREF; }
-Ref	FIsCommandKeystroke(RefArg inRcvr, RefArg inArg1, RefArg inArg2) { return NILREF; }
-Ref	FFindKeyCommand(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3) { return NILREF; }
-Ref	FSendKeyMessage(RefArg inRcvr, RefArg inArg1, RefArg inArg2) { return NILREF; }
-Ref	FMatchKeyMessage(RefArg inRcvr, RefArg inArg1, RefArg inArg2) { return NILREF; }
-Ref	FGatherKeyCommands(RefArg inRcvr, RefArg inArg) { return NILREF; }
-Ref	FCategorizeKeyCommands(RefArg inRcvr, RefArg inArg) { return NILREF; }
-Ref	FHandleKeyEvents(RefArg inRcvr, RefArg inArg) { return NILREF; }
-Ref	FInRepeatedKeyCommand(RefArg inRcvr) { return NILREF; }
-Ref	FClearHardKeymap(RefArg inRcvr) { return NILREF; }
-Ref	FGetTrueModifiers(RefArg inRcvr) { return NILREF; }
+Ref
+FindKeyCommand(CView * inView, UniChar inKeyChar, ULong inModifiers)
+{
+	RefVar keyCmd;
+	int bestMatch = -1;
+	CView * view = inView;
+	for (bool isDone = false; !isDone; )
+	{
+		RefVar keyCmds(view->getProto(SYMA(_keyCommands)));
+		if (IsArray(keyCmds))
+		{
+			int numOfModifiers;
+			bool isExact;
+			ArrayIndex index = FindKeyCommandInArray(keyCmds, inKeyChar, inModifiers, &numOfModifiers, &isExact);
+			if (isExact)
+			{
+				keyCmd = GetArraySlot(keyCmds, index);
+				isDone = true;
+			}
+			else if (index != kIndexNotFound && numOfModifiers > bestMatch)
+			{
+				keyCmd = GetArraySlot(keyCmds, index);
+				bestMatch = numOfModifiers;
+			}
+			if (view == gRootView)
+				isDone = true;
+			else
+			{
+				RefVar nextKeyView(view->getProto(SYMA(_nextKeyView)));
+				if (NOTNIL(nextKeyView))
+				{
+					if (EQ(nextKeyView, SYMA(none)))
+						isDone = true;
+					else
+						view = GetView(nextKeyView);
+				}
+				else
+					view = view->fParent;
+			}
+		}
+	}
+	return keyCmd;
+}
 
 
 #pragma mark -
@@ -370,7 +372,7 @@ UniChar
 KeyLabel(ULong inCode, bool inHardKeys)
 {
 	ULong	state = inHardKeys ? gHardKeyDeadState : gSoftKeyDeadState;
-	return TranslateKey(inCode, YES, Modifiers(inHardKeys), &state);
+	return TranslateKey(inCode, true, Modifiers(inHardKeys), &state);
 }
 
 
@@ -387,7 +389,7 @@ KeyDown(ULong inCode, bool inHardKeys)
 UniChar
 KeyIn(ULong inCode, bool inIsDown, CView * inView)
 {
-	bool	isHardKeys = NO;
+	bool	isHardKeys = false;
 	if (inView == (CView *)-1)
 	{
 		// no view associated with this keyboard, so it must be a REAL one
@@ -480,8 +482,353 @@ KeyIn(ULong inCode, bool inIsDown, CView * inView)
 	return ch;
 }
 
-#pragma mark -
 
+void
+PostKeyString(CView * inKeyView, RefArg inStr)
+{
+	;
+}
+
+
+bool
+UserVisibleChar(UniChar inChar)
+{
+	if (inChar >= 0xF721 && inChar <= 0xF72F)
+		return false;	// it’s a function key
+	return (inChar > 0x20 && inChar != 0x7F);
+}
+
+UniChar
+GetDisplayCmdChar(RefArg inKeyCmd)
+{
+	UniChar displayChar;
+	RefVar ch(GetFrameSlot(inKeyCmd, SYMA(showChar)));
+	if (ISNIL(ch))
+		ch = GetFrameSlot(inKeyCmd, SYMA(char));
+	displayChar = RCHAR(ch);
+	if (UserVisibleChar(displayChar))
+		return displayChar;
+	return 0;
+}
+
+
+ULong
+KeyCommandModifiers(RefArg inKeyCmd)
+{
+	RefVar modifiers(GetFrameSlot(inKeyCmd, SYMA(modifiers)));
+	if (NOTNIL(modifiers))
+		return RINT(modifiers) & kKeyModifierMask;
+	return 0;
+}
+
+
+int
+GetModifiersWidth(RefArg inKeyCmd)
+{
+	int width = 0;
+	ULong modifiers = KeyCommandModifiers(inKeyCmd);
+	if (FLAGTEST(modifiers, kCmdModifier))
+		width = 11;
+	if (FLAGTEST(modifiers, kShiftModifier))
+		width += 11;
+	if (FLAGTEST(modifiers, kOptionModifier))
+		width += 12;
+	if (FLAGTEST(modifiers, kControlModifier))
+		width += 12;
+	return width + 10;
+}
+
+
+int
+GetCommandCharWidth(RefArg inKeyCmd, StyleRecord * inStyle)
+{
+	Ref chr = GetProtoVariable(inKeyCmd, SYMA(char));
+	UniChar ch = RCHAR(chr);
+	UpperCaseText(&ch, 1);
+	return MeasureOnce(&ch, 1, inStyle);
+}
+
+
+#pragma mark -
+/* -----------------------------------------------------------------------------
+	P l a i n   C   I n t e r f a c e
+----------------------------------------------------------------------------- */
+
+Ref
+FKeyboardConnected(RefArg inRcvr)
+{
+	return MAKEBOOLEAN(gRootView->keyboardConnected());
+}
+
+
+Ref
+FCommandKeyboardConnected(RefArg inRcvr)
+{
+	return MAKEBOOLEAN(gRootView->commandKeyboardConnected());
+}
+
+
+Ref
+FRegisterOpenKeyboard(RefArg inRcvr, RefArg inKybd)
+{
+	gRootView->registerKeyboard(inRcvr, RINT(inKybd));
+	return NILREF;
+}
+
+
+Ref
+FUnregisterOpenKeyboard(RefArg inRcvr)
+{
+	return MAKEBOOLEAN(gRootView->unregisterKeyboard(inRcvr));
+}
+
+
+
+Ref
+FAddKeyCommand(RefArg inRcvr, RefArg inCmd)
+{
+	AddKeyCommand(inRcvr, inCmd);
+	return NILREF;
+}
+
+
+Ref
+FAddKeyCommands(RefArg inRcvr, RefArg inCmds)
+{
+	AddKeyCommands(inRcvr, inCmds);
+	return NILREF;
+}
+
+
+Ref
+FBlockKeyCommand(RefArg inRcvr, RefArg inCmd)
+{
+	CView *  view = GetView(inRcvr);
+	if (view)
+		BlockKeyCommand(view, inCmd);
+	return NILREF;
+}
+
+
+Ref
+FSetKeyView(RefArg inRcvr, RefArg inView, RefArg inOffset)
+{
+	CView *  view = NULL;
+	if (NOTNIL(inView))
+		view = GetView(inView);
+
+	if (ISINT(inOffset) || ISNIL(inOffset))
+	{
+		RefVar	info(Clone(RA(canonicalParaCaretInfo)));
+		SetFrameSlot(info, SYMA(offset), MAKEINT(NOTNIL(inOffset) ? RINT(inOffset) : 0));
+		SetFrameSlot(info, SYMA(Length), MAKEINT(0));
+		gRootView->setKeyViewSelection(view, info, true);
+	}
+	else
+		gRootView->setKeyViewSelection(view, inOffset, true);
+
+	return NILREF;
+}
+
+
+Ref
+FGetKeyView(RefArg inRcvr)
+{
+	CView * keyView = gRootView->caretView();
+	if (keyView != NULL) {
+		return keyView->fContext;
+	}
+	return NILREF;
+}
+
+
+Ref
+FNextKeyView(RefArg inRcvr, RefArg inArg1, RefArg inArg2, RefArg inArg3)
+{
+	CView * keyView = FailGetView(inArg1);
+	if (keyView != NULL) {
+		keyView = keyView->nextKeyView(keyView, RINT(inArg2), RINT(inArg3));
+		if (keyView)
+			return keyView->fContext;
+	}
+	return NILREF;
+}
+
+
+Ref
+FGetCaretBox(RefArg inRcvr)
+{
+	CView * keyView = gRootView->caretView();
+	Rect caretRect = gRootView->getCaretRect();
+	if (keyView != NULL && caretRect.top != -32768)
+	{
+		RefVar box(ToObject(&caretRect));
+		SetFrameSlot(box, SYMA(view), keyView->fContext);
+//		int offset = gRootView->x70 == NULL ? gRootView->x6C : -1;
+//		SetFrameSlot(box, SYMA(offset), MAKEINT(offset));
+		return box;
+	}
+	return NILREF;
+}
+
+
+Ref
+FKeyIn(RefArg inRcvr, RefArg inCode, RefArg inIsDown)
+{
+	return MAKECHAR(KeyIn(RINT(inCode), ISTRUE(inIsDown), NULL));
+}
+
+
+Ref
+FPostKeyString(RefArg inRcvr, RefArg inView, RefArg inStr)
+{
+	CView * keyView = GetView(inRcvr, inView);
+	if (keyView != NULL)
+		PostKeyString(keyView, inStr);
+	return NILREF;
+}
+
+
+Ref
+FRestoreKeyView(RefArg inRcvr, RefArg inView)
+{
+	CView * keyView = GetView(inView);
+	if (keyView != NULL)		// original doesn’t bother to check
+		return MAKEBOOLEAN(gRootView->restoreKeyView(keyView));
+	return NILREF;
+}
+
+Ref
+FTranslateKey(RefArg inRcvr, RefArg inKeyCode, RefArg inModifiers, RefArg inState)
+{
+	ULong state = RINT(inState);
+	return MAKECHAR(TranslateKey(RINT(inKeyCode), true/*isDown*/, (RINT(inModifiers) & kKeyModifierMask) >> kKeyModifierShift, &state));
+
+}
+
+Ref
+FIsKeyDown(RefArg inRcvr, RefArg inKey, RefArg inHardKeys)
+{
+	return MAKEBOOLEAN(KeyDown(RINT(inKey), ISTRUE(inHardKeys)));
+}
+
+bool
+IsCommandKeystroke(UniChar inKey, ULong inModifiers)
+{
+	return FLAGTEST(inModifiers, kCmdModifier)
+		 || (inKey >= 0xF721 && inKey <= 0xF72F)
+		 || inKey == 0x1B;
+}
+
+Ref
+FIsCommandKeystroke(RefArg inRcvr, RefArg inKey, RefArg inModifiers)
+{
+	return MAKEBOOLEAN(IsCommandKeystroke(RCHAR(inKey), RINT(inModifiers)));
+}
+
+
+Ref
+FFindKeyCommand(RefArg inRcvr, RefArg inView, RefArg inKeycode, RefArg inModifiers)
+{
+	CView * keyView = GetView(inView);
+	if (keyView != NULL)
+		return FindKeyCommand(keyView, RCHAR(inKeycode), RINT(inModifiers));
+	return NILREF;
+}
+
+
+Ref
+SendKeyMessage(CView * inView, RefArg inMsg)
+{return NILREF;}
+
+Ref
+FSendKeyMessage(RefArg inRcvr, RefArg inView, RefArg inMsg)
+{
+	CView * keyView = GetView(inView);
+	if (keyView != NULL)
+		return SendKeyMessage(keyView, inMsg);
+	return NILREF;
+}
+
+
+Ref
+MatchKeyMessage(CView * inView, RefArg inMsg, ULong inModifiers)
+{return NILREF;}
+
+Ref
+FMatchKeyMessage(RefArg inRcvr, RefArg inView, RefArg inMsg)
+{
+	CView * keyView = GetView(inView);
+	if (keyView != NULL)
+		return MatchKeyMessage(keyView, inMsg, 0);
+	return NILREF;
+}
+
+
+Ref
+GatherKeyCommands(CView * inView)
+{return NILREF;}
+
+Ref
+FGatherKeyCommands(RefArg inRcvr, RefArg inView)
+{
+	CView * keyView = GetView(inView);
+	if (keyView != NULL)		// original doesn’t bother to check
+		return GatherKeyCommands(keyView);
+	return NILREF;
+}
+
+
+Ref
+CategorizeKeyCommands(RefArg inCmds)
+{return NILREF;}
+
+Ref
+FCategorizeKeyCommands(RefArg inRcvr, RefArg inCmds)
+{
+	return CategorizeKeyCommands(inCmds);
+}
+
+
+void
+HandleKeyEvents(RefArg inEvents, ArrayIndex inNumOfEvents)
+{}
+
+Ref
+FHandleKeyEvents(RefArg inRcvr, RefArg inEvents)
+{
+	HandleKeyEvents(inEvents, Length(inEvents));
+	return NILREF;
+}
+
+
+Ref
+FGetTrueModifiers(RefArg inRcvr)
+{
+	return MAKEINT(gTrueModifiers);
+}
+
+
+void
+ClearHardKeymap(void)
+{
+	for (ArrayIndex i = 0; i < 32; ++i)
+		gHardKeyMap[i] = 0;
+	gHardKeyDeadState = 0;
+	gHardCapsLock = false;
+	gTrueModifiers = 0;
+
+}
+
+Ref
+FClearHardKeymap(RefArg inRcvr)
+{
+	ClearHardKeymap();
+	return NILREF;
+}
+
+
+#pragma mark -
 /*------------------------------------------------------------------------------
 	C R a w K e y I t e r a t o r
 ------------------------------------------------------------------------------*/
@@ -538,12 +885,12 @@ CRawKeyIterator::loadKey(void)
 		fCurKeyLegend = NILREF;
 		fCurKeyResult = NILREF;
 		fCurKeyFormat = 0;
-		return NO;
+		return false;
 	}
 	fCurKeyLegend = GetArraySlot(fRowDef, 2 + fColumn*3);
 	fCurKeyResult = GetArraySlot(fRowDef, 3 + fColumn*3);
 	fCurKeyFormat = RINT(GetArraySlot(fRowDef, 4 + fColumn*3));
-	return YES;
+	return true;
 }
 
 bool
@@ -631,7 +978,7 @@ CVisKeyIterator::loadRow(void)
 	fRowBounds.left = fRowOrigin.h;
 	fRowBounds.top = fKeyOrigin.v;
 	fRowBounds.bottom = fKeyOrigin.v + fMaxRowHeight;
-	fHasVisKeys = NO;
+	fHasVisKeys = false;
 	fFirstVisKeyIndex =
 	fLastVisKeyIndex = 0;
 	long	rowSize = 0;
@@ -643,7 +990,7 @@ CVisKeyIterator::loadRow(void)
 		{
 			if (!fHasVisKeys)
 			{
-				fHasVisKeys = YES;
+				fHasVisKeys = true;
 				fFirstVisKeyIndex = i;
 			}
 			fLastVisKeyIndex = i;
@@ -720,7 +1067,7 @@ CVisKeyIterator::skipToStartOfNextRow(void)
 		} while (fRow <= fNumOfRows && !fHasVisKeys);
 		return loadKey();
 	}
-	return NO;
+	return false;
 }
 
 #pragma mark -
@@ -758,10 +1105,10 @@ CKeyboardView::init(RefArg inProto, CView * inView)
 	fKeyArrayIndex = exists ? RINT(slot) : 0;
 
 	slot = GetProtoVariable(fContext, SYMA(keyResultsAreKeycodes), &exists);
-	fKeyResultsAreKeycodes = exists ? NOTNIL(slot) : NO;
+	fKeyResultsAreKeycodes = exists ? NOTNIL(slot) : false;
 
 	slot = GetProtoVariable(fContext, SYMA(keySound), &exists);
-	fHasSound = exists ? NOTNIL(slot) : NO;
+	fHasSound = exists ? NOTNIL(slot) : false;
 
 	slot = GetVariable(fContext, SYMA(viewFont), &exists);
 //	CreateTextStyle(slot, &fStyle);
@@ -779,7 +1126,7 @@ CKeyboardView::init(RefArg inProto, CView * inView)
 */
 	fKeyReceiverView = GetProtoVariable(fContext, SYMA(keyReceiverView), &exists);
 	if (!exists)
-		fKeyReceiverView = RSYMviewFrontKey;
+		fKeyReceiverView = SYMA(viewFrontKey);
 
 //L115
 	//sp-2C
@@ -823,7 +1170,7 @@ CKeyboardView::init(RefArg inProto, CView * inView)
 	Perform a command.
 	If it’s a click then track the pen otherwise pass it on.
 	Args:		inCmd		the command frame
-	Return:	YES if we handled the command
+	Return:	true if we handled the command
 --------------------------------------------------------------------------------*/
 
 bool
@@ -836,8 +1183,8 @@ CKeyboardView::realDoCommand(RefArg inCmd)
 		isHandled = trackStroke(((CUnit *)CommandParameter(inCmd))->stroke(), NULL);
 		if (isHandled)
 		{
-			CommandSetResult(inCmd, YES);
-			return YES;
+			CommandSetResult(inCmd, true);
+			return true;
 		}
 		// otherwise give superclass a chance to handle it
 	}
@@ -859,7 +1206,7 @@ CKeyboardView::insideView(Point inPt)
 		CVisKeyIterator	iter(fKeyDefinitions, &fUnitBounds, inPt);
 		return iter.findEnclosingKey(inPt);
 	}
-	return NO;
+	return false;
 }
 
 
@@ -870,7 +1217,7 @@ CKeyboardView::doKey(CVisKeyIterator & inIter)
 	RefVar	keycode(MakeArray(1));
 	SetArraySlot(keycode, 0, keyResult);
 	bool		isDone;
-	RefVar	scriptResult(runCacheScript(kIndexKeyPressScript, keycode, YES, &isDone));
+	RefVar	scriptResult(runCacheScript(kIndexKeyPressScript, keycode, true, &isDone));
 	if (isDone)
 	{
 		if (NOTNIL(GetProtoVariable(fContext, SYMA(newt_feature)))
@@ -883,7 +1230,7 @@ CKeyboardView::doKey(CVisKeyIterator & inIter)
 	if (ISINT(keyResult)
 	&&  fKeyResultsAreKeycodes)
 		return IsModifierKeyCode(RINT(keyResult));
-	return NO;
+	return false;
 }
 
 
@@ -892,70 +1239,70 @@ CKeyboardView::handleKeyPress(CVisKeyIterator & inIter, RefArg inKeycode)
 {
 	//sp-0C
 	UniChar	visKeycode = 0;
-	ULong		existingModifiers = Modifiers(NO);
+	ULong		existingModifiers = Modifiers(false);
 
 	if (ISINT(inKeycode)
 	&&  fKeyResultsAreKeycodes)
 	{
 		//sp-14
-		bool	wasOptDown = KeyDown(0x3A, NO);		// sp10
-		bool	wasCmdDown = KeyDown(0x37, NO);		// sp0C
-		bool	wasCtrlDown = KeyDown(0x3B, NO);		// sp08
-		bool	wasShiftDown = KeyDown(0x38, NO);	// r9
-		bool	wasCapsDown = KeyDown(0x39, NO);		// sp04
+		bool	wasOptDown = KeyDown(0x3A, false);		// sp10
+		bool	wasCmdDown = KeyDown(0x37, false);		// sp0C
+		bool	wasCtrlDown = KeyDown(0x3B, false);		// sp08
+		bool	wasShiftDown = KeyDown(0x38, false);	// r9
+		bool	wasCapsDown = KeyDown(0x39, false);		// sp04
 		ULong	oldState = gSoftKeyDeadState;
 
-		bool	legendsChanged = NO;
+		bool	legendsChanged = false;
 		int	keycode = RINT(inKeycode);
 		switch(keycode)
 		{
 		case 0x37:	// command
 			KeyIn(0x37, wasCmdDown, this);
-			legendsChanged = YES;
+			legendsChanged = true;
 			break;
 		case 0x38:	// shift
 			KeyIn(0x38, wasShiftDown, this);
 			if (wasCapsDown)
-				KeyIn(0x39, NO, this);
-			legendsChanged = YES;
+				KeyIn(0x39, false, this);
+			legendsChanged = true;
 			break;
 		case 0x39:	// caps lock
-			KeyIn(0x39, YES, this);
-			KeyIn(0x39, NO, this);
+			KeyIn(0x39, true, this);
+			KeyIn(0x39, false, this);
 			if (wasShiftDown)
-				KeyIn(0x38, NO, this);
-			legendsChanged = YES;
+				KeyIn(0x38, false, this);
+			legendsChanged = true;
 			break;
 		case 0x3A:	// option
 			KeyIn(0x3A, wasOptDown, this);
-			legendsChanged = YES;
+			legendsChanged = true;
 			break;
 		case 0x3B:	// control
 			KeyIn(0x3B, wasCtrlDown, this);
-			legendsChanged = YES;
+			legendsChanged = true;
 			break;
 		default:
-			visKeycode = KeyIn(keycode, YES, this);
-			KeyIn(keycode, NO, this);
+			visKeycode = KeyIn(keycode, true, this);
+			KeyIn(keycode, false, this);
 			if (wasShiftDown)
 			{
-				KeyIn(0x38, NO, this);
-				legendsChanged = YES;
+				KeyIn(0x38, false, this);
+				legendsChanged = true;
 			}
 			if (wasOptDown)
 			{
-				KeyIn(0x3A, NO, this);
-				legendsChanged = YES;
+				KeyIn(0x3A, false, this);
+				legendsChanged = true;
 			}
 			if (wasCmdDown)
 			{
-				KeyIn(0x37, NO, this);
-				legendsChanged = YES;
+				KeyIn(0x37, false, this);
+				legendsChanged = true;
 			}
 			if (wasCtrlDown)
 			{
-				KeyIn(0x3B, NO, this);
-				legendsChanged = YES;
+				KeyIn(0x3B, false, this);
+				legendsChanged = true;
 			}
 			break;
 		}
@@ -1020,12 +1367,12 @@ CKeyboardView::getLegendRef(CRawKeyIterator & inIter)
 	RefVar	legend(inIter.keyLegend());
 	if (ISNIL(legend))
 		legend = inIter.keyResult();
-	if (EQRef(ClassOf(legend), RSYMarray))
+	if (EQ(ClassOf(legend), SYMA(array)))
 		legend = GetArraySlot(legend, fKeyArrayIndex);
 	else if (IsFunction(legend))
 	{
 		legend = DoScript(fContext, legend, RA(NILREF));
-		if (EQRef(ClassOf(legend), RSYMarray))
+		if (EQ(ClassOf(legend), SYMA(array)))
 			legend = GetArraySlot(legend, fKeyArrayIndex);
 	}
 	return legend;
@@ -1036,12 +1383,12 @@ Ref
 CKeyboardView::getResultRef(CRawKeyIterator & inIter)
 {
 	RefVar	result(inIter.keyResult());
-	if (EQRef(ClassOf(result), RSYMarray))
+	if (EQ(ClassOf(result), SYMA(array)))
 		result = GetArraySlot(result, fKeyArrayIndex);
 	else if (IsFunction(result))
 	{
 		result = DoScript(fContext, result, RA(NILREF));
-		if (EQRef(ClassOf(result), RSYMarray))
+		if (EQ(ClassOf(result), SYMA(array)))
 			result = GetArraySlot(result, fKeyArrayIndex);
 	}
 	return result;
@@ -1052,7 +1399,7 @@ bool
 CKeyboardView::trackStroke(CStroke * inStroke, CVisKeyIterator * inIter)
 {
 	// INCOMPLETE
-	return YES;
+	return true;
 }
 
 
@@ -1063,7 +1410,7 @@ CKeyboardView::trackStroke(CStroke * inStroke, CVisKeyIterator * inIter)
 ------------------------------------------------------------------------------*/
 
 void
-CKeyboardView::realDraw(Rect * inRect)
+CKeyboardView::realDraw(Rect& inRect)
 {
 	RefVar	highlightedKeys(GetProtoVariable(fContext, SYMA(keyHighlightKeys)));	// r7
 	long		numOfHighlightedKeys = NOTNIL(highlightedKeys) ? Length(highlightedKeys) : 0;
@@ -1076,20 +1423,20 @@ CKeyboardView::realDraw(Rect * inRect)
 	do
 	{
 		if (iter.fHasVisKeys
-		&&  Intersects(iter.rowFrame(), inRect))
+		&&  Intersects(iter.rowFrame(), &inRect))
 		{
-			if (Intersects(iter.keyFrame(), inRect)
+			if (Intersects(iter.keyFrame(), &inRect)
 			&&  (iter.keyFormat() & keySpacer) == 0)
 			{
-				bool	isHighlighted = NO;
+				bool	isHighlighted = false;
 				code = getResultRef(iter);
 				for (ArrayIndex i = 0; i < numOfHighlightedKeys; ++i)
 					if (EQ(GetArraySlot(highlightedKeys, i), code))
 					{
-						isHighlighted = YES;
+						isHighlighted = true;
 						break;
 					}
-				drawKey(iter, isHighlighted, NO);
+				drawKey(iter, isHighlighted, false);
 			}
 			more = iter.next();
 		}
@@ -1124,14 +1471,14 @@ CKeyboardView::drawKey(CVisKeyIterator & inIter, bool inIsHighlighted, bool inDo
 	UniChar *	textPtr;			// r9
 	long			textLen;			// r8
 	long			keycode = -1;	// r7
-	bool			isText = NO;	// r6
-	bool			isBitmap = NO;	// sp00
+	bool			isText = false;	// r6
+	bool			isBitmap = false;	// sp00
 
 	RefVar		legend(getLegendRef(inIter));
 
-	if (EQRef(ClassOf(legend), RSYMstring))
+	if (EQ(ClassOf(legend), SYMA(string)))
 	{
-		isText = YES;
+		isText = true;
 		CDataPtr	strData(legend);
 		textPtr = (UniChar *)(char *)strData;
 		textLen = Length(strData) / sizeof(UniChar) - 1;
@@ -1139,7 +1486,7 @@ CKeyboardView::drawKey(CVisKeyIterator & inIter, bool inIsHighlighted, bool inDo
 
 	else if (ISCHAR(legend))
 	{
-		isText = YES;
+		isText = true;
 		textBuf[0] = RCHAR(legend);
 		textPtr = textBuf;
 		textLen = 1;
@@ -1147,26 +1494,26 @@ CKeyboardView::drawKey(CVisKeyIterator & inIter, bool inIsHighlighted, bool inDo
 
 	else if (ISINT(legend) && fKeyResultsAreKeycodes)
 	{
-		isText = YES;
+		isText = true;
 		keycode = RINT(legend);
-		textBuf[0] = KeyLabel(keycode, NO);
+		textBuf[0] = KeyLabel(keycode, false);
 		textPtr = textBuf;
 		textLen = 1;
 	}
 
 	else if (ISINT(legend))
 	{
-		isText = YES;
+		isText = true;
 		IntegerString(RINT(legend), textBuf);
 		textPtr = textBuf;
 		textLen = Ustrlen(textBuf);
 	}
 
-	else if (EQRef(ClassOf(legend), RSYMframe)
+	else if (EQ(ClassOf(legend), SYMA(frame))
 	     &&  FrameHasSlot(legend, SYMA(bits)))
 	{
 		Rect	bounds;
-		isBitmap = YES;
+		isBitmap = true;
 		FromObject(GetFrameSlot(legend, SYMA(bounds)), &bounds);
 		sp54 = RectGetWidth(bounds);
 		sp50 = RectGetHeight(bounds);
@@ -1182,7 +1529,7 @@ CKeyboardView::drawKey(CVisKeyIterator & inIter, bool inIsHighlighted, bool inDo
 		}
 		if (keycode != -1
 		&&  KeyDown(keycode, 0))
-			isHighlighted = YES;
+			isHighlighted = true;
 	}
 
 	// Finally! Start drawing - the frame first
@@ -1196,15 +1543,14 @@ CKeyboardView::drawKey(CVisKeyIterator & inIter, bool inIsHighlighted, bool inDo
 		bounds.right = bounds.left + sp54;
 		bounds.top = (inIter.fKeyCap.top + inIter.fKeyCap.bottom - sp50) / 2;
 		bounds.bottom = bounds.top + sp50;		
-		// set drawing mode = isHighlighted ? srcBic : srcOr;
-		DrawBitmap(legend, &bounds);
+		DrawBitmap(legend, &bounds, isHighlighted ? modeBic : modeOr);
 	}
 
 	else if (isText)
 	{
 #if defined(correct)
 		int	glyphHt = fFontInfo.ascent + fFontInfo.descent;
-	//	fOptions.transferMode = isHighlighted ? srcBic : srcOr;
+		fOptions.transferMode = isHighlighted ? modeBic : modeOr;
 		fOptions.width = IntToFixed(RectGetWidth(inIter.fKeyCap) + 2*3);
 
 		FixedPoint	location;

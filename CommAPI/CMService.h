@@ -41,9 +41,9 @@ extern NewtonErr ServiceToPort(ULong serviceId, CUPort* port);		// DON'T USE; ol
 extern NewtonErr ServiceToPort(ULong serviceId, CUPort* port, ObjectId taskId);	// task Id of service
 
 
-/*--------------------------------------------------------------------------------
-	CAsyncServiceMessage
---------------------------------------------------------------------------------*/
+/* -------------------------------------------------------------------------------
+	C A s y n c S e r v i c e M e s s a g e
+------------------------------------------------------------------------------- */
 
 class CAsyncServiceMessage
 {
@@ -58,7 +58,7 @@ public:
 
 	bool				match(CUMsgToken * token);		// used internally
 
-//private:
+private:
 	CCMService *	fService;
 	CUAsyncMessage	fAsyncMessage;
 	void *			fMessage;
@@ -68,8 +68,8 @@ public:
 inline CCMService * CAsyncServiceMessage::service()	{ return fService; }
 
 
-/*--------------------------------------------------------------------------------
-	CCMService
+/* -------------------------------------------------------------------------------
+	C C M S e r v i c e
 
 	Each communications/network service should have a CCMService implementation.
 	Each service should implement:
@@ -87,7 +87,7 @@ inline CCMService * CAsyncServiceMessage::service()	{ return fService; }
 	message:			when the system needs to inform the service of some system event
 	setOptions:		to set "configuration" options
 	getOptions: 	to get the current set of configuration options
---------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------- */
 
 PROTOCOL CCMService : public CProtocol
 {

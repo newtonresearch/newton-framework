@@ -13,7 +13,7 @@
 #define newtAreaCodeLine MAKEMAGICPTR(26)
 #define protoCanonicalCompass MAKEMAGICPTR(28)
 
-#define SYS_boundsFrame MAKEMAGICPTR(36)		// in View.cc
+#define canonicalRect MAKEMAGICPTR(36)		// in View.cc
 
 #define ROM_cardfileSoupName MAKEMAGICPTR(47)
 #define ROM_click MAKEMAGICPTR(51)

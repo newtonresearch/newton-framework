@@ -17,8 +17,8 @@
 		.globl	__ZN13CScreenDriver9powerInitEv
 		.globl	__ZN13CScreenDriver7powerOnEv
 		.globl	__ZN13CScreenDriver8powerOffEv
-		.globl	__ZN13CScreenDriver4blitEP8PixelMapP4RectS3_i
-		.globl	__ZN13CScreenDriver10doubleBlitEP8PixelMapS1_P4RectS3_i
+		.globl	__ZN13CScreenDriver4blitEP14NativePixelMapP4RectS3_i
+		.globl	__ZN13CScreenDriver10doubleBlitEP14NativePixelMapS1_P4RectS3_i
 		.globl	__ZN13CScreenDriver10getFeatureEi
 		.globl	__ZN13CScreenDriver10setFeatureEii
 		.globl	__ZN13CScreenDriver18autoAdjustFeaturesEv
@@ -47,9 +47,9 @@ __ZN13CScreenDriver7powerOnEv:
 		Dispatch 7
 __ZN13CScreenDriver8powerOffEv:
 		Dispatch 8
-__ZN13CScreenDriver4blitEP8PixelMapP4RectS3_i:
+__ZN13CScreenDriver4blitEP14NativePixelMapP4RectS3_i:
 		Dispatch 9
-__ZN13CScreenDriver10doubleBlitEP8PixelMapS1_P4RectS3_i:
+__ZN13CScreenDriver10doubleBlitEP14NativePixelMapS1_P4RectS3_i:
 		Dispatch 10
 __ZN13CScreenDriver10getFeatureEi:
 		Dispatch 11

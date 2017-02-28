@@ -14,6 +14,30 @@
 	C D y n a m i c A r r a y
 --------------------------------------------------------------------------------*/
 
+void
+MoveLow(CDynamicArray * inArray)
+{
+	// the original accesses fElementSize but then discards it and uses 0
+//	size_t r1 = inArray->fElementSize;
+	Size blockSize = GetPtrSize(inArray->fArrayBlock);
+	// allocate a buffer
+	Ptr buf = NewPtr(blockSize);
+	if (buf)
+	{
+		// copy block to the buffer
+		memmove(buf, inArray->fArrayBlock, blockSize);
+		size_t elementCount = inArray->count();
+		// empty the block
+		inArray->setArraySize(0);
+		// then reallocate it
+		inArray->setArraySize(elementCount);
+		// and copy its contents back
+		memmove(inArray->fArrayBlock, buf, blockSize);
+		FreePtr(buf);
+	}
+}
+
+
 CDynamicArray::CDynamicArray()
 {
 	fArrayBlock = NULL;
@@ -42,7 +66,7 @@ CDynamicArray::~CDynamicArray()
 	if (fIterator)
 		fIterator->deleteArray();
 	if (fArrayBlock)
-		free(fArrayBlock);
+		FreePtr(fArrayBlock);
 }
 
 
@@ -58,7 +82,7 @@ CDynamicArray::setArraySize(ArrayIndex inSize)
 		{
 			if (fArrayBlock)
 			{
-				free(fArrayBlock);
+				FreePtr(fArrayBlock);
 				fArrayBlock = NULL;
 				fAllocatedSize = 0;
 			}
@@ -78,7 +102,7 @@ CDynamicArray::setArraySize(ArrayIndex inSize)
 				}
 				if (newSize != fAllocatedSize)
 				{
-					void * newBlock = realloc(fArrayBlock, fElementSize * newSize);
+					Ptr newBlock = ReallocPtr(fArrayBlock, fElementSize * newSize);
 					XFAIL(err = MemError())
 					fArrayBlock = newBlock;
 					fAllocatedSize = newSize;
@@ -109,7 +133,7 @@ void *
 CDynamicArray::safeElementPtrAt(ArrayIndex index)
 {
 	if (fSize > 0 && index != kIndexNotFound && index < fSize)
-		return (Ptr)fArrayBlock + fElementSize * index;
+		return fArrayBlock + fElementSize * index;
 	return NULL;
 }
 
@@ -118,7 +142,7 @@ NewtonErr
 CDynamicArray::getElementsAt(ArrayIndex index, void * outElements, ArrayIndex inCount)
 {
 	if (inCount > 0)
-		memmove(outElements, (Ptr)fArrayBlock + fElementSize * index, fElementSize * inCount);
+		memmove(outElements, fArrayBlock + fElementSize * index, fElementSize * inCount);
 	return noErr;
 }
 
@@ -134,9 +158,9 @@ CDynamicArray::insertElementsBefore(ArrayIndex index, void * inElements, ArrayIn
 	{
 		if ((err = setArraySize(fSize + inCount)) == noErr)
 		{
-			Ptr	srcPtr = (Ptr)fArrayBlock + fElementSize * index;
-			Ptr	dstPtr = (Ptr)fArrayBlock + fElementSize * (index + inCount);
-			Ptr	endPtr = (Ptr)fArrayBlock + fElementSize * fSize;
+			Ptr	srcPtr = fArrayBlock + fElementSize * index;
+			Ptr	dstPtr = fArrayBlock + fElementSize * (index + inCount);
+			Ptr	endPtr = fArrayBlock + fElementSize * fSize;
 			if (index < fSize)
 				memmove(dstPtr, srcPtr, endPtr - srcPtr);
 			memmove(srcPtr, inElements, fElementSize * inCount);
@@ -153,7 +177,7 @@ NewtonErr
 CDynamicArray::replaceElementsAt(ArrayIndex index, void  * inElements, ArrayIndex inCount)
 {
 	if (inCount > 0)
-		memmove((Ptr)fArrayBlock + fElementSize * index, inElements, fElementSize * inCount);
+		memmove(fArrayBlock + fElementSize * index, inElements, fElementSize * inCount);
 	return noErr;
 }
 
@@ -166,9 +190,9 @@ CDynamicArray::removeElementsAt(ArrayIndex index, ArrayIndex inCount)
 	{
 		if (fSize > 0 && inCount > 0)
 		{
-			Ptr	dstPtr = (Ptr)fArrayBlock + fElementSize * index;
-			Ptr	srcPtr = (Ptr)fArrayBlock + fElementSize * (index + inCount);
-			Ptr	endPtr = (Ptr)fArrayBlock + fElementSize * fSize;
+			Ptr	dstPtr = fArrayBlock + fElementSize * index;
+			Ptr	srcPtr = fArrayBlock + fElementSize * (index + inCount);
+			Ptr	endPtr = fArrayBlock + fElementSize * fSize;
 			if (endPtr > srcPtr)
 				memmove(dstPtr, srcPtr, endPtr - srcPtr);
 			XFAIL(err = setArraySize(fSize - inCount))

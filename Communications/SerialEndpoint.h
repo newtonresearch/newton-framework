@@ -246,19 +246,19 @@ public:
 	NewtonErr	waitForEvent(Timeout timeOut = kNoTimeout);
 
 // New calls for 2.0
-	NewtonErr	nBind(COptionArray* opt = NULL, Timeout timeOut = kNoTimeout, bool sync = YES);
-	NewtonErr	nListen(COptionArray* opt = NULL, CBufferSegment* data = NULL, long* seq = NULL, Timeout timeOut = kNoTimeout, bool sync = YES);
-	NewtonErr	nAccept(CEndpoint* resfd, COptionArray* opt = NULL, CBufferSegment* data = NULL, long seq = 0, Timeout timeOut = kNoTimeout, bool sync = YES);
-	NewtonErr	nConnect(COptionArray* opt = NULL, CBufferSegment* data = NULL, long* seq = NULL, Timeout timeOut = kNoTimeout, bool sync = YES);
-	NewtonErr	nRelease(Timeout timeOut = kNoTimeout, bool sync = YES);
-	NewtonErr	nDisconnect(CBufferSegment* data = NULL, long reason = 0, long seq = 0, Timeout timeOut = kNoTimeout, bool sync = YES);
-	NewtonErr	nUnBind(Timeout timeOut = kNoTimeout, bool sync = YES);
-	NewtonErr	nOptMgmt(ULong arrayOpCode, COptionArray* options, Timeout timeOut = kNoTimeout, bool sync = YES);
-	NewtonErr	nSnd(UByte* buf, ArrayIndex* count, ULong flags, Timeout timeOut = kNoTimeout, bool sync = YES, COptionArray* opt = NULL);
-	NewtonErr	nRcv(UByte* buf, ArrayIndex* count, ArrayIndex thresh, ULong* flags, Timeout timeOut = kNoTimeout, bool sync = YES, COptionArray* opt = NULL);
-	NewtonErr	nSnd(CBufferSegment* buf, ULong flags, Timeout timeOut = kNoTimeout, bool sync = YES, COptionArray* opt = NULL);
-	NewtonErr	nRcv(CBufferSegment* buf, ArrayIndex thresh, ULong* flags, Timeout timeOut = kNoTimeout, bool sync = YES, COptionArray* opt = NULL);
-	NewtonErr	nAbort(bool sync = YES);
+	NewtonErr	nBind(COptionArray* opt = NULL, Timeout timeOut = kNoTimeout, bool sync = true);
+	NewtonErr	nListen(COptionArray* opt = NULL, CBufferSegment* data = NULL, long* seq = NULL, Timeout timeOut = kNoTimeout, bool sync = true);
+	NewtonErr	nAccept(CEndpoint* resfd, COptionArray* opt = NULL, CBufferSegment* data = NULL, long seq = 0, Timeout timeOut = kNoTimeout, bool sync = true);
+	NewtonErr	nConnect(COptionArray* opt = NULL, CBufferSegment* data = NULL, long* seq = NULL, Timeout timeOut = kNoTimeout, bool sync = true);
+	NewtonErr	nRelease(Timeout timeOut = kNoTimeout, bool sync = true);
+	NewtonErr	nDisconnect(CBufferSegment* data = NULL, long reason = 0, long seq = 0, Timeout timeOut = kNoTimeout, bool sync = true);
+	NewtonErr	nUnBind(Timeout timeOut = kNoTimeout, bool sync = true);
+	NewtonErr	nOptMgmt(ULong arrayOpCode, COptionArray* options, Timeout timeOut = kNoTimeout, bool sync = true);
+	NewtonErr	nSnd(UByte* buf, ArrayIndex* count, ULong flags, Timeout timeOut = kNoTimeout, bool sync = true, COptionArray* opt = NULL);
+	NewtonErr	nRcv(UByte* buf, ArrayIndex* count, ArrayIndex thresh, ULong* flags, Timeout timeOut = kNoTimeout, bool sync = true, COptionArray* opt = NULL);
+	NewtonErr	nSnd(CBufferSegment* buf, ULong flags, Timeout timeOut = kNoTimeout, bool sync = true, COptionArray* opt = NULL);
+	NewtonErr	nRcv(CBufferSegment* buf, ArrayIndex thresh, ULong* flags, Timeout timeOut = kNoTimeout, bool sync = true, COptionArray* opt = NULL);
+	NewtonErr	nAbort(bool sync = true);
 	NewtonErr	timeout(ULong refCon);
 	bool			isPending(ULong which);
 
@@ -276,8 +276,8 @@ protected:
 	void			releaseGetPB(CCommToolGetPB * inPB);
 	void			nukeGetPBList(void);
 
-	NewtonErr	sendBytes(CCommToolPutPB * inPB, size_t * ioSize, ULong inFlags, Timeout inTimeout = kNoTimeout, bool inSync = YES, COptionArray * inOptions = NULL);
-	NewtonErr	recvBytes(CCommToolGetPB * inPB, size_t * ioSize, size_t inThreshold, ULong * ioFlags, Timeout inTimeout = kNoTimeout, bool inSync = YES, COptionArray * inOptions = NULL);
+	NewtonErr	sendBytes(CCommToolPutPB * inPB, size_t * ioSize, ULong inFlags, Timeout inTimeout = kNoTimeout, bool inSync = true, COptionArray * inOptions = NULL);
+	NewtonErr	recvBytes(CCommToolGetPB * inPB, size_t * ioSize, size_t inThreshold, ULong * ioFlags, Timeout inTimeout = kNoTimeout, bool inSync = true, COptionArray * inOptions = NULL);
 
 	NewtonErr	postEventRequest(CCommToolEventPB * inPB);
 	NewtonErr	postKillRequest(ULong, bool);

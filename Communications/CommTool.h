@@ -209,6 +209,7 @@ enum CommToolEvents
 
 //--------------------------------------------------------------------------------
 //		CommToolRequestType
+//		MUST match order of CommToolChannelNumber
 //--------------------------------------------------------------------------------
 
 enum CommToolRequestType
@@ -227,6 +228,7 @@ enum CommToolRequestType
 
 //--------------------------------------------------------------------------------
 //		CommToolChannelNumber
+//		MUST match order of CommToolRequestType
 //--------------------------------------------------------------------------------
 
 enum CommToolChannelNumber
@@ -355,11 +357,11 @@ public:
 
 	ArrayIndex		fValidCount;			// count of valid bytes in fData; kIndexNotFound => "all"
 													// data is assumed to start at offset 0
-	bool				fOutside;				// YES, fData is a shared memory object id
+	bool				fOutside;				// true, fData is a shared memory object id
 
 	// these fields are for clients using framing
-	bool				fFrameData;				// YES, use framing
-	bool				fEndOfFrame;			// YES, close the frame
+	bool				fFrameData;				// true, use framing
+	bool				fEndOfFrame;			// true, close the frame
 
 	// Optional options for Put request
 	COptionArray *	fOptions;				// 2.0 // COptionArray
@@ -390,12 +392,12 @@ public:
 						CCommToolGetRequest();
 
 	CBufferList *	fData;				// data list, or shared memory ObjectId
-	ArrayIndex		fThreshold;			// for fNonBlocking YES, do not complete until
+	ArrayIndex		fThreshold;			// for fNonBlocking true, do not complete until
 												// at least this many bytes have arrived
 												// if zero, then complete immediately
-	bool				fNonBlocking;		// YES, return as soon as fThreshold is satisfied
-	bool				fFrameData;			// YES, deframe the data as it arrives
-	bool				fOutside;			// YES, fData is a shared memory object id
+	bool				fNonBlocking;		// true, return as soon as fThreshold is satisfied
+	bool				fFrameData;			// true, deframe the data as it arrives
+	bool				fOutside;			// true, fData is a shared memory object id
 	COptionArray *	fOptions;			// 2.0 // COptionArray
 	ArrayIndex		fOptionCount;		// 2.0 // number of options specified in the request option array, only used if outside
 };
@@ -462,7 +464,7 @@ public:
 	CBufferSegment *	fData;
 	ULong				fSequence;				// from CCommToolListenReply
 
-	bool				fOutside;				// if YES, the above are ObjectIds
+	bool				fOutside;				// if true, the above are ObjectIds
 };
 
 
@@ -494,7 +496,7 @@ public:
 	ULong				fSequence;				// from CCommToolListenReply, zero otherwise
 	ULong				fReason;					// reason code
 
-	bool				fOutside;				// if YES, the above *'s are ObjectIds
+	bool				fOutside;				// if true, the above *'s are ObjectIds
 };
 
 
@@ -510,8 +512,8 @@ public:
 	ULong				fReserved1;				// reserved, don't use
 	ULong				fReserved2;				// reserved, don't use
 
-	bool				fOutside;				// if YES, the above *'s are ObjectIds
-	bool				fCopyBack;				// if YES and fOutside YES, copy back the data on reply
+	bool				fOutside;				// if true, the above *'s are ObjectIds
+	bool				fCopyBack;				// if true and fOutside true, copy back the data on reply
 
 	COptionArray *	fOptions;				// used as both a request and reply parameter
 	ArrayIndex		fOptionCount;			// number of options specified in the request option array
@@ -546,8 +548,8 @@ public:
 	ArrayIndex		fOptionCount;			// number of options specified in the request option array
 	ULong				fRequestOpCode;
 
-	bool				fOutside;				// if YES, the above *'s are ObjectIds
-	bool				fCopyBack;				// if YES and fOutside YES, copy back the data on reply
+	bool				fOutside;				// if true, the above *'s are ObjectIds
+	bool				fCopyBack;				// if true and fOutside true, copy back the data on reply
 };
 
 
@@ -566,7 +568,7 @@ public:
 	COptionArray *	fBoundAddr;
 	COptionArray *	fPeerAddr;
 
-	bool				fOutside;					// if YES, the above *'s are ObjectIds
+	bool				fOutside;					// if true, the above *'s are ObjectIds
 };
 
 
@@ -657,7 +659,7 @@ public:
 	ULong				fOptionsState;
 	CommToolChannelNumber	fChannelNum;	// channel number of options request
 	ArrayIndex		fOptionCount;				// used for outside requests only, indicates number of options in option array
-	COptionArray * fOptions;					// pointer to request options
+	COptionArray * fOptions;					// pointer to request options, or ObjectId
 	COption *		fCurOptPtr;					// pointer to current option
 	COptionIterator *	fOptionsIterator;		// pointer to option array iterator for current options request
 };
@@ -765,20 +767,20 @@ public:
 	virtual void			getProtAddr(void);
 
 			  NewtonErr		getConnectState(void);
-			  void			flushChannel(CommToolRequestType, long);
-			  void			completeRequest(CUMsgToken&, long);
-			  void			completeRequest(CUMsgToken&, long, CCommToolReply&);
-			  void			completeRequest(CommToolChannelNumber, long);
-			  void			completeRequest(CommToolChannelNumber, long, CCommToolReply&);
+			  NewtonErr		flushChannel(CommToolRequestType inType, NewtonErr inResult);
+			  void			completeRequest(CUMsgToken&, NewtonErr);
+			  void			completeRequest(CUMsgToken&, NewtonErr, CCommToolReply&);
+			  void			completeRequest(CommToolChannelNumber, NewtonErr);
+			  void			completeRequest(CommToolChannelNumber, NewtonErr, CCommToolReply&);
 
 	virtual void		 	optionMgmt(CCommToolOptionMgmtRequest *);
 	virtual void		 	optionMgmtComplete(NewtonErr inResult);
 
-			  ULong			processOptions(COptionArray*);
-			  ULong			processControlOptions(bool, COptionArray*, ULong);
-	virtual ULong			processOptions(CCommToolOptionInfo*);
-	virtual ULong			processOptionsContinue(CCommToolOptionInfo*);
-	virtual ULong			processOptionsComplete(NewtonErr, CCommToolOptionInfo*);
+			  void			processOptions(COptionArray*);
+			  void			processControlOptions(bool, COptionArray*, ULong);
+	virtual void			processOptions(CCommToolOptionInfo*);
+	virtual void			processOptionsContinue(CCommToolOptionInfo*);
+	virtual void			processOptionsComplete(NewtonErr, CCommToolOptionInfo*);
 	virtual NewtonErr		processOptionsCleanUp(NewtonErr, CCommToolOptionInfo*);
 
 	virtual void			processCommOptionComplete(ULong inStatus, CCommToolOptionInfo * info);
@@ -786,13 +788,13 @@ public:
 	virtual void			processOptionComplete(ULong inResult);
 	virtual void			processOption(COption * inOption, ULong inLabel, ULong inOpcode);
 	
-	virtual NewtonErr		forwardOptions(void);
+	virtual CUPort *		forwardOptions(void);
 	virtual NewtonErr		addDefaultOptions(COptionArray* inOptions);
 	virtual NewtonErr		addCurrentOptions(COptionArray* inOptions);
 
-	virtual void			processPutBytesOptionStart(COption* theOption, ULong inLabel, ULong inOpcode);
+	virtual NewtonErr		processPutBytesOptionStart(COption* theOption, ULong inLabel, ULong inOpcode);
 	virtual void			processPutBytesOptionComplete(ULong);
-	virtual void			processGetBytesOptionStart(COption* theOption, ULong inLabel, ULong inOpcode);
+	virtual NewtonErr		processGetBytesOptionStart(COption* theOption, ULong inLabel, ULong inOpcode);
 	virtual void			processGetBytesOptionComplete(ULong);
 	
 	virtual void			putBytes(CBufferList *)= 0;
@@ -804,7 +806,7 @@ public:
 	virtual void			getBytes(CBufferList *)= 0;
 	virtual void			getFramedBytes(CBufferList *)= 0;
 	virtual void			getBytesImmediate(CBufferList * inClientBuffer, size_t inThreshold);
-	virtual void			getComplete(NewtonErr inResult, bool inEndOfFrame = NO, size_t inGetBytesCount = 0);
+	virtual void			getComplete(NewtonErr inResult, bool inEndOfFrame = false, size_t inGetBytesCount = 0);
 	virtual void			killGet(void) = 0;
 	virtual void			killGetComplete(NewtonErr inResult);
 
@@ -841,17 +843,18 @@ protected:
 	NewtonErr				createPort(ULong inId, CUPort & outPort);
 	NewtonErr				getToolPort(ULong inId, CUPort & outPort);
 	void						unregisterPort(void);
-	void						initAsyncRPCMsg(CUAsyncMessage & ioMsg, ULong inRefCon);
+	NewtonErr				initAsyncRPCMsg(CUAsyncMessage & ioMsg, ULong inRefCon);
 
 	ULong						fState;					// +18
-	int						f1C;						// +1C
-	int						f20;						// +20
+	ULong						fTermFlag;				// +1C	termination flag
+	ULong						fTermPhase;				// +20	termination phase sequence number
 	NewtonErr				fErrStatus;				// +24
 	int						f28;						// +28
-	int						f2C;						// +002C abort
+	int						fAbortLock;				// +002C
 
 	CCMOCTConnectInfo 	fConnectInfo;			// +0030
 															// +0044
+	size_t					f48;						// +0048 size of message following
 	char						f4C[0x40];				// +004C	enough space for the largest CCommToolxxxRequest class
 	CUPort					f8C;						// +008C
 	CCommToolMsgContainer	f94[kCommToolNumChannels];				// +0094	size+18
@@ -872,7 +875,7 @@ protected:
 	bool						f1C7;						// +01C7
 
 	CBufferList *			f1C8;						// +01C8	get queue
-	size_t					f1CC;						// +01CC	threshold?
+	ArrayIndex				f1CC;						// +01CC	threshold?
 	bool						f1D0;						// +01D0
 	bool						f1D1;						// +01D1
 	bool						f1D2;						// +01D2
@@ -881,13 +884,13 @@ protected:
 	CCommToolGetEventReply	fGetEventReply;	// +01D8
 	int						f1F8;						// +01F8
 	NewtonErr				f1FC;						// +01FC
-	bool						f200;						// +0200
+	bool						fIsClosed;				// +0200
 	bool						f201;						// +0201	isPortRegistered
 	ULong						fName;					// +0204
 	CommToolRequestType	f208;						// +0208	channel filter
-	void *					f20C;						// +020C
-	CUAsyncMessage *		f210;						// +0210
-	void *					f214;						// +0214
+	CCommToolOptionMgmtRequest *	fOptionRequest;	// +020C
+	CUAsyncMessage *		fOptionMessage;		// +0210
+	CCommToolReply *		fOptionReply;			// +0214
 	CBufferList *			f218;						// +0218
 	CBufferList *			f21C;						// +021C
 	CShadowBufferSegment	fBufferSegment_1;		// +0220
@@ -896,8 +899,8 @@ protected:
 	Heap						fSavedHeap;				// +0258
 	Heap						fHeap;					// +025C
 	size_t					fHeapSize;				// +0260
-	long						f264;						// +0264
-	long						f268;						// +0268
+	Timeout					fTimeout;				// +0264
+	Timeout					fTimeoutRemaining;	// +0268
 // size +026C
 };
 

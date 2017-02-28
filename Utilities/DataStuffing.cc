@@ -9,7 +9,7 @@
 #include "DataStuffing.h"
 #include "ObjHeader.h"
 #include "Unicode.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 
 #pragma mark Bounds checking
 
@@ -117,7 +117,7 @@ FExtractLong(RefArg rcvr, RefArg inObj, RefArg inOffset)
 	char * p = BinaryData(inObj);
 	int32_t v = *(int32_t *)(p + offset);
 	uint32_t vMask = (uint32_t)kRefValueMask >> kRefTagBits;
-	if ((v & vMask) != 0)
+	if ((v & ~vMask) != 0)
 		ThrowErr(exFrames, kNSErrLongOutOfRange);
 	return MAKEINT(v);
 }

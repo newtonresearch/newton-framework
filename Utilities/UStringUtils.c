@@ -6,16 +6,14 @@
 
 	Written by:	Newton Research Group.
 */
+// define some useful C++ stuff
 typedef char bool;
+#define true 1
+#define false 0
 
 #include "Unicode.h"
 #include "UnicodePrivate.h"
 #include "UStringUtils.h"
-
-#undef YES
-#define YES 1
-#undef NO
-#define NO 0
 
 
 /* -----------------------------------------------------------------------------
@@ -153,8 +151,8 @@ HasChars(UniChar * s)
 	while ((ch = *s++) != kEndOfString)
 		if ((ch >= 'A' && ch <= 'Z')
 		 || (ch >= 'a' && ch <= 'z'))
-			return YES;
-	return NO;
+			return true;
+	return false;
 }
 
 bool
@@ -163,8 +161,8 @@ HasDigits(UniChar * s)
 	UniChar	ch;
 	while ((ch = *s++) != kEndOfString)
 		if (ch >= '0' && ch <= '9')
-			return YES;
-	return NO;
+			return true;
+	return false;
 }
 
 bool
@@ -173,8 +171,8 @@ HasSpaces(UniChar * s)
 	UniChar	ch;
 	while ((ch = *s++) != kEndOfString)
 		if (ch == ' ')
-			return YES;
-	return NO;
+			return true;
+	return false;
 }
 
 #pragma mark -
@@ -260,7 +258,7 @@ IsFirstByteOf2Byte(UChar ch, CharEncoding encoding)
 	case kMacRomanEncoding:
 	case kASCIIEncoding:
 	case kPCRomanEncoding:
-		return NO;
+		return false;
 
 	case kMacKanjiEncoding:
 		return (ch >= 0x81 && ch <= 0x9F)
@@ -270,7 +268,7 @@ IsFirstByteOf2Byte(UChar ch, CharEncoding encoding)
 	default:
 		ThrowMsg("Unknown character encoding");
 	}
-	return NO;
+	return false;
 }
 
 bool
@@ -282,18 +280,18 @@ IsPunctSymbol(UniChar * inStr, int inOffset)	// 00256524
 	if (inOffset > 0
 	 && (inStr[inOffset] == '\'' || inStr[inOffset] == 0x2019)	// ’s don’t count as punctuation
 	 && (inStr[inOffset-1] == 'S' || inStr[inOffset-1] == 's'))
-		return NO;
+		return false;
 
 	UniChar ch = inStr[inOffset];
 	for (ArrayIndex i = 0; i < sizeof(punctSymbols)/sizeof(UniChar); ++i)
 	{
 		UniChar punct = punctSymbols[i];
 		if (punct == ch)
-			return YES;
+			return true;
 		if (punct > ch)
 			break;
 	}
-	return NO;
+	return false;
 }
 
 void

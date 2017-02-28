@@ -175,7 +175,7 @@ public:
 	void		traceSet(RefArg, RefArg, RefArg, RefArg);
 	void		traceSend(RefArg rcvr, RefArg msg, ArrayIndex numArgs, ArrayIndex stackFrameIndex);
 	void		traceMethod(RefArg, RefArg, const char * name, ArrayIndex numArgs, ArrayIndex stackFrameIndex);
-	void		traceReturn(bool hasValue = YES);
+	void		traceReturn(bool hasValue = true);
 
 	Ref		translateException(Exception * inException);
 	bool		handleException(Exception * inException, int inDepth, StackState & inState);
@@ -216,10 +216,10 @@ public:
 ------------------------------------------------------------------------------*/
 
 inline void CInterpreter::setCallEnv(void)
-{ isSend = NO;}
+{ isSend = false;}
 
 inline void CInterpreter::setSendEnv(RefArg receiver, RefArg implementor)
-{ isSend = YES; vm->rcvr = receiver; vm->impl = implementor; }
+{ isSend = true; vm->rcvr = receiver; vm->impl = implementor; }
 
 inline bool CInterpreter::getIsSend(void)
 { return isSend; }

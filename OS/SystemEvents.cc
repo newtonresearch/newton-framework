@@ -1,7 +1,7 @@
 /*
 	File:		SystemEvents.cc
 
-	Contains:	COSEvent implementation.
+	Contains:	CSystemEvent implementation.
 
 	Written by:	Newton Research Group.
 */
@@ -10,29 +10,29 @@
 
 
 /*--------------------------------------------------------------------------------
-	C O S E v e n t
+	C S y s t e m E v e n t
 --------------------------------------------------------------------------------*/
 
-COSEvent::COSEvent(SystemEvent inEvent)
+CSystemEvent::CSystemEvent(SystemEvent inEvent)
 {
 	fEvent = inEvent;
-	fNameServerPort = GetPortSWI(kGetNameServerPort);
+	fSystemPort = GetPortSWI(kGetNameServerPort);
 }
 
 
 void
-COSEvent::setEvent(SystemEvent inEvent)
+CSystemEvent::setEvent(SystemEvent inEvent)
 {
 	fEvent = inEvent;
 }
 
 
 NewtonErr
-COSEvent::registerForSystemEvent(ObjectId inPortId, ULong inSendFilter, Timeout inTimeout)
+CSystemEvent::registerForSystemEvent(ObjectId inPortId, ULong inSendFilter, Timeout inTimeout)
 {
 	CNameServerReply	reply;
 	CSysEventRequest	request;
-	size_t				theSize;
+	size_t				replySize;
 
 	request.fCommand = kRegisterForSystemEvent;
 	request.fTheEvent = fEvent;
@@ -40,25 +40,26 @@ COSEvent::registerForSystemEvent(ObjectId inPortId, ULong inSendFilter, Timeout 
 	request.fSysEventTimeOut = inTimeout;
 	request.fSysEventSendFilter = inSendFilter;
 
-	return fNameServerPort.sendRPC(&theSize, &request, sizeof(request), &reply, sizeof(reply));
+	return fSystemPort.sendRPC(&replySize, &request, sizeof(request), &reply, sizeof(reply));
 }
 
 
 NewtonErr
-COSEvent::unregisterForSystemEvent(ObjectId inPortId)
+CSystemEvent::unregisterForSystemEvent(ObjectId inPortId)
 {
 	CNameServerReply	reply;
 	CSysEventRequest	request;
-	size_t				theSize;
+	size_t				replySize;
 
 	request.fCommand = kUnregisterForSystemEvent;
 	request.fTheEvent = fEvent;
 	request.fSysEventObjId = inPortId;
 
-	return fNameServerPort.sendRPC(&theSize, &request, sizeof(request), &reply, sizeof(reply));
+	return fSystemPort.sendRPC(&replySize, &request, sizeof(request), &reply, sizeof(reply));
 }
 
 
+#pragma mark -
 /*--------------------------------------------------------------------------------
 	C S e n d S y s t e m E v e n t
 --------------------------------------------------------------------------------*/
@@ -73,15 +74,19 @@ CSendSystemEvent::init(void)
 NewtonErr
 CSendSystemEvent::sendSystemEvent(void * inMessage, size_t inMessageSize)
 {
-	NewtonErr			err;
-	CSysEventRequest	request;
-	if ((err = fMsgToSend.setBuffer(inMessage, inMessageSize)) == noErr)
+	NewtonErr err;
+	XTRY
 	{
+		XFAIL(err = fMsgToSend.setBuffer(inMessage, inMessageSize))
+
+		size_t replySize;
+		CSysEventRequest request;
 		request.fCommand = kSendSystemEvent;
 		request.fTheEvent = fEvent;
-		// INCOMPLETE
-		//err = sendRPC(&theSize, &request, sizeof(request), &reply, sizeof(reply));
+		request.fSysEventObjId = fMsgToSend;
+		err = fSystemPort.sendRPC(&replySize, &request, sizeof(request), NULL, 0, kNoTimeout, 1);
 	}
+	XENDTRY;
 	return err;
 }
 
@@ -89,6 +94,30 @@ CSendSystemEvent::sendSystemEvent(void * inMessage, size_t inMessageSize)
 NewtonErr
 CSendSystemEvent::sendSystemEvent(CUAsyncMessage * inAsyncMessage, void * inMessage, size_t inMessageSize, void * outReply, ULong outReplySize)
 {
-	// INCOMPLETE
-	return noErr;
+	NewtonErr err;
+	XTRY
+	{
+		XFAILIF(inMessage == (void *)-1, err = kOSErrBadParameters;)	// well, obviously
+		if (outReply == (void *)-1)
+			;			 // we donÕt want a reply
+		else
+		{
+			// get the shared reply mem
+			CUSharedMem replyMem(inAsyncMessage->getReplyMemId());
+			size_t replySize = MIN(inMessageSize, outReplySize);
+			// point it to the reply buffer
+			XFAIL(err = replyMem.setBuffer(outReply, replySize, kSMemReadWrite))
+			if (replySize > 0)
+				// the reply is the message
+				memcpy(outReply, inMessage, replySize);
+		}
+		XFAIL(err = fMsgToSend.setBuffer(inMessage, inMessageSize))
+
+		fMsgToNameServer.fCommand = kSendSystemEvent;
+		fMsgToNameServer.fTheEvent = fEvent;
+		fMsgToNameServer.fSysEventObjId = fMsgToSend;
+		err = fSystemPort.sendRPC(inAsyncMessage, &fMsgToNameServer, sizeof(fMsgToNameServer), NULL, 0, kNoTimeout, NULL, 1);
+	}
+	XENDTRY;
+	return err;
 }

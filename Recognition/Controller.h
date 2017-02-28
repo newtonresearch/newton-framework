@@ -124,9 +124,9 @@ protected:
 	long			f44;
 	long			f48;
 	long			f4C;
-	long			f50;
-	long			f54;
-	long			f58;
+	CRecArea *	f50;
+	HitTestProcPtr			fSaveHitTest;	//+54
+	ExpireStrokeProcPtr  fSaveExpireStroke;	//+58
 	long			f5C;
 // size +60
 };

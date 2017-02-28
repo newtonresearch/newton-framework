@@ -44,7 +44,7 @@ public:
 	ArrayIndex	markerSpace(void);
 
 	NewtonErr	copyIn(CBufferList * inBuf, ArrayIndex * ioSize);
-	NewtonErr	copyIn(UByte * inBuf, ArrayIndex * ioSize, bool inArg3 = NO, ULong inArg4 = 0);
+	NewtonErr	copyIn(UByte * inBuf, ArrayIndex * ioSize, bool inArg3 = false, ULong inArg4 = 0);
 
 	NewtonErr	copyOut(CBufferList * outBuf, ArrayIndex * ioSize, ULong * outArg3 = NULL);
 	NewtonErr	copyOut(UByte * outBuf, ArrayIndex * ioSize, ULong * outArg3 = NULL);

@@ -85,7 +85,7 @@
 #define kSetEnvironment					35	// with return
 #define kGetEnvironment					36	// with return
 #define kAddDomainToEnvironment		37
-#define kRemoveDomainFromEnvironment 38
+#define kRemoveDomainFromEnvironment	38
 #define kEnvironmentHasDomain			39	// with return
 #define kSemGroupSetRefCon				40
 #define kSemGroupGetRefCon				41
@@ -100,9 +100,9 @@
 #define kClearFIQ							50
 #define kSetTabletCalibration			51
 #define kGetTabletCalibration			52
-#define k53GenericSWI					53
-#define k54GenericSWI					54
-#define k55GenericSWI					55
+#define kRegisterCodeWithDebugger	53
+#define kDeregisterCodeWithDebugger		54
+#define kInformDebuggerMemoryReloaded	55
 #define k56GenericSWI					56
 #define k57GenericSWI					57
 #define k58GenericSWI					58
@@ -113,7 +113,7 @@
 #define k63GenericSWI					63
 #define kGetRExPtr						64
 #define kGetLastRExConfigEntry		65
-#define k66GenericSWI					66
+#define kRegisterPackageWithDebugger	66
 #define kResetPortFlags					67
 #define kPowerOffSystem					68
 #define kPauseSystem						69

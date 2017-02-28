@@ -34,17 +34,29 @@ public:
 					CInkerEvent();
 					CInkerEvent(int inSelector);
 
-	void			setSelector(int inSelector);
+	void			setParameter(int inParameter);
 
-//protected:
+protected:
 	int			fSelector;	// +08
-	int			fResult;		// +0C
+	int			fParameter;	// +0C
 };
 
 
 inline CInkerEvent::CInkerEvent() : CEvent() { }
 inline CInkerEvent::CInkerEvent(int inSelector) : CEvent(kInkerEventId), fSelector(inSelector) { }
-inline void CInkerEvent::setSelector(int inSelector) { fSelector = inSelector; }
+inline void CInkerEvent::setParameter(int inParameter) { fParameter = inParameter; }
+
+
+class CInkerReply : public CInkerEvent
+{
+public:
+					CInkerReply();
+
+	int			result(void) const;
+};
+
+inline CInkerReply::CInkerReply() : CInkerEvent() { }
+inline int CInkerReply::result(void) const { return fParameter; }
 
 
 /* -------------------------------------------------------------------------------
@@ -53,13 +65,11 @@ inline void CInkerEvent::setSelector(int inSelector) { fSelector = inSelector; }
 
 class CInkerCalibrationEvent : public CInkerEvent
 {
+	friend class CInkerEventHandler;
 public:
 					CInkerCalibrationEvent();
 					CInkerCalibrationEvent(int inSelector);
 
-	friend class CInkerEventHandler;
-
-//protected:
 	Calibration	fCalibration;	// +10
 };
 
@@ -71,18 +81,20 @@ inline CInkerCalibrationEvent::CInkerCalibrationEvent(int inSelector) : CInkerEv
 	C I n k e r B o u n d s E v e n t
 ------------------------------------------------------------------------------- */
 
-class CInkerBoundsEvent : public CInkerEvent
+class CInkerBoundsEvent : public CInkerReply
 {
+	friend class CInkerEventHandler;
 public:
 					CInkerBoundsEvent();
 
-	friend class CInkerEventHandler;
+	Rect			bounds(void) const;
 
-//protected:
+private:
 	Rect	fBounds;	// +10
 };
 
-inline CInkerBoundsEvent::CInkerBoundsEvent() : CInkerEvent() { }
+inline CInkerBoundsEvent::CInkerBoundsEvent() : CInkerReply() { }
+inline Rect CInkerBoundsEvent::bounds(void) const { return fBounds; }
 
 
 /* -------------------------------------------------------------------------------
@@ -127,7 +139,7 @@ private:
 	bool			mapLCDExtent(const Rect * inRect, Rect * outRect);
 
 	char *		fPixMem;				// +00
-	NativePixelMap	fPixMap;				// +04
+	NativePixelMap	fPixMap;			// +04
 	Rect			fInkBounds;			// +20
 	ArrayIndex	fNumOfPts;			// +28
 	LPoint		fExtent;
@@ -144,6 +156,15 @@ inline Rect CLiveInker::bounds(void) const  { return fInkBounds; }
 /* -------------------------------------------------------------------------------
 	C I n k e r
 ------------------------------------------------------------------------------- */
+
+enum PenState
+{
+	kPenDown,
+	kPenError,
+	kPenActive,
+	kPenUp
+};
+
 
 class CInker : public CAppWorld
 {
@@ -177,7 +198,7 @@ private:
 
 	CUAsyncMessage	fMessage;			// +70
 	CUPort *			fPort;				// +80
-	short				x84;
+	short				x84;					//			doesn’t do anything useful
 	FPoint			fPenLoc;				// +88
 	FPoint			fSampleLoc;			// +90
 
@@ -186,7 +207,7 @@ private:
 	UChar				fPenSize;			// +C2	unused
 	UChar				fPenState;			// +C3
 	Rect				fInkBounds;			// +C4
-	CInkerEvent		fEvent;				// +CC
+	CIdleEvent		fEvent;				// +CC	but CInkerEvent sized
 	CLiveInker		fLiveInker;			// +DC
 //	size +0118
 };

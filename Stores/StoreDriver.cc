@@ -35,13 +35,13 @@ CStoreDriver::addressOf(ULong inAddr, bool * outIsContiguous)
 	{
 		p = (fMemBase + (inAddr & 0x0001FFFF) * sizeof(long)) + ((inAddr >> 17) ^ 3);
 		if (outIsContiguous)
-			*outIsContiguous = NO;
+			*outIsContiguous = false;
 	}
 	else
 	{
 		p = fStoreBase + (inAddr - f0C);
 		if (outIsContiguous)
-			*outIsContiguous = YES;
+			*outIsContiguous = true;
 	}
 	return p;
 }
@@ -55,13 +55,13 @@ CStoreDriver::addressOfAligned(ULong inAddr, bool * outIsContiguous)
 	{
 		p = (fMemBase + (inAddr & 0x0001FFFF) * sizeof(long));
 		if (outIsContiguous)
-			*outIsContiguous = NO;
+			*outIsContiguous = false;
 	}
 	else
 	{
 		p = fStoreBase + (inAddr - f0C);
 		if (outIsContiguous)
-			*outIsContiguous = YES;
+			*outIsContiguous = true;
 	}
 	return p;
 }

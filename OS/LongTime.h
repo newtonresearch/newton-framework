@@ -33,7 +33,7 @@ public:
 
 	// Set the alarm on a channel.
 	// If an alarm already exists on this channel, it will be discarded
-	static NewtonErr	setAlarm(ULong inName, CTime inTime, ObjectId inPortId, ObjectId inMsgId, void * inObj, long inObjSize, ULong inType);
+	static NewtonErr	setAlarm(ULong inName, CTime inTime, ObjectId inPortId, ObjectId inMsgId, void * inObj, size_t inObjSize, ULong inType);
 
 	// Set the alarm on a channel.
 	// If an alarm already exists on this channel, it will be discarded.

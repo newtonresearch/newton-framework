@@ -31,10 +31,10 @@ CTaskSafeRingBuffer::CTaskSafeRingBuffer()
 	fGetPtr = NULL;
 	f18 = NULL;
 	f1C = NULL;
-	fIsBufOurs = NO;
+	fIsBufOurs = false;
 	fLockCount = 0;
 	fCurrentTask = 0;	// kNoId
-	fIsThreaded = NO;
+	fIsThreaded = false;
 	f20 = noErr;
 	f24 = noErr;
 }
@@ -43,7 +43,7 @@ CTaskSafeRingBuffer::CTaskSafeRingBuffer()
 CTaskSafeRingBuffer::~CTaskSafeRingBuffer()
 {
 	if (fIsBufOurs && fBuf != NULL)
-		delete fBuf;	// free()?
+		FreePtr((Ptr)fBuf);
 	if (f1C)
 		delete f1C;
 	if (f18)
@@ -57,20 +57,20 @@ CTaskSafeRingBuffer::init(size_t inBufLen, bool inThreaded)
 	NewtonErr	err = noErr;
 	XTRY
 	{
-		fIsBufOurs = YES;
+		fIsBufOurs = true;
 		fIsThreaded = inThreaded;
 		fBufLen = inBufLen + 1;
 		fBuf = (UByte *)NewNamedPtr(fBufLen, 'trng');
-		XFAILNOT(fBuf, err = MemError();)
+		XFAILIF(fBuf == NULL, err = MemError();)
 		fBufEnd = fBuf + fBufLen;
 		fPutPtr = fGetPtr = fBuf;
 
 		f18 = new CULockingSemaphore;
-		XFAILNOT(f18, err = MemError();)
+		XFAILIF(f18 == NULL, err = MemError();)
 		f18->init();
 
 		f1C = new CULockingSemaphore;
-		XFAILNOT(f1C, err = MemError();)
+		XFAILIF(f1C == NULL, err = MemError();)
 		f1C->init();
 	}
 	XENDTRY;
@@ -346,7 +346,6 @@ CTaskSafeRingBuffer::putCompletely(int inCh, Timeout interval, Timeout inTimeout
 		&& GetGlobalTime() > expiryTime)
 			ThrowErr(exPipe, kOSErrMessageTimedOut);
 	}
-	return ch;
 }
 
 
@@ -631,7 +630,7 @@ CTaskSafeRingBuffer::updateGetVector(long)
 CTaskSafeRingPipe::CTaskSafeRingPipe()
 {
 	fRingBuf = NULL;
-	fIsBufOurs = NO;
+	fIsBufOurs = false;
 	fRetryInterval = 0;
 	fTimeout = 250*kMilliseconds;
 }
@@ -665,7 +664,7 @@ CTaskSafeRingPipe::init(size_t inBufLen, Timeout inTimeout, Timeout interval, bo
 	if ((err = ringBuf->init(inBufLen, inArg4)) != noErr)
 		ThrowErr(exPipe, err);
 	fRingBuf = ringBuf;
-	fIsBufOurs = YES;
+	fIsBufOurs = true;
 	fTimeout = inTimeout;
 	fRetryInterval = interval;
 }

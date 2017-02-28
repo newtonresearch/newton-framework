@@ -1,9 +1,8 @@
 /*
- *  Stroker.h
- *  Newton
- *
- *  Created by Simon Bell on 09/09/2010.
- *  Copyright 2010 __MyCompanyName__. All rights reserved.
- *
- */
+	File:		Stroker.h
 
+	Contains:	The stroker reads points out of the tablet queue
+					and assembles strokes in the stroke queue.
+
+	Written by:	Newton Research Group, 2010.
+*/

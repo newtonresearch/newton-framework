@@ -72,7 +72,7 @@ public:
 	ArrayIndex	inkWordNoAtOffset(ArrayIndex inOffset) const;
 	Ref			cloneInkWordNo(ArrayIndex inWordNo) const;
 
-	int			compareSubStringCommon(const CRichString &, ArrayIndex offset, ArrayIndex length, bool huh = NO) const;
+	int			compareSubStringCommon(const CRichString &, ArrayIndex offset, ArrayIndex length, bool doDiacritical = false) const;
 	int			compareInk(const CRichString &, ArrayIndex, ArrayIndex) const;
 
 	Ref			makeParagraphStylesSlot(RefArg) const;

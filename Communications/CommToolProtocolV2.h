@@ -266,7 +266,7 @@ public:
 
 	NONVIRTUAL 	void					CTResArbClaimNotification(UChar* resName, UChar* resType);
 
-	NONVIRTUAL void					CTHandleInternalEvent();
+	NONVIRTUAL	void					CTHandleInternalEvent();
 
 	// new implementation methods
 					void					bindStart();
@@ -299,11 +299,11 @@ public:
 };
 
 
-NewtonErr StartCommToolProtocol(COptionArray* options, ULong serviceId, CServiceInfo* serviceInfo, CCMService* service, CCommToolProtocol* ctProtocol);
+//NewtonErr StartCommToolProtocol(COptionArray* options, ULong serviceId, CServiceInfo* serviceInfo, CCMService* service, CCommToolProtocol* ctProtocol);
 
 // 2.0:	New version of StartCommToolProtocol accepts heapSize parameter.
 // 		HeapSize is used to set the size of the heap for the CCommToolProtocol implementation.
-NewtonErr StartCommToolProtocol(COptionArray* options, ULong serviceId, CServiceInfo* serviceInfo, CCMService* service, CCommToolProtocol* ctProtocol, size_t heapSize);
+NewtonErr StartCommToolProtocol(COptionArray* options, ULong serviceId, CServiceInfo* serviceInfo, CCMService* service, CCommToolProtocol* ctProtocol, size_t heapSize = 50000);
 
 
 #endif	/* __COMMTOOLPROTOCOLV2_H */

@@ -15,7 +15,7 @@
 bool
 InitInterpretation(UnitInterpretation * interpretation, ULong inParamSize, ArrayIndex inNumOfParams)
 {
-	bool initd = NO;
+	bool initd = false;
 	XTRY
 	{
 		interpretation->label = kNoLabel;
@@ -28,7 +28,7 @@ InitInterpretation(UnitInterpretation * interpretation, ULong inParamSize, Array
 			interpretation->parms = CArray::make(inParamSize, inNumOfParams);
 			XFAIL(interpretation->parms == NULL)
 		}
-		initd = YES;
+		initd = true;
 	}
 	XENDTRY;
 	return initd;
@@ -61,10 +61,10 @@ CSIUnit::~CSIUnit()
 CSIUnit *
 CSIUnit::make(CRecDomain * inDomain, ULong inType, ULong inArg3, CArray * inAreas, ULong inInterpSize)
 {
-	CSIUnit * siUnit;
+	CSIUnit * siUnit = new CSIUnit;
 	XTRY
 	{
-		XFAIL((siUnit = new CSIUnit) == NULL)
+		XFAIL(siUnit == NULL)
 		XFAILIF(siUnit->iSIUnit(inDomain, inType, inArg3, inAreas, inInterpSize) != noErr, siUnit->release(); siUnit = NULL;)
 	}
 	XENDTRY;
@@ -722,7 +722,7 @@ CSIUnit::getStroke(ArrayIndex index)
 CRecUnitList *
 CSIUnit::getAllStrokes(void)
 {
-	bool isStrokeOwner = NO;
+	bool isStrokeOwner = false;
 	CRecUnitList * allUnits = CRecUnitList::make();		// r4
 	CRecUnitList * uniqueUnits = CRecUnitList::make();	// r5
 	XTRY

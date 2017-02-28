@@ -7,6 +7,7 @@
 */
 
 #include "Quartz.h"
+#include "Geometry.h"
 #include "DrawShape.h"
 #include "DrawText.h"
 
@@ -30,9 +31,12 @@ extern void		InkDrawInRect(RefArg inkData, size_t inPenSize, Rect * inOriginalBo
 ------------------------------------------------------------------------------*/
 
 extern "C" {
+Ref		FIsPrimShape(RefArg inRcvr, RefArg inShape);
 Ref		FDrawShape(RefArg inRcvr, RefArg inShape, RefArg inStyle);
 Ref		FOffsetShape(RefArg inRcvr, RefArg ioShape, RefArg indX, RefArg indY);
 Ref		FShapeBounds(RefArg inRcvr, RefArg inShape);
+Ref		FPointsToArray(RefArg inRcvr, RefArg inShape);
+Ref		FArrayToPoints(RefArg inRcvr, RefArg inArray);
 };
 
 class CSaveStyle;
@@ -46,7 +50,7 @@ void		GetBoundsRect(RefArg inShape, Rect * outRect, Point inOffset, CSaveStyle *
 	Read a number from an object.
 	Args:		inObj		the NS object
 				outNum	the number
-	Return:	YES if successful
+	Return:	true if successful
 --------------------------------------------------------------------------------*/
 
 bool
@@ -55,16 +59,16 @@ FromObject(RefArg inObj, short * outNum)
 	if (ISINT(inObj))
 	{
 		*outNum = RVALUE(inObj);
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 /*--------------------------------------------------------------------------------
 	Read a bounds frame from an object.
 	Args:		inObj			the NS object
 				outBounds	a rect for the bounds
-	Return:	YES if successful
+	Return:	true if successful
 --------------------------------------------------------------------------------*/
 
 bool
@@ -83,12 +87,12 @@ FromObject(RefArg inObj, Rect * outBounds)
 				var = GetFrameSlot(inObj, SYMA(right));
 				if (FromObject(var, &outBounds->right))
 				{
-					return YES;
+					return true;
 				}
 			}
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -119,9 +123,7 @@ SetBoundsRect(RefArg ioFrame, const Rect * inBounds)
 Ref
 ToObject(const Rect * inBounds)
 {
-	Ref	Rbounds = SYS_boundsFrame;
-	Ref *	RSbounds = &Rbounds;
-	RefVar	frame(Clone(RA(bounds)));
+	RefVar frame(Clone(RA(canonicalRect)));
 	return SetBoundsRect(frame, inBounds);
 }
 
@@ -139,16 +141,16 @@ FamilyNumToSym(int inFontSpec)
 	switch (inFontSpec)
 	{
 	case 0:
-		fontFamily = RSYMespy;				// change these to match OS X font names?
+		fontFamily = SYMA(espy);				// change these to match OS X font names?
 		break;
 	case 1:
-		fontFamily = RSYMnewYork;
+		fontFamily = SYMA(newYork);
 		break;
 	case 2:
-		fontFamily = RSYMgeneva;
+		fontFamily = SYMA(geneva);
 		break;
 	case 3:
-		fontFamily = RSYMhandwriting;
+		fontFamily = SYMA(handwriting);
 		break;
 	default:
 		fontFamily = NILREF;
@@ -395,7 +397,7 @@ inline	void	CSaveStyle::setStrokePattern(void)
 ------------------------------------------------------------------------------*/
 
 CPattern::CPattern()
-	:	fPattern(NULL), fPatternIsOurs(NO), f05(YES)
+	:	fPattern(NULL), fPatternIsOurs(false), f05(true)
 { }
 
 
@@ -518,7 +520,7 @@ CSaveStyle::setStyle(RefArg inStyle, Point inOffset, unsigned inFlags)
 {
 // if already using this style, ignore the request
 	if (EQ(inStyle, fCurrentStyle))
-		return YES;
+		return true;
 
 	bool  sp04 = (inFlags & 0x01) != 0;	// restoring?
 	bool  sp00 = (inFlags & 0x02) != 0;
@@ -526,17 +528,17 @@ CSaveStyle::setStyle(RefArg inStyle, Point inOffset, unsigned inFlags)
 
 // set defaults
 	LineNormal();
-	fDoStroke = YES;
-	fDoFill = NO;
-	fDoText = NO;
-	fTransferMode = srcOr;
+	fDoStroke = true;
+	fDoFill = false;
+	fDoText = false;
+	fTransferMode = modeOr;
 	fAlignment = 0;
 	fJustification = 0;
 	fSelection = 0;
 
 // modify defaults from inStyle
-	bool  gotFont = NO;
-	bool  r10 = YES;
+	bool  gotFont = false;
+	bool  r10 = true;
 	if (NOTNIL(inStyle))
 	{
 		StyleInfo * cachedStyle = lookupCache();
@@ -602,7 +604,7 @@ CSaveStyle::setStyle(RefArg inStyle, Point inOffset, unsigned inFlags)
 		{
 			if (NOTNIL(item = GetProtoVariable(inStyle, SYMA(fillPattern))))
 			{
-				fDoFill = fFillPattern.getFillPattern(item, NO);
+				fDoFill = fFillPattern.getFillPattern(item, false);
 			}
 			else
 				cachedStyle->clear(kBitFillPattern);
@@ -615,8 +617,8 @@ CSaveStyle::setStyle(RefArg inStyle, Point inOffset, unsigned inFlags)
 				if (NOTNIL(item = GetProtoVariable(inStyle, SYMA(transferMode))))
 				{
 					fTransferMode = RINT(item);
-					if (fTransferMode == patCopy)
-						fTransferMode = srcCopy;
+					if (fTransferMode == modeMask)
+						fTransferMode = modeCopy;
 //					PenMode(fTransferMode+8);
 				}
 				else
@@ -627,7 +629,7 @@ CSaveStyle::setStyle(RefArg inStyle, Point inOffset, unsigned inFlags)
 			{
 				if (NOTNIL(item = GetProtoVariable(inStyle, SYMA(penPattern))))
 				{
-					fDoStroke = fStrokePattern.getFillPattern(item, YES);
+					fDoStroke = fStrokePattern.getFillPattern(item, true);
 				}
 				else
 					cachedStyle->clear(kBitPenPattern);
@@ -637,9 +639,9 @@ CSaveStyle::setStyle(RefArg inStyle, Point inOffset, unsigned inFlags)
 			{
 				if (NOTNIL(item = GetProtoVariable(inStyle, SYMA(textPattern))))
 				{
-					fDoText = fTextPattern.getFillPattern(item, YES);
+					fDoText = fTextPattern.getFillPattern(item, true);
 					if (fDoText)
-						fTextPattern.setf05(YES);
+						fTextPattern.setf05(true);
 				}
 				else
 					cachedStyle->clear(kBitFontPattern);
@@ -663,7 +665,7 @@ CSaveStyle::setStyle(RefArg inStyle, Point inOffset, unsigned inFlags)
 				if (NOTNIL(item = GetProtoVariable(inStyle, SYMA(font))))
 				{
 					fFontSpec = item;
-					gotFont = YES;
+					gotFont = true;
 				}
 				else
 					cachedStyle->clear(kBitFont);
@@ -703,7 +705,7 @@ IsPrimShape(RefArg inObj)
 			 || EQ(objClass, SYMA(region))
 			 || EQ(objClass, SYMA(text));
 	}
-	return NO;
+	return false;
 }
 
 
@@ -803,7 +805,7 @@ MungeBounds(RefArg inShape)
 			if (NOTNIL(bits = GetProtoVariable(inShape, SYMA(data))))
 			{
 				CDataPtr pixmapData(bits);
-				if (IsInstance(bits, RSYMpixels))
+				if (IsInstance(bits, SYMA(pixels)))
 				{
 					PixelMap * pixmap = (PixelMap *)(Ptr)pixmapData;
 					pixmap->reserved1 = 0x11EB;	// sign it so we know bounds have been swapped
@@ -994,6 +996,13 @@ extern CView *	FailGetView(RefArg inContext);
 ------------------------------------------------------------------------------*/
 
 Ref
+FIsPrimShape(RefArg inRcvr, RefArg inShape)
+{
+	return MAKEBOOLEAN(IsPrimShape(inShape));
+}
+
+
+Ref
 FDrawShape(RefArg inRcvr, RefArg inShape, RefArg inStyle)
 {
 	CView *  view = FailGetView(inRcvr);
@@ -1062,6 +1071,68 @@ FShapeBounds(RefArg inRcvr, RefArg inShape)
 	Rect  bounds;
 	return ToObject(ShapeBounds(inShape, &bounds));
 }
+
+
+/*------------------------------------------------------------------------------
+	Convert the points data in a polygon shape from the binary data structure
+	in the shape view to an array.
+	Args:		inShape		binary object of class 'polygonShape
+	Return:	array object
+				[0] = shape type
+				[1] = number of points
+				[2],[3]... points
+------------------------------------------------------------------------------*/
+
+Ref
+FPointsToArray(RefArg inRcvr, RefArg inShape)
+{
+	if (!EQ(ClassOf(inShape), SYMA(polygonShape)))
+		ThrowMsg("not a polygonShape");
+
+	CDataPtr ppd(inShape);
+	int16_t * pd = (int16_t *)(char *)ppd;
+	ArrayIndex numOfPoints = pd[1];
+	ArrayIndex numOfElements = 2 + numOfPoints*2;
+	RefVar points(MakeArray(numOfElements));
+	SetArraySlot(points, 0, MAKEINT(pd[0]));	// shape type
+	SetArraySlot(points, 1, MAKEINT(pd[1]));	// number of points
+	Point * p = (Point *)(pd+2);
+	for (ArrayIndex i = 2; i < numOfElements; ++p)
+	{
+		SetArraySlot(points, i, p->h), ++i;
+		SetArraySlot(points, i, p->v), ++i;
+	}
+	return points;
+}
+
+
+/*------------------------------------------------------------------------------
+	Convert the points in an array to the binary data structure of a polygon shape.
+	Args:		inArray		array of points
+								[0] = type; 4=>closed, 5=>open polygon
+	Return:	polygon shape object
+------------------------------------------------------------------------------*/
+
+Ref
+FArrayToPoints(RefArg inRcvr, RefArg inArray)
+{
+//	ArrayIndex numOfPoints = Length(inArray);	// original uses this instead of element 1 of array
+	ArrayIndex numOfPoints = RINT(GetArraySlot(inArray, 1));
+	ArrayIndex numOfElements = 2 + numOfPoints*2;
+	RefVar polyPoints(AllocateBinary(SYMA(polygonShape), 2*sizeof(int16_t) + numOfPoints*sizeof(Point)));
+	CDataPtr ppd(polyPoints);
+	int16_t * pd = (int16_t *)(char *)ppd;
+	pd[0] = RINT(GetArraySlot(inArray, 0));	// shape type
+	pd[1] = numOfPoints;
+	Point * p = (Point *)(pd+2);
+	for (ArrayIndex i = 2; i < numOfElements; ++p)
+	{
+		p->h = RINT(GetArraySlot(inArray, i)), ++i;
+		p->v = RINT(GetArraySlot(inArray, i)), ++i;
+	}
+	return polyPoints;
+}
+
 #endif
 
 #pragma mark -
@@ -1110,7 +1181,7 @@ DrawShapeList(RefArg inShapes, CSaveStyle * inStyle, Point inOffset)
 {
 	if (IsArray(inShapes))
 	{
-		bool  badStyle = NO;
+		bool  badStyle = false;
 		CObjectIterator	iter(inShapes);
 		for ( ; !iter.done(); iter.next())
 		{
@@ -1173,7 +1244,7 @@ DrawOneShape(RefArg inShape, CSaveStyle * inStyle, Point inOffset)
 
 	//sp-10
 	RefVar	shapeData(inShape);		// sp0C
-	bool		isShapeHandle = NO;		// sp08
+	bool		isShapeHandle = false;		// sp08
 
 	RefVar	shapeClass(ClassOf(inShape));		// r6
 
@@ -1250,7 +1321,7 @@ DrawOneShape(RefArg inShape, CSaveStyle * inStyle, Point inOffset)
 
 		shapeData = GetProtoVariable(inShape, SYMA(data));
 		inStyle->setStrokePattern();
-		InkDrawInRect(shapeData, LineWidth(), &originalBoundsRect, &boundsRect, NO);
+		InkDrawInRect(shapeData, LineWidth(), &originalBoundsRect, &boundsRect, false);
 	}
 
 //000E00D0
@@ -1309,7 +1380,7 @@ DrawOneShape(RefArg inShape, CSaveStyle * inStyle, Point inOffset)
 	else if (EQ(shapeClass, SYMA(region)))
 	{
 		shapeData = GetProtoVariable(inShape, SYMA(data));
-		isShapeHandle = YES;
+		isShapeHandle = true;
 		offsetFn = (OffsetFunc) (void(*)(RegionShape*,short,short)) OffsetRgn;
 		fillFn = (FillFunc) (void(*)(RegionShape*)) FillRgn;
 		strokeFn = (StrokeFunc) (void(*)(RegionShape*)) StrokeRgn;
@@ -1320,7 +1391,7 @@ DrawOneShape(RefArg inShape, CSaveStyle * inStyle, Point inOffset)
 	else if (EQ(shapeClass, SYMA(polygon)))
 	{
 		shapeData = GetProtoVariable(inShape, SYMA(data));
-		isShapeHandle = YES;
+		isShapeHandle = true;
 		offsetFn = (OffsetFunc) (void(*)(PolygonShape*,short,short)) OffsetPoly;
 		fillFn = (FillFunc) (void(*)(PolygonShape*)) FillPoly;
 		strokeFn = (FillFunc) (void(*)(PolygonShape*)) StrokePoly;
@@ -1422,20 +1493,16 @@ commondraw:
 //000E05C0
 	else if (EQ(shapeClass, SYMA(bitmap)))				// •• bitmap
 	{
-		Rect  boundsRect;
+		Rect boundsRect;
 		GetBoundsRect(inShape, &boundsRect, inOffset, inStyle);
-#if 0
-		RefVar	mask(GetFrameSlot(inShape, SYMmask));
-// quartz doesn’t do transfer modes
-		int		mode = inStyle->fTransferMode;
-		if (mode == patCopy)
-		{
+		RefVar mask(GetFrameSlot(inShape, SYMA(mask)));
+		int mode = inStyle->fTransferMode;
+		if (mode == modeMask) {
 			if (NOTNIL(mask))
-				DrawBitmap(mask, &boundsRect, srcBic);
-			mode = srcOr;
+				DrawBitmap(mask, &boundsRect, modeBic);
+			mode = modeOr;
 		}
-#endif
-		DrawBitmap(inShape, &boundsRect /*, mode*/);
+		DrawBitmap(inShape, &boundsRect, mode);
 	}
 
 //000E0678
@@ -1452,7 +1519,7 @@ commondraw:
 		shapeData = GetProtoVariable(inShape, SYMA(data));
 		CDataPtr textData(shapeData);
 		CRichString str((UniChar *)(Ptr) textData, Length(shapeData));
-		if (EQRef(ClassOf(shapeData), RSYMtextBox))
+		if (EQ(ClassOf(shapeData), SYMA(textBox)))
 		{
 			newton_try
 			{
@@ -1512,7 +1579,7 @@ commondraw:
 		bounds.bottom += grabHandleSize;
 		bounds.right += grabHandleSize;
 
-		if (EQRef(shapeClass, SYMline))
+		if (EQ(shapeClass, SYMA(line)))
 		{
 			PenState pnState;
 			GetPenState(&pnState);
@@ -1521,7 +1588,7 @@ commondraw:
 			OffsetRect(&bounds, dh, dv);
 			InvertRect(&bounds);
 		}
-		else if (EQRef(shapeClass, SYMrectangle))							// it’s a rect…
+		else if (EQ(shapeClass, SYMA(rectangle)))							// it’s a rect…
 			  && (dh < grabHandleOffset || dv < grabHandleOffset))	// …but too small to have distinct grab handles
 		{
 			if (dv < grabHandleOffset)

@@ -92,7 +92,7 @@ AllocateLargeBinary(RefArg inClass, StoreRef inClassRef, size_t inSize, CStoreWr
 void
 AbortLargeBinaries(RefArg inEntry)
 {
-	bool	isRegisteredForDeclawing = NO;
+	bool	isRegisteredForDeclawing = false;
 	for (int i = Length(gLBCache) - 1; i >= 0; i--)
 	{
 		Ref	entry = GetArraySlot(gLBCache, i);
@@ -107,7 +107,7 @@ AbortLargeBinaries(RefArg inEntry)
 			{
 				OSERRIF(AbortObject(storeWrapper->store(), *largeBinary));
 				if (RegisterLargeBinaryForDeclawing(largeBinary))
-					isRegisteredForDeclawing = YES;
+					isRegisteredForDeclawing = true;
 				largeBinary->fAddr = 0;
 			}
 		}
@@ -163,7 +163,7 @@ RegisterLargeBinaryForDeclawing(const LBData * inData)
 	  || IsPackageHeader((char*)largeBinary->fAddr, sizeof(PackageDirectory))))
 		return RegisterRangeForDeclawing(largeBinary->fAddr, largeBinary->fAddr + largeBinary->fSize);
 
-	return NO;
+	return false;
 }
 
 
@@ -171,7 +171,7 @@ void
 LargeBinariesStoreRemoved(CStoreWrapper * inStoreWrapper)
 {
 	RefVar	entry;
-	bool		isRegisteredForDeclawing = NO;
+	bool		isRegisteredForDeclawing = false;
 	ArrayIndex count = Length(gLBCache);
 	for (ArrayIndex i = 0; i < count; ++i)
 	{
@@ -183,7 +183,7 @@ LargeBinariesStoreRemoved(CStoreWrapper * inStoreWrapper)
 			if (largeBinary->getStore() == inStoreWrapper)
 			{
 				if (RegisterLargeBinaryForDeclawing(largeBinary))
-					isRegisteredForDeclawing = YES;
+					isRegisteredForDeclawing = true;
 				largeBinary->fAddr = 0;
 			}
 		}
@@ -210,7 +210,7 @@ LoadLargeBinary(CStoreWrapper * inStoreWrapper, PSSId inId, StoreRef inClassRef)
 	if (ISNIL(obj))
 	{
 		VAddr			addr;
-		OSERRIF(MapLargeObject(&addr, inStoreWrapper->store(), inId, NO));
+		OSERRIF(MapLargeObject(&addr, inStoreWrapper->store(), inId, false));
 		size_t size = ObjectSize(addr);
 		RefVar objClass(inStoreWrapper->referenceToSymbol(inClassRef));
 
@@ -244,7 +244,7 @@ DuplicateLargeBinary(RefArg inObj, CStoreWrapper * inStoreWrapper)
 	newton_try
 	{
 		OSERRIF(DuplicateLargeObject(&largeBinary.fId, storeWrapper->store(), largeBinary, inStoreWrapper->store()));
-		OSERRIF(MapLargeObject(&largeBinary.fAddr, storeWrapper->store(), largeBinary, NO));
+		OSERRIF(MapLargeObject(&largeBinary.fAddr, storeWrapper->store(), largeBinary, false));
 		storeWrapper->addEphemeral(largeBinary);
 	}
 	cleanup
@@ -265,7 +265,7 @@ FinalizeLargeObjectWrites(CStoreWrapper * inStoreWrapper, CDynamicArray * inObjs
 	{
 		for (int i = inObjs->count() - 1; i >= 0; i--)
 		{
-			bool isWritten = NO;
+			bool isWritten = false;
 			PSSId objId = *(PSSId *)inObjs->safeElementPtrAt(i);
 			if (inObjsWritten != NULL)
 			{
@@ -273,7 +273,7 @@ FinalizeLargeObjectWrites(CStoreWrapper * inStoreWrapper, CDynamicArray * inObjs
 				{
 					if (objId == *(PSSId *)inObjsWritten->safeElementPtrAt(i))
 					{
-						isWritten = YES;
+						isWritten = true;
 						break;
 					}
 				}
@@ -319,7 +319,7 @@ BreakLargeObjectToEntryLink(PSSId inId, CStoreWrapper * inStoreWrapper)
 /*------------------------------------------------------------------------------
 	Determine whether object is large binary.
 	Args:		r		an object
-	Return	YES	if it is
+	Return	true	if it is
 ------------------------------------------------------------------------------*/
 
 bool
@@ -427,7 +427,7 @@ LBDataPtr(void * inData)
 	if (largeBinary->fAddr == 0)
 	{
 		NewtonErr	err;
-		if ((err = MapLargeObject(&largeBinary->fAddr, storeWrapper->store(), *largeBinary, NO)) != noErr)
+		if ((err = MapLargeObject(&largeBinary->fAddr, storeWrapper->store(), *largeBinary, false)) != noErr)
 			ThrowOSErr(err);
 	}
 #if 0
@@ -474,7 +474,7 @@ LBClone(void * inData, Ref inClass)
 
 	if ((err = DuplicateLargeObject(&largeBinary->fId, storeWrapper->store(), clonedBinary, storeWrapper->store())) != noErr)
 		ThrowOSErr(err);
-	if ((err = MapLargeObject(&largeBinary->fAddr, storeWrapper->store(), *largeBinary, NO)) != noErr)
+	if ((err = MapLargeObject(&largeBinary->fAddr, storeWrapper->store(), *largeBinary, false)) != noErr)
 		ThrowOSErr(err);
 
 	storeWrapper->addEphemeral(*largeBinary);
@@ -513,7 +513,7 @@ LBSetClass(void * inData, RefArg inClass)
 		ThrowOSErr(kNSErrInvalidStore);
 
 	if (largeBinary->fAddr == 0)
-		MapLargeObject(&largeBinary->fAddr, storeWrapper->store(), *largeBinary, NO);
+		MapLargeObject(&largeBinary->fAddr, storeWrapper->store(), *largeBinary, false);
 	OSERRIF(storeWrapper->lockStore());
 	newton_try
 	{
@@ -577,7 +577,7 @@ FLBAllocCompressed(RefArg inStoreWrapper, RefArg inClass, RefArg inLength, RefAr
 	{
 		NewtonErr	err;
 		OSERRIF(CreateLargeObject(&objId, store, RINT(inLength), companderName, companderParms, companderParmSize));
-		if ((err = MapLargeObject(&objAddr, store, objId, NO)) != noErr)
+		if ((err = MapLargeObject(&objAddr, store, objId, false)) != noErr)
 		{
 			DeleteLargeObject(store, objId);
 			ThrowOSErr(err);

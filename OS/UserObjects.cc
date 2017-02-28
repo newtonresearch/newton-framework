@@ -54,7 +54,7 @@ CUObject::makeObject(ObjectTypes inObjectType, struct ObjectMessage * ioMsg, siz
 		XFAILIF(err = gUObjectMgrMonitor->invokeRoutine(kCreate, ioMsg), fId = kNoId;)
 
 		fId = *(ObjectId*)ioMsg;	// yes, result is really element 0
-		fObjectCreatedByUs = YES;
+		fObjectCreatedByUs = true;
 	}
 	XENDTRY;
 
@@ -74,7 +74,7 @@ CUObject::copyObject(const ObjectId inId)
 	if ((ObjectId)*this != inId)
 	{
 		destroyObject();
-		fObjectCreatedByUs = NO;
+		fObjectCreatedByUs = false;
 		fId = inId;
 	}
 }
@@ -99,7 +99,7 @@ CUObject::destroyObject(void)
 			msg.size = MSG_SIZE(0);
 			gUObjectMgrMonitor->invokeRoutine(kDestroy, &msg);
 		}
-		fObjectCreatedByUs = NO;
+		fObjectCreatedByUs = false;
 		fId = kNoId;
 	}
 }

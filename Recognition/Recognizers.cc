@@ -7,7 +7,7 @@
 */
 
 #include "Objects.h"
-#include "Globals.h"
+#include "ROMResources.h"
 #include "Arrays.h"
 #include "Lookup.h"
 #include "Recognition.h"
@@ -112,7 +112,7 @@ OnlyStrokeWritten(CStrokeUnit * inStroke)
 		if (unit->getType() == 'STRK'
 		&& !unit->testFlags(0x40000000)
 		&&  unit != inStroke)
-			return NO;
+			return false;
 	}
 	// see if there any still in the event queue
 	return inStroke == NULL
@@ -137,9 +137,9 @@ DomainOn(CRecArea * inArea, ULong inId)
 	for (ArrayIndex i = 0; i < iter.count(); group = (Assoc *)iter.getNext(), i++)
 	{
 		if (group->fDomain->getType() == inId)
-			return YES;
+			return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -324,7 +324,7 @@ CClickRecognizer::handleUnit(CUnit * inUnit)
 	{
 		cmd = aeNoCommand;
 		if (ClicksOnlyArea(rUnit))
-			gRecognitionManager.setx38(YES);
+			gRecognitionManager.setx38(true);
 	}
 	return cmd;
 }
@@ -396,10 +396,10 @@ CShapeRecognizer::handleUnit(CUnit * inUnit)
 CRecognizerList *
 CRecognizerList::make(void)
 {
-	CRecognizerList * list;
+	CRecognizerList * list = new CRecognizerList;
 	XTRY
 	{
-		XFAIL((list = new CRecognizerList) == NULL)
+		XFAIL(list == NULL)
 		XFAILIF(list->iRecognizerList() != noErr, list->release(); list = NULL;)
 	}
 	XENDTRY;

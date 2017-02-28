@@ -4,19 +4,19 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>Newton</string>
-	<key>CFBundleIdentifier</key>
-	<string>com.newton.objects</string>
 	<key>CFBundlePackageType</key>
 	<string>FMWK</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.2</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>44</string>
-	<key>CFBundleShortVersionString</key>
-	<string>1.2</string>
 </dict>
 </plist>

@@ -27,10 +27,10 @@ ClickInProgress(CRecUnit * inUnit)
 CClickUnit *
 CClickUnit::make(CRecDomain * inDomain, ULong inType, CRecStroke * inStroke, CArray * inAreas)
 {
-	CClickUnit * clikUnit;
+	CClickUnit * clikUnit = new CClickUnit;
 	XTRY
 	{
-		XFAIL((clikUnit = new CClickUnit) == NULL)
+		XFAIL(clikUnit == NULL)
 		XFAILIF(clikUnit->iClickUnit(inDomain, inType, inStroke, inAreas) != noErr, clikUnit->release(); clikUnit = NULL;)
 	}
 	XENDTRY;
@@ -97,7 +97,7 @@ CClickUnit::countStrokes(void)
 bool
 CClickUnit::ownsStroke(void)
 {
-	return YES;
+	return true;
 }
 
 
@@ -117,10 +117,10 @@ CClickUnit::getStroke(ArrayIndex index)
 CClickEventUnit *
 CClickEventUnit::make(CRecDomain * inDomain, ULong inArg2, CArray * inAreas)
 {
-	CClickEventUnit * evtUnit;
+	CClickEventUnit * evtUnit = new CClickEventUnit;
 	XTRY
 	{
-		XFAIL((evtUnit = new CClickEventUnit) == NULL)
+		XFAIL(evtUnit == NULL)
 		XFAILIF(evtUnit->iClickEventUnit(inDomain, inArg2, inAreas) != noErr, evtUnit->release(); evtUnit = NULL;)
 	}
 	XENDTRY;

@@ -372,7 +372,7 @@ CHackStore::setBuddy(CStore * inStore)
 bool
 CHackStore::ownsObject(PSSId inObjectId)
 {
-	return YES;
+	return true;
 }
 
 VAddr
@@ -402,7 +402,7 @@ CHackStore::setStore(CStore * inStore, ObjectId inEnvironment)
 bool
 CHackStore::isSameStore(void * inData, size_t inSize)
 {
-	return YES;
+	return true;
 }
 
 bool
@@ -639,7 +639,7 @@ CLOHackStore::createFromCompressed(PSSId * outId, CStore * inStore, CPipe * inPi
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 
@@ -743,7 +743,7 @@ CLOHackStore::createFromCompressed(PSSId * outId, CStore * inStore, CPipe * inPi
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 
@@ -900,7 +900,7 @@ REPprintf("Decompress: %s\n", companderName);
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 
@@ -938,7 +938,7 @@ REPprintf("Decompress: %s\n", companderName);
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 
@@ -973,7 +973,7 @@ REPprintf("Decompress: %s\n", companderName);
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 
@@ -1017,7 +1017,7 @@ REPprintf("Decompress: %s\n", companderName);
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 		decompressor->destroy();
@@ -1154,7 +1154,7 @@ REPprintf("Decompress: %s\n", companderName);
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 

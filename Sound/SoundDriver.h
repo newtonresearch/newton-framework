@@ -11,7 +11,7 @@
 
 #include "Protocols.h"
 
-typedef long (*SoundCallbackProcPtr)(void*);
+typedef long (*SoundDriverCallbackProcPtr)(void*);
 
 struct SoundDriverInfo
 {
@@ -26,28 +26,27 @@ struct SoundDriverInfo
 
 
 /*------------------------------------------------------------------------------
-	C S o u n d D r i v e r
+	P S o u n d D r i v e r
 	P-class interface.
-	Originally named PSoundDriver.
 ------------------------------------------------------------------------------*/
 
-PROTOCOL CSoundDriver : public CProtocol
+PROTOCOL PSoundDriver : public CProtocol
 {
 public:
-	static CSoundDriver *	make(const char * inName);
+	static PSoundDriver *	make(const char * inName);
 	void			destroy(void);
 
-	void			setSoundHardwareInfo(const SoundDriverInfo * info);
-	void			getSoundHardwareInfo(SoundDriverInfo * outInfo);
+	NewtonErr	setSoundHardwareInfo(const SoundDriverInfo * info);
+	NewtonErr	getSoundHardwareInfo(SoundDriverInfo * outInfo);
 	void			setOutputBuffers(VAddr inBuf1, size_t inBuf1Size, VAddr inBuf2, size_t inBuf2Size);
 	void			setInputBuffers(VAddr inBuf1, size_t inBuf1Size, VAddr inBuf2, size_t inBuf2Size);
 	void			scheduleOutputBuffer(VAddr inBuf, size_t inBufSize);
 	void			scheduleInputBuffer(VAddr inBuf, size_t inBufSize);
-	void			powerOutputOn(long);
+	void			powerOutputOn(int);
 	void			powerOutputOff(void);
-	void			powerInputOn(long);
+	void			powerInputOn(int);
 	void			powerInputOff(void);
-	void			startOutput(void);
+	int			startOutput(void);
 	void			startInput(void);
 	void			stopOutput(void);
 	void			stopInput(void);
@@ -57,19 +56,19 @@ public:
 	bool			inputIsRunning(void);
 	void			currentOutputPtr(void);
 	void			currentInputPtr(void);
-	void			outputVolume(long);
-	void			outputVolume(void);
-	void			inputVolume(long);
-	void			inputVolume(void);
-	void			enableExtSoundSource(long);
-	void			disableExtSoundSource(long);
+	void			outputVolume(float);
+	float			outputVolume(void);
+	void			inputVolume(int);
+	int			inputVolume(void);
+	void			enableExtSoundSource(int);
+	void			disableExtSoundSource(int);
 	void			outputIntHandler(void);
 	void			inputIntHandler(void);
 
 	NONVIRTUAL void			outputIntHandlerDispatcher(void);
 	NONVIRTUAL void			inputIntHandlerDispatcher(void);
-	NONVIRTUAL void			setOutputCallbackProc(SoundCallbackProcPtr, void*);
-	NONVIRTUAL void			setInputCallbackProc(SoundCallbackProcPtr, void*);
+	NONVIRTUAL void			setOutputCallbackProc(SoundDriverCallbackProcPtr, void*);
+	NONVIRTUAL void			setInputCallbackProc(SoundDriverCallbackProcPtr, void*);
 };
 
 

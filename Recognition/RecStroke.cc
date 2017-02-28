@@ -13,7 +13,6 @@
 
 #include "RecStroke.h"
 #include "Transformations.h"
-#include "QDGeometry.h"
 
 extern void		InkerLine(const Point inPt1, const Point inPt2, Rect * outRect, const Point inPenSize);
 
@@ -80,10 +79,10 @@ SetPoint(SamplePt * outSample, TabPt * inPt)
 CRecStroke *
 CRecStroke::make(ArrayIndex inNumOfPts)
 {
-	CRecStroke * stroke;
+	CRecStroke * stroke = new CRecStroke;
 	XTRY
 	{
-		XFAIL((stroke = new CRecStroke) == NULL)
+		XFAIL(stroke == NULL)
 		XFAILIF(stroke->iStroke(inNumOfPts) != noErr, stroke->release(); stroke = NULL;)
 	}
 	XENDTRY;
@@ -113,7 +112,7 @@ CRecStroke::iStroke(ArrayIndex inNumOfPts)
 		SetRectangleEmpty(&box);
 		fBBox = box;
 		setFlags(gLastPenTip << 8);  // pen size
-		if (gDefaultInk == NO)
+		if (!gDefaultInk)
 			setFlags(0x20000000);
 		f30 = 0;
 		fEvt = 0;
@@ -182,7 +181,7 @@ CRecStroke::addPoint(TabPt * inPt)
 			{
 				XFAILNOT(p = tryToAddPoint(), err = 1;)
 				SetPoint(p, inPt);
-				AddPtToRect((FPoint *)inPt, &fBBox, YES);
+				AddPtToRect((FPoint *)inPt, &fBBox, true);
 				fBBox.right += 0.001;		// original adds 1 to Fixed
 				fBBox.bottom += 0.001;
 			}
@@ -191,7 +190,7 @@ CRecStroke::addPoint(TabPt * inPt)
 				getPoint(count()-1);
 				XFAILNOT(p = tryToAddPoint(), err = 1;)
 				SetPoint(p, inPt);
-				AddPtToRect((FPoint *)inPt, &fBBox, NO);
+				AddPtToRect((FPoint *)inPt, &fBBox, false);
 			}
 		}
 		XENDTRY;
@@ -209,8 +208,8 @@ CRecStroke::addPoint(TabPt * inPt)
 SamplePt *
 CRecStroke::tryToAddPoint(void)
 {
-	SamplePt * p;
-	if ((p = (SamplePt *)addEntry()) == NULL)
+	SamplePt * p = (SamplePt *)addEntry();
+	if (p == NULL)
 	{
 		// we ran out of memory! limp on a bit longer by halving our memory requirement
 		bifurcate();
@@ -262,7 +261,7 @@ CRecStroke::endStroke(void)
 /*------------------------------------------------------------------------------
 	Determine whether the stroke is done.
 	Args:		--
-	Return:	YES => stroke is done
+	Return:	true => stroke is done
 ------------------------------------------------------------------------------*/
 
 bool

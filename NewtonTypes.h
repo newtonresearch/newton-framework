@@ -27,7 +27,7 @@ typedef uint32_t	ULong;
 
 /* Array/String index -- also used to define length */
 typedef uint32_t	ArrayIndex;
-#define kIndexNotFound 0xFFFFFFFF
+#define kIndexNotFound -1
 
 typedef unsigned long	offs_t;
 
@@ -65,15 +65,6 @@ typedef const RefVar RefArg;
 
 typedef Ref (*MapSlotsFunction)(RefArg tag, RefArg value, unsigned long anything);
 
-
-#if !defined(nil)
-#define nil 0
-#endif
-
-#if !defined(YES)
-#define YES true
-#define NO  false
-#endif
 
 #if !defined(__MACTYPES__)
 /* From MacTypes.h */
@@ -177,14 +168,27 @@ typedef unsigned char                   Str15[16];
 
 typedef unsigned char                   Style;
 
-/* Pointer types */
+/* Graphics types */
+struct Point
+{
+	short	v;
+	short	h;
+};
 
+struct Rect
+{
+	short	top;
+	short	left;
+	short	bottom;
+	short	right;
+};
+
+/* Pointer types */
 typedef char * Ptr;
 typedef Ptr * Handle;	// deprecated
 typedef int32_t (*ProcPtr)(void*);
 
 /* Math types */
-
 typedef int32_t Fixed;
 typedef int32_t Fract;
 typedef uint32_t UnsignedFixed;

@@ -20,8 +20,9 @@ InitPowerManager(void)
 	XTRY
 	{
 #if defined(correct)
-		XFAIL((gPowerMgr = new CPowerManager) == NULL)
-		XFAIL(gPowerMgr->init('pg&e', YES, kSpawnedTaskStackSize))
+		gPowerMgr = new CPowerManager;
+		XFAIL(gPowerMgr == NULL)
+		XFAIL(gPowerMgr->init('pg&e', true, kSpawnedTaskStackSize))
 		InitializePowerInterrupt();
 #endif
 	}
@@ -34,7 +35,7 @@ InitializePowerInterrupt(void)
 {
 	new (&gPowerInterruptEvent) CPowerEvent('pg&e');
 	gPowerInterruptEvent.fSysEventType = 'powr';
-	gPowerInterruptAsyncMessage.init(NO);
+	gPowerInterruptAsyncMessage.init(false);
 	GetPlatformDriver()->registerPowerSwitchInterrupt();
 	GetPlatformDriver()->enableSysPowerInterrupt();
 	return noErr;
@@ -83,9 +84,9 @@ CPowerManager::mainDestructor(void)
 void
 CPowerManager::doCommand(CUMsgToken * inToken, size_t * inSize, CPowerManagerEvent * inEvent)
 {
-	if (inEvent->fSysEventType == 'powr')
+	if (inEvent->fEventType == 'powr')
 		powerOffMessage();
-	else if (inEvent->fSysEventType == 'bklt')
+	else if (inEvent->fEventType == 'bklt')
 		backlightMessage();
 }
 

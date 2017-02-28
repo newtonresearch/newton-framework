@@ -27,10 +27,10 @@
 CRecArea *
 CRecArea::make(ULong inArea, ULong inFlags)
 {
-	CRecArea * area;
+	CRecArea * area = new CRecArea;
 	XTRY
 	{
-		XFAIL((area = new CRecArea) == NULL)
+		XFAIL(area == NULL)
 		area->iRecObject();
 		area->fFlags = inFlags;
 		area->fArea = inArea;
@@ -105,7 +105,7 @@ CRecArea::addAType(RecType inType, UnitHandler inHandler, ULong inArg3, RecDomai
 	aType.fType = inType;
 	aType.fDomain = NULL;
 	aType.fDomainInfo = NULL;
-	aType.f18 = NO;
+	aType.f18 = false;
 	if (info != NULL)
 		aType.fDomainInfo = info;
 	aType.fInfo = NULL;
@@ -179,10 +179,10 @@ CRecArea::paramsAllSet(RecType inType)
 CAreaList *
 CAreaList::make(void)
 {
-	CAreaList * list;
+	CAreaList * list = new CAreaList;
 	XTRY
 	{
-		XFAIL((list = new CAreaList) == NULL)
+		XFAIL(list == NULL)
 		XFAILIF(list->iAreaList() != noErr, list->release(); list = NULL;)
 	}
 	XENDTRY;
@@ -250,7 +250,7 @@ CAreaList::findMatchingView(ULong inView)
 {
 	for (ArrayIndex i = 0; i < fSize; ++i)
 		if (getArea(i)->fView == inView)
-			return YES;
-	return NO;
+			return true;
+	return false;
 }
 

@@ -19,12 +19,6 @@ NewtonErr	IntegerString(int i, UniChar * ioStr);
 NewtonErr	NumberString(double n, UniChar * ioStr, ArrayIndex inLength, const char * inFormat);
 
 
-#define DEFSTR(name) extern Ref * RS##name;
-#define DEFMPSTR(name, str) extern Ref * RS##name;
-#include "StringDefs.h"
-#undef DEFMPSTR
-#undef DEFSTR
-
 #define RSTRLEN(s) (Length(s) / sizeof(UniChar) - 1)
 
 #endif	/* __STRINGS_H */

@@ -305,7 +305,7 @@ CLocalTalkTool::allocateBuffers()
 	XTRY
 	{
 		XFAIL(err = f304->setSerialMode(2))
-		f28C = YES;
+		f28C = true;
 
 		XFAIL(err = f3C8.allocate(f3F0.f10, f3F0.f14, 0x02, 0x01))
 		XFAIL(err = f3A0.allocate(f3F0.f0C, 0, 0x02, 0x00))
@@ -331,7 +331,7 @@ CLocalTalkTool::deallocateBuffers()
 	f434 = NULL;
 	ExitFIQAtomic();
 
-	f28C = NO;
+	f28C = false;
 
 	f3C8.deallocate();
 	f3A0.deallocate();
@@ -396,7 +396,7 @@ CLocalTalkTool::doInput(void)
 		if (status == 1)
 			status = noErr;
 		f384 |= 0x40000000;
-		getComplete(status, YES, f27C->position());
+		getComplete(status, true, f27C->position());
 	}
 }
 

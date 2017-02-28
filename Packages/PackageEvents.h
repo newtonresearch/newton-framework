@@ -14,7 +14,23 @@
 #include "PackageTypes.h"
 #include "PartHandler.h"
 #include "ArrayIterator.h"
+#include "PartPipe.h"
 #include "UserPorts.h"
+
+/* -----------------------------------------------------------------------------
+	E v e n t   I d s
+----------------------------------------------------------------------------- */
+
+#define kRegisterPartHandlerEventId		'rgtr'
+#define kUnregisterPartHandlerEventId	'urgr'
+#define kBeginLoadPkgEventId				'pkbl'
+#define kBackupPkgEventId					'pkbu'
+#define kSafeToDeactivatePkgEventId		'pksc'
+#define kRemovePkgEventId					'pkrm'
+
+#define kInstallPartEventId				'prti'
+#define kRemovePartEventId					'prtr'
+
 
 /*------------------------------------------------------------------------------
 	C P k B a s e E v e n t
@@ -36,10 +52,10 @@ public:
 class CPkRegisterEvent : public CPkBaseEvent
 {
 public:
-			CPkRegisterEvent(ULong inArg1, ULong inArg2);
+			CPkRegisterEvent(ULong inPartType, ObjectId inPortId);
 
-	ULong		f10;
-	ULong		f14;
+	ULong		fPartType;
+	ObjectId	fPortId;		//+14
 };
 
 
@@ -49,9 +65,9 @@ public:
 class CPkUnregisterEvent : public CPkBaseEvent
 {
 public:
-			CPkUnregisterEvent(ULong inArg1);
+			CPkUnregisterEvent(ULong inPartType);
 
-	ULong		f10;
+	ULong		fPartType;
 };
 
 
@@ -63,13 +79,19 @@ class CPkBeginLoadEvent : public CPkBaseEvent
 public:
 			CPkBeginLoadEvent(SourceType inType, const PartSource & inSource, ObjectId inArg3, ObjectId inArg4, bool inArg5);
 
-	ULong			f10;
-	ULong			f14;
-	SourceType	f18;
-	PartSource	f20;
+	ObjectId		f10;				// they’re port ids
+	ObjectId		f14;
+	SourceType	fSrcType;		//+18
+	PartSource	fSrc;				//+20
 	bool			f28;
-	long			f2C;
-	char			f30[0x54];
+	ULong			fUniqueId;		//+2C
+	size_t		fPkgSize;		//+30
+	ArrayIndex	fNumOfParts;	//+34
+	ULong			fVersion;		//+38
+	size_t		fSizeInMem;		//+3C
+	UniChar		fName[32];		//+40
+	bool			f80;
+	bool			f81;
 // size +84
 };
 
@@ -80,9 +102,9 @@ public:
 class CPkRemoveEvent : public CPkBaseEvent
 {
 public:
-			CPkRemoveEvent(ULong inArg1, ULong inArg2, ULong inArg3);
+			CPkRemoveEvent(ObjectId inPkgId, ULong inArg2, ULong inArg3);
 
-	ULong		f10;
+	ObjectId fPkgId;
 	ULong		f14;
 	ULong		f18;
 };
@@ -94,14 +116,20 @@ public:
 class CPkBackupEvent : public CPkBaseEvent
 {
 public:
-			CPkBackupEvent(long inArg1, ULong inArg2, bool inArg3, const PartSource & inArg4, ObjectId inArg5, ObjectId inArg6);
+			CPkBackupEvent(ArrayIndex inArg1, ULong inArg2, bool inArg3, const PartSource & inArg4, ObjectId inArg5, ObjectId inArg6);
 
-	long			f10;
+	ArrayIndex	fIndex;			//+10
 	ULong			f14;
 	PartSource	f18;
 	ULong			f20;
 	ULong			f24;
-	UniChar		f28[kMaxPackageNameSize];	// 0x5C?
+	size_t		fSize;			//+28
+	ULong			fId;				//+2C
+	ULong			fVersion;		//+30
+	SourceType	fSrcType;		//+34
+	ULong			fFlags;			//+3C
+	ULong			fDate;			//+40
+	UniChar		fName[kMaxPackageNameSize+1];	//+44
 	bool			f84;
 // size +88
 };
@@ -119,8 +147,8 @@ public:
 	ExtendedPartInfo	fPartInfo;	// +18
 	SourceType		fType;			// +84
 	PartSource		fSource;			// +8C
-	char				fInfo[kMaxInfoSize];	// +94
-	char				fCompressorName[kMaxCompressorNameSize];	// +D4
+	char				fInfo[kMaxInfoSize+1];	// +94
+	char				fCompressorName[kMaxCompressorNameSize+1];	// +D4
 // size +F4
 };
 
@@ -160,10 +188,10 @@ public:
 class CPkSafeToDeactivateEvent : public CPkBaseEvent
 {
 public:
-		CPkSafeToDeactivateEvent(ULong inArg1);
+		CPkSafeToDeactivateEvent(ObjectId inPkgId);
 
-		ULong	f10;
-		bool	f14;
+	ObjectId	fPkgId;
+	bool		fIsSafeToDeactivate;
 };
 
 
@@ -193,8 +221,51 @@ public:
 };
 
 
-struct CInstalledPart;
+/* -----------------------------------------------------------------------------
+	C P a c k a g e B l o c k
+----------------------------------------------------------------------------- */
+
+class CPackageBlock
+{
+public:
+	NewtonErr	init(ULong inId, ULong inVersion, size_t inSize, SourceType inSrcType, ULong inFlags, UniChar * inName, UniChar * inCopyright, ArrayIndex inNumOfParts, ULong inDate);
+
+	ULong			fId;				//+00
+	ULong			fVersion;		//+04
+	size_t		fSize;			//+08
+	SourceType	fSrcType;		//+0C	stream/mem
+	ULong			fFlags;			//+14
+	ULong			fDate;			//+18
+	UniChar *	fName;			//+1C
+	UniChar *	fCopyright;		//+20
+	CDynamicArray *	fParts;	//+24
+	ULong			fSignature;		//+28 'spbl' 'spvd' 'spcm'
+	int			f2C;
+//size+30
+};
+
+
+/* -----------------------------------------------------------------------------
+	C P a c k a g e E v e n t H a n d l e r
+----------------------------------------------------------------------------- */
+class CClassInfo;
+
+struct CInstalledPart
+{
+	CInstalledPart(ULong inType, int, int, bool, bool, bool, bool, VAddr);
+
+	ULong		fType;
+	int		f04;
+	int		f08;
+	CClassInfo *	f0C;
+	ULong		f108:1;
+	ULong		f104:1;
+	ULong		f102:1;
+	ULong		f101:1;
+//size+14
+};
 class CPackageIterator;
+class CValidatePackageDriver;	// actually PROTOCOL
 
 class CPackageEventHandler : public CEventHandler
 {
@@ -210,21 +281,21 @@ public:
 
 	void		initValidatePackageDriver(void);
 
-	void		checkAndInstallPatch(PartInfo&, SourceType, const PartSource&);
-	void		loadProtocolCode(void**, PartInfo&, SourceType, const PartSource&);
-	void		getUniquePackageId(void);
+	NewtonErr	checkAndInstallPatch(PartInfo& inPart, SourceType inSrcType, const PartSource& inSource);
+	NewtonErr	loadProtocolCode(void**, PartInfo&, SourceType, const PartSource&);
+	ULong		getUniquePackageId(void);
 
 	void		getBackupInfo(CPkBackupEvent * inEvent);
 
-	void		validatePackage(CPkBeginLoadEvent * inEvent, CPackageIterator * inIter);
+	NewtonErr	validatePackage(CPkBeginLoadEvent * inEvent, CPackageIterator * inIter);
 	void		beginLoadPackage(CPkBeginLoadEvent * inEvent);
 	void		safeToDeactivatePackage(CPkSafeToDeactivateEvent * inEvent);
 	void		removePackage(CPkRemoveEvent * inEvent, bool, bool);
 
-	void		getPartSize(void);
-	void		loadNextPart(long*, unsigned char*, unsigned char*);
-	void		installPart(unsigned long*, long*, unsigned char*, const PartId&, ExtendedPartInfo&, SourceType, const PartSource&);
-	void		removePart(const PartId&, const CInstalledPart&, unsigned char);
+	size_t	getPartSize(void);
+	bool		loadNextPart(NewtonErr * outErr, bool *, bool *);
+	NewtonErr	installPart(VAddr *, int*, bool*, const PartId& inId, ExtendedPartInfo& inPart, SourceType inSrcType, const PartSource& inSource);
+	void		removePart(const PartId& inId, const CInstalledPart& inPart, bool);
 
 	NewtonErr	searchPackageList(ArrayIndex * outIndex, ULong inArg2);
 	NewtonErr	searchPackageList(ArrayIndex * outIndex, UniChar * inName, ULong inArg3);
@@ -234,16 +305,22 @@ public:
 	void		setPersistentHeap(void);
 
 private:
-	CDynamicArray *	f14;
-	CDynamicArray *	f18;
-	bool					f1C;
-	int					f28;
-	int					f2C;
-	int					f3C;
-	int					f40;
-	CArrayIterator		f44;
-	int					f60;
-	bool					f64;
+	ArrayIndex				f10;
+	CDynamicArray *		fPackageList;	//+14
+	CDynamicArray *		fRegistry;		//+18	registry of user-defined part types
+	bool						f1C;
+	ObjectId					f20;
+	ObjectId					f24;
+	CPackageIterator *	fPkg;				//+28
+	CPartPipe *				fPipe;			//+2C
+	PartSource				fPartSource;	//+30
+	ArrayIndex				fPartIndex;		//+38
+	CPackageBlock *		fPkgInfo;		//+3C
+	CShadowRingBuffer *	fBuffer;			//+40
+	CArrayIterator			fBackupIter;	//+44
+	int						f60;
+	bool						f64;
+	CValidatePackageDriver * fValidatePackageDriver;	//+68
 // size +6C
 };
 

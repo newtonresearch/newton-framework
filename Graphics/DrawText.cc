@@ -9,20 +9,20 @@
 // text drawing function hierarchy
 
 DrawRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleRecord * inStyle, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo)
-->	DoRichString(inStr, inStart, inLength, inStyle, inPt, inOptions, outBoundsInfo, YES);
+->	DoRichString(inStr, inStart, inLength, inStyle, inPt, inOptions, outBoundsInfo, true);
 
 MeasureRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleRecord * inStyle, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo)
-->	DoRichString(inStr, inStart, inLength, inStyle, inPt, inOptions, outBoundsInfo, NO);
+->	DoRichString(inStr, inStart, inLength, inStyle, inPt, inOptions, outBoundsInfo, false);
 
 	DoRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleRecord * inStyle, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo, bool inDoDraw)
 	->	DoTextOnce(theText, inLength, stylePtrs, runLengths, inPt, inOptions, outBoundsInfo, inDoDraw);
 
 
 DrawTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo)
-->	DoTextOnce(inText, inLength, inStyles, inRuns, inPt, inOptions, outBoundsInfo, YES);
+->	DoTextOnce(inText, inLength, inStyles, inRuns, inPt, inOptions, outBoundsInfo, true);
 
 MeasureTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo)
-->	DoTextOnce(inText, inLength, inStyles, inRuns, inPt, inOptions, outBoundsInfo, NO);
+->	DoTextOnce(inText, inLength, inStyles, inRuns, inPt, inOptions, outBoundsInfo, false);
 
 	DoTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo, bool inDoDraw)
 	->	DrawTextObj
@@ -30,10 +30,10 @@ MeasureTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short *
 
 
 TextBox(CRichString & inStr, RefArg inFont, const Rect * inRect, ULong inJustifyH, ULong inJustifyV /*, long inTransferMode*/)
-->	DrawSimpleParagraph(inStr, inFont, &box, inJustifyH, YES/*, inTransferMode*/);
+->	DrawSimpleParagraph(inStr, inFont, &box, inJustifyH, true/*, inTransferMode*/);
 
 TextBounds(CRichString & inStr, RefArg inFont, Rect * ioRect, long inJustifyH)
-->	DrawSimpleParagraph(inStr, inFont, ioRect, inJustifyH, NO/*, 1*/);
+->	DrawSimpleParagraph(inStr, inFont, ioRect, inJustifyH, false/*, 1*/);
 
 	DrawSimpleParagraph(CRichString & inStr, RefArg inFont, Rect * ioRect, ULong inJustifyH, bool inDoDraw /*, long inTransferMode*/)
 	uses line break table
@@ -49,6 +49,7 @@ TextBounds(CRichString & inStr, RefArg inFont, Rect * ioRect, long inJustifyH)
 
 #include "Quartz.h"
 #include <CoreText/CoreText.h>
+#include "Geometry.h"
 #include "DrawShape.h"
 #include "DrawText.h"
 #include "Ink.h"
@@ -66,9 +67,11 @@ TextBounds(CRichString & inStr, RefArg inFont, Rect * ioRect, long inJustifyH)
 #include "Preference.h"
 #include "UStringUtils.h"
 
+
 void			DrawSimpleParagraph(CRichString & inStr, RefArg inFont, Rect * ioRect, ULong inJustifyH, bool inDoDraw /*, long inTransferMode*/);
-NewtonErr	DoRichString(CRichString & inStr, ULong inStart, size_t inCount, StyleRecord * inStyle, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * inBoundsInfo, bool inDoDraw);
-NewtonErr	DoTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo, bool inDoDraw);
+ArrayIndex	DoRichString(CRichString & inStr, ULong inStart, size_t inCount, StyleRecord * inStyle, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * inBoundsInfo, bool inDoDraw);
+ArrayIndex	DoTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo, bool inDoDraw);
+ArrayIndex	MeasureTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo);
 
 
 #pragma mark -
@@ -117,7 +120,7 @@ CreateTextStyleRecord(RefArg inFontSpec, StyleRecord * outRec)
 		{
 /*			bool				sp00;
 			PatternHandle  fontPattern;
-			if (GetPattern(color, &sp00, &fontPattern, YES))
+			if (GetPattern(color, &sp00, &fontPattern, true))
 			{
 				outRec->x1C = fontPattern;
 				outRec->fontPattern = AddressToRef(fontPattern);
@@ -255,13 +258,22 @@ ConvertToFlush(ULong inViewJustify, float * outJustification)
 void
 DrawTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo)
 {
-	DoTextOnce(inText, inLength, inStyles, inRuns, inPt, inOptions, outBoundsInfo, YES);
+	DoTextOnce(inText, inLength, inStyles, inRuns, inPt, inOptions, outBoundsInfo, true);
 }
 
-void
+
+ArrayIndex
+MeasureOnce(UniChar * inText, size_t inLength, StyleRecord * inStyle)
+{
+	TextBoundsInfo txBounds;
+	MeasureTextOnce(inText, inLength, &inStyle, NULL, gZeroFPoint, NULL, &txBounds);
+	return txBounds.width;	// float -> ArrayIndex
+}
+
+ArrayIndex
 MeasureTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo)
 {
-	DoTextOnce(inText, inLength, inStyles, inRuns, inPt, inOptions, outBoundsInfo, NO);
+	return DoTextOnce(inText, inLength, inStyles, inRuns, inPt, inOptions, outBoundsInfo, false);
 }
 
 
@@ -280,13 +292,13 @@ MeasureTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short *
 void
 DrawRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleRecord * inStyle, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo)
 {
-	DoRichString(inStr, inStart, inLength, inStyle, inPt, inOptions, outBoundsInfo, YES);
+	DoRichString(inStr, inStart, inLength, inStyle, inPt, inOptions, outBoundsInfo, true);
 }
 
-void
+ArrayIndex
 MeasureRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleRecord * inStyle, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo)
 {
-	DoRichString(inStr, inStart, inLength, inStyle, inPt, inOptions, outBoundsInfo, NO);
+	return DoRichString(inStr, inStart, inLength, inStyle, inPt, inOptions, outBoundsInfo, false);
 }
 
 
@@ -299,14 +311,14 @@ MeasureRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleReco
 				inPt					location of text
 				inOptions			
 				outBoundsInfo		
-				inDoDraw				NO => do measure
+				inDoDraw				false => do measure
 	Return:	--
 ------------------------------------------------------------------------------*/
 
-NewtonErr
+ArrayIndex
 DoRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleRecord * inStyle, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo, bool inDoDraw)
 {
-	NewtonErr	err;
+	ArrayIndex	strLen;
 	//sp-14
 //	bool sp0C = inDoDraw;
 	UniChar *	theText = inStr.grabPtr() + inStart;	// sp08
@@ -314,7 +326,7 @@ DoRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleRecord * 
 
 	if (inStr.format() == 0)
 	{
-		err = DoTextOnce(theText, inLength, &inStyle, NULL, inPt, inOptions, outBoundsInfo, inDoDraw);
+		strLen = DoTextOnce(theText, inLength, &inStyle, NULL, inPt, inOptions, outBoundsInfo, inDoDraw);
 	}
 
 	else
@@ -356,7 +368,7 @@ DoRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleRecord * 
 		}
 		else
 			stylePtrs = &inStyle;
-		err = DoTextOnce(theText, inLength, stylePtrs, runLengths, inPt, inOptions, outBoundsInfo, inDoDraw);
+		strLen = DoTextOnce(theText, inLength, stylePtrs, runLengths, inPt, inOptions, outBoundsInfo, inDoDraw);
 		if (numOfInkWords != 0)
 		{
 			delete[] styleRecs;
@@ -367,13 +379,13 @@ DoRichString(CRichString & inStr, ULong inStart, size_t inLength, StyleRecord * 
 	}
 
 	inStr.releasePtr();
-	return err;
+	return strLen;
 }
 
 void
 DrawUnicodeText(const UniChar * inStr, size_t inLength, /* inFont,*/ const Rect * inBox, CGColorRef inColor, ULong inJustify);	// SRB
 
-NewtonErr
+ArrayIndex
 DoTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRuns, FPoint inPt, TextOptions * inOptions, TextBoundsInfo * outBoundsInfo, bool inDoDraw)
 {
 	if (inDoDraw)
@@ -409,10 +421,11 @@ DoTextOnce(void * inText, size_t inLength, StyleRecord ** inStyles, short * inRu
 #endif
 	}
 
-//	if (outBoundsInfo)
+	if (outBoundsInfo)
+		outBoundsInfo->width = 16.0;	// gotta return something
 //		DispatchCalcBounds(textRef, outBoundsInfo);
 
-	return noErr;
+	return 0;
 }
 
 
@@ -439,6 +452,20 @@ DrawUnicodeText(const UniChar * inStr, size_t inLength, /* inFont,*/ const Rect 
 
 	CGContextSetTextMatrix(quartz, CGAffineTransformIdentity);
 	CGContextSetTextDrawingMode(quartz, kCGTextStroke);
+
+
+//	CGContextSetAllowsAntialiasing(quartz, false);
+
+//	CGContextSetAllowsFontSmoothing(quartz, true);
+//	CGContextSetShouldSmoothFonts(quartz, false);	//improves draw quality of text
+
+//	CGContextSetAllowsFontSubpixelPositioning(quartz, true);
+//	CGContextSetShouldSubpixelPositionFonts(quartz, true);
+
+//	CGContextSetAllowsFontSubpixelQuantization(quartz, true);
+//	CGContextSetShouldSubpixelQuantizeFonts(quartz, true);
+
+
 //	CGContextSelectFont(quartz, "Helvetica", 10.0, kCGEncodingMacRoman);
 
 	// create font -- fixed for now
@@ -520,7 +547,7 @@ TextBox(CRichString & inStr, RefArg inFont, const Rect * inRect, ULong inJustify
 	{
 		// calculate actual box size for justification
 		box.bottom = box.top;
-		DrawSimpleParagraph(inStr, inFont, &box, inJustifyH, NO /*, 1*/);
+		DrawSimpleParagraph(inStr, inFont, &box, inJustifyH, false /*, 1*/);
 		int  delta = RectGetHeight(*inRect) - RectGetHeight(box);
 		box = *inRect;
 		if (inJustifyV == vjCenterV)
@@ -529,7 +556,7 @@ TextBox(CRichString & inStr, RefArg inFont, const Rect * inRect, ULong inJustify
 			OffsetRect(&box, 0, delta);
 	}
 
-	DrawSimpleParagraph(inStr, inFont, &box, inJustifyH, YES /*, inTransferMode*/);
+	DrawSimpleParagraph(inStr, inFont, &box, inJustifyH, true /*, inTransferMode*/);
 }
 
 
@@ -545,7 +572,7 @@ TextBox(CRichString & inStr, RefArg inFont, const Rect * inRect, ULong inJustify
 void
 TextBounds(CRichString & inStr, RefArg inFont, Rect * ioRect, long inJustifyH)
 {
-	DrawSimpleParagraph(inStr, inFont, ioRect, inJustifyH, NO/*, 1*/);
+	DrawSimpleParagraph(inStr, inFont, ioRect, inJustifyH, false/*, 1*/);
 }
 
 

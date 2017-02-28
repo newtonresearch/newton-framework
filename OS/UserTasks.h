@@ -77,7 +77,7 @@ public:
 	virtual			~CUTaskWorld();
 
 	NewtonErr		startTask(bool inWantResultFromChild, bool inWantOwnership, Timeout inStartTimeout, size_t inStackSize, ULong inPriority, ULong inTaskName, ObjectId inEnvironment);	// make a new task and object
-	NewtonErr		startTask(bool inWantResultFromChild = YES, bool inWantOwnership = NO, Timeout inStartTimeout = kNoTimeout, size_t inStackSize = kSpawnedTaskStackSize, ULong inPriority = kUserTaskPriority, ULong inTaskName = 'UNAM');	// make a new task and object
+	NewtonErr		startTask(bool inWantResultFromChild = true, bool inWantOwnership = false, Timeout inStartTimeout = kNoTimeout, size_t inStackSize = kSpawnedTaskStackSize, ULong inPriority = kUserTaskPriority, ULong inTaskName = 'UNAM');	// make a new task and object
 	ObjectId			getChildTaskId(void) const;
 
 protected:
@@ -131,7 +131,7 @@ inline 	ObjectId	CUTaskWorld::getChildTaskId(void) const
 	zero will do a warm boot.
 ----------------------------------------------------------------------------- */
 
-NewtonErr	Reboot(NewtonErr inError = noErr, ULong inRebootType = 0, bool inSafe = NO);
+NewtonErr	Reboot(NewtonErr inError = noErr, ULong inRebootType = 0, bool inSafe = false);
 
 
 /* -----------------------------------------------------------------------------

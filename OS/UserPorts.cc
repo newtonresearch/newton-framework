@@ -189,10 +189,12 @@ CUPort::receive(size_t * outSize, void * outContent, size_t inSize, CUMsgToken *
 		{
 			flags |= kPortFlags_WantTimeout;
 			XFAIL(err = SMemMsgSetTimerParmsSWI(kBuiltInSMemMsgId, inTimeout, 0))
-printf("CUPort::receive() id=%d timeout=%d -> %lld\n", (ObjectId)*this, inTimeout, (int64_t)TimeFromNow(inTimeout));
+//printf("CUPort::receive() id=%d timeout=%d -> %lld\n", (ObjectId)*this, inTimeout, (int64_t)TimeFromNow(inTimeout));
 		}
 
+//printf("CUPort::receive() id=%d ", (ObjectId)*this);
 		XFAIL(err = PortReceiveSWI((ObjectId)*this, kBuiltInSMemMsgId, inMsgFilter, flags, &senderMsgId, &replyMemId, &msgType, &signature))
+//printf(" sender=%d replyMem=%d\n", senderMsgId, replyMemId);
 
 		if (((msgType & kMsgType_CollectedReceiver) == 0  ||  (err = SMemMsgCheckForDoneSWI(senderMsgId, 0, &senderMsgId, &replyMemId, &msgType, &signature)) == noErr)
 		&&  (msgType & kMsgType_CollectedSender) == 0)

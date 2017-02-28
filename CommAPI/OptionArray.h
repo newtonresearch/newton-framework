@@ -128,7 +128,7 @@ public:
 	NewtonErr	copyDataFrom(COption* source);
 	COption *	clone(void);
 
-private:
+protected:
 	friend class COptionIterator;
 	friend class COptionArray;
 	friend class COptionExtended;
@@ -262,8 +262,8 @@ private:
 		char *			fArrayBlock;		// element storage
 		COptionIterator *	fIterator;		// linked list of iterators active on this array
 		CUSharedMem		fSharedMemoryObject;
-		bool				fIsShared;			// YES if we have been shared
-		bool				fShadow;				// YES if were created from a shared memory object
+		bool				fIsShared;			// true if we have been shared
+		bool				fShadow;				// true if were created from a shared memory object
 
 #ifdef DebugOptionArrayAtomicity
 		bool				fNeedSemaphore;

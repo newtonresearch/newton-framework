@@ -17,7 +17,7 @@
 #include "FaultBlocks.h"
 #include "CObjectBinaries.h"
 #include "UStringUtils.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 
 extern Ref EntrySoup(RefArg);
 
@@ -165,12 +165,12 @@ CCursor::init(RefArg inCursor, RefArg inSoup, RefArg inQuerySpec)
 	fCursor = inCursor;
 	if (ISNIL(inQuerySpec))
 	{
-		fIndexPath = RSYM_uniqueId;
+		fIndexPath = SYMA(_uniqueId);
 	}
 	else
 	{
 		if (ISNIL(fIndexPath = EnsureInternal(GetFrameSlot(inQuerySpec, SYMA(indexPath)))))
-			fIndexPath = RSYM_uniqueId;
+			fIndexPath = SYMA(_uniqueId);
 
 		if (NOTNIL(fQryWords = GetFrameSlot(inQuerySpec, SYMA(words))))
 		{
@@ -333,14 +333,14 @@ CCursor::buildSoupsInfo(void)
 			if (i == 0)
 			{
 				fIndexType = GetFrameSlot(soupIndex, SYMA(type));
-				if (EQRef(fIndexType, RSYMtags))
+				if (EQ(fIndexType, SYMA(tags)))
 					ThrowErr(exStore, kNSErrBadIndexDesc);
 				if ((fQuerySpecBits & kQueryByKey) != 0)
 				{
 					//sp-54
 					SKey keyData;
 					short keySize;
-					bool isMultiSlot = EQRef(GetFrameSlot(soupIndex, SYMA(structure)), RSYMmultislot);	// r10
+					bool isMultiSlot = EQ(GetFrameSlot(soupIndex, SYMA(structure)), SYMA(multiSlot));	// r10
 					if ((fQuerySpecBits & kQueryByBeginKey) != 0
 					&&  fBeginKeyData == NULL)
 					{
@@ -391,7 +391,7 @@ ArrayIndex
 CCursor::getSoupInfoIndex(RefArg inSoup)
 {
 	for (ArrayIndex i = 0; i < fNumOfSoupsInUnion; ++i)
-		if (EQRef(fSoupInfo[i].fSoup, inSoup))
+		if (EQ(fSoupInfo[i].fSoup, inSoup))
 			return i;
 	return kIndexNotFound;
 }
@@ -459,7 +459,7 @@ Ref
 CCursor::isParked(void)
 {
 	if (ISNIL(fCurrentEntry))
-		return fIsCursorAtEnd ? RSYMend : RSYMbegin;
+		return fIsCursorAtEnd ? SYMA(end) : SYMA(begin);
 	return NILREF;
 }
 
@@ -539,7 +539,7 @@ CCursor::keyBoundsValidTest(const SKey & inKey, bool inIsEndBound)
 	Args:		inStr			the string to test
 				inLen			length of that string
 				inParms		array of words we must find in that string
-	Return:	YES => all words have been found in the string
+	Return:	true => all words have been found in the string
 ------------------------------------------------------------------------------*/
 
 struct SWordsTestParms
@@ -815,7 +815,7 @@ void
 CCursor::soupRemoved(RefArg inSoup)
 {
 	ArrayIndex index;
-	if (EQRef(inSoup, fSoup))
+	if (EQ(inSoup, fSoup))
 		invalidate();
 	else if ((index = getSoupInfoIndex(inSoup)) != kIndexNotFound)
 	{
@@ -849,7 +849,7 @@ CCursor::soupAdded(RefArg inSoup)
 Ref
 CCursor::status(void)
 {
-	return fIsIndexInvalid ? RSYMmissingIndex : RSYMvalid;
+	return fIsIndexInvalid ? SYMA(missingIndex) : SYMA(valid);
 }
 
 
@@ -868,7 +868,7 @@ CCursor::setSoup(RefArg inSoup)
 void
 CCursor::indexRemoved(RefArg inArg1, RefArg inQuerySpec)
 {
-	if ((EQRef(GetFrameSlot(inQuerySpec, SYMA(type)), RSYMtags) && fTagsIndexes)
+	if ((EQ(GetFrameSlot(inQuerySpec, SYMA(type)), SYMA(tags)) && fTagsIndexes)
 	||  IndexPathsEqual(fIndexPath, GetFrameSlot(inQuerySpec, SYMA(path))))
 	{
 		invalidate();
@@ -1084,14 +1084,14 @@ CCursor::gotoEntry(RefArg inEntry)
 	}
 	if (!r8)
 		gotoKey(theKey);
-	return MAKEBOOLEAN(EQRef(inEntry, fCurrentEntry));
+	return MAKEBOOLEAN(EQ(inEntry, fCurrentEntry));
 }
 
 
 Ref
 CCursor::entry(void)
 {
-	return fIsEntryDeleted ? RSYMdeleted : fCurrentEntry;
+	return fIsEntryDeleted ? (Ref)SYMA(deleted) : fCurrentEntry;
 }
 
 
@@ -1110,7 +1110,7 @@ CCursor::entryKey(void)
 void
 CCursor::entryChanged(RefArg inEntry, bool inArg2, bool inArg3)
 {
-	if (EQRef(fCurrentEntry, inEntry))
+	if (EQ(fCurrentEntry, inEntry))
 	{
 		if (inArg2)
 			gotoEntry(inEntry);
@@ -1123,7 +1123,7 @@ CCursor::entryChanged(RefArg inEntry, bool inArg2, bool inArg3)
 void
 CCursor::entryReadded(RefArg inEntry, RefArg inNewEntry)
 {
-	if (EQRef(fCurrentEntry, inEntry))
+	if (EQ(fCurrentEntry, inEntry))
 		fCurrentEntry = inNewEntry;
 }
 
@@ -1131,7 +1131,7 @@ CCursor::entryReadded(RefArg inEntry, RefArg inNewEntry)
 void
 CCursor::entryRemoved(RefArg inEntry)
 {
-	if (EQRef(fCurrentEntry, inEntry))
+	if (EQ(fCurrentEntry, inEntry))
 	{
 		fIsEntryDeleted = false;
 		move(1);
@@ -1143,7 +1143,7 @@ CCursor::entryRemoved(RefArg inEntry)
 void
 CCursor::entrySoupChanged(RefArg inEntry, RefArg inNewEntry)
 {
-	if (EQRef(fCurrentEntry, inEntry))
+	if (EQ(fCurrentEntry, inEntry))
 		gotoEntry(inNewEntry);
 }
 

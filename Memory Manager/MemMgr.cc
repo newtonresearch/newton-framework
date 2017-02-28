@@ -96,7 +96,7 @@ ExtendVMHeap(Heap inHeap, Size inSize)
 						{
 						//	unlock didn’t work
 							heap->maxExtent = heap->extent;
-							return NO;
+							return false;
 						}
 					}
 					else
@@ -104,7 +104,7 @@ ExtendVMHeap(Heap inHeap, Size inSize)
 					//	lock didn’t work; restore prev heap limits
 						SetHeapLimits(heap->start, heap->start + heap->prevMaxExtent);
 						heap->maxExtent = heap->extent;
-						return NO;
+						return false;
 					}
 				}
 			}
@@ -133,10 +133,10 @@ ExtendVMHeap(Heap inHeap, Size inSize)
 			heap->freeListTail = blockPtr;
 			heap->x48 = blockPtr;
 		}
-		return YES;
+		return true;
 	}
 
-	return NO;
+	return false;
 }
 
 
@@ -267,7 +267,7 @@ NewBlock(Size inSize)
 	{
 		freeBlock = SearchFreeList(blockSize);
 		if ((freeBlock == NULL || freeBlock->free.size < blockSize)
-		 && ExtendVMHeap(heap, blockSize) == NO)
+		 && ExtendVMHeap(heap, blockSize) == false)
 			return NULL;		// can’t find a block of the required size, and can’t extend the heap
 	}
 
@@ -525,7 +525,7 @@ L66:
 					if ((heap->x58
 					 &&  heap->x58(heap->start, alignedSize - heap->free))
 					||  ExtendVMHeap(heap, alignedSize))
-						r9 = YES;
+						r9 = true;
 					else
 					{
 						// can’t do it; 
@@ -833,7 +833,7 @@ SlideBlocksUp(Block * inLimit, Block * inBlock)
 		if ((r6->inuse.flags & 0x04) != 0)
 		{
 			if (thisBlock == heap->x48)
-				isx48Affected = YES;
+				isx48Affected = true;
 			thisBlock = prevFreeBlock;
 			prevFreeBlock = prevFreeBlock->free.prev;
 			r9 += thisBlock->free.size;
@@ -890,7 +890,7 @@ SlideBlocksDown(Block * inBlock, Block * inLimit)
 			thisBlock->free.size = freeSize + nextFreeBlock->free.size;
 			nextBlock = (Block *)((Ptr) nextBlock + nextFreeBlock->free.size);
 			if (nextFreeBlock == heap->x48)
-				isx48Affected = YES;
+				isx48Affected = true;
 			nextFreeBlock = nextFreeBlock->free.next;
 		}
 		SetFreeChain(thisBlock, prevFreeBlock, nextFreeBlock);
@@ -1454,16 +1454,16 @@ EqualBytes(const void * src1, const void * src2, Size length)
 
 	while (MISALIGNED(src1Ptr) && length-- > 0)
 		if (*src1Ptr++ != *src2Ptr++)
-			return NO;
+			return false;
 	Size postLength = length & 0x03;
 	for (length /= 4; length > 0; length--, src1Ptr += sizeof(long), src2Ptr += sizeof(long))
 		if (*(ULong*)src1Ptr != *(ULong*)src2Ptr)
-			return NO;
+			return false;
 	while (postLength-- > 0)
 		if (*src1Ptr++ != *src2Ptr++)
-			return NO;
+			return false;
 
-	return YES;
+	return true;
 }
 
 

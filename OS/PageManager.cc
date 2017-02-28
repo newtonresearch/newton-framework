@@ -140,7 +140,7 @@ AllocatePageTable(VAddr inVAddr)
 	NewtonErr	err;
 	PAddr			pageTable;
 	if ((err = gThePageTableManager->allocatePageTable(inVAddr, pageTable)) == noErr)
-		AddPTable(inVAddr, pageTable, YES);
+		AddPTable(inVAddr, pageTable, true);
 	return err;
 }
 
@@ -278,8 +278,8 @@ CExtPageTracker::init(CExtPageTracker ** ioTracker, ObjectId inPhysId, PAddr inB
 		CExtPageTracker * tracker;  // 44 from func
 		XFAILNOT(tracker = (CExtPageTracker *)NewPtr(sizeof(CExtPageTracker) + numOfPages * sizeof(CLittlePhys)), err = kOSErrCouldNotCreateObject;)
 
-		tracker->f00 = YES;
-		tracker->f01 = NO;
+		tracker->f00 = true;
+		tracker->f01 = false;
 		tracker->fPhysId = inPhysId;
 
 		CDoubleQItem	qItem;
@@ -321,9 +321,9 @@ CExtPageTracker::put(CLittlePhys * inPhys)
 		fPages.add(inPhys);
 		fPageCount++;
 		ExitAtomic();
-		return YES;
+		return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -350,20 +350,20 @@ CExtPageTracker::take(void)
 bool
 CExtPageTracker::removeReferences(ObjectId inId, bool * outDone)
 {
-	*outDone = NO;
+	*outDone = false;
 	if (inId != fPhysId)
-		return NO;
+		return false;
 
 	if (inId)
 	{
-		f00 = NO;
-		f01 = YES;
+		f00 = false;
+		f01 = true;
 		if (IsSuperMode())
-			*outDone = YES;
+			*outDone = true;
 		else
 			doDeferral();
 	}
-	return YES;
+	return true;
 }
 
 
@@ -380,7 +380,7 @@ CExtPageTracker::doDeferral(void)
 			if ((id = f2C[i].fId) != kNoId)
 				gTheMemArchObjTbl->remove(id);
 #endif
-		f01 = NO;
+		f01 = false;
 	}
 }
 
@@ -391,7 +391,7 @@ CExtPageTracker::doDeferral(void)
 ------------------------------------------------------------------------------*/
 /* don’t know where this came from…
 CExtPageTrackerMgr::CExtPageTrackerMgr()
-	: f04(8), f00(NO)	// 8 returned from func
+	: f04(8), f00(false)	// 8 returned from func
 { }
 */
 
@@ -413,9 +413,9 @@ CExtPageTrackerMgr::put(CLittlePhys * inPhys)
 	for (tracker = (CExtPageTracker *)f04.peek(); tracker != NULL; tracker = (CExtPageTracker *)f04.getNext(tracker))
 	{
 		if (tracker->put(inPhys))
-			return YES;
+			return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -441,7 +441,7 @@ CExtPageTrackerMgr::doDeferral(void)
 		CExtPageTracker * tracker;
 		for (tracker = (CExtPageTracker *)f04.peek(); tracker != NULL; tracker = (CExtPageTracker *)f04.getNext(tracker))
 			tracker->doDeferral();
-		f00 = NO;
+		f00 = false;
 	}
 }
 
@@ -457,8 +457,8 @@ CExtPageTrackerMgr::unhookTracker(ObjectId inId)
 		{
 			if (done)
 			{
-				f00 = YES;
-				gWantDeferred = YES;  // reschedule
+				f00 = true;
+				gWantDeferred = true;  // reschedule
 				return noErr;
 			}
 		}
@@ -499,7 +499,7 @@ CExtPageTrackerMgr::disposeTracker(ObjectId inId)
 ------------------------------------------------------------------------------*/
 
 CPageManager::CPageManager()
-	:	f00(NO), fClients(16)
+	:	f00(false), fClients(16)
 { }
 
 
@@ -589,7 +589,7 @@ CPageManager::get(ObjectId & outId, ObjectId inOwnerId, int inArg3, CUMonitor * 
 	if ((thePage = gPageTracker->take()) == NULL
 	 && (thePage = queryClients(inArg3, inMonitor)) == NULL)
 	{
-		f00 = YES;
+		f00 = true;
 		return kOSErrNoAvailablePage;
 	}
 
@@ -713,7 +713,7 @@ CPageManager::queryClients(int inArg1, CUMonitor * inMonitor)
 	Request an existing page for a client.
 	Args:		inArg1
 				inClientId		the monitor
-	Return:	YES if a page was available
+	Return:	true if a page was available
 ------------------------------------------------------------------------------*/
 
 bool
@@ -727,11 +727,11 @@ CPageManager::askOnePageToAClient(int inArg1, ObjectId inClientId)
 		fClients.rotate(1);
 		if (theClient != inClientId
 		 && CUPageManagerMonitor::releaseRequest(theClient, inArg1) == noErr)
-			return YES;
+			return true;
 	}
 
 	// couldn’t find any pages
-	return NO;
+	return false;
 }
 
 #pragma mark -

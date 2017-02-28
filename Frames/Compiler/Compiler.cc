@@ -78,7 +78,7 @@ Ref			gConstFuncFrame = NILREF;			// 0C1052C4 global constant functions
 Ref *			RSgConstFuncFrame = &gConstFuncFrame;
 #endif
 
-int			gCompilerIsInitialized = NO;		// 0C1052C8
+int			gCompilerIsInitialized = false;		// 0C1052C8
 
 
 //	yacc/bison stuff
@@ -107,7 +107,7 @@ extern char *yyrule[];
 #define YYFINAL 31
 #define YYMAXTOKEN 312
 
-int		yydebug = 0;	// +00	debug level		0C105574
+int		yydebug = YYDEBUG;	// +00	debug level		0C105574
 int		yynerrs;			// +04	number of errors
 int		yyerrflag;		// +08	error flag
 int		yychar;			// +0C	token type --> theToken.id
@@ -130,8 +130,18 @@ short *	yyss;				// +24	state stack base
 
 	The NewtonScript protoEditor frame, pre-compiled in the EditorCommands
 	stream file, which is read by NTK at launch, defines EvaluateSelection()
-	which (unsurprisingly perhaps) evaluates the current text selection.
-	EvaluateSelection() calls Compile() the plainC function defined here.
+	which (unsurprisingly perhaps) evaluates the current text selection:
+		EvaluateSelection: func(selOffset, selLength)
+			begin
+			...
+			local text := :Selection();
+			...
+			local code := Compile(text);
+			vars.this := self;
+			local result := call code with ();
+			vars.this := nil;
+			Print(result)
+			end
 	However--
 		the FCompile() function we have here is disassembled from the Newton
 		ROM and does not have the behaviour we see in NTK
@@ -153,7 +163,7 @@ FCompile(RefArg inRcvr, RefArg inStr)
 #if 0
 	RefVar					codeBlock;
 	CStringInputStream	stream(inStr);
-	CCompiler				compiler(&stream, NO);
+	CCompiler				compiler(&stream, false);
 
 	newton_try
 	{
@@ -199,19 +209,11 @@ ParseString(RefArg inStr)
 {
 	RefVar					codeBlock;
 	CStringInputStream	stream(inStr);
-	CCompiler				compiler(&stream, NO);
+	CCompiler				compiler(&stream, false);
 
 	newton_try
 	{
 		codeBlock = compiler.compile();
-
-		//	not in the original, but could be interesting
-		if (NOTNIL(GetFrameSlot(RA(gVarFrame), MakeSymbol("showCodeBlocks"))))
-		{
-			PrintObject(codeBlock, 0);
-			gREPout->print("\n");
-			Disassemble(codeBlock);
-		}
 	}
 	cleanup
 	{
@@ -243,7 +245,7 @@ CompileFile(const char * inFilename)
 		ThrowMsg("couldn't open file");
 
 	CStdioInputStream stream(fd, inFilename);
-	CCompiler compiler(&stream, YES);
+	CCompiler compiler(&stream, true);
 
 	newton_try
 	{
@@ -301,7 +303,7 @@ ParseFile(const char * inFilename)
 		ThrowMsg("couldn't open file");
 
 	CStdioInputStream stream(fd, inFilename);
-	CCompiler compiler(&stream, YES);
+	CCompiler compiler(&stream, true);
 
 	newton_try
 	{
@@ -410,7 +412,7 @@ AllocatePT5(int inToken, RefArg inP1, RefArg inP2, RefArg inP3, RefArg inP4, Ref
 	globals.
 	NOTE:		This class uses malloc rather than NewPtr for portability reasons.
 	Args:		inStream				the input stream (string or file)
-				inDoConstituents	YES => stop compiling when first constituent
+				inDoConstituents	true => stop compiling when first constituent
 												 terminated, so all declarations/functions
 												 in a file are evaluated by repeatedly
 												 calling compile(); InterpretBlock();
@@ -426,6 +428,7 @@ CCompiler::CCompiler(CInputStream * inStream, bool inDoConstituents)
 	sStack = (short *)malloc(kInitYaccStackSize * sizeof(short));
 	doConstituents = inDoConstituents;
 	funcDepthPtr = NULL;
+	tokenQueueIndex = 0;
 	stackedToken.id = 0;
 	stackedToken.value.type = TYPEnone;
 	stackedToken.value.ref = NILREF;
@@ -433,7 +436,7 @@ CCompiler::CCompiler(CInputStream * inStream, bool inDoConstituents)
 	vStack = Slots(yaccStack);
 	if (!gCompilerIsInitialized)
 	{
-		gCompilerIsInitialized = YES;
+		gCompilerIsInitialized = true;
 		AddGCRoot(&yyval);
 		AddGCRoot(&yylval);
 
@@ -473,6 +476,22 @@ CCompiler::~CCompiler()
 Ref
 CCompiler::compile(void)
 {
+// experimental
+	if (NOTNIL(GetFrameSlot(gVarFrame, MakeSymbol("LLVM"))))
+	{
+		ExprAST * ast = parse();
+		if (ast)
+			ast->dump();	// FOR DEBUG
+		// walk the AST
+		//		ast->walkForDeclarations(this)
+		//		-> WalkNodes(inAST, this, DeclarationWalkerTrampoline, false); func->declarationsFinished();
+		//			->
+		// delete the AST to free all its mem
+		delete ast;
+		return NILREF;
+	}
+
+
 	func = NULL;
 	funcDepthPtr = NULL;
 
@@ -507,7 +526,7 @@ CCompiler::compile(void)
 				warning("= at top level... did you mean := ?");
 		}
 		func->copyClosedArgs();
-		walkForCode(graph, NO);
+		walkForCode(graph, false);
 		codeblock = endFunction();
 	}
 	on_unwind
@@ -936,16 +955,16 @@ case 62:
 						yyval = AllocatePT2(TOKENcall, SYMA(DefGlobalFn), fn); }
 break;
 case 63:
-					{	AllocatePT1(TOKENbreak, yyvsp[0]); }
+					{	yyval = AllocatePT1(TOKENbreak, yyvsp[0]); }
 break;
 case 64:
-					{	AllocatePT1(TOKENbreak, AllocatePT1(TOKENconst, RA(NILREF))); }
+					{	yyval = AllocatePT1(TOKENbreak, AllocatePT1(TOKENconst, RA(NILREF))); }
 break;
 case 65:
-					{	AllocatePT1(TOKENreturn, yyvsp[0]); }
+					{	yyval = AllocatePT1(TOKENreturn, yyvsp[0]); }
 break;
 case 66:
-					{	AllocatePT1(TOKENreturn, AllocatePT1(TOKENconst, RA(NILREF))); }
+					{	yyval = AllocatePT1(TOKENreturn, AllocatePT1(TOKENconst, RA(NILREF))); }
 break;
 case 67:
 					{	yyval = AllocatePT2(TOKENcall, yyvsp[-3], yyvsp[-1]); }
@@ -1025,12 +1044,12 @@ case 90:
 					{	yyval = TRUEREF; }
 break;
 case 91:
-					{	yyval = RSYMmap; }
+					{	yyval = SYMA(Map); }
 break;
 case 92:
-					{	if (!EQRef(yyvsp[0], RSYMcollect))
+					{	if (!EQ(yyvsp[0], SYMA(collect)))
 							syntaxError("FOREACH requires DO or COLLECT");
-						yyval = RSYMcollect; }
+						yyval = SYMA(collect); }
 break;
 case 93:
 					{	yyval = AllocatePT2(TOKENwhile, yyvsp[-2], yyvsp[0]); }
@@ -1268,7 +1287,7 @@ case 140:
 break;
 case 142:
 					{
-						if (EQRef(ClassOf(yyvsp[-2]), RSYMpathExpr))
+						if (EQ(ClassOf(yyvsp[-2]), SYMA(pathExpr)))
 						{
 							AddArraySlot(yyvsp[-2], yyvsp[0]);
 							yyval = yyvsp[-2];
@@ -1377,13 +1396,13 @@ yyaccept:
 	yygrowstack() in file y.tab.c. It has been tweaked a bit to cope with
 	our own parser stack (of Refs).
 	Args:		--
-	Return:	YES => stack overflowed - can’t allocate any more
+	Return:	true => stack overflowed - can’t allocate any more
 ------------------------------------------------------------------------------*/
 
 bool
 CCompiler::parserStackOverflow(void)
 {
-	bool ovflw = YES;
+	bool ovflw = true;
 
 	newton_try
 	{
@@ -1402,7 +1421,7 @@ CCompiler::parserStackOverflow(void)
 			yyvsp = vStack + i;
 
 			stackSize = newSize;
-			ovflw = NO;
+			ovflw = false;
 		}
 	}
 	newton_catch(exRootException)
@@ -1426,7 +1445,7 @@ CCompiler::parserStackOverflow(void)
 int
 CCompiler::getToken(void)
 {
-	int	token;
+	int token;
 
 	if (stackedToken.id != 0)
 	{
@@ -1436,36 +1455,34 @@ CCompiler::getToken(void)
 		stackedToken.value.ref = NILREF;
 		return theToken.id;
 	}
-	else
+
+	token = consumeToken();
+	if (token == ';')
 	{
 		token = consumeToken();
-		if (token == ';')
-		{
-			token = consumeToken();
-			if (token == EOF			// ignore trailing ';'
-			 || token == TOKENend
-			 || token == TOKENelse
-			 || token == ']'
-			 || token == ')'
-			 || token == '}'
-			 || token == ','
-			 || token == TOKENuntil
-			 || token == TOKENconst)
-				return token;
-			stackedToken = theToken;
-			return ';';
-		}
-		else if (token == ',')
-		{
-			token = consumeToken();
-			if (token == '}'			// similarly trailing ','
-			 || token == ']')
-				return token;
-			stackedToken = theToken;
-			return ',';
-		}
-		return token;
+		if (token == EOF			// ignore trailing ';'
+		 || token == TOKENend
+		 || token == TOKENelse
+		 || token == ']'
+		 || token == ')'
+		 || token == '}'
+		 || token == ','
+		 || token == TOKENuntil
+		 || token == TOKENconst)
+			return token;
+		stackedToken = theToken;
+		return ';';
 	}
+	else if (token == ',')
+	{
+		token = consumeToken();
+		if (token == '}'			// similarly trailing ','
+		 || token == ']')
+			return token;
+		stackedToken = theToken;
+		return ',';
+	}
+	return token;
 }
 
 
@@ -1585,8 +1602,7 @@ void	WalkNodes(RefArg inGraph, CCompiler * inContext, Trampoline inWalker, bool 
 			break;
 
 		case TOKENbegin:
-			count = Length(p1);
-			for (i = 0; i < count; ++i)
+			for (i = 0, count = Length(p1); i < count; ++i)
 				WalkNodes(GetArraySlot(p1, i), inContext, inWalker, inPostProcessing);
 			break;
 
@@ -1595,8 +1611,7 @@ void	WalkNodes(RefArg inGraph, CCompiler * inContext, Trampoline inWalker, bool 
 			break;
 
 		case TOKENlocal:
-			count = Length(p1);
-			for (i = 1; i < count; i += 2)
+			for (i = 1, count = Length(p1); i < count; i += 2)
 			{
 				RefVar	value(GetArraySlot(p1, i));
 				if (NOTNIL(value))
@@ -1613,8 +1628,7 @@ void	WalkNodes(RefArg inGraph, CCompiler * inContext, Trampoline inWalker, bool 
 
 		case TOKENtry:
 			WalkNodes(p1, inContext, inWalker, inPostProcessing);
-			count = Length(p2);
-			for (i = 0; i < count; ++i)
+			for (i = 0, count = Length(p2); i < count; ++i)
 			{
 				RefVar	p2x(GetArraySlot(p2, i));
 				WalkNodes(GetArraySlot(p2x, 2), inContext, inWalker, inPostProcessing);
@@ -1622,8 +1636,7 @@ void	WalkNodes(RefArg inGraph, CCompiler * inContext, Trampoline inWalker, bool 
 			break;
 
 		case TOKENBuildArray:
-			count = Length(p1);
-			for (i = 1; i < count; i += 2)
+			for (i = 1, count = Length(p1); i < count; i += 2)
 				WalkNodes(GetArraySlot(p1, i), inContext, inWalker, inPostProcessing);
 			break;
 
@@ -1636,21 +1649,18 @@ void	WalkNodes(RefArg inGraph, CCompiler * inContext, Trampoline inWalker, bool 
 			break;
 
 		case TOKENrepeat:
-			count = Length(p1);
-			for (i = 1; i < count; i += 2)
+			for (i = 0, count = Length(p1); i < count; ++i)
 				WalkNodes(GetArraySlot(p1, i), inContext, inWalker, inPostProcessing);
-			WalkNodes(p1, inContext, inWalker, inPostProcessing);
+			WalkNodes(p2, inContext, inWalker, inPostProcessing);
 			break;
 
 		case TOKENcall:
-			count = Length(p2);
-			for (i = 0; i < count; ++i)
+			for (i = 0, count = Length(p2); i < count; ++i)
 				WalkNodes(GetArraySlot(p2, i), inContext, inWalker, inPostProcessing);
 			break;
 
 		case TOKENinvoke:
-			count = Length(p2);
-			for (i = 0; i < count; ++i)
+			for (i = 0, count = Length(p2); i < count; ++i)
 				WalkNodes(GetArraySlot(p2, i), inContext, inWalker, inPostProcessing);
 			WalkNodes(p1, inContext, inWalker, inPostProcessing);
 			break;
@@ -1707,8 +1717,7 @@ void	WalkNodes(RefArg inGraph, CCompiler * inContext, Trampoline inWalker, bool 
 
 		case ':':
 		case TOKENsendIfDefined:
-			count = Length(p3);
-			for (i = 0; i < count; ++i)
+			for (i = 0, count = Length(p3); i < count; ++i)
 				WalkNodes(GetArraySlot(p3, i), inContext, inWalker, inPostProcessing);
 			break;
 		}
@@ -1728,7 +1737,7 @@ void	WalkNodes(RefArg inGraph, CCompiler * inContext, Trampoline inWalker, bool 
 void
 CCompiler::walkForDeclarations(RefArg inGraph)
 {
-	WalkNodes(inGraph, this, DeclarationWalkerTrampoline, NO);
+	WalkNodes(inGraph, this, DeclarationWalkerTrampoline, false);
 	func->declarationsFinished();
 }
 
@@ -1756,8 +1765,7 @@ CCompiler::declarationWalker(RefArg inGraph, int inNodeType, RefArg inP1, RefArg
 		break;
 
 	case TOKENconstant:
-		count = Length(inP1);
-		for (i = 0; i < count; i += 2)
+		for (i = 0, count = Length(inP1); i < count; i += 2)
 		{
 			RefVar	varName(GetArraySlot(inP1, i));
 			RefVar	varValue(GetArraySlot(inP1, i+1));
@@ -1802,23 +1810,23 @@ CCompiler::declarationWalker(RefArg inGraph, int inNodeType, RefArg inP1, RefArg
 
 	case TOKENforeach:
 		{
-			func->addLocals(Clone(inP3));
-			const char *	name = SymbolName(GetArraySlot(inP3, 0));
-			const char *	deep = Length(inP3) > 1 ? SymbolName(GetArraySlot(inP3, 1)) : "";
-			ArrayIndex	nameLen = strlen(name);
-			ArrayIndex	deepLen = strlen(deep);
-			char *	iterVarName = (char *)malloc(nameLen + deepLen + 8);
-			strcpy(iterVarName, name);
-			strcat(iterVarName, deep);
+			func->addLocals(Clone(inP4));
+			const char *	tagName = SymbolName(GetArraySlot(inP4, 0));
+			const char *	valueName = Length(inP4) > 1 ? SymbolName(GetArraySlot(inP4, 1)) : "";
+			ArrayIndex	tagNameLen = strlen(tagName);
+			ArrayIndex	valueNameLen = strlen(valueName);
+			char *	iterVarName = (char *)malloc(tagNameLen + valueNameLen + 8);	// +8 for longest of "|iter", "|index", "|result" 
+			strcpy(iterVarName, tagName);
+			strcat(iterVarName, valueName);
 			strcat(iterVarName, "|iter");
 			bool		doCollect = EQ(inP1, SYMA(collect));
 			RefVar	varNames(MakeArray(doCollect ? 3 : 1));
 			SetArraySlot(varNames, 0, MakeSymbol(iterVarName));
 			if (doCollect)
 			{
-				memmove(iterVarName + nameLen + deepLen, "|index", 7);
+				memmove(iterVarName + tagNameLen + valueNameLen, "|index", 7);
 				SetArraySlot(varNames, 1, MakeSymbol(iterVarName));
-				memmove(iterVarName + nameLen + deepLen, "|result", 8);
+				memmove(iterVarName + tagNameLen + valueNameLen, "|result", 8);
 				SetArraySlot(varNames, 2, MakeSymbol(iterVarName));
 			}
 			free(iterVarName);
@@ -1841,7 +1849,7 @@ void
 CCompiler::walkForClosures(RefArg inGraph)
 {
 	func->computeInitialVarLocs();
-	WalkNodes(inGraph, this, ClosureWalkerTrampoline, NO);
+	WalkNodes(inGraph, this, ClosureWalkerTrampoline, false);
 	func->computeArgFrame();
 }
 
@@ -1918,7 +1926,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 	RefVar	p4(numOfParams >= 4 ? GetArraySlot(inGraph, 4) : NILREF);
 	RefVar	p5(numOfParams >= 5 ? GetArraySlot(inGraph, 5) : NILREF);
 
-	bool		isArithmetic = NO;
+	bool		isArithmetic = false;
 	ArrayIndex	i, numOfElements, numOfArgs;
 	int		isFinalNode = 1;
 
@@ -1928,58 +1936,58 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 	//	p1 = operand1
 	//	p2 = operand2
 	case '+':
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_2B), 2);		// '+
 		break;
 
 	case '-':
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_2D), 2);		// '-
 		break;
 
 	case '*':
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_2A), 2);		// '*
 		break;
 
 	case '/':
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_2F), 2);		// '/
 		break;
 
 	case TOKENdiv:
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(div), 2);
 		break;
 
 	case TOKENmod:
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(mod), 2);
 		break;
 
 	case TOKENLShift:
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_3C_3C), 2);		// <<
 		break;
 
 	case TOKENRShift:
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_3E_3E), 2);		// >>
 		break;
 
@@ -1988,8 +1996,8 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		//	generate
 		//	expr1 expr1offset:branchIfFalse->noAction expr2 expr2offset:branch->noAction nil noAction:
 			ArrayIndex	expr1PC, expr2PC;
-			isArithmetic = YES;
-			walkForCode(p1, NO);
+			isArithmetic = true;
+			walkForCode(p1, false);
 			expr1PC = emitPlaceholder();
 			if (inFinalNode)
 			{
@@ -1998,7 +2006,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			}
 			else
 			{
-				walkForCode(p2, NO);
+				walkForCode(p2, false);
 				expr2PC = emitPlaceholder();
 			}
 			backpatch(expr1PC, kOpcodeBranchIfFalse, curPC());
@@ -2017,8 +2025,8 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		//	generate
 		//	expr1 expr1offset:branchIfTrue->noAction expr2 expr2offset:branch->noAction true noAction:
 			ArrayIndex	expr1PC, expr2PC;
-			isArithmetic = YES;
-			walkForCode(p1, NO);
+			isArithmetic = true;
+			walkForCode(p1, false);
 			expr1PC = emitPlaceholder();
 			if (inFinalNode)
 			{
@@ -2027,7 +2035,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			}
 			else
 			{
-				walkForCode(p2, NO);
+				walkForCode(p2, false);
 				expr2PC = emitPlaceholder();
 			}
 			backpatch(expr1PC, kOpcodeBranchIfTrue, curPC());
@@ -2042,65 +2050,65 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		break;
 
 	case TOKENnot:
-		isArithmetic = YES;
-		walkForCode(p1, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
 		emitFuncall(SYMA(not), 1);
 		break;
 
 	case '<':
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_3C), 2);		// '<
 		break;
 
 	case TOKENLEQ:
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_3C_3D), 2);	// <=
 		break;
 
 	case '>':
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_3E), 2);		// '>
 		break;
 
 	case TOKENGEQ:
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_3E_3D), 2);	// >=
 		break;
 
 	case TOKENEQL:
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_3D), 2);		// '=
 		break;
 
 	case TOKENNEQ:
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
 		emitFuncall(SYMA(_3C_3E), 2);	// '<>
 		break;
 
 	case '&':
 	case TOKENAmperAmper:
-		isArithmetic = YES;
+		isArithmetic = true;
 		numOfElements = walkForStringer(inGraph);
 		emitPush(SYMA(array));
 		emit(kOpcodeMakeArray, numOfElements);
-		emitFuncall(SYMA(stringer), 1);
+		emitFuncall(SYMA(Stringer), 1);
 		break;
 
 	case '.':
 		{
-			int		throwIfNilObject = YES;
+			int		throwIfNilObject = true;
 			RefVar	pathExpr(walkForPath(inGraph, &throwIfNilObject));
 			if (NOTNIL(pathExpr))
 				emitPush(pathExpr);
@@ -2109,14 +2117,14 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		break;
 
 	case '[':
-		isArithmetic = YES;
-		walkForCode(p1, NO);
-		walkForCode(p2, NO);
-		emitFuncall(SYMA(aref), 2);
+		isArithmetic = true;
+		walkForCode(p1, false);
+		walkForCode(p2, false);
+		emitFuncall(SYMA(Aref), 2);
 		break;
 
 	case TOKENuMinus:
-		isArithmetic = YES;
+		isArithmetic = true;
 		if (RINT(GetArraySlot(p1, 0)) == TOKENconst)
 		{
 			newton_try
@@ -2135,7 +2143,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		}
 		else
 		{
-			walkForCode(p1, NO);
+			walkForCode(p1, false);
 			emitFuncall(SYMA(negate), 1);
 		}
 		break;
@@ -2167,7 +2175,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			{
 				if (i < finalNode)
 				{
-					if (walkForCode(GetArraySlot(p1, i), YES) != 0)
+					if (walkForCode(GetArraySlot(p1, i), true) != 0)
 						emitPop();
 				}
 				else
@@ -2191,14 +2199,14 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		//	p3 = isNative
 		//	p4 = formal args [1]
 		//	p5 = used to save func context
-		isArithmetic = YES;
+		isArithmetic = true;
 		if (inFinalNode)
 			isFinalNode = 0;
 		else
 		{
 			func = (CFunctionState *)((Ref) p5);
 			func->copyClosedArgs();
-			walkForCode(p2, NO);
+			walkForCode(p2, false);
 			bool		hasScope = NOTNIL(func->argFrame());
 			RefVar	fnBlock(endFunction());
 			emitPush(fnBlock);
@@ -2211,9 +2219,9 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 	case TOKENglobal:
 		if (FrameHasSlot(gConstantsFrame, p1))
 			errorWithValue(kNSErrGlobalAndConstCollision, p1);
-		walkForCode(p2, NO);
+		walkForCode(p2, false);
 		emitPush(p1);
-		emitFuncall(SYMA(setGlobal), 2);
+		emitFuncall(SYMA(SetGlobal), 2);
 		break;
 
 	case TOKENconstant:
@@ -2230,7 +2238,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			ArrayIndex	j = i + 1;
 			if (NOTNIL(GetArraySlot(p1, j)))
 			{
-				walkForCode(GetArraySlot(p1, j), NO);
+				walkForCode(GetArraySlot(p1, j), false);
 				emitVarSet(GetArraySlot(p1, i));
 			}
 		}
@@ -2247,7 +2255,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		{
 			if (RINT(GetArraySlot(p1, 0)) == TOKENAmperAmper)
 				warning("&& used in IF statement... did you mean AND?");
-			walkForCode(p1, NO);
+			walkForCode(p1, false);
 			ArrayIndex	elseBranch = emitPlaceholder();
 			ArrayIndex	continueBranch;
 			if (inFinalNode)
@@ -2256,14 +2264,14 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 					emitPop();
 			}
 			else
-				walkForCode(p2, NO);
+				walkForCode(p2, false);
 			if (ISNIL(p3))
 			{
 			//	there’s no ELSE clause
 				if (inFinalNode)
 				{
 					backpatch(elseBranch, kOpcodeBranchIfFalse, curPC());
-					isFinalNode = 0;
+					isFinalNode = 0;	// actually branches to something more complicated &002C5938
 				}
 				else
 				{
@@ -2281,11 +2289,11 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 				backpatch(elseBranch, kOpcodeBranchIfFalse, curPC());
 				if (inFinalNode)
 				{
-					if (walkForCode(p2, inFinalNode) != 0)
+					if (walkForCode(p3, inFinalNode) != 0)
 						emitPop();
 				}
 				else
-					walkForCode(p2, NO);
+					walkForCode(p3, false);
 				backpatch(continueBranch, kOpcodeBranch, curPC());
 				if (inFinalNode)
 					isFinalNode = 0;
@@ -2313,11 +2321,11 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 
 			if (inFinalNode)
 			{
-				if (walkForCode(p1, YES) != 0)
+				if (walkForCode(p1, true) != 0)
 					emitPop();
 			}
 			else
-				walkForCode(p1, NO);
+				walkForCode(p1, false);
 			emit(kOpcodeSimple, kSimplePopHandlers);
 
 			ArrayIndex	continueBranch = emitPlaceholder();
@@ -2335,11 +2343,11 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 
 				if (inFinalNode)
 				{
-					if (walkForCode(GetArraySlot(handler, 2), YES) != 0)
+					if (walkForCode(GetArraySlot(handler, 2), true) != 0)
 						emitPop();
 				}
 				else
-					walkForCode(GetArraySlot(handler, 2), NO);
+					walkForCode(GetArraySlot(handler, 2), false);
 
 				// set up handler exit branch
 				if (i < numOfExits)
@@ -2359,21 +2367,21 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		break;
 
 	case TOKENBuildArray:
-		isArithmetic = YES;
+		isArithmetic = true;
 		numOfElements = Length(p1);
 		for (i = 0; i < numOfElements; ++i)
-			walkForCode(GetArraySlot(p1, i), NO);
+			walkForCode(GetArraySlot(p1, i), false);
 		emitPush(ClassOf(p1));
 		emit(kOpcodeMakeArray, numOfElements);
 		break;
 
 	case TOKENBuildFrame:
 		{
-			isArithmetic = YES;
+			isArithmetic = true;
 			numOfElements = Length(p1);
 			CObjectIterator	iter(p1);
 			for ( ; !iter.done(); iter.next())
-				walkForCode(iter.value(), NO);
+				walkForCode(iter.value(), false);
 			emitPush(SharedFrameMap(p1));
 			emit(kOpcodeMakeFrame, numOfElements);
 		}
@@ -2383,7 +2391,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		{
 			int	loopStart = curPC();
 			func->beginLoop();
-			walkForCode(p1, NO);
+			walkForCode(p1, false);
 			emitPop();
 			emitBranch(loopStart);
 			func->endLoop();
@@ -2395,10 +2403,10 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			ArrayIndex	entryBranch = emitPlaceholder();
 			ArrayIndex	loopStart = curPC();
 			func->beginLoop();
-			walkForCode(p2, NO);
+			walkForCode(p2, false);
 			emitPop();
 			backpatch(entryBranch, kOpcodeBranch, curPC());
-			walkForCode(p1, NO);
+			walkForCode(p1, false);
 			emit(kOpcodeBranchIfTrue, loopStart);
 			emitPush(RA(NILREF));
 			func->endLoop();
@@ -2412,10 +2420,10 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			numOfElements = Length(p1);
 			for (i = 0; i < numOfElements; ++i)
 			{
-				if (walkForCode(GetArraySlot(p1, i), YES) != 0)
+				if (walkForCode(GetArraySlot(p1, i), true) != 0)
 					emitPop();
 			}
-			walkForCode(p2, NO);
+			walkForCode(p2, false);
 			emit(kOpcodeBranchIfFalse, loopStart);
 			emitPush(RA(NILREF));
 			func->endLoop();
@@ -2425,15 +2433,15 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 	case TOKENcall:
 		numOfArgs = Length(p2);
 		for (i = 0; i < numOfArgs; ++i)
-			walkForCode(GetArraySlot(p2, i), NO);
+			walkForCode(GetArraySlot(p2, i), false);
 		emitFuncall(p1, numOfArgs);
 		break;
 
 	case TOKENinvoke:
 		numOfArgs = Length(p2);
 		for (i = 0; i < numOfArgs; ++i)
-			walkForCode(GetArraySlot(p2, i), NO);
-		walkForCode(p1, NO);
+			walkForCode(GetArraySlot(p2, i), false);
+		walkForCode(p1, false);
 		emit(kOpcodeInvoke, numOfArgs);
 		break;
 
@@ -2455,11 +2463,11 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			RefVar	iterIncr(MakeSymbol(iterVarName));
 			free(iterVarName);
 
-			walkForCode(p2, NO);
+			walkForCode(p2, false);
 			emitVarSet(p1);
-			walkForCode(p3, NO);
+			walkForCode(p3, false);
 			emitVarSet(iterLimit);
-			walkForCode(p4, NO);
+			walkForCode(p4, false);
 			emitVarSet(iterIncr);
 			emitVarGet(iterIncr);
 			emitVarGet(p1);
@@ -2467,7 +2475,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			ArrayIndex	entryBranch = emitPlaceholder();
 			ArrayIndex	loopStart = curPC();
 			func->beginLoop();
-			if (walkForCode(p5, YES) != 0)
+			if (walkForCode(p5, true) != 0)
 				emitPop();
 			emitVarGet(iterIncr);
 			emitVarIncr(p1);
@@ -2488,12 +2496,12 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		//	p4 = [optional tag|index, iterName]
 		//	p5 = optional deeply
 			bool		doCollect = EQ(p1, SYMA(collect));
-			bool		isTagged = (Length(p4) > 1);
+			bool		isSlotReqd = (Length(p4) > 1);
 			bool		isDeeply = NOTNIL(p5);
-			RefVar	tagSym(isTagged ? GetArraySlot(p4, 0) : NILREF);
-			RefVar	valueSym(GetArraySlot(p4, isTagged ? 1 : 0));
+			RefVar	slotSym(isSlotReqd ? GetArraySlot(p4, 0) : NILREF);
+			RefVar	valueSym(GetArraySlot(p4, isSlotReqd ? 1 : 0));
 			const char *	namePart1 = SymbolName(GetArraySlot(p4, 0));
-			const char *	namePart2 = isTagged ? SymbolName(GetArraySlot(p4, 1)) : "";
+			const char *	namePart2 = isSlotReqd ? SymbolName(GetArraySlot(p4, 1)) : "";
 			int		namePart1Len = strlen(namePart1);
 			int		namePart2Len = strlen(namePart2);
 			char *	iterVarName = (char *)malloc(namePart1Len + namePart2Len + 8);
@@ -2504,7 +2512,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			RefVar	iterVarSym(MakeSymbol(iterVarName));	// sp+08
 			RefVar	iterIndexSym;		// sp+04
 			RefVar	iterResultSym;		// sp+00
-			walkForCode(p2, NO);
+			walkForCode(p2, false);
 			if (doCollect)
 			{
 				memmove(iterVarName + namePart1Len + namePart2Len, "|index", 7);
@@ -2515,7 +2523,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			free(iterVarName);
 
 			emitPush(isDeeply ? RA(TRUEREF) : RA(NILREF));
-			emitFuncall(SYMA(newIterator), 2);
+			emitFuncall(SYMA(NewIterator), 2);
 			emitVarSet(iterVarSym);
 
 			if (doCollect)
@@ -2530,7 +2538,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 					emitVarGet(iterVarSym);
 					emitPush(MAKEINT(kIterNumOfSlotsIndex));
 				}
-				emitFuncall(SYMA(aref), 2);
+				emitFuncall(SYMA(Aref), 2);
 				emitPush(SYMA(array));
 				emit(kOpcodeMakeArray, 0xFFFF);
 				emitVarSet(iterResultSym);
@@ -2544,22 +2552,22 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			func->beginLoop();
 			emitVarGet(iterVarSym);
 			emitPush(MAKEINT(kIterValueIndex));
-			emitFuncall(SYMA(aref), 2);
+			emitFuncall(SYMA(Aref), 2);
 			emitVarSet(valueSym);
-			if (isDeeply)
+			if (isSlotReqd)
 			{
 				emitVarGet(iterVarSym);
 				emitPush(MAKEINT(kIterTagIndex));
-				emitFuncall(SYMA(aref), 2);
-				emitVarSet(tagSym);
+				emitFuncall(SYMA(Aref), 2);
+				emitVarSet(slotSym);
 			}
 
 			if (doCollect)
 			{
 				emitVarGet(iterResultSym);
 				emitVarGet(iterIndexSym);
-				walkForCode(p3, NO);
-				emitFuncall(SYMA(setAref), 3);
+				walkForCode(p3, false);
+				emitFuncall(SYMA(SetAref), 3);
 				emitPop();
 				emitPush(MAKEINT(1));
 				emitVarIncr(iterIndexSym);
@@ -2568,7 +2576,7 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 			}
 			else
 			{
-				if (walkForCode(p3, YES))
+				if (walkForCode(p3, true))
 					emitPop();
 			}
 
@@ -2606,12 +2614,12 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		break;
 
 	case TOKENreturn:
-		walkForCode(p1, NO);
+		walkForCode(p1, false);
 		emitReturn();
 		break;
 
 	case TOKENbreak:
-		walkForCode(p1, NO);
+		walkForCode(p1, false);
 		func->addLoopExit();
 		break;
 
@@ -2620,24 +2628,24 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		break;
 
 	case TOKENexists:
-		isArithmetic = YES;
+		isArithmetic = true;
 		subType = RINT(GetArraySlot(p1, 0));
 		if (subType == TOKENsymbol)
 		{
 			emitPush(GetArraySlot(p1, 1));
-			emitFuncall(SYMA(hasVar), 1);
+			emitFuncall(SYMA(HasVar), 1);
 		}
 		else if (subType == '.')
 		{
-			int		throwIfNilObject = NO;
+			int		throwIfNilObject = false;
 			RefVar	pathExpr(walkForPath(p1, &throwIfNilObject));
 			if (NOTNIL(pathExpr))
 				emitPush(pathExpr);
-			emitFuncall(SYMA(hasPath), throwIfNilObject);
+			emitFuncall(SYMA(HasPath), throwIfNilObject);
 		}
 		else if (subType == ':')
 		{
-			walkForCode(GetArraySlot(p1, 2), NO);
+			walkForCode(GetArraySlot(p1, 2), false);
 			emitPush(GetArraySlot(p1, 1));
 			emitFuncall(SYMA(hasVariable), 2);
 		}
@@ -2652,10 +2660,10 @@ CCompiler::walkForCode(RefArg inGraph, bool inFinalNode)
 		//	p3	= args
 		numOfArgs = Length(p3);
 		for (i = 0; i < numOfArgs; ++i)
-			walkForCode(GetArraySlot(p3, i), NO);
+			walkForCode(GetArraySlot(p3, i), false);
 		if (NOTNIL(p2))
 		{
-			walkForCode(p2, NO);
+			walkForCode(p2, false);
 			emitPush(p1);
 			emit(tokenType == ':' ? kOpcodeSend : kOpcodeSendIfDefined, numOfArgs);
 		}
@@ -2699,7 +2707,7 @@ CCompiler::walkAssignment(RefArg inLHS, RefArg inRHS, bool inArg3)
 		RefVar	varName(GetArraySlot(inLHS, 1));
 		if (func->isConstant(varName))
 			errorWithValue(kNSErrBadAssign, varName);
-		walkForCode(inRHS, NO);
+		walkForCode(inRHS, false);
 		emitVarSet(varName);
 		if (inArg3)
 			isFinalNode = 0;
@@ -2710,11 +2718,11 @@ CCompiler::walkAssignment(RefArg inLHS, RefArg inRHS, bool inArg3)
 	else if (tokenType == '.')
 	{
 	//	it’s a slot accessor
-		int		throwIfNilObject = YES;
+		int		throwIfNilObject = true;
 		RefVar	pathExpr(walkForPath(inLHS, &throwIfNilObject));
 		if (NOTNIL(pathExpr))
 			emitPush(pathExpr);
-		walkForCode(inRHS, NO);
+		walkForCode(inRHS, false);
 		emit(kOpcodeSetPath, inArg3 ? 0 : 1);
 		if (inArg3)
 			isFinalNode = 0;
@@ -2723,10 +2731,10 @@ CCompiler::walkAssignment(RefArg inLHS, RefArg inRHS, bool inArg3)
 	else if (tokenType == '[')
 	{
 	//	it’s an array accessor
-		walkForCode(GetArraySlot(inLHS, 1), NO);	// array object
-		walkForCode(GetArraySlot(inLHS, 2), NO);	// index
-		walkForCode(inRHS, NO);							// element
-		emitFuncall(SYMA(setAref), 3);
+		walkForCode(GetArraySlot(inLHS, 1), false);	// array object
+		walkForCode(GetArraySlot(inLHS, 2), false);	// index
+		walkForCode(inRHS, false);							// element
+		emitFuncall(SYMA(SetAref), 3);
 	}
 
 	return isFinalNode;
@@ -2757,7 +2765,7 @@ CCompiler::walkForPath(RefArg inGraph, int * ioThrowIfNilObject)
 				if (ISNIL(object))
 				{
 					emit(kOpcodeGetPath, *ioThrowIfNilObject);
-					*ioThrowIfNilObject = NO;
+					*ioThrowIfNilObject = false;
 					return GetArraySlot(right, 1);
 				}
 				else if (IsSymbol(object))
@@ -2775,7 +2783,7 @@ CCompiler::walkForPath(RefArg inGraph, int * ioThrowIfNilObject)
 			}
 			else
 			{
-				walkForCode(left, NO);
+				walkForCode(left, false);
 				return GetArraySlot(right, 1);
 			}
 		}
@@ -2785,13 +2793,13 @@ CCompiler::walkForPath(RefArg inGraph, int * ioThrowIfNilObject)
 			if (NOTNIL(pathExpr))
 				emitPush(pathExpr);
 			emit(kOpcodeGetPath, *ioThrowIfNilObject);
-			*ioThrowIfNilObject = NO;
-			walkForCode(right, NO);
+			*ioThrowIfNilObject = false;
+			walkForCode(right, false);
 		}
 		else
 		{
-			walkForCode(left, NO);
-			walkForCode(right, NO);
+			walkForCode(left, false);
+			walkForCode(right, false);
 		}
 	}
 	else
@@ -2822,7 +2830,7 @@ CCompiler::walkForStringer(RefArg inGraph)
 		int	count2 = walkForStringer(GetArraySlot(inGraph, 2));
 		return count1 + spacer + count2;
 	}
-	walkForCode(inGraph, NO);
+	walkForCode(inGraph, false);
 	return 1;
 }
 
@@ -2830,7 +2838,7 @@ CCompiler::walkForStringer(RefArg inGraph)
 /*------------------------------------------------------------------------------
 	Determine whether a PT represents a constant expression.
 	Args:		inGraph		a parameterised token.
-	Return:	YES => PT is a constant expression
+	Return:	true => PT is a constant expression
 ------------------------------------------------------------------------------*/
 
 bool
@@ -2841,13 +2849,13 @@ CCompiler::isConstantExpr(RefArg inGraph)
 	bool		result;
 #if 1
 	if (tokenType == TOKENconst)
-		result = YES;
+		result = true;
 	else if (tokenType == TOKENsymbol)
 		result = func->isConstant(tokenValue);
 	else if (tokenType == TOKENuMinus)
 		result = isConstantExpr(tokenValue);
 	else
-		result = NO;
+		result = false;
 
 #else
 	// handle arithmetic operators
@@ -2875,13 +2883,13 @@ CCompiler::isConstantExpr(RefArg inGraph)
 		break;
 
 	case TOKENconst:
-		result = YES;
+		result = true;
 		break;
 	case TOKENsymbol:
 		result = func->isConstant(tokenValue);
 		break;
 	default:
-		result = NO;
+		result = false;
 	}
 #endif
 
@@ -2940,7 +2948,7 @@ CCompiler::evaluateConstantExpr(RefArg inGraph)
 		break;
 
 	case TOKENconst:
-		result = YES;
+		result = true;
 		break;
 	case TOKENsymbol:
 		result = func->getConstantValue(tokenValue, NULL);

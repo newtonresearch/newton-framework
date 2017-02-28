@@ -12,7 +12,7 @@
 #include "EndpointClient.h"
 #include "CommManagerInterface.h"
 #include "OSErrors.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "Funcs.h"
 
 DeclareException(exTranslator, exRootException);
@@ -51,11 +51,11 @@ EzSerialOptions(COptionArray * outOptions, Handle inData, size_t inWrBufLen, siz
 		XFAIL(err = outOptions->appendOption(&serialOption1))
 
 		CCMOInputFlowControlParms serialOption2;
-		serialOption2.fUseHardFlowControl = YES;
+		serialOption2.fUseHardFlowControl = true;
 		XFAIL(err = outOptions->appendOption(&serialOption2))
 
 		CCMOOutputFlowControlParms serialOption3;
-		serialOption3.fUseHardFlowControl = YES;
+		serialOption3.fUseHardFlowControl = true;
 		XFAIL(err = outOptions->appendOption(&serialOption3))
 
 		if (inRdBufLen > 0 && inWrBufLen > 0)
@@ -75,18 +75,19 @@ bool
 EzConvertOptions(RefArg inOptions, COptionArray ** outOpenOptions, COptionArray ** outBindOptions, COptionArray ** outConnectOptions)
 {
 	NewtonErr err = noErr;
-	bool isUsingEOP = NO;
+	bool isUsingEOP = false;
 	POptionDataOut * optDataOut = NULL;
 	PScriptDataOut * scrDataOut = NULL;
 	XTRY
 	{
-		XFAILNOT(*outOpenOptions = new COptionArray, err = kOSErrNoMemory;)	// I’m paraphrasing here; the original uses MemError()
+		*outOpenOptions = new COptionArray;
+		XFAILIF(*outOpenOptions == NULL, err = kOSErrNoMemory;)	// I’m paraphrasing here; the original uses MemError()
 		XFAIL(err = (*outOpenOptions)->init())
 
 		optDataOut = (POptionDataOut *)MakeByName("PFrameSink", "POptionDataOut");
-		XFAILNOT(optDataOut, err = kOSErrNoMemory;)								// I’m paraphrasing here; the original uses MemError()
+		XFAILIF(optDataOut == NULL, err = kOSErrNoMemory;)			// I’m paraphrasing here; the original uses MemError()
 		scrDataOut = (PScriptDataOut *)MakeByName("PFrameSink", "PScriptDataOut");
-		XFAILNOT(scrDataOut, err = kOSErrNoMemory;)							// ...you get the idea
+		XFAILIF(scrDataOut == NULL, err = kOSErrNoMemory;)			// ...you get the idea
 
 		newton_try
 		{
@@ -104,7 +105,8 @@ EzConvertOptions(RefArg inOptions, COptionArray ** outOpenOptions, COptionArray 
 
 				if (FrameHasSlot(inOptions, SYMA(BindOptions)))
 				{
-					XFAILNOT(*outBindOptions = new COptionArray, err = kOSErrNoMemory;)
+					*outBindOptions = new COptionArray;
+					XFAILIF(*outBindOptions == NULL, err = kOSErrNoMemory;)
 					XFAIL(err = (*outBindOptions)->init())
 
 					specOptions = DoMessage(inOptions, SYMA(BindOptions), args);
@@ -119,7 +121,8 @@ EzConvertOptions(RefArg inOptions, COptionArray ** outOpenOptions, COptionArray 
 
 				if (FrameHasSlot(inOptions, SYMA(ConnectOptions)))
 				{
-					XFAILNOT(*outConnectOptions = new COptionArray, err = kOSErrNoMemory;)
+					*outConnectOptions = new COptionArray;
+					XFAILIF(*outConnectOptions == NULL, err = kOSErrNoMemory;)
 					XFAIL(err = (*outConnectOptions)->init())
 
 					specOptions = DoMessage(inOptions, SYMA(ConnectOptions), args);
@@ -174,7 +177,7 @@ CEzEndpointPipe::CEzEndpointPipe()
 	fEndpoint = NULL;
 	fTimeout = 10*kSeconds;
 	f30 = NULL;
-	f54 = NO;
+	fIsAppleTalkOpen = false;
 }
 
 
@@ -231,25 +234,24 @@ CEzEndpointPipe::init(RefArg inOptions, Timeout inTimeout)
 void
 CEzEndpointPipe::init(COptionArray * inOpenOptions, COptionArray * inBindOptions, COptionArray * inConnectOptions, bool inUseEOP, Timeout inTimeout)
 {
-//	r4: r5 r7 r6 r9 r8
 	XTRY
 	{
 		commonInit(inTimeout);
 		XFAIL(fError = RunModemNavigator(inOpenOptions))
 
-		if ((fError = CMGetEndpoint(inOpenOptions, &fEndpoint, NO)) == noErr)
+		if ((fError = CMGetEndpoint(inOpenOptions, &fEndpoint, false)) == noErr)
 		{
 			if ((fError = fEndpoint->open(0)) == noErr)
 			{
-				if ((fError = fEndpoint->nBind(inBindOptions, inTimeout, YES)) == noErr)
+				if ((fError = fEndpoint->nBind(inBindOptions, inTimeout, true)) == noErr)
 				{
-					if ((fError = fEndpoint->nConnect(inConnectOptions, NULL, NULL, inTimeout, YES)) == noErr)
+					if ((fError = fEndpoint->nConnect(inConnectOptions, NULL, NULL, inTimeout, true)) == noErr)
 					{
 						CEndpointPipe::init(fEndpoint, 2*KByte, 2*KByte, fEzTimeout, inUseEOP, NULL);
-						XFAIL(YES);	// NO! Not a failure, success!
+						XFAIL(true);	// NO! Not a failure, success!
 					}
 					// on error, unwind endpoint create(), open(), bind()
-					fEndpoint->nUnBind(0, YES);
+					fEndpoint->nUnBind(0, true);
 				}
 				fEndpoint->close();
 			}
@@ -274,26 +276,26 @@ CEzEndpointPipe::init(ConnectionType inType, Handle inArg2, Timeout inTimeout)
 		f30 = inArg2;
 		switch (inType)
 		{
-		case 0:
+		case kSerial:
 			getSerialEndpoint();
 			break;
-		case 1:
+		case kAppleTalk:
 			fError = OpenAppleTalk('sltk');
 			if (fError != noErr)
 				ThrowErr(exPipe, fError);
-			f54 = YES;
+			fIsAppleTalkOpen = true;
 			getADSPEndpoint();
 			break;
-		case 3:
+		case kMNPSerial:
 			getMNPSerialEndpoint();
 			break;
-		case 4:
+		case kSharpIR:
 			getSharpIREndpoint();
 			break;
-		case 5:
+		case kMNPModem:
 			getMNPModemEndpoint();
 			break;
-		case 6:
+		case kIrDA:
 			getIrDAEndpoint();
 			break;
 		}
@@ -302,7 +304,7 @@ CEzEndpointPipe::init(ConnectionType inType, Handle inArg2, Timeout inTimeout)
 	newton_catch(exPipe)
 	{
 		tearDown();
-		fError = (NewtonErr)(unsigned long)CurrentException()data;
+		fError = (NewtonErr)(long)CurrentException()->data;
 	}
 	cleanup
 	{
@@ -348,8 +350,8 @@ CEzEndpointPipe::getSerialEndpoint(void)
 		XFAIL(fError = options.init())
 		XFAIL(fError = EzSerialOptions(&options, f30, 2*KByte, 2*KByte))
 		// get the endpoint
-		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, NO))
-		fEndpoint->useForks(YES);
+		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, false))
+		fEndpoint->useForks(true);
 		// connect the endpoint
 		fError = fEndpoint->easyConnect(0, &options, fEzTimeout);
 	}
@@ -372,8 +374,8 @@ CEzEndpointPipe::getMNPSerialEndpoint(void)
 		XFAIL(fError = options.init())
 		XFAIL(fError = EzMNPSerialOptions(&options, f30))
 		// get the endpoint
-		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, NO))
-		fEndpoint->useForks(YES);
+		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, false))
+		fEndpoint->useForks(true);
 		// add MNP options
 		XFAIL(fError = options.removeAllOptions())
 		XFAIL(fError = EzMNPConnectOptions(&options, f30))
@@ -401,8 +403,8 @@ CEzEndpointPipe::getMNPModemEndpoint(void)
 		if (UseModemNavigator())
 			XFAIL(fError = RunModemNavigator(&options))
 		// get the endpoint
-		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, NO))
-		fEndpoint->useForks(YES);
+		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, false))
+		fEndpoint->useForks(true);
 		// add phone options
 		XFAIL(fError = options.removeAllOptions())
 		char phoneNoStr[256];
@@ -440,8 +442,8 @@ CEzEndpointPipe::getSharpIREndpoint(void)
 		XFAIL(fError = options.init())
 		XFAIL(fError = EzSharpIROptions(&options, f30))
 		// get the endpoint
-		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, NO))
-		fEndpoint->useForks(YES);
+		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, false))
+		fEndpoint->useForks(true);
 		// connect the endpoint
 		fError = fEndpoint->easyConnect(0, &options, fEzTimeout);
 	}
@@ -464,8 +466,8 @@ CEzEndpointPipe::getIrDAEndpoint(void)
 		XFAIL(fError = options.init())
 		XFAIL(fError = EzIrDAOptions(&options, f30))
 		// get the endpoint
-		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, NO))
-		fEndpoint->useForks(YES);
+		XFAIL(fError = CMGetEndpoint(&options, &fEndpoint, false))
+		fEndpoint->useForks(true);
 		// connect the endpoint
 		fError = fEndpoint->easyConnect(0, &options, fEzTimeout);
 	}
@@ -494,13 +496,13 @@ CEzEndpointPipe::getADSPEndpoint(void)
 		XFAIL(fError = CMGetOptionsForAppleTalkADSP(&appleTalkOptions))
 
 		// get the endpoint
-		XFAIL(fError = CMGetEndpoint(&appleTalkOptions, &fEndpoint, NO))
-		fEndpoint->useForks(YES);
+		XFAIL(fError = CMGetEndpoint(&appleTalkOptions, &fEndpoint, false))
+		fEndpoint->useForks(true);
 
 		// connect the endpoint
 		XFAIL(fError = fEndpoint->open(0))
-		XFAIL(fError = fEndpoint->nBind(NULL, 0, YES))
-		fError = fEndpoint->nConnect(&appleTalkOptions, NULL, NULL, 0, YES);
+		XFAIL(fError = fEndpoint->nBind(NULL, 0, true))
+		fError = fEndpoint->nConnect(&appleTalkOptions, NULL, NULL, 0, true);
 	}
 	XENDTRY;
 	XDOFAIL(fError)
@@ -554,10 +556,10 @@ CEzEndpointPipe::tearDown(void)
 			XFAIL(fError = fEndpoint->easyClose())
 			fEndpoint->destroy(), fEndpoint = NULL;
 		}
-		if (f54)
+		if (fIsAppleTalkOpen)
 		{
 			XFAIL(fError = CloseAppleTalk('sltk'))
-			f54 = NO;
+			fIsAppleTalkOpen = false;
 		}
 	}
 	XENDTRY;

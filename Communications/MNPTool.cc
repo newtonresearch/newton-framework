@@ -44,13 +44,13 @@ CMNP_CCB::init()
 			bufDescr->fNext = &fXmitBuf[(i+1)&7];
 			bufDescr->fPrev = &fXmitBuf[(i-1)&7];
 
-			XFAIL(err = bufDescr->fBufList.init(NO))				// init buffer list
+			XFAIL(err = bufDescr->fBufList.init(false))				// init buffer list
 			XFAIL(err = bufDescr->fBufSegment.init(&bufDescr->fBufData, sizeof(bufDescr->fBufData)))	// create buffer
 			bufDescr->fBufList.insert(&bufDescr->fBufSegment);	// add it to the list
 		}
 		XFAIL(err)	// catch failures within for loop
 
-		XFAIL(err = fXmitHeaderBuf.init(NO))							// init the header-send buffer list
+		XFAIL(err = fXmitHeaderBuf.init(false))							// init the header-send buffer list
 		XFAIL(err = fXmitHeaderSegment.init(fXmitHeaderData, 10))			// create a buffer segment
 		fXmitHeaderBuf.insert(&fXmitHeaderSegment);				// add it to the list
 	}
@@ -90,10 +90,10 @@ CMNPTool::taskConstructor()
 		fCCB = NULL;
 		f564 = 0;
 		f568 = 0;
-		f58C = YES;
+		f58C = true;
 		f3D4.fRecvSize = KByte;
 		fBufferSize = 260;
-		if ((f594.init(NO)) == noErr)
+		if ((f594.init(false)) == noErr)
 			f5AC = f594.getMsgId();
 	}
 	return err;
@@ -296,9 +296,9 @@ CMNPTool::connectPreflight(void)
 		fState |= 0x80000000;
 
 		getFramingCtl(&fCCB->framing);
-		framingOpt.fDoHeader = YES;		// but why set these? they’re the defaults anyway
-		framingOpt.fDoPutFCS = YES;
-		framingOpt.fDoGetFCS = YES;
+		framingOpt.fDoHeader = true;		// but why set these? they’re the defaults anyway
+		framingOpt.fDoPutFCS = true;
+		framingOpt.fDoGetFCS = true;
 		framingOpt.fEscapeChar = chDLE;
 		framingOpt.fEOMChar = chETX;
 		setFramingCtl(&framingOpt);
@@ -319,7 +319,7 @@ CMNPTool::openAlloc(void)
 	XTRY
 	{
 		fCCB = new CMNP_CCB;
-		XFAILNOT(fCCB, err = kOSErrNoMemory;)	// not original, but surely we want to report it?
+		XFAILIF(fCCB == NULL, err = kOSErrNoMemory;)	// not original, but surely we want to report it?
 		XFAIL(err = fCCB->init())
 
 		fCCB->f0C = f54C.fCompressionType;
@@ -330,7 +330,7 @@ CMNPTool::openAlloc(void)
 			XFAIL(err = MNPC5Open(&fCCB->f1C))	// CMNPClass5Vars*
 #endif
 
-		XFAIL(fCCB->fRcvdFrame.init(NO))
+		XFAIL(fCCB->fRcvdFrame.init(false))
 		XFAIL(fCCB->fC98.init(256+10))
 		fCCB->fRcvdFrame.insert(&fCCB->fC98);
 
@@ -526,7 +526,7 @@ CMNPTool::xmitLR(void)
 		xmitBuf->hide(266-index, kSeekFromEnd);
 
 		fCCB->f00 |= 0x00100000;
-		xmitPostRequest(xmitBuf, YES);
+		xmitPostRequest(xmitBuf, true);
 
 		fCCB->fMNPStats.fLRRetransCount++;
 		fCCB->fCFC = fCCB->fCF4;
@@ -586,7 +586,7 @@ CMNPTool::xmitLT(void)
 	xmitBuf->hide(266 - (fCCB->fOffsetToLTData+1), kSeekFromEnd);
 	fCCB->fA8 = 2;
 
-	xmitPostRequest(xmitBuf, NO);
+	xmitPostRequest(xmitBuf, false);
 
 	if (fCCB->fCFC == 0)
 		fCCB->fCFC = fCCB->fCF4;
@@ -635,7 +635,7 @@ CMNPTool::xmitNAck(void)
 		length			1
 		N(k)				xx		rx credit number
 	Args:		inFlags
-	Return:	YES => success
+	Return:	true => success
 ----------------------------------------------------------------------------- */
 
 int
@@ -644,7 +644,7 @@ CMNPTool::xmitLA(ULong inFlags)
 	if (fState & 0x08000000)
 	{
 		fCCB->f00 |= inFlags;
-		return NO;
+		return false;
 	}
 
 	fCCB->f00 &= ~0x18000000;
@@ -694,9 +694,9 @@ CMNPTool::xmitLA(ULong inFlags)
 		fCCB->f00 &= ~0x04000000;
 
 	xmitBuf->hide(10-(index+1), kSeekFromEnd);
-	xmitPostRequest(xmitBuf, YES);
+	xmitPostRequest(xmitBuf, true);
 
-	return YES;
+	return true;
 }
 
 
@@ -723,10 +723,10 @@ CMNPTool::xmitLD(void)
 	if (fCCB->f00 & 0x40000000)	// already disconnected
 	{
 		fState &= ~0x20000000;
-		return YES;
+		return true;
 	}
 
-	fCCB->fIsDisconnecting = YES;
+	fCCB->fIsDisconnecting = true;
 
 	CBufferList * xmitBuf = &fCCB->fXmitHeaderBuf;
 	xmitBuf->reset();
@@ -742,10 +742,10 @@ CMNPTool::xmitLD(void)
 	frameData[7] = fCCB->fDisconnectUserCode;
 
 //	xmitBuf->hide(10-(8), kSeekFromEnd);	// original doesn’t -- why not?
-	xmitPostRequest(xmitBuf, YES);
+	xmitPostRequest(xmitBuf, true);
 	setXmitAbortTimer();
 
-	return NO;
+	return false;
 }
 
 
@@ -904,7 +904,7 @@ CMNPTool::putComplete(NewtonErr inStatus, size_t inPutCount)
 		fDataToSend = NULL;
 		if (fCCB->fIsDisconnecting)
 		{
-			fCCB->fIsDisconnecting = NO;
+			fCCB->fIsDisconnecting = false;
 			xmitLDComplete(inStatus, inPutCount);
 		}
 		else
@@ -953,7 +953,7 @@ CMNPTool::rcvBuffer(void)
 		if (fCCB->fC70 != 0)
 			fCCB->f40.copyOut(fCCB->fC68, &fCCB->fC70);
 		fCCB->fMNPStats.fReadBytesOut += fCCB->fC6C;
-		getComplete(noErr, NO, fCCB->fC6C);
+		getComplete(noErr, false, fCCB->fC6C);
 		fCCB->fC68 = 0;
 		fCCB->fC6C = 0;
 		fCCB->fC70 = 0;
@@ -1032,19 +1032,19 @@ void
 CMNPTool::rcvFrameComplete(NewtonErr inErr, bool inEndOfFrame)
 {
 	NewtonErr err = noErr;
-	bool isFrameOK = YES;
+	bool isFrameOK = true;
 
 	if (inErr == kSerErrCRCError)
-		isFrameOK = NO;
+		isFrameOK = false;
 	else if (inErr == kSerErrAsyncError)
 	{
-		isFrameOK = NO;
+		isFrameOK = false;
 		fCCB->fMNPStats.fRcvAsyncErrTotal++;
 	}
 	else if (inErr)
 		err = inErr;
 	else if (!inEndOfFrame)
-		isFrameOK = NO;
+		isFrameOK = false;
 
 	if (shouldAbort(0x40000000, err))
 		return;
@@ -1139,7 +1139,7 @@ CMNPTool::rcvLR(void)
 			else
 			{
 				fCCB->fD0C = 0;
-				if (paramNegotiation(YES))
+				if (paramNegotiation(true))
 					listenComplete(noErr);
 				else
 				{
@@ -1151,7 +1151,7 @@ CMNPTool::rcvLR(void)
 		}
 		else
 		{
-			if (paramNegotiation(NO))
+			if (paramNegotiation(false))
 			{
 				if (f568 != 0)
 					f55C = changeSpeed(f568);
@@ -1200,22 +1200,22 @@ CMNPTool::rcvLR(void)
 		length			1
 		facilities		x
 	Args:		inArg		isListening
-	Return:	YES => success
+	Return:	true => success
 ----------------------------------------------------------------------------- */
 
 bool
 CMNPTool::paramNegotiation(bool inArg)
 {
-	bool isOK = YES;	// r5
+	bool isOK = true;	// r5
 	int sp00;
 	ULong n401;								//sp04
 	int sp08 = 0;
 	UChar framingMode;					//sp0C
 	UChar optimisation;					//sp10
-	bool hasOptimisationParam = NO;	//sp14
-	bool hasN401Param = NO;				//sp18
-	bool haskParam = NO;					//sp1C
-	bool hasFramingModeParam = NO;	//sp20
+	bool hasOptimisationParam = false;	//sp14
+	bool hasN401Param = false;				//sp18
+	bool haskParam = false;					//sp1C
+	bool hasFramingModeParam = false;	//sp20
 	int sp24;
 
 	fCCB->fRcvdFrame.get();	// ignore constant parameter 1
@@ -1237,14 +1237,14 @@ CMNPTool::paramNegotiation(bool inArg)
 			if (param > 2)
 				param = 2;
 			framingMode = param;
-			hasFramingModeParam = YES;
+			hasFramingModeParam = true;
 			break;
 
 		case 3:	// max number of outstanding LT frames, k
 			param = fCCB->fRcvdFrame.get();
 			if (param < fCCB->fMaxNumOfLTFramesk)
 				fCCB->fMaxNumOfLTFramesk = param;
-			haskParam = YES;
+			haskParam = true;
 			break;
 
 		case 4:	// max information field length, N401
@@ -1252,13 +1252,13 @@ CMNPTool::paramNegotiation(bool inArg)
 			n401 = (fCCB->fRcvdFrame.get() << 8) + n401;
 			if (n401 < fCCB->fN401)
 				fCCB->fN401 = n401;
-			hasN401Param = YES;
+			hasN401Param = true;
 			fCCB->fMaxLTFrameLen = fCCB->fN401;
 			break;
 
 		case 8:	// data phase optimisation
 			optimisation = fCCB->fRcvdFrame.get();
-			hasOptimisationParam = YES;
+			hasOptimisationParam = true;
 			break;
 
 		case 9:
@@ -1278,7 +1278,7 @@ CMNPTool::paramNegotiation(bool inArg)
 			fCCB->fRcvdFrame.seek(codeLen, kSeekFromHere);
 			if (!inArg)
 				// connecting entity is trying to negotiate a param we don’t support
-				isOK = NO;
+				isOK = false;
 			break;
 		}
 	}
@@ -1313,12 +1313,12 @@ CMNPTool::paramNegotiation(bool inArg)
 			if (hasOptimisationParam)	// bit 2 => fixed field LT and LA frames
 			{
 				if ((optimisation & 0x02) == 0)
-					fCCB->fIsOptimised = NO;
+					fCCB->fIsOptimised = false;
 				if ((fCCB->f04 & 0x04) == 0)
 					fCCB->fMNPStats.fAdaptValue = fCCB->fMaxLTFrameLen;
 			}
 			else
-				fCCB->fIsOptimised = NO;
+				fCCB->fIsOptimised = false;
 //001182B8
 			// compression stuff
 		}
@@ -1338,9 +1338,9 @@ CMNPTool::paramNegotiation(bool inArg)
 			option->setOpCodeResult(fCCB->f0C == fCCB->f34 ? opSuccess : opFailure);
 		}
 	}
-	fConnectInfo.fErrorFree = YES;
-	fConnectInfo.fSupportsCallBack = YES;
-	fConnectInfo.fViaAppleTalk = NO;
+	fConnectInfo.fErrorFree = true;
+	fConnectInfo.fSupportsCallBack = true;
+	fConnectInfo.fViaAppleTalk = false;
 	fConnectInfo.fConnectBitsPerSecond = (fCCB->f34 == 10) ? f55C : (f55C * 3) / 2;
 
 	return isOK;
@@ -1469,7 +1469,7 @@ CMNPTool::rcvLT(void)
 		else
 		{
 			//r7=0,r5=1
-			bool hasNS = NO;
+			bool hasNS = false;
 			ArrayIndex i = 1;
 			int codeType, codeLen;
 			while (i <= fCCB->fRcvdFrameLen)
@@ -1481,7 +1481,7 @@ CMNPTool::rcvLT(void)
 				if (codeType == 1)
 				{
 					NS = fCCB->fRcvdFrame.get();
-					hasNS = YES;
+					hasNS = true;
 				}
 				else
 					fCCB->fRcvdFrame.seek(codeLen, kSeekFromHere);
@@ -1606,8 +1606,8 @@ CMNPTool::rcvLA(void)
 		}
 		else
 		{
-			bool hasNk = NO;
-			bool hasNR = NO;
+			bool hasNk = false;
+			bool hasNR = false;
 			int codeType, codeLen;
 			while ((codeType = fCCB->fRcvdFrame.get()) != -1)
 			{
@@ -1615,12 +1615,12 @@ CMNPTool::rcvLA(void)
 				if (codeType == 1)
 				{
 					fCCB->fAckNR = fCCB->fRcvdFrame.get();
-					hasNR = YES;
+					hasNR = true;
 				}
 				else if (codeType == 2)
 				{
 					fCCB->fAckNk = fCCB->fRcvdFrame.get();
-					hasNk = YES;
+					hasNk = true;
 				}
 				else
 					fCCB->fRcvdFrame.seek(codeLen, kSeekFromHere);

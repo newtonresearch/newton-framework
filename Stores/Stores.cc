@@ -49,6 +49,9 @@ extern void		RemoveFromUnionSoup(RefArg name, RefArg soup);
 /*------------------------------------------------------------------------------
 	F u n c t i o n   P r o t o t y p e s
 ------------------------------------------------------------------------------*/
+extern size_t sizeof_rand_state(void);
+extern void set_rand_state(void * ioState);
+extern void get_rand_state(void * ioState);
 
 extern void		InitPackageSoups(void);
 extern void		InitHintsHandlers(void);
@@ -61,10 +64,6 @@ NewtonErr		ReadStoreRootData(CStore * inStore, PSSId inId, StoreRootData * outRo
 extern void		LargeBinariesStoreRemoved(CStoreWrapper * inStoreWrapper);
 extern NewtonErr	SetupEphemeralTracker(RefArg inStoreObject, PSSId inEphemeralListId);
 extern CStore *	StoreFromWrapper(RefArg inRcvr);
-
-#if !defined(correct)
-extern void	RegisterHackStore(void);
-#endif
 
 
 /*------------------------------------------------------------------------------
@@ -114,7 +113,6 @@ InitExternal(void)
 	RegisterStore((CStore *)thing);
 #else
 	RegisterStore(gMuxInRAMStore);
-//	RegisterHackStore();	// could actually register the hack store with the name server
 #endif
 
 	InitLargeObjects();
@@ -175,7 +173,7 @@ RegisterStore(CStore * inStore)
 
 Ref	StoreConvertSoupSortTables(void) { return NILREF; }
 const CSortingTable *	StoreGetDirSortTable(RefArg) { return NULL; }
-bool	StoreHasSortTables(RefArg) { return NO; }
+bool	StoreHasSortTables(RefArg) { return false; }
 void	StoreSaveSortTable(RefArg, long) {}
 void	StoreRemoveSortTable(RefArg, long) {}
 
@@ -205,7 +203,7 @@ AddSortTables(RefArg inStore)
 				if (sortTable == NULL)
 					OutOfMemory();
 				OSERRIF([storeWrapper->store() read: sortTableId buf: sortTable offset: 0 size: size]);
-				gSortTables->add(sortTable, YES);
+				gSortTables->add(sortTable, true);
 			}
 			else
 				gSortTables->subscribe(sortTableNumber);
@@ -250,18 +248,16 @@ RemoveStore(CStore * inStore)
 }
 
 
+/*------------------------------------------------------------------------------
+	Return store information.
+------------------------------------------------------------------------------*/
+
+
 CStore *
 GetInternalStore(void)
 {
 	return gMuxInRAMStore;
 }
-
-
-long		g0C10595C;
-
-long sizeof_rand_state(void) { return sizeof(long); }
-void set_rand_state(void * ioState) { g0C10595C = *(long *)ioState; }
-void get_rand_state(void * ioState) { *(long *)ioState = g0C10595C; }
 
 void
 SetupRandomSignature()
@@ -341,7 +337,7 @@ MakeStoreObject(CStore * inStore)
 		OutOfMemory();
 
 	RefVar	storeObject;
-	bool		isStoreNew = NO;
+	bool		isStoreNew = false;
 
 	newton_try
 	{
@@ -355,7 +351,7 @@ MakeStoreObject(CStore * inStore)
 		if (size == 0)
 		{
 			// store is empty - create default info
-			isStoreNew = YES;
+			isStoreNew = true;
 			CheckWriteProtect(storeWrapper->store());
 			OSERRIF(storeWrapper->lockStore());
 
@@ -511,9 +507,15 @@ KillStoreObject(RefArg inStoreObject)
 
 #pragma mark -
 
-/*------------------------------------------------------------------------------
+/* -----------------------------------------------------------------------------
 	P l a i n   C   F u n c t i o n   I n t e r f a c e
-------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------- */
+
+/* -----------------------------------------------------------------------------
+	Return array of all known stores.
+	Args:		inRcvr
+	Return:	array Ref
+----------------------------------------------------------------------------- */
 
 Ref
 GetStores(void)
@@ -529,16 +531,61 @@ FGetStores(RefArg inRcvr)
 }
 
 
-/*	canonicalCardInfo := {	cardInfoVersion: 0,
+/* -----------------------------------------------------------------------------
+	Erase a store.
+	Args:		inRcvr		the store
+	Return:	erased store frame Ref
+----------------------------------------------------------------------------- */
+extern CStoreWrapper * StoreWrapper(RefArg inRcvr);
+
+Ref
+StoreErase(RefArg inRcvr)
+{
+	NewtonErr err;
+	CStoreWrapper * storeWrapper = StoreWrapper(inRcvr);
+	CheckWriteProtect(inRcvr);
+
+	// remember where we are in the global list of stores
+	ArrayIndex originalStoreIndex = ArrayPosition(gStores, inRcvr, 0, RA(NILREF));
+	CStore * store = storeWrapper->store();
+	// remove the store from the global list of stores
+	RemoveStore(store);
+	// reformat it
+	err = store->format();
+	if (err)
+		ThrowErr(exStore, err);
+	// reregister it
+	RefVar storeRef(RegisterStore(store));
+	ArrayIndex storeIndex;
+	if (originalStoreIndex != kIndexNotFound && (storeIndex = ArrayPosition(gStores, storeRef, 0, RA(NILREF))) != kIndexNotFound)
+	{
+		if (storeIndex != originalStoreIndex)
+		{
+			// the store is not where it used to be in the global list -- put it back where it was
+			SetArraySlotRef(gStores, storeIndex, GetArraySlotRef(gStores, originalStoreIndex));
+			SetArraySlotRef(gStores, originalStoreIndex, storeRef);
+		}
+	}
+	return storeRef;
+}
+
+
+/* -----------------------------------------------------------------------------
+	Return info for PCMCIA card.
+
+	canonicalCardInfo := {	cardInfoVersion: 0,
 									totalSockets: 0,
 									totalCards: 0,
 									socketInfos: [] };
-*/
+
+	Args:		inRcvr
+	Return:	info frame Ref
+----------------------------------------------------------------------------- */
 
 Ref
 FGetCardInfo(RefArg inRcvr)
 {
-# if 0
+#if defined(correct)
 	//sp-64
 	ArrayIndex numOfCards = 0;	// sp2C
 	RefVar sp28;
@@ -570,11 +617,7 @@ FGetCardInfo(RefArg inRcvr)
 		SetFrameSlot(cardInfo, SYMA(totalCards), MAKEINT(numOfCards));
 	}
 #else
-	RefVar cardInfo(AllocateFrame());
-	SetFrameSlot(cardInfo, SYMA(cardInfoVersion), MAKEINT(0x00020200));
-	SetFrameSlot(cardInfo, SYMA(totalSockets), MAKEINT(0));
-	SetFrameSlot(cardInfo, SYMA(totalCards), MAKEINT(0));
-	SetFrameSlot(cardInfo, SYMA(socketInfos), MakeArray(0));
+	RefVar cardInfo(DeepClone(RA(canonicalCardInfo)));
 #endif
 	return cardInfo;
 }
@@ -603,7 +646,6 @@ void
 CheckWriteProtect(CStore * inStore)
 {
 	bool isRO;
-
 	if (inStore->isROM())
 		ThrowErr(exStore, kNSErrStoreIsROM);
 	OSERRIF(inStore->isReadOnly(&isRO));
@@ -616,7 +658,6 @@ bool
 StoreWritable(CStore * inStore)
 {
 	bool isRO;
-
 	if (!(isRO = inStore->isROM()))
 		inStore->isReadOnly(&isRO);
 	return !isRO;

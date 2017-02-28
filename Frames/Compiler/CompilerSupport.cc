@@ -83,16 +83,16 @@ CFunctionState::CFunctionState(CCompiler * inCompiler, RefArg inArgs, CFunctionS
 	else
 		fFuncDepth = -1;
 
-	fIsParent = NO;
-	fIsSlotReferenced = NO;
-	fIsMethodReferenced = NO;
-	fHasClosedVars = NO;
+	fIsParent = false;
+	fIsSlotReferenced = false;
+	fIsMethodReferenced = false;
+	fHasClosedVars = false;
 
 	if (inState != NULL)
 	{
 		fConstants = AllocateFrame();		// local constants
 		SetFrameSlot(fConstants, SYMA(_proto), inState->fConstants);
-		inState->fIsParent = YES;
+		inState->fIsParent = true;
 	}
 	else
 		fConstants = gConstantsFrame;		// global constants
@@ -102,7 +102,7 @@ CFunctionState::CFunctionState(CCompiler * inCompiler, RefArg inArgs, CFunctionS
 	else if (FrameHasSlot(gVarFrame, MakeSymbol("dbgKeepVarNames")))
 		fKeepVarNames = NOTNIL(GetFrameSlot(gVarFrame, MakeSymbol("dbgKeepVarNames")));
 	else
-		fKeepVarNames = NO;
+		fKeepVarNames = false;
 }
 
 
@@ -123,7 +123,7 @@ CFunctionState::~CFunctionState()
 	Determine whether this function is at the top level
 	(or conversely is enclosed by further function state).
 	Args:		--
-	Return:	YES => is at top level
+	Return:	true => is at top level
 ----------------------------------------------------------------------*/
 
 bool
@@ -334,7 +334,7 @@ CFunctionState::declarationsFinished(void)
 /*----------------------------------------------------------------------
 	Return a value from the constants frame.
 	Args:		inTag			name of the constant
-				outExists	YES => constant actually exists
+				outExists	true => constant actually exists
 	Return:	the value
 ----------------------------------------------------------------------*/
 
@@ -349,7 +349,7 @@ CFunctionState::getConstantValue(RefArg inTag, bool * outExists)
 	Determine whether a name refers to a constant
 	(as opposed to a variable).
 	Args:		inTag			name of the item
-	Return:	YES => is a constant
+	Return:	true => is a constant
 ----------------------------------------------------------------------*/
 
 bool
@@ -360,20 +360,20 @@ CFunctionState::isConstant(RefArg inTag)
 		for (CFunctionState * funcState = this; funcState != NULL; funcState = funcState->fScope)
 		{
 			if (funcState->isLocalConstant(inTag))
-				return YES;
+				return true;
 			if (funcState->isLocalVariable(inTag))
-				return NO;
+				return false;
 		}
 	}
 
-	return NO;
+	return false;
 }
 
 
 /*----------------------------------------------------------------------
 	Determine whether a name refers to a constant local to this function.
 	Args:		inTag			name of the item
-	Return:	YES => is a local constant
+	Return:	true => is a local constant
 ----------------------------------------------------------------------*/
 
 bool
@@ -386,17 +386,17 @@ CFunctionState::isLocalConstant(RefArg inTag)
 /*----------------------------------------------------------------------
 	Determine whether a name refers to a variable local to this function.
 	Args:		inTag			name of the item
-	Return:	YES => is a local variable
+	Return:	true => is a local variable
 ----------------------------------------------------------------------*/
 
 bool
 CFunctionState::isLocalVariable(RefArg inTag)
 {
 	if (NOTNIL(fLocals) && ArrayPosition(fLocals, inTag, 0, NILREF) != kIndexNotFound)
-		return YES;
+		return true;
 	if (NOTNIL(fArgs) && ArrayPosition(fArgs, inTag, 0, NILREF) != kIndexNotFound)
-		return YES;
-	return NO;
+		return true;
+	return false;
 }
 
 
@@ -445,9 +445,9 @@ CFunctionState::noteMsgEnvReference(MsgEnvComponent msg)
 	for (state = this; state != NULL; state = state->fScope)
 	{
 		if (msg == kMsgSlotAccess)
-			state->fIsSlotReferenced = YES;
+			state->fIsSlotReferenced = true;
 		else if (msg == kMsgMessageSend)
-			state->fIsMethodReferenced = YES;
+			state->fIsMethodReferenced = true;
 	}
 }
 
@@ -461,16 +461,16 @@ CFunctionState::noteVarReference(RefArg inVarName)
 	{
 		SetFrameSlot(fNotedLocals, inVarName, RA(TRUEREF));
 		SetFrameSlot(fVarLocs, inVarName, SYMA(closed));
-		isNoted = YES;
+		isNoted = true;
 	}
 	 else if (fScope != NULL)
 	{
 		isNoted = fScope->noteVarReference(inVarName);
 		if (isNoted)
-			fHasClosedVars = YES;	// var is inherited
+			fHasClosedVars = true;	// var is inherited
 	}
 	else
-		isNoted = NO;
+		isNoted = false;
 
 	return isNoted;
 }

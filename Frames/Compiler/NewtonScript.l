@@ -30,7 +30,7 @@ flex -d -i -Cfe  definition of NewtonScript
 	/* |symbol| */
 "|"		{
 				long size;
-				UniChar * str = GetCharsUntil('|', NO, size);
+				UniChar * str = GetCharsUntil('|', false, size);
 				if (str == NULL)
 					return -1;
 				char cstr255[256];
@@ -64,7 +64,7 @@ flex -d -i -Cfe  definition of NewtonScript
 "\""		{
 				Ref	val;
 				long	size;
-				UniChar * str = GetCharsUntil('\"', YES, &size);
+				UniChar * str = GetCharsUntil('\"', true, &size);
 				if (str == NULL)
 					return -1;
 				val = AllocateBinary(SYMA(string), size);

@@ -121,7 +121,7 @@ static const ReservedWord gOtherTokens[] =
 ----------------------------------------------------------------------*/
 #include <ctype.h>
 
-static int
+int
 wordcmp(const char * s1, const char * s2)
 {
 	char c1, c2;
@@ -308,6 +308,7 @@ CCompiler::makeSymbolToken(const char * inValue)
 }
 
 
+#pragma mark Stream reading
 /*------------------------------------------------------------------------------
 
 Lexical grammar, from http://manuals.info.apple.com/en_US/NewtonScriptProgramLanguage.PDF
@@ -388,15 +389,45 @@ CCompiler::consumeChar(void)
 
 
 /*------------------------------------------------------------------------------
+	Peek at the next token from the input stream -- don’t update theToken.
+	Args:		--
+	Return:	token number
+------------------------------------------------------------------------------*/
+
+int
+CCompiler::peekToken(void)
+{
+	ASSERT(tokenQueueIndex == 0);		// queue not already active
+	tokenQueue[1] = theToken;
+	consumeToken();
+	tokenQueue[0] = theToken;
+	theToken = tokenQueue[1];			// we do NOT want to change the token, just peek at the next token id
+	tokenQueueIndex = 1;
+	return tokenQueue[0].id;
+	// queue now holds:
+	// [0] this token
+	// [1] prev token
+}
+
+
+/*------------------------------------------------------------------------------
 	Get the next token from the input stream.
 	Args:		--
 	Return:	token number
-				this.tokenValue contains the token value.
+				this.theToken contains the token value.
 ------------------------------------------------------------------------------*/
 
 int
 CCompiler::consumeToken(void)
 {
+	if (tokenQueueIndex != 0)
+	{
+		// return queued token
+		--tokenQueueIndex;
+		theToken = tokenQueue[tokenQueueIndex];
+		return theToken.id;
+	}
+
 	Str255 str;
 	ArrayIndex length;
 
@@ -473,7 +504,7 @@ CCompiler::consumeToken(void)
 //		<any ASCII character with code 32–127 except '|' or '\'>
 		case '|':
 		{
-			UniChar * tokenStr = getCharsUntil('|', NO, &length);
+			UniChar * tokenStr = getCharsUntil('|', false, &length);
 			if (tokenStr == NULL)
 				return makeToken(EOF);
 			ConvertFromUnicode(tokenStr, str, sizeof(str), kASCIIEncoding);
@@ -507,7 +538,7 @@ CCompiler::consumeToken(void)
 //		" character-sequence "
 		case '"':
 		{
-			UniChar * tokenStr = getCharsUntil('"', YES, &length);
+			UniChar * tokenStr = getCharsUntil('"', true, &length);
 			if (tokenStr == NULL)
 				return makeToken(EOF);
 			int tokenId = makeStringToken(tokenStr, length);
@@ -694,7 +725,7 @@ CCompiler::getCharsUntil(UniChar inDelimiter, bool isString, ArrayIndex * outLen
 	UniChar * buf = NULL;		// mallocd string buffer
 	ArrayIndex	bufLen = 0;		// mallocd size
 	ArrayIndex	index = 0;		// index into string buffer
-	bool		isEscape = NO;
+	bool		isEscape = false;
 	int		hexIndex = -1;
 	int		numOfHexDigits = isString ? 4 : 2;
 	int		chValue = 0;
@@ -764,11 +795,11 @@ CCompiler::getCharsUntil(UniChar inDelimiter, bool isString, ArrayIndex * outLen
 					return NULL;
 				}
 			}
-			isEscape = NO;
+			isEscape = false;
 		}
 
 		else if (theChar == '\\')
-			isEscape = YES;
+			isEscape = true;
 
 		else if (theChar == inDelimiter)
 		{
@@ -830,7 +861,7 @@ CCompiler::getCharsUntil(UniChar inDelimiter, bool isString, ArrayIndex * outLen
 
 	Args:		inCh		first character of number
 	Return:	token number (integer or real)
-				this.tokenValue contains the token value.
+				this.theToken contains the token value.
 ------------------------------------------------------------------------------*/
 
 int

@@ -16,7 +16,7 @@
 
 CCommToolPB::CCommToolPB(CommToolRequestType inReqType, ULong inClientHandler, bool inAsync)
 {
-	fMsg.init(YES);
+	fMsg.init(true);
 	fClientRefCon = inClientHandler;
 	fReqType = inReqType;
 	fIsAsync = inAsync;
@@ -38,7 +38,7 @@ CCommToolGetPB::CCommToolGetPB(ULong inClientHandler, bool inAsync)
 	f7C = 0;
 	fMadeData = NULL;
 	fQueue = NULL;
-	f8C = NO;
+	f8C = false;
 }
 
 #pragma mark -
@@ -90,7 +90,7 @@ CCommToolAbortPB::CCommToolAbortPB(ULong inWhat, ULong inClientHandler, bool inA
 --------------------------------------------------------------------------------*/
 
 CCommToolEventPB::CCommToolEventPB(ULong inClientHandler)
-	:	CCommToolPB(kCommToolRequestTypeGetEvent, inClientHandler, YES)
+	:	CCommToolPB(kCommToolRequestTypeGetEvent, inClientHandler, true)
 { }
 
 #pragma mark -
@@ -112,11 +112,11 @@ CSerialEndpoint::make(void)
 	f34 = 0;
 	f38 = NULL;
 	f3C = NULL;
-	f40 = NO;
-	f41 = NO;
-	f42 = NO;
-	f43 = NO;
-	fToolIsRunning = NO;
+	f40 = false;
+	f41 = false;
+	f42 = false;
+	f43 = false;
+	fToolIsRunning = false;
 	fEventHandler = NULL;
 	fInfo = NULL;
 
@@ -131,8 +131,8 @@ CSerialEndpoint::destroy(void)
 	if (fToolIsRunning)
 	{
 		fState = T_UNBND;
-		f42 = NO;
-		f40 = NO;
+		f42 = false;
+		f40 = false;
 		close();
 	}
 	if (fPutPBList)
@@ -162,11 +162,11 @@ CSerialEndpoint::deleteLeavingTool(void)
 	XTRY
 	{
 		if (isPending(kEitherCall))
-			XFAIL(err = nAbort(YES))
+			XFAIL(err = nAbort(true))
 		if (fToolIsRunning)
 			XFAIL(err = killKillKill(8, &fCommToolEvent->fMsg))
-		f40 = NO;
-		fToolIsRunning = NO;
+		f40 = false;
+		fToolIsRunning = false;
 		destroy();
 	}
 	XENDTRY;
@@ -203,7 +203,8 @@ CSerialEndpoint::open(ULong inClientHandler)
 		XFAIL(err = initPending())
 		XFAIL(err = initGetPBList())
 		XFAIL(err = initPutPBList())
-		XFAILNOT(fCommToolEvent = new CCommToolEventPB(0), err = MemError();)
+		fCommToolEvent = new CCommToolEventPB(0);
+		XFAILIF(fCommToolEvent == NULL, err = MemError();)
 		fClientRefCon = inClientHandler;
 		err = postEventRequest(fCommToolEvent);	// tell us about events
 	}
@@ -231,11 +232,11 @@ CSerialEndpoint::close(void)
 	{
 		if (fState != T_UNINIT)
 			killKillKill(8, &fCommToolEvent->fMsg);
-		CCommToolControlPB pb(2, 0, 0, NO);
-		f40 = YES;
-		err = fEventHandler->callService(4, &pb.fMsg, &pb.fRequest, sizeof(CCommToolControlRequest), &pb.f28, sizeof(CCommToolReply), kNoTimeout, 0, YES);
-		f40 = NO;
-		fToolIsRunning = NO;
+		CCommToolControlPB pb(2, 0, 0, false);
+		f40 = true;
+		err = fEventHandler->callService(4, &pb.fMsg, &pb.fRequest, sizeof(CCommToolControlRequest), &pb.f28, sizeof(CCommToolReply), kNoTimeout, 0, true);
+		f40 = false;
+		fToolIsRunning = false;
 		if (err = noErr)
 			err = pb.fReply.fResult;
 	}
@@ -252,7 +253,7 @@ CSerialEndpoint::close(void)
 
 NewtonErr
 CSerialEndpoint::abort(void)
-{ return nAbort(YES); }
+{ return nAbort(true); }
 
 
 NewtonErr
@@ -332,7 +333,7 @@ CSerialEndpoint::connect(COptionArray * inAddr, COptionArray * inOptions, CBuffe
 NewtonErr
 CSerialEndpoint::disconnect(CBufferSegment * inData, long inReason, long inSeq)
 {
-	fSync = YES;
+	fSync = true;
 	return nDisconnect(inData, inReason, inSeq);
 }
 
@@ -376,18 +377,19 @@ NewtonErr
 CSerialEndpoint::waitForEvent(Timeout inTimeout)
 {
 	NewtonErr err;
-	f41 = YES;
+	f41 = true;
 	XTRY
 	{
 		if (f3C == NULL)
 		{
-			XFAILNOT(f3C = new CPseudoSyncState, err = MemError();)
+			f3C = new CPseudoSyncState;
+			XFAILIF(f3C == NULL, err = MemError();)
 			XFAIL(err = f3C->init())
 		}
 		err = f3C->block(inTimeout);
 	}
 	XENDTRY;
-	f41 = NO;	// original doesn’t clear this on err
+	f41 = false;	// original doesn’t clear this on err
 	return err;
 }
 
@@ -444,7 +446,7 @@ CSerialEndpoint::nSnd(CBufferSegment * inData, ULong inFlags, Timeout inTimeout,
 	CCommToolPutPB * pb;
 	XTRY
 	{
-		XFAILNOT(pb = grabPutPB(NO), err = TSYSERR;)
+		XFAILNOT(pb = grabPutPB(false), err = TSYSERR;)
 		pb->fRawData = NULL;
 		pb->fData = inData;
 		pb->fOptions = inOptions;
@@ -483,12 +485,12 @@ CSerialEndpoint::nSnd(UByte * inData, size_t * ioSize, ULong inFlags, Timeout in
 	CCommToolPutPB * pb;
 	XTRY
 	{
-		XFAILNOT(pb = grabPutPB(YES), err = TSYSERR;)
+		XFAILNOT(pb = grabPutPB(true), err = TSYSERR;)
 		if (inSync)
-			pb->fIsAsync = NO;
+			pb->fIsAsync = false;
 		else
 		{
-			pb->fIsAsync = YES;
+			pb->fIsAsync = true;
 			pb->fData = NULL;
 			pb->fRawData = inData;
 			pb->fOptions = inOptions;
@@ -512,7 +514,7 @@ NewtonErr
 CSerialEndpoint::sendBytes(CCommToolPutPB * inPB, size_t * ioSize, ULong inFlags, Timeout inTimeout, bool inSync, COptionArray * inOptions)
 {
 	NewtonErr err;
-	inPB->fRequest.fOutside = NO;
+	inPB->fRequest.fOutside = false;
 	if (inOptions && inOptions->count() > 0)
 	{
 		inPB->fRequest.fOptions = inOptions;
@@ -529,7 +531,7 @@ CSerialEndpoint::sendBytes(CCommToolPutPB * inPB, size_t * ioSize, ULong inFlags
 	inPB->fRequest.fEndOfFrame = (inFlags & 0x01) == 0;	// T_MORE?
 
 	if (inSync)
-		f40 = YES;
+		f40 = true;
 	else
 		inPB->fMsg.setCollectorPort(*gAppWorld->getMyPort());
 	err = fEventHandler->callService(2, &inPB->fMsg, &inPB->fRequest, sizeof(CCommToolPutRequest), &inPB->fReply, sizeof(CCommToolPutReply), inTimeout, (ULong) inPB, inSync);
@@ -543,7 +545,7 @@ CSerialEndpoint::sendBytes(CCommToolPutPB * inPB, size_t * ioSize, ULong inFlags
 		if (err == noErr)
 			*ioSize = inPB->fReply.fPutBytesCount;
 		if (f40)
-			f40 = NO;
+			f40 = false;
 		else if (err == noErr)
 			err = kOSErrCallAborted;
 	}
@@ -563,7 +565,7 @@ NewtonErr
 CSerialEndpoint::recvBytes(CCommToolGetPB * inPB, size_t * ioSize, size_t inThreshold, ULong * ioFlags, Timeout inTimeout, bool inSync, COptionArray * inOptions)
 {
 	NewtonErr err;
-	inPB->fRequest.fOutside = NO;
+	inPB->fRequest.fOutside = false;
 	if (inOptions && inOptions->count() > 0)
 	{
 		inPB->fRequest.fOptions = inOptions;
@@ -579,19 +581,19 @@ CSerialEndpoint::recvBytes(CCommToolGetPB * inPB, size_t * ioSize, size_t inThre
 	inPB->f8C = isFrameData;
 	if (isFrameData)
 	{
-		inPB->fRequest.fFrameData = YES;
+		inPB->fRequest.fFrameData = true;
 		inPB->fRequest.fThreshold = 0;
-		inPB->fRequest.fNonBlocking = NO;
+		inPB->fRequest.fNonBlocking = false;
 	}
 	else
 	{
-		inPB->fRequest.fFrameData = NO;
+		inPB->fRequest.fFrameData = false;
 		inPB->fRequest.fThreshold = inThreshold;
-		inPB->fRequest.fNonBlocking = YES;
+		inPB->fRequest.fNonBlocking = true;
 	}
 
 	if (inSync)
-		f40 = YES;
+		f40 = true;
 	else
 		inPB->fMsg.setCollectorPort(*gAppWorld->getMyPort());
 	err = fEventHandler->callService(1, &inPB->fMsg, &inPB->fRequest, sizeof(CCommToolGetRequest), &inPB->fReply, sizeof(CCommToolGetReply), inTimeout, (ULong) inPB, inSync);
@@ -611,7 +613,7 @@ CSerialEndpoint::recvBytes(CCommToolGetPB * inPB, size_t * ioSize, size_t inThre
 			*ioFlags = flags;
 		}
 		if (f40)
-			f40 = NO;
+			f40 = false;
 		else if (err == noErr)
 			err = kOSErrCallAborted;
 	}
@@ -657,13 +659,13 @@ CSerialEndpoint::timeout(ULong inRefCon)
 bool
 CSerialEndpoint::isPending(ULong inWhich)
 {
-	bool pending = NO;
+	bool pending = false;
 	if (inWhich & kSyncCall)
 		pending = f40;
 	if (inWhich & kAsyncCall)
 	{
 		if (fPendingList && fPendingList->count() > 0)
-			pending |= YES;
+			pending |= true;
 	}
 	return pending;
 }
@@ -675,7 +677,8 @@ CSerialEndpoint::initPending(void)
 	NewtonErr err = noErr;
 	XTRY
 	{
-		XFAILNOT(fPendingList = new CList, err = MemError();)
+		fPendingList = new CList;
+		XFAILIF(fPendingList == NULL, err = MemError();)
 	}
 	XENDTRY;
 	return err;
@@ -702,11 +705,12 @@ NewtonErr
 CSerialEndpoint::initPutPBList(void)
 {
 	NewtonErr err;
-	CCommToolPutPB * pb;
 	XTRY
 	{
-		XFAILNOT(fPutPBList = new CList, err = MemError();)
-		XFAILNOT(pb = grabPutPB(NO), err = TSYSERR;)
+		fPutPBList = new CList;
+		XFAILIF(fPutPBList == NULL, err = MemError();)
+		CCommToolPutPB * pb = grabPutPB(false);
+		XFAILIF(pb == NULL, err = TSYSERR;)
 		err = fPutPBList->insert(pb);
 	}
 	XENDTRY;
@@ -728,14 +732,18 @@ CSerialEndpoint::grabPutPB(bool inMake)
 		}
 		else
 		{
-			XFAILNOT(pb = new CCommToolPutPB(fClientRefCon, NO), err = MemError();)
-			XFAILNOT(pb->fQueue = CBufferList::make(), err = MemError();)
-			XFAIL(err = pb->fQueue->init(NO))
+			pb = new CCommToolPutPB(fClientRefCon, false);
+			XFAILIF(pb == NULL, err = MemError();)
+			pb->fQueue = CBufferList::make();
+			XFAILIF(pb->fQueue == NULL, err = MemError();)
+			XFAIL(err = pb->fQueue->init(false))
 		}
 		if (inMake)
 		{
-			if (pb->fMadeData == NULL)
-				XFAILNOT(pb->fMadeData = CBufferSegment::make(), err = MemError();)
+			if (pb->fMadeData == NULL) {
+				pb->fMadeData = CBufferSegment::make();
+				XFAILIF(pb->fMadeData == NULL, err = MemError();)
+			}
 		}
 	}
 	XENDTRY;
@@ -790,11 +798,12 @@ NewtonErr
 CSerialEndpoint::initGetPBList(void)
 {
 	NewtonErr err;
-	CCommToolGetPB * pb;
 	XTRY
 	{
-		XFAILNOT(fGetPBList = new CList, err = MemError();)
-		XFAILNOT(pb = grabGetPB(NO), err = TSYSERR;)
+		fGetPBList = new CList;
+		XFAILIF(fGetPBList == NULL, err = MemError();)
+		CCommToolGetPB * pb = grabGetPB(false);
+		XFAILIF(pb == NULL, err = TSYSERR;)
 		err = fGetPBList->insert(pb);
 	}
 	XENDTRY;
@@ -816,14 +825,18 @@ CSerialEndpoint::grabGetPB(bool inMake)
 		}
 		else
 		{
-			XFAILNOT(pb = new CCommToolGetPB(fClientRefCon, NO), err = MemError();)
-			XFAILNOT(pb->fQueue = CBufferList::make(), err = MemError();)
-			XFAIL(err = pb->fQueue->init(NO))
+			pb = new CCommToolGetPB(fClientRefCon, false);
+			XFAILIF(pb == NULL, err = MemError();)
+			pb->fQueue = CBufferList::make();
+			XFAILIF(pb->fQueue == NULL, err = MemError();)
+			XFAIL(err = pb->fQueue->init(false))
 		}
 		if (inMake)
 		{
-			if (pb->fMadeData == NULL)
-				XFAILNOT(pb->fMadeData = CBufferSegment::make(), err = MemError();)
+			if (pb->fMadeData == NULL) {
+				pb->fMadeData = CBufferSegment::make();
+				XFAILIF(pb->fMadeData == NULL, err = MemError();)
+			}
 		}
 	}
 	XENDTRY;
@@ -894,11 +907,12 @@ CSerialEndpoint::postKillRequest(ULong inWhat, bool inAsync)
 
 	XTRY
 	{
-		XFAILNOT(pb = new CCommToolAbortPB(inWhat, f18, inAsync), err = MemError();)
+		pb = new CCommToolAbortPB(inWhat, f18, inAsync);
+		XFAILIF(pb == NULL, err = MemError();)
 		pb->fMsg.setCollectorPort(*gAppWorld->getMyPort());
 		XFAILIF(err = fEventHandler->callService(16, &pb->fMsg, &pb->fRequest, sizeof(CCommToolKillRequest), &pb->fReply, sizeof(CCommToolReply)), delete pb;)
 		fPendingList->insert(pb);
-		f42 = YES;
+		f42 = true;
 	}
 	XENDTRY;
 	return err;
@@ -915,23 +929,24 @@ CSerialEndpoint::prepareAbort(ULong inWhat, bool inArg2)
 		{
 			if (isPending(kSyncCall) && !isPending(kAsyncCall))
 			{
-				f42 = YES;
+				f42 = true;
 				err = killKillKill(inWhat, NULL);
-				f42 = NO;
-				f40 = NO;
+				f42 = false;
+				f40 = false;
 			}
 			else if (isPending(kEitherCall))
 			{
-				XFAILNOT(f38 = new CPseudoSyncState, err = MemError();)
+				f38 = new CPseudoSyncState;
+				XFAILIF(f38 == NULL, err = MemError();)
 				XFAIL(err = f38->init())
-				XFAIL(err = postKillRequest(inWhat, YES))
-				f43 = YES;
+				XFAIL(err = postKillRequest(inWhat, true))
+				f43 = true;
 				err = f38->block(0);
 			}
 		}
 
 		else
-			err = postKillRequest(inWhat, YES);
+			err = postKillRequest(inWhat, true);
 	}
 	XENDTRY;
 	return err;
@@ -942,7 +957,7 @@ CSerialEndpoint::prepareAbort(ULong inWhat, bool inArg2)
 bool
 CSerialEndpoint::handleEvent(ULong inMsgType, CEvent * inEvent, ULong inMsgSize)
 {
-	return NO;
+	return false;
 }
 
 
@@ -955,14 +970,14 @@ CSerialEndpoint::handleComplete(CUMsgToken * inMsgToken, ULong * ioMsgSize, CEve
 	else
 	{
 		CCommToolPB * pb = NULL;
-		bool isPBFound = NO;
+		bool isPBFound = false;
 		for (ArrayIndex i = 0, count = fPendingList->count(); i < count; ++i)
 		{
 			pb = fPendingList->at(i);
 			if (pb->fMsg == inMsgToken->f00)
 			{
 				fPendingList->removeAt(i);
-				isPBFound = YES;
+				isPBFound = true;
 				break;
 			}
 		}
@@ -986,7 +1001,7 @@ CSerialEndpoint::handleComplete(CUMsgToken * inMsgToken, ULong * ioMsgSize, CEve
 			}
 		}
 	}
-	return NO;
+	return false;
 }
 
 

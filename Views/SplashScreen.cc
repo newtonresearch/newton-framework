@@ -149,7 +149,7 @@ FDisplaySplashGraphic(RefArg rcvr, RefArg inBounds)
 CSplashScreenInfo *
 DrawSplashGraphic(bool * outDrawn, const Rect * inRect)
 {
-	*outDrawn = NO;
+	*outDrawn = false;
 	CSplashScreenInfo * licenseeInfo = (CSplashScreenInfo *)MakeByName("CSplashScreenInfo", "CMainSplashScreenInfo");
 	if (licenseeInfo)
 	{
@@ -160,8 +160,8 @@ DrawSplashGraphic(bool * outDrawn, const Rect * inRect)
 			Rect		frame;
 			frame = graphic->bBox;
 			Justify(&frame, inRect, vjCenterH + vjCenterV);
-			DrawPicture(&graphic, &frame, 0);
-			*outDrawn = YES;
+			DrawPicture(&graphic, &frame, vjLeftH + vjTopV);
+			*outDrawn = true;
 		}
 #endif
 	}

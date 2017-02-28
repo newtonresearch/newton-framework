@@ -33,8 +33,8 @@ public:
 					CBufferList();
 	virtual		~CBufferList();
 
-	NewtonErr	init(bool deleteSegments = YES);
-	NewtonErr	init(CList * bufList, bool deleteSegments = YES);
+	NewtonErr	init(bool deleteSegments = true);
+	NewtonErr	init(CList * bufList, bool deleteSegments = true);
 
 	// Buffer methods
 

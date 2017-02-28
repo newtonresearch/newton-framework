@@ -52,18 +52,10 @@ protected:
 	char	buf[kSKeyBufSize];		// actually variable length, but this is what you get if you new SKey
 };
 
-inline SKey::SKey()
-	: flagBits(0), length(0)
-{ }
-
-inline ArrayIndex	SKey::size(void) const
-{ return length; }
-
-inline ULong	SKey::flags(void) const
-{ return flagBits; }
-
-inline const void *	SKey::data(void) const
-{ return buf; }
+inline					SKey::SKey() : flagBits(0), length(0)  { }
+inline ArrayIndex		SKey::size(void) const  { return length; }
+inline ULong			SKey::flags(void) const  { return flagBits; }
+inline const void *	SKey::data(void) const  { return buf; }
 
 
 struct STagsBits : public SKey
@@ -110,9 +102,9 @@ struct KeyField
 	unsigned short type:2;
 	unsigned short	length:14;
 	char	buf[kKeyFieldBufSize];
-};
+}__attribute__((__packed__));
 
-inline SKey * KeyField::key(void) const { return (SKey *)buf; }
+inline SKey * KeyField::key(void) const  { return (SKey *)buf; }
 
 /*
 	Dup nodes are suffixed w/ PACKED extra data
@@ -121,7 +113,7 @@ struct DupInfo
 {
 	short	count;
 	ULong	id;
-};
+}__attribute__((__packed__));
 
 
 /*----------------------------------------------------------------------
@@ -359,14 +351,9 @@ private:
 	const CSortingTable *	fSortingTable;
 };
 
-inline 	CStore *	CSoupIndex::store(void)
-{ return fStoreWrapper->store(); }
-
-inline	CNodeCache * CSoupIndex::nodeCache(void)
-{ return fCache; }
-
-inline	PSSId		CSoupIndex::indexId(void) const
-{ return fInfoId; }
+inline 	CStore *		 CSoupIndex::store(void)  { return fStoreWrapper->store(); }
+inline	CNodeCache * CSoupIndex::nodeCache(void)  { return fCache; }
+inline	PSSId			 CSoupIndex::indexId(void) const  { return fInfoId; }
 
 
 /*----------------------------------------------------------------------
@@ -421,7 +408,7 @@ private:
 	bool				fIsForwardSearch;		// +10
 };
 
-inline ArrayIndex  CUnionSoupIndex::i(void) const  { return fSeqInUnion; }
+inline ArrayIndex		CUnionSoupIndex::i(void) const  { return fSeqInUnion; }
 inline CSoupIndex *	CUnionSoupIndex::index(void) const	{ return index(fSeqInUnion); }
 inline CSoupIndex *	CUnionSoupIndex::index(ArrayIndex inSeq) const	{ return fIndexData[inSeq].index; }
 
@@ -439,9 +426,9 @@ bool	TagsValidTest(CSoupIndex & index, RefArg inTags, PSSId inTagsId);
 
 // Indexes
 Ref	GetTagsIndexDesc(RefArg inSpec);
-void	AlterTagsIndex(unsigned char inSelector, CSoupIndex & ioSoupIndex, PSSId inId, RefArg inKey, RefArg inSoup, RefArg inTags);
+void	AlterTagsIndex(bool inAdd, CSoupIndex & ioSoupIndex, PSSId inId, RefArg inKey, RefArg inSoup, RefArg inTags);
 bool	UpdateTagsIndex(RefArg inSoup, RefArg indexSpec, RefArg, RefArg, PSSId inId);
-void	AlterIndexes(unsigned char inSelector, RefArg inSoup, RefArg inArg3, PSSId inId);
+void	AlterIndexes(bool inAdd, RefArg inSoup, RefArg inArg3, PSSId inId);
 bool	IndexPathsEqual(RefArg inPath1, RefArg inPath2);
 Ref	IndexPathToIndexDesc(RefArg inSoup, RefArg inPath, int * outIndex);
 bool	UpdateIndexes(RefArg inSoup, RefArg inArg2, RefArg inArg3, PSSId inId, bool * outArg5);

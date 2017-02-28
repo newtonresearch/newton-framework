@@ -542,8 +542,8 @@ class CCMOSerialDiscard : public COption
 public:
 					CCMOSerialDiscard();
 
-	bool			fDiscardInput;			// defaults to YES
-	bool			fDiscardOutput;		// defaults to NO
+	bool			fDiscardInput;			// defaults to true
+	bool			fDiscardOutput;		// defaults to false
 };
 
 
@@ -559,7 +559,7 @@ public:
 
 	Timeout		fBreakOnTime;			// break time before send: default 0 usec
 	Timeout		fBreakOffTime;			// marking time before send: default 0 usec
-	bool			fUseHighSpeedClock;	// defaults to NO.
+	bool			fUseHighSpeedClock;	// defaults to false.
 	ULong			fRepeatCount;			// defaults to zero. Set to non-zero to repeat a send
 												//  multiple times (only small data amounts).
 };
@@ -575,7 +575,7 @@ class CCMOSerialDTRControl : public COption
 public:
 					CCMOSerialDTRControl();
 
-	bool			fAssertDTR;			// defaults to YES. Set NO to negate DTR.
+	bool			fAssertDTR;			// defaults to true. Set false to negate DTR.
 };
 
 
@@ -615,7 +615,7 @@ class CCMOSerialHalfDuplex : public COption
 public:
 					CCMOSerialHalfDuplex();
 
-	bool			fHalfDuplex;		// defaults to NO.
+	bool			fHalfDuplex;		// defaults to false.
 };
 
 
@@ -631,12 +631,12 @@ public:
 					CCMOSerialMiscConfig();
 
 	Timeout		fInputDelay;			// defaults to kSerDefaultSendForIntDelay, 20 ms. delay for SendForInterrupt on input available.
-	bool			fDisableInputDMA;		// defaults to NO.
-	bool			fDisableOutputDMA;	// defaults to NO.
-	bool			fTxdOffUntilSend; 	// defaults to NO. If set, transceiver is not enabled until the first send occurs.
+	bool			fDisableInputDMA;		// defaults to false.
+	bool			fDisableOutputDMA;	// defaults to false.
+	bool			fTxdOffUntilSend; 	// defaults to false. If set, transceiver is not enabled until the first send occurs.
 												// This is useful for clients that want to listen first.
-	bool			fTxdOnIfGPiOn; 		// defaults to NO. This modifies txdOffUntilSend to work only if GPi is not asserted at open.
-	bool			fTxdOnIfHSKiOn; 		// defaults to NO. This modifies txdOffUntilSend to work only if HSKi is not asserted at open.
+	bool			fTxdOnIfGPiOn; 		// defaults to false. This modifies txdOffUntilSend to work only if GPi is not asserted at open.
+	bool			fTxdOnIfHSKiOn; 		// defaults to false. This modifies txdOffUntilSend to work only if HSKi is not asserted at open.
 };
 
 
@@ -688,10 +688,10 @@ public:
 
 	UChar			fXonChar;					// default chDC1
 	UChar			fXoffChar;					// default chDC3
-	bool			fUseSoftFlowControl;		// default NO
-	bool			fUseHardFlowControl;		// default NO
-	bool			fIsHardFlowBlocked;		// default NO; YES if hardware flow blocked
-	bool			fIsSoftFlowBlocked;		// default NO; YES if software flow blocked
+	bool			fUseSoftFlowControl;		// default false
+	bool			fUseHardFlowControl;		// default false
+	bool			fIsHardFlowBlocked;		// default false; true if hardware flow blocked
+	bool			fIsSoftFlowBlocked;		// default false; true if software flow blocked
 
 protected:
 					CCMOFlowControlParms();
@@ -726,9 +726,9 @@ public:
 // MNP base +528
 	UChar			fEscapeChar;		// default chDLE; escape character
 	UChar			fEOMChar;			// default chETX; eom character
-	bool			fDoHeader;			// default YES; syn/dle/stx header
-	bool			fDoPutFCS;			// default YES; compute and send 2-byte FCS at end
-	bool			fDoGetFCS;			// default YES; compute and check 2-byte FCS at end
+	bool			fDoHeader;			// default true; syn/dle/stx header
+	bool			fDoPutFCS;			// default true; compute and send 2-byte FCS at end
+	bool			fDoGetFCS;			// default true; compute and check 2-byte FCS at end
 };
 
 
@@ -759,13 +759,13 @@ public:
 
 	// Keyboard options. fSCPAtPowerOn is always set true for 130-style keyboards, false
 	//  for the Shay-style keyboards.
-	bool			fPowerOffClose;		// defaults to YES. Close driver at power off (e.g., rely on SCP to restart).
-	bool			fGPiDuringSCP;			// defaults to YES. Ignore data while GPi asserted.
-	bool			fSCPAtPowerOn;			// defaults to YES. Ignore SCP data at power on.
-	bool			fHSKiLoopedToHSKo;	// defaults to YES. Close driver if HSKi drops.
+	bool			fPowerOffClose;		// defaults to true. Close driver at power off (e.g., rely on SCP to restart).
+	bool			fGPiDuringSCP;			// defaults to true. Ignore data while GPi asserted.
+	bool			fSCPAtPowerOn;			// defaults to true. Ignore SCP data at power on.
+	bool			fHSKiLoopedToHSKo;	// defaults to true. Close driver if HSKi drops.
 
 	// Shay-style keyboard specific options...
-	bool			fPowerOnCheck;			// defaults to NO. Close driver if not detected at power on.
+	bool			fPowerOnCheck;			// defaults to false. Close driver if not detected at power on.
 };
 
 
@@ -876,7 +876,7 @@ class CCMOSlowIRSniff : public COption
 public:
 					CCMOSlowIRSniff();
 
-	bool			fSniffEnable;			// YES if sniffing should be enabled during Open
+	bool			fSniffEnable;			// true if sniffing should be enabled during Open
 };
 
 
@@ -901,7 +901,7 @@ public:
 
 	ULong			fBitTime;				// bit timing in microseconds
 	long			fCount;					// repeat count for code (defaults to 1)
-	bool			fEnableBitBangIR;		// defaults to YES (May be ignored in 2.0)
+	bool			fEnableBitBangIR;		// defaults to true (May be ignored in 2.0)
 };
 
 

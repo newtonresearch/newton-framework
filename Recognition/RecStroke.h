@@ -114,7 +114,7 @@ inline void			CRecStroke::setTapEvent(ULong inEvt)  { fEvt = inEvt; }
 class CSStroke : public CRecStroke
 {
 public:
-	static CSStroke *	make(ULong inNumOfPts);
+	static CSStroke *	make(ArrayIndex inNumOfPts);
 
 	NewtonErr	addPoint(TabPt * inPt);
 

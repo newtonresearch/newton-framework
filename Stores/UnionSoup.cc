@@ -63,7 +63,7 @@ CheckSoupsSortTables(RefArg inSoup1, RefArg inSoup2)
 		index2 = IndexPathToIndexDesc(inSoup2, path, NULL);
 		if (NOTNIL(index2))
 		{
-			if (EQRef(GetFrameSlot(index1, SYMA(sortId)), GetFrameSlot(index2, SYMA(sortId))))
+			if (EQ(GetFrameSlot(index1, SYMA(sortId)), GetFrameSlot(index2, SYMA(sortId))))
 				return path;
 		}
 	}
@@ -196,7 +196,7 @@ RemoveFromUnionSoup(RefArg inUnionSoup, RefArg oldSoup)
 	int		i;
 	for (i = Length(soupList) - 1; i >= 0; i--)
 	{
-		if (EQRef(GetArraySlot(soupList, i), oldSoup))
+		if (EQ(GetArraySlot(soupList, i), oldSoup))
 		{
 			ArrayMunger(soupList, i, 1, RA(NILREF), 0, 0);
 			break;
@@ -399,7 +399,7 @@ UnionSoupRemoveTags(RefArg inRcvr, RefArg inTags)
 }
 
 #pragma mark -
-#if 0
+
 // discontinued
 Ref
 FlushSoupList(RefArg inSoupList)
@@ -422,4 +422,3 @@ UnionSoupFlush(RefArg inRcvr)
 	RefVar	soupList(GetFrameSlot(inRcvr, SYMA(soupList)));
 	return FlushSoupList(soupList);
 }
-#endif

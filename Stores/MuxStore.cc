@@ -438,7 +438,7 @@ CMuxStore::setStore(CStore * inStore, PSSId inEnvironment)
 		fStore = inStore;
 		XFAILNOT(fMonitor = (CMuxStoreMonitor *)CStoreMonitor::make("CMuxStoreMonitor"), err = MemError();)
 #if !defined(forFramework)
-		XFAIL(err = fMonitor->startMonitor(1*KByte, inEnvironment, 'Cmux', NO))
+		XFAIL(err = fMonitor->startMonitor(1*KByte, inEnvironment, 'Cmux', false))
 #endif
 		err = fMonitor->init(fStore);
 	}

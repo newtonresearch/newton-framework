@@ -51,7 +51,7 @@ PhysReadOnly(ObjectId inId)
 	CPhys *	page;
 	if (GetPhys(inId, page))
 		return page->isReadOnly();
-	return YES;		// original returns -1;
+	return true;		// original returns -1;
 }
 
 
@@ -189,9 +189,9 @@ GetPhys(ObjectId inPageId, CPhys * &outPage)
 			outPage = page;
 		}
 		if (page == NULL)
-			return NO;
+			return false;
 	}
-	return YES;
+	return true;
 }
 
 
@@ -688,8 +688,8 @@ ForgetMapping(ULong inDomain, VAddr inVAddr, ObjectId inPageId)
 
 CPhys::CPhys()
 {
-	fIsWhatever = NO;
-	fIsLittle = YES;		// not in the original, but surely init() relies on this?
+	fIsWhatever = false;
+	fIsLittle = true;		// not in the original, but surely init() relies on this?
 }
 
 
@@ -762,7 +762,7 @@ CPhys::changeVirtualMapping(VAddr inVAddr, size_t inVSize, PhysicalChange inAcce
 
 CLittlePhys::CLittlePhys()
 {
-	fIsWhatever = NO;
-	fIsLittle = YES;
+	fIsWhatever = false;
+	fIsLittle = true;
 }
 

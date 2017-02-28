@@ -31,9 +31,9 @@ public:
 	void		crumpleEffect(void);
 	void		crumpleSprite(Rect *, Rect *);
 
-	void		setupPlainEffect(CView * inView, bool, long);
+	void		setupPlainEffect(CView * inView, bool, int inFX = 0);
 	void		setupTrashEffect(CView * inView);
-	void		setupSlideEffect(CView * inView, const Rect * inBounds, long inHorizontal, long inVertical);
+	void		setupSlideEffect(CView * inView, const Rect * inBounds, int inHorizontal, int inVertical);
 	void		setupPoofEffect(CView * inView, const Rect * inBounds);
 	void		setupDragEffect(CView * inView);
 

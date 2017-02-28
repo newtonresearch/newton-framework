@@ -12,7 +12,7 @@
 #include "Lookup.h"
 #include "Funcs.h"
 #include "UStringUtils.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "OSErrors.h"
 #include "CommManagerInterface.h"
 #include "CommErrors.h"
@@ -215,7 +215,7 @@ CEndpointClient::releaseComplete(CEndpointEvent * inEvent)
 bool
 UseModemNavigator(void)
 {
-	return true;	// original says YES
+	return true;	// original says true
 }
 
 bool
@@ -315,10 +315,10 @@ CNewScriptEndpointClient::CNewScriptEndpointClient()
 	fEncoding = kDefaultEncoding;
 	fCEndpoint = NULL;
 	fRcvFlags = 0;
-	f24 = NO;
-	f70 = NO;
-	fIsInputSpecActive = NO;
-	fB1 = NO;
+	f24 = false;
+	f70 = false;
+	fIsInputSpecActive = false;
+	fB1 = false;
 	fEndSequence = NILREF;
 	fByteArray = NILREF;
 	fProxyArray = NILREF;
@@ -381,7 +381,7 @@ CNewScriptEndpointClient::initScriptEndpointClient(RefArg inNSEndpoint, RefArg i
 //			Smells like a hack
 //			if (UseModemNavigator() && ContainsModemService(&optionArray))
 //				RunModemNavigator(optionArray);
-			XFAIL(err = CMGetEndpoint(&optionArray, &inCEndpoint, NO))
+			XFAIL(err = CMGetEndpoint(&optionArray, &inCEndpoint, false))
 			if (hasOptions)
 				XFAIL(err = convertFromOptionArray(inOptions, &optionArray))
 		}
@@ -392,7 +392,7 @@ CNewScriptEndpointClient::initScriptEndpointClient(RefArg inNSEndpoint, RefArg i
 		if (NOTNIL(encoding))
 			fEncoding = (CharEncoding)RINT(encoding);
 
-		XFAIL(err = initIdler(0, kMilliseconds, 0, NO))
+		XFAIL(err = initIdler(0, kMilliseconds, 0, false))
 		err = fCEndpoint->open((ULong)this);
 	}
 	XENDTRY;
@@ -467,7 +467,7 @@ CNewScriptEndpointClient::idleProc(CUMsgToken * inToken, size_t * inSize, CEvent
 				end_try;
 			}
 		}
-		fIsDataAvailable = NO;
+		fIsDataAvailable = false;
 		if (err)
 		{
 			clearInputSpec();
@@ -593,7 +593,7 @@ CNewScriptEndpointClient::rcvComplete(CEndpointEvent * inEvent)
 {
 	NewtonErr err;
 	CRcvCompleteEvent * evt = (CRcvCompleteEvent *)inEvent;
-	fIsInputSpecActive = NO;
+	fIsInputSpecActive = false;
 	if (fIsTargetActive)
 	{
 		if (NOTNIL(fTarget) && IsRawOrString(fTarget))
@@ -616,12 +616,12 @@ CNewScriptEndpointClient::rcvComplete(CEndpointEvent * inEvent)
 
 		if (err == noErr)
 		{
-			fB1 = YES;
+			fB1 = true;
 			if (fIsTargetActive)
 				err = rawRcvComplete(evt);
 			else
 				err = filterRcvComplete(evt->f2C);
-			fB1 = NO;
+			fB1 = false;
 		}
 
 		if (err == noErr)
@@ -780,7 +780,7 @@ CNewScriptEndpointClient::parseInput(FormType inType, long inArg2, long inArg3, 
 		}
 		newton_catch(exTranslator)
 		{
-			*outErr = (NewtonErr)(unsigned long)CurrentException()data;
+			*outErr = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 	}
@@ -847,10 +847,10 @@ CNewScriptEndpointClient::postReceive(void)
 			{
 				XFAILIF(ISNIL(fTarget) || !IsRawOrString(fTarget), err = kCommScriptExpectedTarget;)
 				LockRef(fTarget);
-				fIsInputSpecActive = YES;
+				fIsInputSpecActive = true;
 				UChar * dataPtr = (UChar *)BinaryData(fTarget) + fTargetOffset;
 				ArrayIndex dataSize = fByteCount;
-				err = fCEndpoint->nRcv(dataPtr, &dataSize, fByteCount, &flags, fTimeout, NO, optionArray);
+				err = fCEndpoint->nRcv(dataPtr, &dataSize, fByteCount, &flags, fTimeout, false, optionArray);
 			}
 			else
 			{
@@ -865,13 +865,13 @@ CNewScriptEndpointClient::postReceive(void)
 						r0 = 512;
 					threshold = r0;
 				}
-				err = fCEndpoint->nRcv(&f74, threshold, &flags, fTimeout, NO, optionArray);
+				err = fCEndpoint->nRcv(&f74, threshold, &flags, fTimeout, false, optionArray);
 			}
 		}
 		XENDTRY;
 		XDOFAIL(err)
 		{
-			fIsInputSpecActive = NO;
+			fIsInputSpecActive = false;
 			if (optionArray)
 				delete optionArray;
 		}
@@ -890,7 +890,7 @@ CNewScriptEndpointClient::clearInputSpec(void)
 	fProxyArray = NILREF;
 	fByteCount = 0;
 	fPartialInterval = kNoTimeout;
-	fSevenBit = NO;
+	fSevenBit = false;
 	fRcvOptions = NILREF;
 	f60 = 2;
 	fForm = kStringFormType;
@@ -963,7 +963,7 @@ CNewScriptEndpointClient::readInputSlots(void)
 		{
 			fByteArray = NILREF;
 			fProxyArray = NILREF;
-			fSevenBit = NO;
+			fSevenBit = false;
 		}
 	}
 
@@ -973,7 +973,7 @@ CNewScriptEndpointClient::readInputSlots(void)
 		if (NOTNIL(item))
 		{
 			fRcvOptions = CloneOptions(item);
-			f60 = NO;
+			f60 = false;
 		}
 		else
 			fRcvOptions = NILREF;
@@ -1179,7 +1179,7 @@ CNewScriptEndpointClient::addProxyArrayElement(RefArg inArray, RefArg inElement)
 	}
 	newton_catch(exOutOfMemory)
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 
@@ -1230,19 +1230,19 @@ NewtonErr
 CNewScriptEndpointClient::initInputBuffers(void)
 {
 	NewtonErr err = noErr;
-	fIsTargetActive = NO;
+	fIsTargetActive = false;
 
 	if (fForm == kBinaryFormType)
 	{
 		long sizeAvailable = Length(fTarget) - fTargetOffset;
 		if (fByteCount == 0 || fByteCount > sizeAvailable)
 			fByteCount = sizeAvailable;
-		fIsTargetActive = YES;
+		fIsTargetActive = true;
 	}
 
 	else if (fForm == kFrameFormType)
 	{
-		f44 = YES;
+		f44 = true;
 		fByteCount = 4;
 		if (fInputBuffer == NULL)
 		{
@@ -1267,7 +1267,7 @@ CNewScriptEndpointClient::getFrameLength(void)
 	if (r5 > 0)
 	{
 		memmove(fInputBuffer, fInputBuffer + 4, fInputBufWrIndex);
-		f44 = NO;
+		f44 = false;
 		if (fInputBufLen < r5)
 		{
 			UChar * r7 = (UChar *)realloc(fInputBuffer, r5);
@@ -1279,7 +1279,7 @@ CNewScriptEndpointClient::getFrameLength(void)
 		fByteCount = r5;
 	}
 	else
-		f44 = YES;
+		f44 = true;
 
 	return err;
 }
@@ -1345,7 +1345,7 @@ CNewScriptEndpointClient::filterRcvComplete(ULong inData)
 	ULong sp08 = inData & 0x01;
 	while (fInputBuffer != NULL && err == noErr && f74.get() != -1)
 	{
-		isProxyChar = YES;
+		isProxyChar = true;
 		for (ArrayIndex i = 0; i < count; ++i)
 		{
 			UChar byte = RINT(GetArraySlot(fByteArray, i));
@@ -1353,7 +1353,7 @@ CNewScriptEndpointClient::filterRcvComplete(ULong inData)
 			{
 				Ref proxy = GetArraySlot(fProxyArray, i);
 				if (ISNIL(proxy))
-					isProxyChar = NO;
+					isProxyChar = false;
 				else
 					proxyChar = RINT(proxy);
 				break;
@@ -1363,7 +1363,7 @@ CNewScriptEndpointClient::filterRcvComplete(ULong inData)
 		{
 			if (fSevenBit)
 				proxyChar &= 0x7F;
-			fIsDataAvailable = YES;
+			fIsDataAvailable = true;
 			fInputBuffer[fInputBufWrIndex++] = proxyChar;
 			err = checkForInput(fInputBufWrIndex, !sp08);
 		}
@@ -1399,12 +1399,12 @@ CNewScriptEndpointClient::postInput(long inArg1, int inTerminationCondition)
 		fInputBufWrIndex -= inArg1;
 		if (fForm == kFrameFormType)
 		{
-			f44 = YES;
+			f44 = true;
 			fByteCount = 4;
 		}
 	}
 	fInputBufRdIndex = 0;
-	fIsDataAvailable = NO;
+	fIsDataAvailable = false;
 	if (NOTNIL(data) && hasInputScript && err == noErr)
 	{
 		RefVar terminator;
@@ -1464,7 +1464,7 @@ CNewScriptEndpointClient::doFlushInput(void)
 {
 	fInputBufWrIndex = 0;
 	fInputBufRdIndex = 0;
-	fIsDataAvailable = NO;
+	fIsDataAvailable = false;
 }
 
 
@@ -1491,7 +1491,7 @@ CNewScriptEndpointClient::getPartialData(NewtonErr * outErr)
 	{
 		obj = parseInput(fForm, fEncoding, fInputBufWrIndex, fInputBuffer, fTarget, outErr);
 		fInputBufRdIndex = fInputBufWrIndex;
-		fIsDataAvailable = NO;
+		fIsDataAvailable = false;
 	}
 	return obj;
 }
@@ -1505,7 +1505,7 @@ CNewScriptEndpointClient::doFlushPartial(void)
 		memmove(fInputBuffer, fInputBuffer + fInputBufRdIndex, amt);
 	fInputBufWrIndex = amt;
 	fInputBufRdIndex = 0;
-	fIsDataAvailable = NO;
+	fIsDataAvailable = false;
 }
 
 
@@ -1567,11 +1567,11 @@ CNewScriptEndpointClient::unwindOptions(void)
 bool
 CNewScriptEndpointClient::getParms(RefArg inCallbackSpec, Timeout * outTimeout)
 {
-	bool isSync = YES;
+	bool isSync = true;
 	if (NOTNIL(inCallbackSpec))
 	{
 		if (NOTNIL(GetVariable(inCallbackSpec, SYMA(async))))
-			isSync = NO;
+			isSync = false;
 		Ref reqTimeout = GetVariable(inCallbackSpec, SYMA(reqTimeout));
 		if (ISINT(reqTimeout))
 			*outTimeout = reqTimeout * kMilliseconds;
@@ -1587,7 +1587,7 @@ CNewScriptEndpointClient::prepOptions(RefArg inOptions, COptionArray ** outArray
 	XTRY
 	{
 		*outArray = new COptionArray;
-		XFAIL(err = MemError())
+		XFAILIF(*outArray == NULL, err = MemError();)
 		XFAIL(err = (*outArray)->init())
 		err = convertToOptionArray(inOptions, *outArray);
 	}
@@ -1617,7 +1617,7 @@ CNewScriptEndpointClient::convertToOptionArray(RefArg inOptions, COptionArray * 
 		}
 		newton_catch(exTranslator)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 	}
@@ -1647,7 +1647,7 @@ CNewScriptEndpointClient::convertFromOptionArray(RefArg outOptions, COptionArray
 		}
 		newton_catch(exTranslator)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 	}
@@ -1943,13 +1943,13 @@ CNewScriptEndpointClient::outputFrame(RefArg inData, bool inSync, ULong inFlags,
 		{
 			FlattenPtrParms parms;
 			parms.ref = inData;
-		//	parms.allocHandle = NO;
+		//	parms.allocHandle = false;
 			parms.offset = sizeof(ArrayIndex);
 			dataPtr = fFrameDataOutXlator->translate(&parms, NULL);
 		}
 		newton_catch(exTranslator)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 		XFAIL(err)
@@ -1984,13 +1984,13 @@ CNewScriptEndpointClient::outputData(RefArg inData, FormType inForm, bool inSync
 			parms.x00 = inData;
 			parms.x04 = inForm;
 			parms.x08 = fEncoding;
-			parms.x0C = NO;
+			parms.x0C = false;
 			parms.x10 = 0;
 			dataPtr = getScriptDataOutXlator()->translate(&parms, NULL);
 		}
 		newton_catch(exTranslator)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
 		XFAIL(err)
@@ -2058,7 +2058,7 @@ CNewScriptEndpointClient::outputRaw(RefArg inData, RefArg inCallbackSpec, bool i
 int
 CNewScriptEndpointClient::checkEndArray(UChar * inBuf)
 {
-	bool isFound = NO;
+	bool isFound = false;
 	RefVar endItem;
 	int i, count = Length(fEndSequence);
 	for (i = 0; i < count && !isFound; ++i)
@@ -2073,7 +2073,7 @@ CNewScriptEndpointClient::checkEndArray(UChar * inBuf)
 			int byteIndex = Length(endItem) - 1;
 			if (inBuf - fInputBuffer >= byteIndex)
 			{
-				isFound = YES;
+				isFound = true;
 				UChar * endSeq = (UChar *)BinaryData(endItem);
 				UChar * bufSeq = inBuf - byteIndex;
 				for ( ; byteIndex >= 0 && isFound; byteIndex--)
@@ -2512,7 +2512,7 @@ bool
 CStreamingCallback::status(size_t inNumOfBytesGot, size_t inNumOfBytesPut)
 {
 	if (fReceiver == INVALIDPTRREF)
-		return YES;
+		return true;
 
 	RefVar args(MakeArray(2));
 	if (f10)

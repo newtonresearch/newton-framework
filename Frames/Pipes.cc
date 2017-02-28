@@ -7,7 +7,7 @@
 */
 
 #include "LargeBinaries.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 
 
 /*------------------------------------------------------------------------------
@@ -142,7 +142,7 @@ CPipe::operator>>(size_t & ioValue)
 const CPipe &
 CPipe::operator<<(char ioValue)
 {
-	writeChunk(&ioValue, sizeof(char), NO);
+	writeChunk(&ioValue, sizeof(char), false);
 	return *this;
 }
 
@@ -150,7 +150,7 @@ CPipe::operator<<(char ioValue)
 const CPipe &
 CPipe::operator<<(unsigned char ioValue)
 {
-	writeChunk(&ioValue, sizeof(unsigned char), NO);
+	writeChunk(&ioValue, sizeof(unsigned char), false);
 	return *this;
 }
 
@@ -159,7 +159,7 @@ const CPipe &
 CPipe::operator<<(short ioValue)
 {
 	short	value = CANONICAL_SHORT(ioValue);
-	writeChunk(&value, sizeof(value), NO);
+	writeChunk(&value, sizeof(value), false);
 	return *this;
 }
 
@@ -168,7 +168,7 @@ const CPipe &
 CPipe::operator<<(unsigned short ioValue)
 {
 	unsigned short	value = CANONICAL_SHORT(ioValue);
-	writeChunk(&value, sizeof(value), NO);
+	writeChunk(&value, sizeof(value), false);
 	return *this;
 }
 
@@ -177,7 +177,7 @@ const CPipe &
 CPipe::operator<<(int ioValue)
 {
 	int	value = CANONICAL_LONG(ioValue);
-	writeChunk(&value, sizeof(value), NO);
+	writeChunk(&value, sizeof(value), false);
 	return *this;
 }
 
@@ -186,7 +186,7 @@ const CPipe &
 CPipe::operator<<(unsigned int ioValue)
 {
 	unsigned int	value = CANONICAL_LONG(ioValue);
-	writeChunk(&value, sizeof(value), NO);
+	writeChunk(&value, sizeof(value), false);
 	return *this;
 }
 
@@ -211,7 +211,7 @@ CPtrPipe::CPtrPipe()
 	fOffset = 0;
 	fEnd = 0;
 	fCallback = 0;
-	fPtrIsOurs = NO;
+	fPtrIsOurs = false;
 }
 
 CPtrPipe::~CPtrPipe()
@@ -229,7 +229,7 @@ CPtrPipe::init(size_t inSize, CPipeCallback * inCallback)
 	char * p = NewPtr(inSize);
 	if (p == NULL)
 		ThrowErr(exPipe, MemError());
-	init(p, inSize, YES, inCallback);
+	init(p, inSize, true, inCallback);
 }
 
 void
@@ -269,7 +269,7 @@ CPtrPipe::writePosition(void) const
 void
 CPtrPipe::readChunk(void * outBuf, size_t & ioSize, bool & outEOF)
 {
-	outEOF = NO;
+	outEOF = false;
 	if (fEnd - fOffset < (long)ioSize)
 		ThrowErr(exPipe, kUCErrUnderflow);
 	memmove(outBuf, fPtr + fOffset, ioSize);
@@ -363,7 +363,7 @@ CRefPipe::initSink(size_t inSize, RefArg inStore, CPipeCallback * inCallback)
 	else
 		fTheRef = AllocateBinary(SYMA(binary), inSize);
 	LockRef(fTheRef);
-	CPtrPipe::init(BinaryData(fTheRef), inSize, NO, inCallback);
+	CPtrPipe::init(BinaryData(fTheRef), inSize, false, inCallback);
 }
 
 
@@ -372,7 +372,7 @@ CRefPipe::initSource(RefArg inRef, CPipeCallback * inCallback)
 {
 	fTheRef = inRef;
 	LockRef(fTheRef);
-	CPtrPipe::init(BinaryData(fTheRef), Length(fTheRef), NO, inCallback);
+	CPtrPipe::init(BinaryData(fTheRef), Length(fTheRef), false, inCallback);
 }
 
 #pragma mark -
@@ -432,7 +432,7 @@ CStdIOPipe::readChunk(void * outBuf, size_t & ioSize, bool & outEOF)
 		if (ferror(fFile))
 			ThrowErr(exPipe, -4);
 		ioSize = sizeRead;
-		outEOF = YES;
+		outEOF = true;
 		ThrowErr(exPipe, -3);
 	}
 	outEOF = feof(fFile);

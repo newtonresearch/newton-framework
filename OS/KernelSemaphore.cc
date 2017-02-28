@@ -198,7 +198,8 @@ CSemaphoreOpList::init(ArrayIndex inNumOfOps, SemOp * inOps)
 	NewtonErr err = noErr;
 	XTRY
 	{
-		XFAILNOT(fOpList = new SemOp[inNumOfOps], fCount = 0; err = -1;)
+		fOpList = new SemOp[inNumOfOps];
+		XFAILIF(fOpList == NULL, fCount = 0; err = -1;)
 		memmove(fOpList, inOps, inNumOfOps * sizeof(SemOp));
 		fCount = inNumOfOps;
 	}
@@ -236,7 +237,8 @@ CSemaphoreGroup::init(ArrayIndex inCount)
 	XTRY
 	{
 		fRefCon = 0;
-		XFAILNOT(fGroup = new CSemaphore[inCount], fCount = 0; err = -1;)
+		fGroup = new CSemaphore[inCount];
+		XFAILIF(fGroup == NULL, fCount = 0; err = -1;)
 		fCount = inCount;
 	}
 	XENDTRY;

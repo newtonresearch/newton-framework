@@ -239,7 +239,7 @@ GetExceptionErr(Exception * inException)
 	}
 	else if (!Subexception(inException->name, exMessage))
 	{
-		err = (NewtonErr)(unsigned long)inException->data;
+		err = (NewtonErr)(long)inException->data;
 	}
 
 	return err;
@@ -249,7 +249,6 @@ GetExceptionErr(Exception * inException)
 void
 ExceptionNotify(Exception * inException)
 {
-#if defined(correct)
 	Ptr preflightCHeap = NewPtr(1*KByte);
 	if (preflightCHeap == NULL)
 		OutOfMemory();
@@ -257,7 +256,6 @@ ExceptionNotify(Exception * inException)
 
 	RefVar	preflightNSHeap(MakeArray(256));
 	preflightNSHeap = NILREF;
-#endif
 
 	NewtonErr	excError = GetExceptionErr(inException);
 	RefVar		excName;
@@ -502,11 +500,11 @@ Subexception(ExceptionName name, ExceptionName super)
 	do
 	{
 		if (strncmp(super, name, strlen(super)) == 0)
-			return YES;
+			return true;
 		if ((delim = strchr(name, ';')) != NULL)
 			name = delim + 1;
 	} while (delim != NULL);
-	return NO;
+	return false;
 }
 
 
@@ -534,6 +532,8 @@ SetExceptionHandler(CatchHeader * inHandler)
 CatchHeader *
 GetExceptionHandler()
 {
+	return gFirstCatch;
+
 	int mode = GetCPUMode();
 	if (mode == kUserMode)
 		return gFirstCatch;
@@ -617,8 +617,8 @@ ExitHandler(NewtonExceptionHandler * inHandler)
 	{
 		// itÕs not so call its destructor
 		ForgetDeveloperNotified(inHandler->exception.name);
-		if (inHandler->exception.destructor != NULL && inHandler->exception.data != NULL)
-			inHandler->exception.destructor(inHandler->exception.data);
+//		if (inHandler->exception.destructor != NULL && inHandler->exception.data != NULL)
+//			inHandler->exception.destructor(inHandler->exception.data);
 	}
 }
 
@@ -636,6 +636,6 @@ FramesException(Exception * inException)
 			err = RINT(GetFrameSlot(excData, SYMA(errorCode)));
 	}
 	else
-		err = (NewtonErr)(unsigned long)inException->data;
+		err = (NewtonErr)(long)inException->data;
 	return err;
 }

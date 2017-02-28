@@ -14,27 +14,36 @@
 #include "Protocols.h"
 #include "UStringUtils.h"
 
+extern void SetCardReinsertReason(const UniChar * inReason, bool inArg2);
+
 
 /* -----------------------------------------------------------------------------
 	T y p e s
 ----------------------------------------------------------------------------- */
+/*------------------------------------------------------------------------------
+	C V a l i d a t e P a c k a g e D r i v e r
+	P-class interface.
+------------------------------------------------------------------------------*/
+
+PROTOCOL CValidatePackageDriver : public CProtocol
+{
+public:
+	static CValidatePackageDriver *	make(const char * inName);
+	void			destroy(void);
+
+	void	validateBegin(UniChar * inName, Ptr inAddr, size_t inSize, Ptr);
+	void	validateNextBlock(Ptr inAddr, size_t inSize);
+	void	validateEnd(NewtonErr inErr);
+};
+
 
 // Packages are registered using the following information:
 struct RegistryInfo
 {
-		RegistryInfo(ULong inArg1, ULong inArg2);
+		RegistryInfo(ULong inType, ULong inArg2);
 
-	ULong		f00;
+	ULong		fType;
 	ULong		f04;
-};
-
-
-// The following information is held about a Package:
-struct PackageInfo
-{
-	ULong			f00;
-	UniChar *	f1C;
-// size +30
 };
 
 
@@ -48,12 +57,17 @@ CULockingSemaphore *	gPackageSemaphore;
 /*------------------------------------------------------------------------------
 	P u b l i c   I n t e r f a c e
 ------------------------------------------------------------------------------*/
+void
+MakeFourCharStr(ULong inVal, char * outStr) {
+	sprintf(outStr, "%c%c%c%c", inVal>>24, inVal>>16, inVal>>8, inVal);
+}
+
 
 NewtonErr
 InitializePackageManager(ObjectId inEnvironmentId)
 {
 	CPackageManager	pm;
-	return pm.init('pckm', YES, kSpawnedTaskStackSize, kUserTaskPriority, inEnvironmentId);
+	return pm.init('pckm', true, kSpawnedTaskStackSize, kUserTaskPriority, inEnvironmentId);
 }
 
 
@@ -64,9 +78,72 @@ PackageManagerPortId(void)
 	OpaqueRef thing, spec;
 	MAKE_ID_STR('pckm',type);
 
-	if (ns.lookup(type, kUPort, &thing, &spec) != noErr)
+	if (ns.lookup(type, kUPort, &thing, &spec) != noErr) {
 		thing = 0;
+	}
 	return (ObjectId)thing;
+}
+
+
+void
+RegisterPackageWithDebugger(void * inAddr, ULong inPkgId)
+{
+#if 0
+	if (IsSuperMode()) {
+		SRegisterPackageWithDebugger(inAddr, inPkgId);
+	} else {
+		GenericSWI(kRegisterPackageWithDebugger, inAddr, inPkgId);
+	}
+#endif
+}
+
+void
+RegisterLoadedCodeWithDebugger(void * inAddr, const char * infoStr, ULong inId)
+{
+#if 0
+	if (IsSuperMode()) {
+		SRegisterCodeWithDebugger(inAddr, infoStr, inId);
+	} else {
+		GenericSWI(kRegisterCodeWithDebugger, inAddr, infoStr, inId);
+	}
+#endif
+}
+
+void
+DeregisterLoadedCodeWithDebugger(ULong inId)
+{
+#if 0
+	if (IsSuperMode()) {
+		SDeregisterCodeWithDebugger(inId);
+	} else {
+		GenericSWI(kDeregisterCodeWithDebugger, inId);
+	}
+#endif
+}
+
+void
+InformDebuggerMemoryReloaded(void * inAddr, ULong inSize)
+{
+#if 0
+	if (IsSuperMode()) {
+		SInformDebuggerMemoryReloaded(inAddr, inSize);
+	} else {
+		GenericSWI(kInformDebuggerMemoryReloaded, inAddr);
+	}
+#endif
+}
+
+
+CInstalledPart::CInstalledPart(ULong inType, int inArg2, int inArg3, bool inArg4, bool inArg5, bool inArg6, bool inArg7, VAddr inArg8)
+{
+	fType = inType;
+	f04 = inArg2;
+	f08 = inArg3;
+	f108 = inArg4;
+	f104 = inArg6;
+	f102 = inArg7;
+	f101 = inArg5;
+	f0C = (CClassInfo *)inArg8;
 }
 
 
@@ -87,8 +164,8 @@ CPackageManager::getSizeOf(void) const
 NewtonErr
 CPackageManager::mainConstructor(void)
 {
-	f74 = NULL;
-	f78 = NULL;
+	fPersistentHeap = NULL;
+	fDefaultHeap = NULL;
 	f7C = 0;
 
 	NewtonErr				err;
@@ -97,11 +174,10 @@ CPackageManager::mainConstructor(void)
 
 	CAppWorld::mainConstructor();
 
-	f78 = GetHeap();
-	if ((err = MemObjManager::findEntryByName(kMemObjPersistent, 'prot', &persistentSpace)) == noErr)
-	{
+	fDefaultHeap = GetHeap();
+	if ((err = MemObjManager::findEntryByName(kMemObjPersistent, 'prot', &persistentSpace)) == noErr) {
 		persistentSpace.f10 = 0;
-		ZapHeap(persistentSpace.fHeap, kZapHeapVerification, YES);
+		ZapHeap(persistentSpace.fHeap, kZapHeapVerification, true);
 		persistentSpace.fFlags &= ~0x80;
 		MemObjManager::registerEntryByName(kMemObjPersistent, 'prot', &persistentSpace);
 		DestroyVMHeap(persistentSpace.fHeap);
@@ -109,10 +185,12 @@ CPackageManager::mainConstructor(void)
 		XTRY
 		{
 			XFAIL(err = MemObjManager::findEntryByName(kMemObjHeap, 'kstk', &kernelSpace))
-			f74 = kernelSpace.fHeap;
-			XFAILNOT(fEventHandler = new CPackageEventHandler, err = MemError();)
+			fPersistentHeap = kernelSpace.fHeap;
+			fEventHandler = new CPackageEventHandler;
+			XFAILIF(fEventHandler == NULL, err = MemError();)
 			fEventHandler->init(kPackageEventId);
-			XFAILNOT(gPackageSemaphore = new CULockingSemaphore, err = MemError();)
+			gPackageSemaphore = new CULockingSemaphore;
+			XFAILIF(gPackageSemaphore == NULL, err = MemError();)
 		}
 		XENDTRY;
 	}
@@ -123,12 +201,12 @@ CPackageManager::mainConstructor(void)
 void
 CPackageManager::mainDestructor(void)
 {
-	if (fEventHandler)
+	if (fEventHandler) {
 		delete fEventHandler;
-
-	if (gPackageSemaphore)
+	}
+	if (gPackageSemaphore) {
 		delete gPackageSemaphore, gPackageSemaphore = NULL;
-
+	}
 	CAppWorld::mainDestructor();
 }
 
@@ -139,10 +217,68 @@ CPackageManager::mainDestructor(void)
 	Information the Package Manager holds about registered packages.
 ------------------------------------------------------------------------------*/
 
-RegistryInfo::RegistryInfo(ULong inArg1, ULong inArg2)
+RegistryInfo::RegistryInfo(ULong inType, ULong inArg2)
 {
-	f00 = inArg1;
+	fType = inType;
 	f04 = inArg2;
+}
+
+
+#pragma mark -
+/* -----------------------------------------------------------------------------
+	C P a c k a g e B l o c k
+----------------------------------------------------------------------------- */
+
+NewtonErr
+CPackageBlock::init(ULong inId, ULong inVersion, size_t inSize, SourceType inSrcType, ULong inFlags, UniChar * inName, UniChar * inCopyright, ArrayIndex inNumOfParts, ULong inDate)
+{
+	NewtonErr err = noErr;
+	fSignature = 0;
+	fId = inId;
+	fVersion = inVersion;
+	fSize = inSize;
+	fSrcType = inSrcType;
+	fFlags = inFlags;
+	fDate = inDate;
+	fName = NULL;
+	fCopyright = NULL;
+	fParts = NULL;
+	
+	newton_try
+	{
+		fName = new UniChar[(Ustrlen(inName) + 1)*sizeof(UniChar)];
+		if (fName) {
+			Ustrcpy(fName, inName);
+		}
+		if (inCopyright) {
+			fCopyright = new UniChar[(Ustrlen(inName) + 1)*sizeof(UniChar)];
+			if (fCopyright)
+				Ustrcpy(fCopyright, inName);
+		}
+	}
+	newton_catch_all	// original says newton_catch("")
+	{
+		err = kOSErrBadPackage;
+	}
+	end_try;
+
+	fParts = new CDynamicArray(sizeof(CInstalledPart), inNumOfParts);
+
+	if (err != noErr
+	||  fParts == NULL
+	||  fName == NULL || fName[0] == 0
+	|| (fCopyright == NULL && inCopyright != NULL)) {
+		if (err == noErr)
+			err = kOSErrNoMemory;
+		if (fParts)
+			delete fParts;
+		if (fName)
+			delete fName;
+		if (fCopyright)
+			delete fCopyright;
+	}
+
+	return err;
 }
 
 
@@ -154,16 +290,19 @@ RegistryInfo::RegistryInfo(ULong inArg1, ULong inArg2)
 
 CPackageEventHandler::CPackageEventHandler()
 {
-	f1C = NO;
-	f28 = 0;
-	f3C = 0;
-	f2C = 0;
-	f40 = 0;
-	f64 = NO;
+	f1C = false;
+	fPkg = NULL;
+	fPkgInfo = NULL;
+	fPipe = NULL;
+	fBuffer = NULL;
+	f64 = false;
+
+	// the loaded-package list is persistent
 	setPersistentHeap();
-	f14 = new CDynamicArray(sizeof(PackageInfo), 6);
+	fPackageList = new CDynamicArray(sizeof(CPackageBlock), 6);
 	setDefaultHeap();
-	f18 = new CDynamicArray(sizeof(RegistryInfo), 8);
+
+	fRegistry = new CDynamicArray(sizeof(RegistryInfo), 8);
 	f60 = 0;
 	initValidatePackageDriver();
 }
@@ -171,39 +310,37 @@ CPackageEventHandler::CPackageEventHandler()
 
 CPackageEventHandler::~CPackageEventHandler()
 {
-	// no delete f14 in original
-	if (f18)
-		delete f18;
+	// no delete fPackageList -- it’s persistent
+	if (fRegistry)
+		delete fRegistry;
 }
 
 
 void
 CPackageEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
 {
-	if (*inSize >= sizeof(CPkBaseEvent))
-	{
+	if (*inSize >= sizeof(CPkBaseEvent)) {
 		ULong evtCode = ((CPkBaseEvent *)inEvent)->fEventCode;
-		switch (evtCode)
-		{
+		switch (evtCode) {
 		// package registration
-		case 'rgtr':
+		case kRegisterPartHandlerEventId:
 			registerEvent((CPkRegisterEvent *)inEvent);
 			break;
-		case 'urgr':
+		case kUnregisterPartHandlerEventId:
 			unregisterEvent((CPkUnregisterEvent *)inEvent);
 			break;
 
-		case 'pkbl':
+		case kBeginLoadPkgEventId:
 			beginLoadPackage((CPkBeginLoadEvent *)inEvent);
 			break;
-		case 'pkbu':
+		case kBackupPkgEventId:
 			getBackupInfo((CPkBackupEvent *)inEvent);
 			break;
-		case 'pksc':
+		case kSafeToDeactivatePkgEventId:
 			safeToDeactivatePackage((CPkSafeToDeactivateEvent *)inEvent);
 			break;
-		case 'pkrm':
-			removePackage((CPkRemoveEvent *)inEvent, YES, YES);
+		case kRemovePkgEventId:
+			removePackage((CPkRemoveEvent *)inEvent, true, true);
 			break;
 		}
 	}
@@ -220,13 +357,13 @@ CPackageEventHandler::registerEvent(CPkRegisterEvent * inEvent)
 {
 	ArrayIndex index;
 	ULong sp04;
-	if (searchRegistry(&index, &sp04, inEvent->f10) == kOSErrPartTypeNotRegistered)
-	{
-		RegistryInfo info(inEvent->f10, inEvent->f14);
-		f18->addElement(&info);
-	}
-	else
-	{
+	if (searchRegistry(&index, &sp04, inEvent->fPartType) == kOSErrPartTypeNotRegistered) {
+char evtType[5];
+MakeFourCharStr(inEvent->fPartType, evtType);
+printf("  CPackageEventHandler::registerEvent(partType='%s',port=%d)\n", evtType, inEvent->fPortId);
+		RegistryInfo info(inEvent->fPartType, inEvent->fPortId);
+		fRegistry->addElement(&info);
+	} else {
 		inEvent->fEventErr = kOSErrPartTypeAlreadyRegistered;
 		setReply(sizeof(CPkRegisterEvent), inEvent);
 		replyImmed();
@@ -239,8 +376,9 @@ CPackageEventHandler::unregisterEvent(CPkUnregisterEvent * inEvent)
 {
 	ArrayIndex index;
 	ULong sp04;
-	if (searchRegistry(&index, &sp04, inEvent->f10) == noErr)
-		f18->removeElementsAt(index, 1);
+	if (searchRegistry(&index, &sp04, inEvent->fPartType) == noErr) {
+		fRegistry->removeElementsAt(index, 1);
+	}
 	inEvent->fEventErr = noErr;
 	setReply(sizeof(CPkUnregisterEvent), inEvent);
 	replyImmed();
@@ -248,72 +386,570 @@ CPackageEventHandler::unregisterEvent(CPkUnregisterEvent * inEvent)
 
 
 void
-CPackageEventHandler::beginLoadPackage(CPkBeginLoadEvent * inEvent)
-{}
+CPackageEventHandler::beginLoadPackage(CPkBeginLoadEvent * ioEvent)
+{
+printf("  CPackageEventHandler::beginLoadPackage()\n");
+	NewtonErr err;
+	ULong quickKey = 0;
+	SourceType srcType = ioEvent->fSrcType;
+	XTRY
+	{
+		fPartSource = ioEvent->fSrc;
+		fPartIndex = 0;
+		f64 = false;
+		fPkg = NULL;
+		if (IsStream(srcType)) {
+			// create a buffer to stream into
+			fBuffer = new CShadowRingBuffer;
+			fBuffer->init(ioEvent->fSrc.stream.bufferId, 0, 0);
+			// pipe data into that buffer
+			fPipe = new CPartPipe;
+			fPipe->init(ioEvent->fSrc.stream.messagePortId, fBuffer, true);
+			// create iterator with streamed pkg
+			fPkg = new CPackageIterator(fPipe);
+		} else {
+			// create iterator with in-memory pkg
+			fPkg = new CPackageIterator((void *)ioEvent->fSrc.mem.buffer);
+		}
+		XFAILIF(fPkg == NULL, err = MemError();)
+		XFAIL(err = fPkg->init())	// also validate "package" header signature
+
+		newton_try
+		{
+			// fill in reply
+			ioEvent->fUniqueId = getUniquePackageId();
+			ioEvent->fPkgSize = fPkg->packageSize();
+			ioEvent->fNumOfParts = fPkg->numberOfParts();
+			ioEvent->fVersion = fPkg->getVersion();
+			ioEvent->fSizeInMem = 0;
+			for (ArrayIndex i = 0, count = fPkg->numberOfParts(); i < count; ++i) {
+				PartInfo info;
+				fPkg->getPartInfo(i, &info);
+				ioEvent->fSizeInMem += info.sizeInMemory;
+			}
+			Ustrncpy(ioEvent->fName, fPkg->packageName(), kMaxPackageNameSize);
+			quickKey = (ioEvent->fName[0] << 16) | (ioEvent->fName[1] << 8) | (ioEvent->fName[2]);
+
+			// validate package
+			XTRY
+			{
+				ArrayIndex index;
+				if (searchPackageList(&index, fPkg->packageName(), 0) == noErr) {
+					// we already have a package with this name
+					CPackageBlock * existingPkg = (CPackageBlock *)fPackageList->elementPtrAt(index);
+					if (existingPkg != NULL) {
+						// return id of existing duplicate package
+						ioEvent->fUniqueId = existingPkg->fId;
+						if (existingPkg->fVersion != 0 && fPkg->getVersion() != 0) {
+							// compare versions
+							XFAILIF(fPkg->getVersion() > existingPkg->fVersion, err = kOSErrOlderPackageAlreadyExists;)
+							XFAILIF(fPkg->getVersion() < existingPkg->fVersion, err = kOSErrNewerPackageAlreadyExists;)
+						}
+					}
+					XFAIL(err = kOSErrPackageAlreadyExists)
+				}
+				if (fValidatePackageDriver != NULL) {
+					XFAIL(err = validatePackage(ioEvent, fPkg))
+				}
+				// package is valid -- add package info to our persistent list
+char pkgName[32+1], *p = pkgName;
+UniChar * s = fPkg->packageName();
+while (*s) {
+	*p++ = *s++;
+}
+*p = 0;
+printf("  adding %s to package list\n", pkgName);
+				setPersistentHeap();
+				XTRY
+				{
+					CPackageBlock block;
+					XFAIL(err = block.init(ioEvent->fUniqueId, fPkg->getVersion(), fPkg->packageSize(), srcType, fPkg->packageFlags(), fPkg->packageName(), fPkg->copyright(), fPkg->numberOfParts(), fPkg->modifyDate()))
+					XFAIL(err = fPackageList->addElement(&block))
+					fPkgInfo = (CPackageBlock *)fPackageList->safeElementPtrAt(fPackageList->count()-1);
+					fPkgInfo->fSignature = 'spbl';
+					// let Hammer know about the package
+					if (IsMemory(srcType))
+						RegisterPackageWithDebugger((void *)ioEvent->fSrc.mem.buffer, fPkgInfo->fId);
+				}
+				XENDTRY;
+				setDefaultHeap();
+
+				f1C = true;
+				f20 = ioEvent->f10;
+				f24 = ioEvent->f14;
+			}
+			XENDTRY;
+		}
+		newton_catch_all	// original says newton_catch("")
+		{
+			setDefaultHeap();
+			err = kOSErrBadPackage;
+		}
+		end_try;
+	}
+	XENDTRY;
+	XDOFAIL(err)
+	{
+		if (fPkg != NULL) {
+			delete fPkg, fPkg = NULL;
+		}
+	}
+	XENDFAIL;
+
+	if (err == kOSErrPackageAlreadyExists) {
+		err = noErr;	// not original
+	}
+
+	if (err == noErr) {
+		while (loadNextPart(&err, &ioEvent->f81, &ioEvent->f80)) {
+			;	/* just keep loading */
+		}
+	}
+	if (err == noErr && fValidatePackageDriver == NULL && srcType.format == kFixedMemory && quickKey == 'VPD') {	// VPD = ValidatePackageDriver ?
+		initValidatePackageDriver();
+	}
+	ioEvent->fEventErr = err;
+	setReply(sizeof(CPkBeginLoadEvent), ioEvent);
+	replyImmed();
+}
+
 
 void
-CPackageEventHandler::getBackupInfo(CPkBackupEvent * inEvent)
-{}
+CPackageEventHandler::getBackupInfo(CPkBackupEvent * ioEvent)
+{
+	NewtonErr err = noErr;	//r10
+	f1C = true;
+	f20 = ioEvent->f20;
+	f24 = ioEvent->f24;
+	CArrayIterator * iter = &fBackupIter;
+	if (ioEvent->fIndex == 0) {
+		iter->init(fPackageList, 0, fPackageList->count() - 1, true);
+	} else {
+		iter->nextIndex();
+	}
+	ArrayIndex pkgIndex = iter->more() ? iter->currentIndex() : kIndexNotFound;
+	for ( ; iter->more(); pkgIndex = iter->nextIndex()) {
+		CPackageBlock * pkgInfo = (CPackageBlock *)fPackageList->elementPtrAt(pkgIndex);
+		if (!FLAGTEST(pkgInfo->fFlags, kInvisibleFlag) && ioEvent->f14 == -1) {
+			ioEvent->fSize = pkgInfo->fSize;
+			ioEvent->fId = pkgInfo->fId;
+			ioEvent->fVersion = pkgInfo->fVersion;
+			ioEvent->fSrcType = pkgInfo->fSrcType;
+			ioEvent->fFlags = pkgInfo->fFlags;
+			ioEvent->fDate = pkgInfo->fDate;
+			Ustrncpy(ioEvent->fName, pkgInfo->fName, kMaxPackageNameSize);
+			break;
+		}
+	}
+	if (pkgIndex == kIndexNotFound) {
+		ioEvent->fSize = 0;
+		ioEvent->fId = 0;
+		ioEvent->fVersion = 0;
+		ioEvent->fFlags = 0;
+	}
+	f1C = false;
+	ioEvent->fEventErr = err;
+	setReply(sizeof(CPkBackupEvent), ioEvent);
+}
+
 
 void
-CPackageEventHandler::safeToDeactivatePackage(CPkSafeToDeactivateEvent * inEvent)
-{}
+CPackageEventHandler::safeToDeactivatePackage(CPkSafeToDeactivateEvent * ioEvent)
+{
+	ioEvent->fIsSafeToDeactivate = true;
+	ArrayIndex pkgIndex;
+	NewtonErr err = searchPackageList(&pkgIndex, ioEvent->fPkgId);
+	if (err == noErr) {
+		CPackageBlock * pkgInfo = (CPackageBlock *)fPackageList->elementPtrAt(pkgIndex);
+		CArrayIterator iter(pkgInfo->fParts, 0, pkgInfo->fParts->count() - 1, false);
+		for (ArrayIndex i = iter.firstIndex(); iter.more(); i = iter.nextIndex()) {
+			CInstalledPart * part = (CInstalledPart *)pkgInfo->fParts->elementPtrAt(i);
+			if (part->f04 == 0) {
+				ioEvent->fIsSafeToDeactivate = GetProtocolRegistry()->getInstanceCount(part->f0C) == 0;
+				if (!ioEvent->fIsSafeToDeactivate)
+					break;
+			}
+		}
+	}
+	ioEvent->fEventErr = err;
+	setReply(sizeof(CPkSafeToDeactivateEvent), ioEvent);
+}
+
 
 void
-CPackageEventHandler::removePackage(CPkRemoveEvent * inEvent, bool, bool)
-{}
+CPackageEventHandler::removePackage(CPkRemoveEvent * ioEvent, bool inArg2, bool inArg3)
+{
+	ArrayIndex pkgIndex;
+	ObjectId pkgId = ioEvent->fPkgId;
+	f1C = true;
+	f20 = ioEvent->f14;
+	f24 = ioEvent->f18;
+	NewtonErr err = searchPackageList(&pkgIndex, pkgId);
+	if (err == noErr) {
+		CPackageBlock * pkgInfo = (CPackageBlock *)fPackageList->elementPtrAt(pkgIndex);
+		int r8 = 0;
+		if (pkgInfo->fSignature == 'spcm')
+			r8 = pkgInfo->f2C;
+
+		SetCardReinsertReason(pkgInfo->fName, true);
+		PartId partId;
+		partId.packageId = pkgId;
+		pkgInfo->fSignature = 'spcm';
+		CArrayIterator iter(pkgInfo->fParts, r8, pkgInfo->fParts->count() - 1, false);
+		for (ArrayIndex i = iter.firstIndex(); iter.more(); i = iter.nextIndex()) {
+			CInstalledPart * part = (CInstalledPart *)pkgInfo->fParts->elementPtrAt(i);
+			partId.partIndex = i;
+			pkgInfo->f2C = i+1;
+			removePart(partId, *part, inArg3);
+		}
+		SetCardReinsertReason(NULL, false);
+
+		setPersistentHeap();
+		delete pkgInfo->fParts;
+		delete[] pkgInfo->fName;
+		delete[] pkgInfo->fCopyright;
+		fPackageList->removeElementsAt(pkgIndex, 1);
+		setDefaultHeap();
+	}
+	f1C = false;
+	DeregisterLoadedCodeWithDebugger(pkgId);
+	ioEvent->fEventErr = err;
+	if (inArg2)
+		setReply(sizeof(CPkRemoveEvent), ioEvent);
+}
 
 
 void
 CPackageEventHandler::initValidatePackageDriver(void)
-{}
-
-void
-CPackageEventHandler::validatePackage(CPkBeginLoadEvent * inEvent, CPackageIterator * inIter)
-{}
-
-
-void
-CPackageEventHandler::checkAndInstallPatch(PartInfo&, SourceType, const PartSource&)
-{}
-
-void
-CPackageEventHandler::loadProtocolCode(void**, PartInfo&, SourceType, const PartSource&)
-{}
-
-void
-CPackageEventHandler::getUniquePackageId(void)
-{}
-
-
-
-void
-CPackageEventHandler::getPartSize(void)
-{}
-
-void
-CPackageEventHandler::loadNextPart(long*, unsigned char*, unsigned char*)
-{}
-
-void
-CPackageEventHandler::installPart(unsigned long*, long*, unsigned char*, const PartId&, ExtendedPartInfo&, SourceType, const PartSource&)
-{}
-
-void
-CPackageEventHandler::removePart(const PartId&, const CInstalledPart&, unsigned char)
-{}
+{
+	fValidatePackageDriver = (CValidatePackageDriver *)MakeByName("CValidatePackageDriver", "CValidatePackage");
+}
 
 
 NewtonErr
-CPackageEventHandler::searchPackageList(ArrayIndex * outIndex, ULong inArg2)
+CPackageEventHandler::validatePackage(CPkBeginLoadEvent * ioEvent, CPackageIterator * inIter)
+{
+	NewtonErr err = noErr;
+	if (ioEvent->fSrcType.format != kFixedMemory) {
+		Ptr pkgBase = NULL;
+		Ptr lastPart = NULL;
+		if (ioEvent->fSrcType.format == kRemovableMemory) {
+			ArrayIndex numOfParts;
+			pkgBase = (Ptr)ioEvent->fSrc.mem.buffer;
+			if (FLAGTEST(inIter->packageFlags(), 0x01000000)
+			&&  (numOfParts = inIter->numberOfParts()) > 1) {
+				lastPart = pkgBase + inIter->getPartDataOffset(numOfParts - 1);
+			}
+		}
+		size_t pkgSize = inIter->packageSize();
+#if 0
+		err = fValidatePackageDriver->validateBegin(ioEvent->fName, pkgBase, pkgSize, lastPart);
+		if (err != noErr && err != kOSErrPackageAlreadyExists && pkgBase != NULL) {
+			CValidateBackupPipe pipe;
+			pipe.init(fValidatePackageDriver);
+			RDMParams parms;
+			GetLargeObjectInfo(&parms, ioEvent->fSrc.stream.bufferId);
+			err = BackupPackage(&pipe, parms.fStore, parms.fObjId);
+			err = fValidatePackageDriver->validateEnd(err);
+		}
+#endif
+	}
+	return err;
+}
+
+
+NewtonErr
+CPackageEventHandler::checkAndInstallPatch(PartInfo&, SourceType, const PartSource&)
+{return noErr;}
+
+
+NewtonErr
+CPackageEventHandler::loadProtocolCode(void ** outCode, PartInfo& info, SourceType inSrcType, const PartSource& inSource)
+{
+	NewtonErr err = noErr;
+	XTRY
+	{
+		if (IsStream(inSrcType)) {
+			// create a buffer to stream into
+			CShadowRingBuffer buf;
+			buf.init(inSource.stream.bufferId, 0, 0);
+			// pipe data into that buffer
+			CPartPipe pipe;
+			pipe.init(inSource.stream.messagePortId, &buf, true);
+			// malloc persistent mem for code
+			setPersistentHeap();
+			*outCode = malloc(info.size);
+			setDefaultHeap();
+			XFAILIF(*outCode == NULL, err = MemError();)
+			newton_try
+			{
+				bool isEOF = false;
+				size_t size = info.size;
+				pipe.readChunk(*outCode, size, isEOF);
+			}
+			newton_catch(exPipe)
+			{
+				err = kOSErrBadPackage;
+			}
+			end_try;
+		} else {
+			// IsMemory
+			if (info.autoCopy) {
+				setPersistentHeap();
+				*outCode = malloc(info.size);
+				setDefaultHeap();
+				XFAILIF(*outCode == NULL, err = MemError();)
+				memmove(*outCode, inSource.mem.buffer, info.size);
+			} else {
+				*outCode = inSource.mem.buffer;
+			}
+		}
+	}
+	XENDTRY;
+	return err;
+}
+
+
+ULong
+CPackageEventHandler::getUniquePackageId(void)
+{
+	ULong uid;
+	ArrayIndex index;
+	do {
+		uid = rand() & 0x00FFFFFF;
+		if (uid == 0)
+			uid = 1;
+	} while (searchPackageList(&index, uid) == noErr);
+	return uid;
+}
+
+
+
+size_t
+CPackageEventHandler::getPartSize(void)
+{
+	if (fPkg == NULL)
+		return 0;
+	size_t partEndOffset = fPartIndex < (fPkg->numberOfParts() - 1) ? fPkg->getPartDataOffset(fPartIndex + 1) : fPkg->packageSize();
+	return partEndOffset - fPkg->getPartDataOffset(f10);
+}
+
+
+bool
+CPackageEventHandler::loadNextPart(NewtonErr * outErr, bool * outArg2, bool * outArg3)
+{
+//r4: r7 r6 r5
+//sp-74
+	PartId thePart;	//sp6C
+	ExtendedPartInfo partInfo;	//sp74
+	NewtonErr err = noErr;	// r8
+	bool isMore = true;	//r10
+	if (fPartIndex < fPkg->numberOfParts()) {
+printf("CPackageEventHandler::loadNextPart() index=%d\n", fPartIndex);
+		newton_try
+		{
+			thePart.packageId = fPkgInfo->fId;
+			thePart.partIndex = fPartIndex;
+			//sp-0C
+			fPkg->getPartInfo(fPartIndex, &partInfo);
+			Ustrncpy(partInfo.packageName, fPkg->packageName(), kMaxPackageNameSize);
+			partInfo.packageName[kMaxPackageNameSize] = 0;
+			if (fPipe != NULL) {
+				fPipe->setStreamSize(getPartSize());
+			} else {
+				fPartSource.mem.buffer = partInfo.data.address;
+			}
+			if (partInfo.kind == kFrames && partInfo.infoSize != 0 && !partInfo.compressed && IsMemory(fPkgInfo->fSrcType)) {
+				char infoStr[kMaxInfoSize+1];
+				memmove(infoStr, partInfo.info, partInfo.infoSize);
+				infoStr[partInfo.infoSize] = 0;
+				RegisterLoadedCodeWithDebugger(partInfo.data.address, infoStr, thePart.packageId);
+			}
+			VAddr loadedAddr;
+			bool sp04;
+			int sp08;
+			err = installPart(&loadedAddr, &sp08, &sp04, thePart, partInfo, fPkgInfo->fSrcType, fPartSource);
+			if (fPipe != NULL) {
+				fPipe->seekEOF();
+			}
+			if (err == noErr) {
+				if (partInfo.kind == kProtocol && !partInfo.compressed) {
+					CClassInfo * driver = (CClassInfo *)loadedAddr;
+					if (driver == NULL && IsMemory(fPkgInfo->fSrcType)) {
+						driver = (CClassInfo *)partInfo.data.address;
+					}
+					if (driver != NULL) {
+						char infoStr[64];
+						strcpy(infoStr, driver->implementationName());
+						RegisterLoadedCodeWithDebugger((void *)loadedAddr, infoStr, thePart.packageId);
+					}
+				}
+				setPersistentHeap();
+				CInstalledPart part(partInfo.type, partInfo.kind, sp08, partInfo.autoLoad, partInfo.autoCopy? true : (partInfo.autoLoad && IsStream(fPkgInfo->fSrcType)), partInfo.notify, sp04, loadedAddr);
+				err = fPkgInfo->fParts->addElement(&part);
+				setDefaultHeap();
+				if (err == noErr) {	// do we really want to keep retrying to load this part?
+					++fPartIndex;
+				}
+			}
+		}
+		newton_catch_all	// original says newton_catch("")
+		{
+			err = kOSErrBadPackage;
+		}
+		end_try;
+	}
+
+	if (err != noErr || fPartIndex == fPkg->numberOfParts())
+	{
+		if (fPipe != NULL) {
+			fPipe->close();
+			delete fPipe, fPipe = NULL;
+			fBuffer = NULL;
+		}
+		newton_try
+		{
+			if (fPkg != NULL && fPkgInfo != NULL) {
+				if (fPartIndex >= fPkg->numberOfParts()) {
+					fPkgInfo->fSignature = 'spvd';
+				} else {
+					CPkRemoveEvent evt(fPkgInfo->fId, f20, f24);
+					removePackage(&evt, false, true);
+				}
+			}
+		}
+		newton_catch_all	// original says newton_catch("")
+		{ }
+		end_try;
+		*outArg2 = false;
+		*outArg3 = false;
+
+		if (fPkg != NULL) {
+			newton_try
+			{
+				if (fPkg->forDispatchOnly()) {
+					*outArg2 = true;
+					CPkRemoveEvent evt(fPkgInfo->fId, f20, f24);
+					removePackage(&evt, false, false);
+				}
+				*outArg3 = f64;
+				f64 = false;
+			}
+			newton_catch_all	// original says newton_catch("")
+			{ }
+			end_try;
+			delete fPkg, fPkg = NULL;
+		}
+		fPkgInfo = NULL;
+		f1C = false;
+		f60 = 0;
+		isMore = false;
+	}
+	*outErr = err;
+	return isMore;
+}
+
+
+NewtonErr
+CPackageEventHandler::installPart(VAddr * outCode, int * outArg2, bool * outArg3, const PartId& inId, ExtendedPartInfo& inPart, SourceType inSrcType, const PartSource& inSource)
+{
+//r4: r5 r7 r6 r8 xx xx r10
+//sp-0C
+printf("CPackageEventHandler::installPart()\n");
+	NewtonErr err = noErr;
+	*outArg2 = 0;
+	*outCode = NULL;
+	ULong processorType = fPkg->processorTypeOfPart(fPartIndex);
+	if (processorType == 0 || processorType == 0x1000) {
+		if (inPart.autoLoad) {
+			if (inPart.kind == kRaw) {
+				if (inPart.type == kPatchPartType) {
+					err = checkAndInstallPatch(inPart, inSrcType, inSource);
+				}
+			} else if (inPart.kind == kProtocol) {
+				CClassInfo * protocolImpl;
+				if (loadProtocolCode((void **)&protocolImpl, inPart, inSrcType, inSource) == noErr) {
+					err = protocolImpl->registerProtocol();
+					if (err == noErr) {
+						*outCode = (VAddr)protocolImpl;
+					} else if (protocolImpl != NULL) {
+						if (IsStream(inSrcType) || (IsMemory(inSrcType) && inPart.autoCopy)) {
+							free(protocolImpl);	// yes, really: protocol code was malloc’d
+						}
+					}
+				}
+			}
+		}
+		if (err == noErr && inPart.notify && inPart.type != kPatchPartType) {
+			PartId existingPart;
+			if ((err = searchRegistry(&existingPart.partIndex, &existingPart.packageId, inPart.type)) == noErr) {	// will be kOSErrNoSuchPackage when loading drivers
+				if (f1C && f20 == existingPart.packageId) {
+					existingPart.packageId = f24;
+				}
+				CUPort appPort(existingPart.packageId);
+				if (*outCode) {
+					inPart.data.address = (Ptr)*outCode;
+				}
+				CPkPartInstallEvent installEvent(inId, inPart, inSrcType, inSource);
+				CPkPartInstallEventReply reply;
+				size_t replySize;
+printf("sending CPkPartInstallEvent to port %d\n", existingPart.packageId);
+				err = appPort.sendRPC(&replySize, &installEvent, sizeof(CPkPartInstallEvent), &reply, sizeof(CPkPartInstallEventReply));
+				if (err == noErr) {
+					err = installEvent.fEventErr;
+				}
+				*outArg2 = reply.f10;
+				*outArg3 = reply.f14;
+			}
+		}
+		CClassInfo * protocolImpl = (CClassInfo *)*outCode;
+		if (protocolImpl != NULL && err != noErr) {
+			protocolImpl->deregisterProtocol();
+			if (IsStream(inSrcType) || inPart.autoCopy) {
+				free(protocolImpl);	// yes, really: protocol code was malloc’d
+			}
+			*outCode = NULL;
+		}
+	} else {
+		*outArg3 = false;
+	}
+	return err;
+}
+
+
+void
+CPackageEventHandler::removePart(const PartId& inId, const CInstalledPart& inPart, bool inArg3)
+{
+	if (inArg3 && inPart.f104) {
+		PartId existingPart;
+		if (searchRegistry(&existingPart.partIndex, &existingPart.packageId, inPart.fType) == noErr) {
+			if (f1C && f20 == existingPart.packageId) {
+				existingPart.packageId = f24;
+			}
+			CPkPartRemoveEvent removeEvent(inId, inPart.f04, inPart.fType, inPart.f08);
+			CUPort appPort(existingPart.packageId);
+			size_t replySize;
+			appPort.sendRPC(&replySize, &removeEvent, sizeof(CPkPartRemoveEvent), NULL, 0, 2*kSeconds);
+		}
+	}
+	CClassInfo * protocolImpl;
+	if (inPart.f108 && (protocolImpl = inPart.f0C) != NULL && inPart.f04 == 0) {
+		protocolImpl->deregisterProtocol();
+		if (inPart.f101) {
+			free(protocolImpl);	// yes, really: protocol code was malloc’d
+		}
+	}
+}
+
+
+NewtonErr
+CPackageEventHandler::searchPackageList(ArrayIndex * outIndex, ULong inId)
 {
 	NewtonErr err = kOSErrNoSuchPackage;
 	ArrayIndex index;
-	CArrayIterator iter(f14);
-	for (index = iter.firstIndex(); iter.more(); index = iter.nextIndex())
-	{
-		if (((PackageInfo *)f14->elementPtrAt(index))->f00 == inArg2)
-		{
+	CArrayIterator iter(fPackageList);
+	for (index = iter.firstIndex(); iter.more(); index = iter.nextIndex()) {
+		if (((CPackageBlock *)fPackageList->elementPtrAt(index))->fId == inId) {
 			*outIndex = index;
 			err = noErr;
 			break;
@@ -328,11 +964,9 @@ CPackageEventHandler::searchPackageList(ArrayIndex * outIndex, UniChar * inName,
 {
 	NewtonErr err = kOSErrNoSuchPackage;
 	ArrayIndex index;
-	CArrayIterator iter(f14);
-	for (index = iter.firstIndex(); iter.more(); index = iter.nextIndex())
-	{
-		if (Ustrcmp(((PackageInfo *)f14->elementPtrAt(index))->f1C, inName) == 0)
-		{
+	CArrayIterator iter(fPackageList);
+	for (index = iter.firstIndex(); iter.more(); index = iter.nextIndex()) {
+		if (Ustrcmp(((CPackageBlock *)fPackageList->elementPtrAt(index))->fName, inName) == 0) {
 			*outIndex = index;
 			err = noErr;
 			break;
@@ -343,18 +977,15 @@ CPackageEventHandler::searchPackageList(ArrayIndex * outIndex, UniChar * inName,
 
 
 NewtonErr
-CPackageEventHandler::searchRegistry(ArrayIndex * outIndex, ULong * outArg2, ULong inArg3)
+CPackageEventHandler::searchRegistry(ArrayIndex * outIndex, ObjectId * outPkgId, ULong inPartType)
 {
-	NewtonErr err = kOSErrNoSuchPackage;
+	NewtonErr err = kOSErrPartTypeNotRegistered;
 	ArrayIndex index;
-	CArrayIterator iter(f18);
-	for (index = iter.firstIndex(); iter.more(); index = iter.nextIndex())
-	{
-		RegistryInfo * info = (RegistryInfo *)f18->safeElementPtrAt(index);
-		if (info != NULL
-		&&  info->f00 == inArg3)
-		{
-			*outArg2 = info->f04;
+	CArrayIterator iter(fRegistry);
+	for (index = iter.firstIndex(); iter.more(); index = iter.nextIndex()) {
+		RegistryInfo * info = (RegistryInfo *)fRegistry->safeElementPtrAt(index);
+		if (info != NULL && info->fType == inPartType) {
+			*outPkgId = info->f04;
 			*outIndex = index;
 			err = noErr;
 			break;
@@ -367,13 +998,13 @@ CPackageEventHandler::searchRegistry(ArrayIndex * outIndex, ULong * outArg2, ULo
 void
 CPackageEventHandler::setDefaultHeap(void)
 {
-	SetHeap(gPkgWorld->f78);
+	SetHeap(gPkgWorld->fDefaultHeap);
 }
 
 void
 CPackageEventHandler::setPersistentHeap(void)
 {
-	SetHeap(gPkgWorld->f74);
+	SetHeap(gPkgWorld->fPersistentHeap);
 }
 
 
@@ -386,87 +1017,25 @@ CPackageEventHandler::setPersistentHeap(void)
 NewtonErr
 cGetPackageBackupInfo(ArrayIndex index, UniChar * outName, size_t * outSize, ULong * outId, ULong * outVersion, SourceType * outSource, ArrayIndex * outIndex, ULong * outFlags, ULong * outTimestamp)
 {
-//	r5 r4 r2 r3 r10 r9 r6 r8 r7
 	NewtonErr err = noErr;
 	PartSource source;
-	CPkBackupEvent backupEvent(*outIndex, index, YES, source, *gPkgWorld->getMyPort(), *gPkgWorld->getMyPort());
-	CUPort pmPort(PackageManagerPortId());
+	CPkBackupEvent backupEvent(*outIndex, index, true, source, *gPkgWorld->getMyPort(), *gPkgWorld->getMyPort());
+	CUPort pkgMgr(PackageManagerPortId());
 	size_t replySize;
 	gPkgWorld->releaseMutex();
-	err = pmPort.sendRPC(&replySize, &backupEvent, sizeof(CPkBackupEvent), &backupEvent, sizeof(CPkBackupEvent));
+	err = pkgMgr.sendRPC(&replySize, &backupEvent, sizeof(CPkBackupEvent), &backupEvent, sizeof(CPkBackupEvent));
 	gPkgWorld->acquireMutex();
-/* this is confusing
-	*outIndex = sp10;	//backupEvent.f0C
-	*outSize = sp0C;	//backupEvent.f10
-	*outId = sp2C;	//backupEvent.f10
-	*outVersion = sp30;	//backupEvent.f14
-
-	*outSource = backupEvent.f18;
-*/	*outFlags = backupEvent.f20;
-	*outTimestamp = backupEvent.f24;
-	Ustrncpy(outName, backupEvent.f28, kMaxPackageNameSize-1);
-	outName[kMaxPackageNameSize-1] = 0;		// original does not use -1 -- buffer overrun, surely?
+	*outIndex = backupEvent.fIndex;
+	*outSize = backupEvent.fSize;
+	*outId = backupEvent.fId;
+	*outVersion = backupEvent.fVersion;
+	*outSource = backupEvent.fSrcType;
+	*outFlags = backupEvent.fFlags;
+	*outTimestamp = backupEvent.fDate;
+	Ustrncpy(outName, backupEvent.fName, kMaxPackageNameSize);
+//	outName[kMaxPackageNameSize-1] = 0;		// original does not use -1 -- buffer overrun, surely? but redundant anyway b/c Ustrncpy adds the nul terminator
 	return err;
 }
-
-
-/* -----------------------------------------------------------------------------
-	Install package.
------------------------------------------------------------------------------ */
-
-NewtonErr
-InstallPackage(char * inArg1, SourceType inSource, PSSId * outPkgId, bool * outArg4, bool * outArg5, CStore * inStore, ObjectId inId)
-{
-#if 0
-//r8 r1 r2 r4 r9 r7 r6 r10
-	NewtonErr err;
-//sp-08
-	if ((err = gPkgWorld->fork(NULL)) == noErr)
-	{
-//sp-98
-		PartSource sp98;
-		sp98.mem.buffer = (VAddr)inArg1;
-		CPkBeginLoadEvent loadEvent(inSource, sp98, *gPkgWorld->getMyPort(), *gPkgWorld->getMyPort(), YES);			//sp10
-
-		CUMonitor	um(GetROMDomainManagerId());	//sp08
-		CUPort pmPort(PackageManagerPortId());		//sp00
-		size_t replySize;
-
-		gPkgWorld->releaseMutex();
-		gPackageSemaphore->acquire(kWaitOnBlock);
-		
-		err = pmPort.sendRPC(&replySize, &loadEvent, sizeof(CPkBeginLoadEvent), &loadEvent, sizeof(CPkBeginLoadEvent));
-		if (err == noErr
-		&&  inStore != NULL
-		&& !loadEvent.f81)
-		{
-			RDMParams	parms;
-			parms.fStore = inStore;
-			parms.fObjId = inId;
-			parms.fPkgId = sp10.f2C;
-			err = um.invokeRoutine(kRDM_4, &parms);	// set package id
-		}
-
-		gPackageSemaphore->release();
-		gPkgWorld->acquireMutex();
-
-		*outPkgId = loadEvent.f81 ? 0 : sp10.f2C;
-		if (outArg4)
-			*outArg4 = loadEvent.f81;
-		if (outArg5)
-			*outArg5 = loadEvent.f80;
-	}
-	return err;
-
-#else
-	return noErr;
-#endif
-}
-
-/* no need for this if we use default arguments
-NewtonErr
-InstallPackage(char*, SourceType, ULong*, bool*, bool*)
-{ return noErr; }*/
 
 
 /* -----------------------------------------------------------------------------
@@ -496,12 +1065,12 @@ CPMIterator::init(void)
 void
 CPMIterator::nextPackage(void)
 {
-	if (more())
-	{
+	if (more()) {
 		fIndex++;
 		NewtonErr err = cGetPackageBackupInfo(kIndexNotFound, fPkgName, &fPkgSize, &fPkgId, &fPkgVersion, &fSource, &fIndex, &fPkgFlags, &fTimestamp);
-		if (err)
+		if (err) {
 			fIndex = kIndexNotFound;
+		}
 	}
 }
 
@@ -523,6 +1092,7 @@ CPMIterator::done(void)
 
 CPrivatePackageIterator::CPrivatePackageIterator()
 {
+	fPackage = NULL;
 	fMem = NULL;
 	fPkgDir = NULL;
 	fPkgParts = NULL;
@@ -542,9 +1112,13 @@ CPrivatePackageIterator::~CPrivatePackageIterator()
 /* -----------------------------------------------------------------------------
 	Initialize.
 	Set up pointers to salient areas in the package.
-	-- directory -- part entries -- directory data
-	-- relocation header -- relocation entries (optional)
-	-- part data
+		directory
+			package header
+			parts directory
+			directory data
+		relocation header
+			relocation entries (optional)
+		part data
 	Args:		inPackage		pointer to package in memory
 	Return:	error code
 ----------------------------------------------------------------------------- */
@@ -553,12 +1127,19 @@ NewtonErr
 CPrivatePackageIterator::init(void * inPackage)
 {
 	NewtonErr err;
-	fMem = (Ptr) inPackage;
+#if 1
+	fPackage = new NewtonPackage(inPackage);
+	fPkgDir = fPackage->directory();
+	fMem = (Ptr)fPkgDir;		// watch this
+#else
+	fMem = (Ptr)inPackage;
 	fPkgDir = (PackageDirectory *)inPackage;
+#endif
+
 	XTRY
 	{
+		XFAILIF(fMem == NULL, err = kOSErrBadPackage;)
 		XFAIL(err = checkHeader())
-
 		ULong partEntryInfoSize = fPkgDir->numParts * sizeof(PartEntry);
 		ULong directoryInfoSize = fPkgDir->directorySize - (sizeof(PackageDirectory) + partEntryInfoSize);
 		XFAIL(err = computeSizeOfEntriesAndData(partEntryInfoSize, directoryInfoSize))
@@ -609,16 +1190,13 @@ NewtonErr
 CPrivatePackageIterator::setupRelocationData(ULong inOtherInfoSize, ULong * outRelocationInfoSize)
 {
 	NewtonErr err = noErr;
-	if ((fPkgDir->flags & kRelocationFlag) != 0)
-	{
+	if (FLAGTEST(fPkgDir->flags, kRelocationFlag)) {
 		fReloc = (RelocationHeader *)(fMem + sizeof(PackageDirectory) + inOtherInfoSize);
 		if (fReloc->reserved == 0)
 			*outRelocationInfoSize = fReloc->relocationSize;
 		else
 			err = kOSErrBadPackage;
-	}
-	else
-	{
+	} else {
 		// no relocation required
 		fReloc = NULL;
 		fRelocInfo = NULL;
@@ -637,8 +1215,9 @@ CPrivatePackageIterator::setupRelocationData(ULong inOtherInfoSize, ULong * outR
 NewtonErr
 CPrivatePackageIterator::getRelocationChunkInfo(void)
 {
-	if (fReloc)
+	if (fReloc) {
 		fRelocInfo = (ULong *)fReloc + 1;
+	}
 	return noErr;
 }
 
@@ -653,6 +1232,7 @@ CPrivatePackageIterator::getRelocationChunkInfo(void)
 void
 CPrivatePackageIterator::disposeDirectory(void)
 {
+	delete fPackage, fPackage = NULL;
 	fMem = NULL;
 	fPkgParts = NULL;
 	fPkgData = NULL;
@@ -676,18 +1256,18 @@ CPrivatePackageIterator::checkHeader(void)
 	NewtonErr err = noErr;
 	ArrayIndex i;
 	// first 7 chars must be "package"
-	for (i = 0; i < 7 && !err; ++i)
-	{
-		if (fPkgDir->signature[i] != kPackageMagicNumber[i])
+	for (i = 0; i < 7 && !err; ++i) {
+		if (fPkgDir->signature[i] != kPackageMagicNumber[i]) {
 			err = kOSErrBadPackage;
+		}
 	}
-	if (!err)
-	{
+	if (err == noErr) {
 		// next char must be 0 or 1
-		for (err = kOSErrBadPackage; i < 7+2 && err; ++i)
-		{
-			if (fPkgDir->signature[7] == kPackageMagicNumber[i])
+		err = kOSErrBadPackage;
+		for ( ; i < 7+2 && err; ++i) {
+			if (fPkgDir->signature[7] == kPackageMagicNumber[i]) {
 				err = noErr;
+			}
 		}
 	}
 	return err;
@@ -708,18 +1288,17 @@ CPrivatePackageIterator::verifyPackage(void)
 	XTRY
 	{
 		// package name must lie within the greater directory
-		XFAIL(fPkgDir->name.offset < fPkgDir->directorySize)
+		XFAIL(fPkgDir->name.offset > fPkgDir->directorySize)
 		// copyright text (if any) must lie within the greater directory
-		XFAIL(fPkgDir->copyright.length > 0 && fPkgDir->copyright.offset < fPkgDir->directorySize)
-		XFAIL((fPkgDir->flags & 0xF000) != 0x1000)
+		XFAIL(fPkgDir->copyright.length > 0 && fPkgDir->copyright.offset > fPkgDir->directorySize)
+//		XFAIL((fPkgDir->flags & 0xF000) != 0x1000)	// huh? cf. processorTypeOfPart()
 		// verify all the part entries
 		PartEntry * part = fPkgParts;
-		for (ArrayIndex i = 0; i < numberOfParts(); ++i, ++part)
-		{
+		for (ArrayIndex i = 0; i < numberOfParts(); ++i, ++part) {
 			// if compressed, compressor name must lie within the greater directpry
-			XFAIL((part->flags & kCompressedFlag) != 0 && part->compressor.offset < fPkgDir->directorySize)
+			XFAIL(FLAGTEST(part->flags, kCompressedFlag) && part->compressor.offset > fPkgDir->directorySize)
 			// info (if any) must lie within the greater directpry
-			XFAIL(part->info.length > 0 && part->info.offset < fPkgDir->directorySize)
+			XFAIL(part->info.length > 0 && part->info.offset > fPkgDir->directorySize)
 			// the part itself must lie within the package but outside the greater directpry
 			XFAIL(part->offset > fPkgDir->size - fPkgDir->directorySize)
 		}
@@ -780,8 +1359,7 @@ CPrivatePackageIterator::numberOfParts(void)
 void
 CPrivatePackageIterator::getPartInfo(ArrayIndex inPartIndex, PartInfo * const outInfo)
 {
-	if (inPartIndex < fPkgDir->numParts)
-	{
+	if (inPartIndex < fPkgDir->numParts) {
 		getPartInfoDesc(inPartIndex, outInfo);
 		outInfo->data.address = fMem + getPartDataOffset(inPartIndex);
 	}
@@ -800,11 +1378,11 @@ CPrivatePackageIterator::getPartInfoDesc(ArrayIndex inPartIndex, PartInfo * cons
 {
 	PartEntry * part = fPkgParts+inPartIndex;
 
-	outInfo->autoLoad = (part->flags & kAutoLoadPartFlag) != 0;
-	outInfo->autoRemove = (part->flags & kAutoRemovePartFlag) != 0;
-	outInfo->compressed = (part->flags & kCompressedFlag) != 0;
-	outInfo->notify = (part->flags & kNotifyFlag) != 0;
-	outInfo->autoCopy = (part->flags & kAutoCopyFlag) != 0;
+	outInfo->autoLoad = FLAGTEST(part->flags, kAutoLoadPartFlag);
+	outInfo->autoRemove = FLAGTEST(part->flags, kAutoRemovePartFlag);
+	outInfo->compressed = FLAGTEST(part->flags, kCompressedFlag);
+	outInfo->notify = FLAGTEST(part->flags, kNotifyFlag);
+	outInfo->autoCopy = FLAGTEST(part->flags, kAutoCopyFlag);
 	outInfo->kind = (part->flags & 0x0F);
 	outInfo->type = part->type;
 	outInfo->size = part->size;
@@ -826,8 +1404,7 @@ ULong
 CPrivatePackageIterator::getPartDataOffset(ArrayIndex inPartIndex)
 {
 	if (inPartIndex < fPkgDir->numParts
-	&&  fPkgParts != NULL)
-	{
+	&&  fPkgParts != NULL) {
 		PartEntry * part = fPkgParts+inPartIndex;
 		return fTotalInfoSize + part->offset;
 	}
@@ -845,7 +1422,7 @@ CPrivatePackageIterator::getPartDataOffset(ArrayIndex inPartIndex)
 
 CPackageIterator::CPackageIterator(CPipe * inPipe)
 {
-	fIsStreamSource = YES;
+	fIsStreamSource = true;
 	fPrivateIter.fMem = NULL;
 	fPipe = inPipe;
 }
@@ -853,7 +1430,7 @@ CPackageIterator::CPackageIterator(CPipe * inPipe)
 
 CPackageIterator::CPackageIterator(void * inData)
 {
-	fIsStreamSource = NO;
+	fIsStreamSource = false;
 	fPrivateIter.fMem = (Ptr)inData;
 	fPipe = NULL;
 }
@@ -870,11 +1447,11 @@ CPackageIterator::init(void)
 	NewtonErr err = noErr;
 	newton_try
 	{
-		if (fIsStreamSource)
-		{
+		if (fIsStreamSource) {
 			XTRY
 			{
-				XFAILNOT(fPrivateIter.fPkgDir = new PackageDirectory, err = kOSErrNoMemory;)
+				fPrivateIter.fPkgDir = new PackageDirectory;
+				XFAILIF(fPrivateIter.fPkgDir == NULL, err = kOSErrNoMemory;)
 				newton_try
 				{
 					bool isEOF;
@@ -883,7 +1460,7 @@ CPackageIterator::init(void)
 				}
 				newton_catch(exPipe)
 				{
-					err = (NewtonErr)(unsigned long)CurrentException()->data;
+					err = (NewtonErr)(long)CurrentException()->data;
 				}
 				end_try;
 				XFAIL(err)
@@ -905,7 +1482,7 @@ CPackageIterator::init(void)
 	}
 	newton_catch(exRootException)	// would not newton_catch_all be better?
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()->data;
+		err = (NewtonErr)(long)CurrentException()->data;
 	}
 	end_try;
 	if (err)
@@ -921,8 +1498,7 @@ NewtonErr
 CPackageIterator::computeSizeOfEntriesAndData(ULong& inPartEntryInfoSize, ULong& inDirectoryInfoSize)
 {
 	NewtonErr err = noErr;
-	if (fIsStreamSource)
-	{
+	if (fIsStreamSource) {
 		XTRY
 		{
 			XFAILNOT(fPrivateIter.fPkgParts = (PartEntry *)NewPtr(inPartEntryInfoSize), err = kOSErrNoMemory;)
@@ -934,7 +1510,7 @@ CPackageIterator::computeSizeOfEntriesAndData(ULong& inPartEntryInfoSize, ULong&
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;
+				err = (NewtonErr)(long)CurrentException()->data;
 			}
 			end_try;
 			XFAIL(err)
@@ -947,14 +1523,14 @@ CPackageIterator::computeSizeOfEntriesAndData(ULong& inPartEntryInfoSize, ULong&
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;
+				err = (NewtonErr)(long)CurrentException()->data;
 			}
 			end_try;
 		}
 		XENDTRY;
-	}
-	else
+	} else {
 		fPrivateIter.computeSizeOfEntriesAndData(inPartEntryInfoSize, inDirectoryInfoSize);
+	}
 	return err;
 }
 
@@ -962,8 +1538,7 @@ NewtonErr
 CPackageIterator::setupRelocationData(ULong inOtherInfoSize, ULong * outRelocationInfoSize)
 {
 	NewtonErr err = noErr;
-	if ((fPrivateIter.fPkgDir->flags & kRelocationFlag) != 0)
-	{
+	if ((fPrivateIter.fPkgDir->flags & kRelocationFlag) != 0) {
 		if (fIsStreamSource)
 		{
 			XTRY
@@ -977,19 +1552,17 @@ CPackageIterator::setupRelocationData(ULong inOtherInfoSize, ULong * outRelocati
 				}
 				newton_catch(exPipe)
 				{
-					err = (NewtonErr)(unsigned long)CurrentException()->data;
+					err = (NewtonErr)(long)CurrentException()->data;
 				}
 				end_try;
 				XFAILNOT(fPrivateIter.fReloc->reserved == 0, *outRelocationInfoSize = 0; err = kOSErrBadPackage;)
 				*outRelocationInfoSize = fPrivateIter.fReloc->relocationSize;
 			}
 			XENDTRY;
-		}
-		else
+		} else {
 			fPrivateIter.setupRelocationData(inOtherInfoSize, outRelocationInfoSize);
-	}
-	else
-	{
+		}
+	} else {
 		fPrivateIter.fReloc = NULL;
 		fPrivateIter.fRelocInfo = NULL;
 		*outRelocationInfoSize = 0;
@@ -1001,10 +1574,8 @@ NewtonErr
 CPackageIterator::getRelocationChunkInfo(void)
 {
 	NewtonErr err = noErr;
-	if (fPrivateIter.fReloc)
-	{
-		if (fIsStreamSource)
-		{
+	if (fPrivateIter.fReloc) {
+		if (fIsStreamSource) {
 			XTRY
 			{
 				XFAILNOT(fPrivateIter.fRelocInfo = (ULong *)NewPtr(fPrivateIter.fReloc->relocationSize - sizeof(RelocationHeader)), err = kOSErrNoMemory;)
@@ -1016,14 +1587,14 @@ CPackageIterator::getRelocationChunkInfo(void)
 				}
 				newton_catch(exPipe)
 				{
-					err = (NewtonErr)(unsigned long)CurrentException()->data;
+					err = (NewtonErr)(long)CurrentException()->data;
 				}
 				end_try;
 			}
 			XENDTRY;
-		}
-		else
+		} else {
 			fPrivateIter.getRelocationChunkInfo();
+		}
 	}
 	return err;
 }
@@ -1031,8 +1602,7 @@ CPackageIterator::getRelocationChunkInfo(void)
 void
 CPackageIterator::disposeDirectory(void)
 {
-	if (fIsStreamSource)
-	{
+	if (fIsStreamSource) {
 		if (fPrivateIter.fPkgDir)
 			delete fPrivateIter.fPkgDir;
 		if (fPrivateIter.fPkgParts)
@@ -1106,13 +1676,13 @@ CPackageIterator::packageSize(void)
 bool
 CPackageIterator::forDispatchOnly(void)
 {
-	return fPrivateIter.fPkgDir ? (fPrivateIter.fPkgDir->flags & kAutoRemoveFlag) != 0 : NO;
+	return fPrivateIter.fPkgDir ? (fPrivateIter.fPkgDir->flags & kAutoRemoveFlag) != 0 : false;
 }
 
 bool
 CPackageIterator::copyProtected(void)
 {
-	return fPrivateIter.fPkgDir ? (fPrivateIter.fPkgDir->flags & kCopyProtectFlag) != 0 : NO;
+	return fPrivateIter.fPkgDir ? (fPrivateIter.fPkgDir->flags & kCopyProtectFlag) != 0 : false;
 }
 
 UniChar *
@@ -1162,10 +1732,11 @@ CPackageIterator::getPartInfo(ArrayIndex inPartIndex, PartInfo * const outInfo)
 	if (inPartIndex < fPrivateIter.fPkgDir->numParts)
 	{
 		fPrivateIter.getPartInfoDesc(inPartIndex, outInfo);
-		if (fIsStreamSource)
+		if (fIsStreamSource) {
 			outInfo->data.streamOffset = getPartDataOffset(inPartIndex);
-		else
+		} else {
 			outInfo->data.address = fPrivateIter.fMem + getPartDataOffset(inPartIndex);
+		}
 	}
 }
 
@@ -1190,15 +1761,21 @@ CPackageIterator::store(CStore * inStore, PSSId inId, CCallbackCompressor * inCo
 /*------------------------------------------------------------------------------
 	P l a i n   C   I n t e r f a c e
 ------------------------------------------------------------------------------*/
+#include "ROMResources.h"
+#include "LargeObjects.h"
+#include "EndpointPipe.h"
+
+extern Ref	ToObject(CStore * inStore);
+
 extern "C" {
 Ref	FGetPackages(RefArg inRcvr);
 }
 
-#if 0
+
 Ref
 IteratorToPackageFrame(CPMIterator * inIter)
 {
-	RefVar pkgFrame(Clone(RScanonicalPMIteratorPackageFrame));
+	RefVar pkgFrame(Clone(RA(canonicalPMIteratorPackageFrame)));
 
 	SetFrameSlot(pkgFrame, SYMA(id), MAKEINT(inIter->packageId()));
 	SetFrameSlot(pkgFrame, SYMA(size), MAKEINT(inIter->packageSize()));
@@ -1209,10 +1786,9 @@ IteratorToPackageFrame(CPMIterator * inIter)
 
 	PSSId storeId;
 	CStore * storeObj;
-	if (IdToStore(inIter->packageId(), &storeObj, &storeId) == noErr)
-	{
+	if (IdToStore(inIter->packageId(), &storeObj, &storeId) == noErr) {
 		SetFrameSlot(pkgFrame, SYMA(store), ToObject(storeObj));
-		SetFrameSlot(pkgFrame, SYMA(pssId), MAKEINT(storeId));
+		SetFrameSlot(pkgFrame, SYMA(pssid), MAKEINT(storeId));
 	}
 
 	return pkgFrame;
@@ -1227,24 +1803,12 @@ FGetPackages(RefArg inRcvr)
 
 	RefVar pkgs(MakeArray(0));
 	CPMIterator iter;
-	for (iter.init(); iter.more(); iter.nextPackage())
+	for (iter.init(); iter.more(); iter.nextPackage()) {
 		AddArraySlot(pkgs, IteratorToPackageFrame(&iter));
+	}
 	iter.done();
 	return pkgs;
 }
-
-
-#pragma mark -
-/* -----------------------------------------------------------------------------
-	C P a c k a g e B l o c k
------------------------------------------------------------------------------ */
-
-class CPackageBlock
-{
-public:
-
-	NewtonErr	init(ULong, ULong, ULong, SourceType, ULong, UShort*, UShort*, ULong, ULong);
-};
 
 
 /* -----------------------------------------------------------------------------
@@ -1256,7 +1820,7 @@ class CPackageLoader
 public:
 					CPackageLoader(CEndpointPipe * inSource, SourceType inType);
 					CPackageLoader(CPipe * inSource, SourceType inType);
-					CPackageLoader(char * inSource, SourceType inType);
+					CPackageLoader(Ptr inSource, SourceType inType);
 					~CPackageLoader();
 
 	void			reset(void);
@@ -1264,13 +1828,13 @@ public:
 	void			done(bool * outArg1, bool * outArg2);
 
 private:
-	Ptr			f00;
-	CPipe *		f04;
-	SourceType	f08;
-	bool			f10;
-	CRingBuffer *	f14;
-	int			f18;
-	CPackageLoaderEventHandler *	f1C;
+	Ptr			fMem;			//+00
+	CPipe *		fPipe;		//+04
+	SourceType	fSrcType;	//+08
+	bool			fIsEndpoint;	//+10
+	CRingBuffer *	fBuffer;	//+14
+	ULong			fPkgId;		//+18
+	CPackageLoaderEventHandler *	fEvtHandler;	//+1C
 	bool			f20;
 	bool			f21;
 //size+24
@@ -1280,31 +1844,31 @@ private:
 // construct to load package over the wire
 CPackageLoader::CPackageLoader(CEndpointPipe * inSource, SourceType inType)
 {
-	f08 = inType;
-	f04 = inSource;
-	f10 = YES;
-	f1C = NULL;
-	f14 = NULL;
+	fSrcType = inType;
+	fPipe = (CPipe *)inSource;
+	fIsEndpoint = true;
+	fEvtHandler = NULL;
+	fBuffer = NULL;
 }
 
 // construct to load package from stream
 CPackageLoader::CPackageLoader(CPipe * inSource, SourceType inType)
 {
-	f08 = inType;
-	f04 = inSource;
-	f10 = NO;
-	f1C = NULL;
-	f14 = NULL;
+	fSrcType = inType;
+	fPipe = inSource;
+	fIsEndpoint = false;
+	fEvtHandler = NULL;
+	fBuffer = NULL;
 }
 
 // construct to load package from memory
-CPackageLoader::CPackageLoader(char * inSource, SourceType inType)
+CPackageLoader::CPackageLoader(Ptr inSource, SourceType inType)
 {
-	f08 = inType;
-	f00 = inSource;
-	f10 = NO;
-	f1C = NULL;
-	f14 = NULL;
+	fSrcType = inType;
+	fMem = inSource;
+	fIsEndpoint = false;
+	fEvtHandler = NULL;
+	fBuffer = NULL;
 }
 
 CPackageLoader::~CPackageLoader()
@@ -1322,51 +1886,57 @@ CPackageLoader::load(void)
 	gPkgWorld->releaseMutex();
 	gPackageSemaphore->acquire(kWaitOnBlock);
 	gPkgWorld->acquireMutex();
-	f20 = NO;
-	f21 = NO;
+	f20 = false;
+	f21 = false;
 	XTRY
 	{
-		f1C = new CPackageLoaderEventHandler;
-		XFAIL(err = f1C->init(kPackageEventId))
-		if (IsStream(f08))
-		{
-			XFAILNOT(f14 = new CRingBuffer, err = kOSErrNoMemory;)
-			XFAIL(err = f14->init(256))
-			f14->makeShared(0);
-			CRingBuffer * sp08 = f14;
-			CPipe * sp00 = f04;
-			if (f10)
-			{
+		fEvtHandler = new CPackageLoaderEventHandler;
+		XFAIL(err = fEvtHandler->init(kPackageEventId))
+		if (IsStream(fSrcType)) {
+			fBuffer = new CRingBuffer;
+			XFAILIF(fBuffer == NULL, err = kOSErrNoMemory;)
+			XFAIL(err = fBuffer->init(256))
+			fBuffer->makeShared(0);
+#if 0
+			PipeInfo pipe;	// sp00 size+10
+			pipe.f00 = fPipe;
+			pipe.f08 = fBuffer;
+			if (fIsEndpoint) {
 				newton_try
 				{
-					((CEndpointPipe *)f04)->removeFromAppWorld();
+					((CEndpointPipe *)fPipe)->removeFromAppWorld();
 				}
 				newton_catch(exPipe)
 				{
-					err = (NewtonErr)(unsigned long)CurrentException()data;
+					err = (NewtonErr)(long)CurrentException()->data;
 				}
 				end_try;
 				XFAIL(err)
 			}
 			//sp-88
-			CPipeApp sp00(sp88, f10);
-			XFAIL(err = sp00.init('pipe', YES, kSpawnedTaskStackSize))
-			ULong thing, spec;
+			CPipeApp loader(pipe, fIsEndpoint);	//sp00
+			XFAIL(err = loader.init('pipe', true, kSpawnedTaskStackSize))
+			//sp-18
+			OpaqueRef thing, spec;
 			CUNameServer ns;
 			XFAIL(err = ns.lookup("pipe", kUPort, &thing, &spec))
-			spB0 = f14->fSharedMem;	//ObjectId
-			spB4 = thing;
+//			sp10 = fBuffer->fSharedMem;	// don’t believe these are used
+//			sp14 = thing;
+#endif
 		}
-		PartSource sp84 = fPipe;	// huh?
-		CPkBeginLoadEvent loadEvent(f08, sp84, gPkgWorld->getMyPort(), gPkgWorld->getMyPort(), YES);
-		CUPort pmPort(PackageManagerPortId());
+		PartSource source;
+		source.mem.buffer = fMem;
+		CPkBeginLoadEvent loadEvent(fSrcType, source, *gPkgWorld->getMyPort(), *gPkgWorld->getMyPort(), true);
+		CUPort pkgMgr(PackageManagerPortId());
 		size_t replySize;
 		gPkgWorld->releaseMutex();
-		err = pmPort.sendRPC(&replySize, &loadEvent, sizeof(CPkBeginLoadEvent), &loadEvent, sizeof(CPkBeginLoadEvent));
+		err = pkgMgr.sendRPC(&replySize, &loadEvent, sizeof(CPkBeginLoadEvent), &loadEvent, sizeof(CPkBeginLoadEvent));
 		gPkgWorld->acquireMutex();
+		if (err == noErr) {
+			err = loadEvent.fEventErr;
+		}
+		fPkgId = loadEvent.fUniqueId;
 		XFAIL(err)
-		XFAIL(err = loadEvent.fEventErr)
-		f18 = sp2C;
 		f20 = loadEvent.f81;
 		f21 = loadEvent.f80;
 	}
@@ -1381,25 +1951,50 @@ CPackageLoader::done(bool * outArg1, bool * outArg2)
 		*outArg1 = f20;
 	if (outArg2)
 		*outArg2 = f21;
-	if (IsStream(f08) && f10)
-	{
+	if (IsStream(fSrcType) && fIsEndpoint) {
 		NewtonErr err = noErr;
 		newton_try
 		{
-			((CEndpointPipe *)f04)->addToAppWorld();
+			((CEndpointPipe *)fPipe)->addToAppWorld();
 		}
 		newton_catch(exPipe)
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()data;
+			err = (NewtonErr)(long)CurrentException()->data;
 		}
 		end_try;
-		if (f1C)
-			delete f1C, f1C = NULL;
-		if (f14)
-			delete f14, f14 = NULL;
+		if (fEvtHandler)
+			delete fEvtHandler, fEvtHandler = NULL;
+		if (fBuffer)
+			delete fBuffer, fBuffer = NULL;
 		gPackageSemaphore->release();
 	}
 }
 
-#endif
 
+#pragma mark -
+/* -----------------------------------------------------------------------------
+	C P a c k a g e L o a d e r E v e n t H a n d l e r
+	The handler for events passed to the Package Loader.
+----------------------------------------------------------------------------- */
+#include "AppWorld.h"
+
+bool
+CPackageLoaderEventHandler::testEvent(CEvent * inEvent)
+{
+	CPkBaseEvent * evt = (CPkBaseEvent *)inEvent;
+	return evt->fEventCode == kBeginLoadPkgEventId || evt->fEventCode == kRemovePkgEventId || evt->fEventCode == kBackupPkgEventId;
+}
+
+
+void
+CPackageLoaderEventHandler::eventHandlerProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
+{
+	gAppWorld->eventTerminateLoop();
+}
+
+
+void
+CPackageLoaderEventHandler::eventCompletionProc(CUMsgToken * inToken, size_t * inSize, CEvent * inEvent)
+{
+	gAppWorld->eventTerminateLoop();
+}

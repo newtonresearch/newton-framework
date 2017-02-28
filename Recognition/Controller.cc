@@ -13,7 +13,9 @@
 #include "OSErrors.h"
 
 extern CStrokeDomain *	gStrokeDomain;
-extern bool		CheckStrokeQueueEvents(ULong inStartTime, ULong inDuration);
+extern bool	CheckStrokeQueueEvents(ULong inStartTime, ULong inDuration);
+extern void StrokeUpdate(FRect * ioBounds);
+extern void NukeEgregiousStrokes(FRect * ioBounds);
 
 
 struct Something
@@ -67,10 +69,10 @@ InitControllerState(CController * inController)
 CController *
 CController::make(void)
 {
-	CController * controller;
+	CController * controller = new CController;
 	XTRY
 	{
-		XFAIL((controller = new CController) == NULL)
+		XFAIL(controller == NULL)
 		XFAILIF(controller->iController() != noErr, controller->release(); controller = NULL;)	// original doesn’t bother
 	}
 	XENDTRY;
@@ -86,13 +88,13 @@ CController::iController(void)
 	f1C = 0;
 	fHitTest = NULL;
 	fExpireStroke = NULL;
-	f40 = NO;
+	f40 = false;
 	f44 = 0;
 	f48 = 0;
 	f4C = 0;
 	f50 = 0;
-	f54 = 0;
-	f58 = 0;
+	fSaveHitTest = NULL;
+	fSaveExpireStroke = NULL;
 	f5C = 0;
 	return noErr;
 }
@@ -551,12 +553,12 @@ CController::nextIdleTime(void)
 		if (count > 0)
 		{
 			// but there are still pieces in the pool -- they MUST be still in progress
-			bool isStillInProgress = NO;
+			bool isStillInProgress = false;
 			for (ArrayIndex i = 0; i < count; ++i)
 			{
 				if (ClickInProgress(fPiecePool->getUnit(i)))
 				{
-					isStillInProgress = YES;
+					isStillInProgress = true;
 					break;
 				}
 			}
@@ -573,7 +575,7 @@ CController::nextIdleTime(void)
 		&&  f28 == kDistantFuture
 		&&  f20 == kDistantFuture
 		&&  f24 == kDistantFuture)
-			fArbiter->f20 = YES;
+			fArbiter->f20 = true;
 		if (fArbiter->f20)
 		{
 			gController->f28 = GetTicks();
@@ -598,7 +600,7 @@ CController::nextIdleTime(void)
 /*------------------------------------------------------------------------------
 	Determine whether we’re busy. What does ‘busy’ mean, exactly?
 	Args:		--
-	Return:	YES => we’re busy
+	Return:	true => we’re busy
 ------------------------------------------------------------------------------*/
 
 bool
@@ -618,7 +620,7 @@ CController::classifyInArea(CRecUnit * inUnit, CRecArea * inArea)
 
 	CRecDomain * domain = inUnit->getDomain();
 
-	Ptr info = inArea->getInfoFor(inUnit->getType(), NO);
+	Ptr info = inArea->getInfoFor(inUnit->getType(), false);
 	if (info != NULL)						// && info != domain->fParameters) in the original but redundant
 	{
 		domain->setParameters(info);
@@ -662,7 +664,7 @@ CController::cleanGroupQ(CRecUnit * inUnit)
 void
 CController::cleanUp(void)
 {
-printf("CController::cleanUp()\n");
+//printf("CController::cleanUp()\n");
 	fArbiter->cleanUp();
 	fPiecePool->compact();
 	fUnitPool->compact();
@@ -681,7 +683,7 @@ CController::registerArbiter(CArbiter * inArbiter)
 void
 CController::doArbitration(void)
 {
-printf("CController::doArbitration()\n");
+//printf("CController::doArbitration()\n");
 	fArbiter->doArbitration();
 	f28 = kDistantFuture;
 }
@@ -704,8 +706,8 @@ CController::deleteUnit(ArrayIndex index)
 int
 CController::doClassify(void)
 {
-printf("CController::doClassify()\n");
-	int isNoArea = NO;
+//printf("CController::doClassify()\n");
+	int isNoArea = false;
 	f20 = kDistantFuture;
 	bool r10 = testFlags(0x08000000);
 
@@ -726,7 +728,7 @@ unit->dumpObject((char *)" examining ");
 					{
 						CRecArea * area = unit->getArea();
 						XFAIL(isNoArea = (area == NULL))
-						Ptr r9 = area->getInfoFor(unit->getType(), NO);
+						Ptr r9 = area->getInfoFor(unit->getType(), false);
 						if (r9 != NULL && r9 != domain->fParameters)
 						{
 							domain->setParameters(r9);
@@ -749,7 +751,7 @@ unit->dumpObject((char *)" examining ");
 				{
 					CRecArea * area = unit->getArea();
 					XFAIL(isNoArea = (area == NULL))
-					Ptr r9 = area->getInfoFor(unit->getType(), NO);
+					Ptr r9 = area->getInfoFor(unit->getType(), false);
 					if (r9 != NULL && r9 != domain->fParameters)
 					{
 						domain->setParameters(r9);
@@ -794,7 +796,7 @@ HandleAreaSwitched(CRecDomain * inDomain, Ptr inParameters)
 		CSIUnit * unit = *unitPtr;
 		if (unit->getType() == domainType  &&  unit->getDomain() == inDomain
 		&&  unit->testFlags(0x10000000)  &&  !unit->testFlags(0x48000000)
-		&&  unit->getArea()->getInfoFor(domainType, NO) != inParameters)
+		&&  unit->getArea()->getInfoFor(domainType, false) != inParameters)
 		{
 			unit->endSubs();
 		}
@@ -805,7 +807,7 @@ HandleAreaSwitched(CRecDomain * inDomain, Ptr inParameters)
 void
 CController::doGroup(void)
 {
-printf("CController::doGroup()\n");
+//printf("CController::doGroup()\n");
 	ArrayIndex groupIndex = 0;
 	ArrayIndex numOfStrokes = 0;
 	ArrayIndex numOfClicks = 0;
@@ -841,7 +843,7 @@ unit->dumpObject((char *)" examining ");
 			XFAIL(controllerError())
 		}
 	}
-printf("cutToIndex(%u)\n",groupIndex);
+//printf("cutToIndex(%u)\n",groupIndex);
 	f14->cutToIndex(groupIndex);
 	f24 = (numOfStrokes <= 1 && numOfClicks <= 1) ? kDistantFuture : GetTicks();
 }
@@ -949,7 +951,7 @@ failed:
 bool
 CController::noEventsWithinDelay(CRecUnit * inUnit, ULong inDelay)
 {
-	bool r5 = NO;
+	bool r5 = false;
 	if (inUnit != NULL)
 	{
 		CRecUnit * sp24 = NULL;
@@ -959,7 +961,7 @@ CController::noEventsWithinDelay(CRecUnit * inUnit, ULong inDelay)
 		ULong delayStart = inUnit->getEndTime();			// r8
 		ULong delayEnd = delayStart + delayDuration;		// r9
 		if (GetTicks() <= delayEnd)
-			return NO;
+			return false;
 
 		ArrayIterator iter;
 		CClickUnit **	clikUnitPtr = (CClickUnit **) fPiecePool->getIterator(&iter);
@@ -971,7 +973,7 @@ CController::noEventsWithinDelay(CRecUnit * inUnit, ULong inDelay)
 			{
 				if (unit->getType() != 'CLIK')
 				{
-					r5 = YES;
+					r5 = true;
 					sp24 = unit;
 					break;
 				}
@@ -991,7 +993,7 @@ CController::noEventsWithinDelay(CRecUnit * inUnit, ULong inDelay)
 				unitStartTime = unit->getStartTime();
 				if (unitStartTime > delayStart  &&  unitStartTime < delayEnd  &&  UnitsHitSameArea(inUnit, unit))
 				{
-					r5 = YES;
+					r5 = true;
 					sp24 = unit;
 					break;
 				}
@@ -1001,14 +1003,14 @@ CController::noEventsWithinDelay(CRecUnit * inUnit, ULong inDelay)
 		}
 
 		if (!r5  &&  CheckStrokeQueueEvents(delayStart, delayDuration))
-			r5 = YES;
+			r5 = true;
 
 		if (sp24 != NULL  ||  r7 != NULL)
 		{
 			CRecDomain * r6 = inUnit->getDomain();
 			if (r7 == NULL  ||  r6->preGroup(NULL) == 0  ||  r6->fPieceTypes->findType('STRK') == kIndexNotFound)
 			{
-				r5 = YES;
+				r5 = true;
 				inUnit->setDelay(255);
 			}
 			else
@@ -1030,7 +1032,7 @@ CController::noEventsWithinDelay(CRecUnit * inUnit, ULong inDelay)
 				}
 				else
 				{
-					r5 = YES;
+					r5 = true;
 					inUnit->setDelay(GetTicks() - delayStart + (50 - r1->count())*60/60);	// sic
 				}
 			}
@@ -1055,10 +1057,10 @@ CController::isExternallyArbitrated(CRecUnit * inUnit)
 		{
 			if (assoc->fType == reqType
 			&&  assoc->f14 == 2)
-				return YES;
+				return true;
 		}
 	}
-	return NO;
+	return false;
 }
 
 
@@ -1114,7 +1116,16 @@ CController::regroupUnclaimedSubs(CRecUnit * inUnit)
 
 
 void
-CController::updateInk(FRect * inBounds)
+CleanUpStrayInk(FRect * ioBounds)
+{
+	SetRectangleEmpty(ioBounds);
+	if (gController->piecePool()->count() == 0)
+		NukeEgregiousStrokes(ioBounds);
+}
+
+
+void
+CController::updateInk(FRect * ioBounds)
 {
 	FRect box;
 	for (ArrayIndex i = 0, count = fPiecePool->count(); i < count; ++i)
@@ -1126,10 +1137,13 @@ CController::updateInk(FRect * inBounds)
 		{
 			CRecStroke * stroke = ((CStrokeUnit *)unit)->getStroke();
 			if (!stroke->testFlags(0x08000000)
-			||  SectRectangle(&box, inBounds, &box))
+			||  SectRectangle(&box, ioBounds, &box))
 				stroke->draw();
 		}
 	}
+	CleanUpStrayInk(&box);
+	StrokeUpdate(ioBounds);
+	*ioBounds = box;
 }
 
 
@@ -1156,16 +1170,16 @@ CController::recognizeInArea(CArray * inArg1, CRecArea * inArea, ULong (*inFunc)
 {
 //	r4: r5 r6 r3 r0
 	//sp-04
-	f40 = YES;
+	f40 = true;
 	f44 = inArg1->count();
 	f48 = 0;
 	f4C = inArg4;
 /*
 	f5C = inFunc;
-	f54 = f38;
-	f38 = SpecialGetAreasHit(CRecUnit*, CArray*);
-	f58 = f3C;
-	f3C = SpecialExpireStroke(CRecUnit*);
+	fSaveHitTest = fHitTest;
+	fHitTest = SpecialGetAreasHit(CRecUnit*, CArray*);
+	fSaveExpireStroke = fExpireStroke;
+	fExpireStroke = SpecialExpireStroke(CRecUnit*);
 
 	for (ArrayIndex i = 0, count = inArea->fATypes->count(); i < count; ++i)
 	{
@@ -1181,7 +1195,7 @@ CController::recognizeInArea(CArray * inArg1, CRecArea * inArea, ULong (*inFunc)
 	if (lastRecTime < aSecondAgo  ||  lastRecTime > now)
 		lastRecTime = aSecondAgo;
 	ULong timePerStroke = (now - lastRecTime) / inArg1->count();
-	for (ArrayIndex i = 0; i < inArg1->count(); ++i)
+	for (ArrayIndex i = 0, count = inArg1->count(); i < count; ++i)
 	{
 		r0 = inArg1->getEntry(i);
 		CRecUnit * strkUnit = MakeStrokeUnit(r0->f00, NULL, 0);	// CRecStroke*
@@ -1194,12 +1208,11 @@ CController::recognizeInArea(CArray * inArg1, CRecArea * inArea, ULong (*inFunc)
 	setFlags(0x08000000);
 	do { idle(); } while (f48 < f44);
 	unsetFlags(0x08000000);
-
-	f38 = f54;
-	f3C = f58;
-	f50 = 0;
-	f40 = NO;
 */
+	fHitTest = fSaveHitTest;
+	fExpireStroke = fSaveExpireStroke;
+	f50 = NULL;
+	f40 = false;
 }
 
 
@@ -1213,7 +1226,7 @@ CController::signalMemoryError(void)
 	if (fArbiter->f21)
 	{
 		f28 = GetTicks();
-		fArbiter->f20 = YES;
+		fArbiter->f20 = true;
 	}
 }
 
@@ -1230,9 +1243,9 @@ CController::cleanupAfterError(void)
 {
 	CRecUnit * unitInProgress = getClickInProgress();
 	clearArbiter();
-	cleanUpUnits(NO);		// but keep units still in progress
+	cleanUpUnits(false);		// but keep units still in progress
 	expireAllStrokes();
-	cleanUpUnits(YES);	// now nuke all units
+	cleanUpUnits(true);	// now nuke all units
 	clearController();
 	unsetFlags(0xFFFFFFFF);
 	if (unitInProgress)

@@ -18,7 +18,7 @@ CCachedReadStore::CCachedReadStore()
 {
 	fDataPtr = NULL;
 	fAllocdBuf = NULL;
-	fIsCached = NO;
+	fIsCached = false;
 }
 
 
@@ -33,9 +33,9 @@ CCachedReadStore::CCachedReadStore(CStore * inStore, PSSId inId, size_t inSize)
 CCachedReadStore::~CCachedReadStore()
 {
 	if (fDataPtr != NULL && fDataPtr != fStaticBuf)
-		free(fDataPtr);
-	if (fAllocdBuf)
-		free(fAllocdBuf);
+		FreePtr(fDataPtr);
+	if (fAllocdBuf != NULL)
+		FreePtr(fAllocdBuf);
 }
 
 
@@ -53,13 +53,13 @@ CCachedReadStore::init(CStore * inStore, PSSId inId, size_t inSize)
 	else
 		size = inSize;
 	fDataSize = size;
-	if (fDataPtr && fDataPtr != fStaticBuf)
-		free(fDataPtr);
+	if (fDataPtr != NULL && fDataPtr != fStaticBuf)
+		FreePtr(fDataPtr);
 	if (size < KByte)
 		fDataPtr = fStaticBuf;
 	else
 		fDataPtr = NewPtr(size);
-	fIsCached = NO;
+	fIsCached = false;
 	return noErr;
 }
 
@@ -67,14 +67,14 @@ CCachedReadStore::init(CStore * inStore, PSSId inId, size_t inSize)
 NewtonErr
 CCachedReadStore::getDataPtr(size_t inOffset, size_t inSize, void ** outData)
 {
-	if (fDataPtr
+	if (fDataPtr != NULL
 	&&  inOffset + inSize <= fDataSize)
 	{
 		if (!fIsCached)
 		{
 			if (fStore->read(fObjId, 0, fDataPtr, fDataSize) != noErr)
 				return kStoreErrObjectOverRun;
-			fIsCached = YES;
+			fIsCached = true;
 		}
 		*outData = fDataPtr + inOffset;
 		return noErr;

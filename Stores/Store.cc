@@ -115,12 +115,12 @@ CStore::isReadOnly(bool * outIsReadOnly)
 /* -----------------------------------------------------------------------------
 	Is this store in ROM? A ROM Flash Card is an application card.
 	Args:		--
-	Return	YES => it’s in ROM
+	Return	true => it’s in ROM
 ----------------------------------------------------------------------------- */
 
 bool
 CStore::isROM(void)
-{ return NO; }
+{ return false; }
 
 
 /* -----------------------------------------------------------------------------
@@ -156,7 +156,7 @@ CStore::unlockStore(void)
 
 bool
 CStore::isLocked(void)
-{ return NO; }
+{ return false; }
 
 
 #pragma mark MuxStore
@@ -192,7 +192,7 @@ CStore::setStore(CStore * inStore, ObjectId inEnvironment)
 
 bool
 CStore::isSameStore(void * inData, size_t inSize)
-{ return NO; }
+{ return false; }
 
 
 #pragma mark Object access
@@ -270,12 +270,12 @@ CStore::nextObject(PSSId inObjectId, PSSId * outNextObjectId)
 /* -----------------------------------------------------------------------------
 	Does this store own the given object?
 	Args:		inObjectId
-	Return	YES => store owns the object
+	Return	true => store owns the object
 ----------------------------------------------------------------------------- */
 
 bool
 CStore::ownsObject(PSSId inObjectId)
-{ return NO; }
+{ return false; }
 
 
 /* -----------------------------------------------------------------------------
@@ -360,12 +360,12 @@ CStore::separatelyAbort(PSSId inObjectId)
 
 bool
 CStore::inTransaction(void)
-{ return NO; }
+{ return false; }
 
 
 bool
 CStore::inSeparateTransaction(PSSId inObjectId)
-{ return NO; }
+{ return false; }
 
 
 NewtonErr

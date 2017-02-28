@@ -29,7 +29,7 @@ Ref	StoreCheckWriteProtect(RefArg inRcvr);
 Ref	StoreIsReadOnly(RefArg inRcvr);
 Ref	StoreIsValid(RefArg inRcvr);
 Ref	StoreHasPassword(RefArg inRcvr);
-Ref	StoreSetPassword(RefArg inRcvr, RefArg inPassword);
+Ref	StoreSetPassword(RefArg inRcvr, RefArg inOldPassword, RefArg inNewPassword);
 Ref	StoreGetKind(RefArg inRcvr);
 Ref	StoreGetSignature(RefArg inRcvr);
 Ref	StoreSetSignature(RefArg inRcvr, RefArg inSignature);
@@ -50,7 +50,7 @@ Ref	StoreGetSoupNames(RefArg inRcvr);
 Ref	StoreHasSoup(RefArg inRcvr, RefArg inName);
 Ref	StoreGetSoup(RefArg inRcvr, RefArg inName);
 
-Ref	StoreNewObject(RefArg inRcvr);
+Ref	StoreNewObject(RefArg inRcvr, RefArg inSize);
 Ref	StoreNewVBO(RefArg inRcvr, RefArg inArg2);
 Ref	StoreNewCompressedVBO(RefArg inRcvr, RefArg inArg2, RefArg inArg3, RefArg inArg4);
 Ref	StoreReadObject(RefArg inRcvr, RefArg inArg2, RefArg inArg3);

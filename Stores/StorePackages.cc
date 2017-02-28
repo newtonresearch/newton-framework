@@ -8,7 +8,7 @@
 
 #include "Objects.h"
 #include "RefMemory.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "LargeBinaries.h"
 #include "StorePackages.h"
 #include "Relocation.h"

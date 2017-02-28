@@ -133,9 +133,9 @@ ArrayMunger(RefArg a1, ArrayIndex a1start, ArrayIndex a1count,
 	Ref *	a1data;
 	Ref *	a2data;
 
-	if ((ObjectFlags(a1) & kObjMask) != kObjSlotted)
+	if ((ObjectFlags(a1) & kObjMask) != kArrayObject)
 		ThrowBadTypeWithFrameData(kNSErrNotAnArray, a1);
-	if (NOTNIL(a2) && (ObjectFlags(a2) & kObjMask) != kObjSlotted)
+	if (NOTNIL(a2) && (ObjectFlags(a2) & kObjMask) != kArrayObject)
 		ThrowBadTypeWithFrameData(kNSErrNotAnArrayOrNil, a2);
 	if (EQ(a1, a2))
 		ThrowExFramesWithBadValue(kNSErrObjectsNotDistinct, a1);
@@ -270,20 +270,20 @@ ArrayAppendInFrame(RefArg frame, RefArg tag, RefArg element)
 	Remove a slot from an array (being a slot in a frame).
 	In:		array		the array
 				element	the slot to be removed
-	Return:	bool		YES => slot was removed
-							NO  => slot wasn't found
+	Return:	bool		true => slot was removed
+							false  => slot wasn't found
 ------------------------------------------------------------------------------*/
 
 bool
 ArrayRemoveInFrame(RefArg frame, RefArg tag, RefArg element)
 {
-	bool	 result = NO;
+	bool	 result = false;
 	RefVar array(GetFrameSlot(frame, tag));
 	if (NOTNIL(array) && ArrayRemove(frame, element))
 	{
 		if (Length(array) == 0)
 			SetFrameSlot(frame, tag, RA(NILREF));
-		result = YES;
+		result = true;
 	}
 	return result;
 }
@@ -293,8 +293,8 @@ ArrayRemoveInFrame(RefArg frame, RefArg tag, RefArg element)
 	Remove a slot from an array.
 	In:		array		the array
 				element	the slot to be removed
-	Return:	bool		YES => slot was removed
-							NO  => slot wasn't found
+	Return:	bool		true => slot was removed
+							false  => slot wasn't found
 ------------------------------------------------------------------------------*/
 
 bool
@@ -303,13 +303,13 @@ ArrayRemove(RefArg array, RefArg element)
 	if (!IsArray(array))
 		ThrowBadTypeWithFrameData(kNSErrNotAnArray, array);
 
-	bool	result = NO;
+	bool	result = false;
 	for (ArrayIndex i = 0, count = Length(array); i < count; ++i)
 	{
 		if (EQRef(element, GetArraySlot(array, i)))
 		{
 			ArrayRemoveCount(array, i, 1);
-			result = YES;
+			result = true;
 			break;
 		}
 	}
@@ -373,7 +373,7 @@ ArrayIsEmpty(RefArg array)
 static Ref
 GetArraySlotError(Ref obj, ArrayIndex index, ObjHeader * p)
 {
-	if (!(p->flags & kObjSlotted))
+	if (!ISSLOTTED(p))
 		ThrowBadTypeWithFrameData(kNSErrNotAnArray, obj);
 
 	RefVar	fr(AllocateFrame());
@@ -397,7 +397,7 @@ Ref
 GetArraySlotRef(Ref obj, ArrayIndex index)
 {
 	ArrayObject * p = (ArrayObject *)ObjectPtr(obj);
-	if ((p->flags & kObjSlotted)
+	if (ISSLOTTED(p)
 	&& index < ARRAYLENGTH(p))
 	{
 		return p->slot[index];
@@ -425,7 +425,7 @@ GetArraySlot(RefArg obj, ArrayIndex index)
 static void
 SetArraySlotError(Ref obj, ArrayIndex index, ObjHeader * p)
 {
-	if (!(p->flags & kObjSlotted))
+	if (!ISSLOTTED(p))
 		ThrowBadTypeWithFrameData(kNSErrNotAnArray, obj);
 
 	else if (index >= ARRAYLENGTH(p))

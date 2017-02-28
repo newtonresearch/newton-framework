@@ -87,8 +87,8 @@ public:
 	CStore *		getStore(void) const;
 
 private:
-	void		acquireLock(void);
-	void		releaseLock(void);
+	NewtonErr	acquireLock(void);
+	NewtonErr	releaseLock(void);
 
 	CStore *					fStore;			// +10
 	CMuxStoreMonitor *	fMonitor;		// +14
@@ -96,8 +96,8 @@ private:
 };
 
 inline CStore *	CMuxStore::getStore(void) const	{ return fStore; }
-inline void			CMuxStore::acquireLock(void)		{ return fLock->acquire(kWaitOnBlock); }
-inline void			CMuxStore::releaseLock(void)		{ return fLock->release(); }
+inline NewtonErr	CMuxStore::acquireLock(void)		{ return fLock->acquire(kWaitOnBlock); }
+inline NewtonErr	CMuxStore::releaseLock(void)		{ return fLock->release(); }
 
 
 /*------------------------------------------------------------------------------

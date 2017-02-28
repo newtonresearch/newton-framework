@@ -185,7 +185,7 @@ FindSymbol(Ref inSymbolTable[], ArrayIndex inSize, ArrayIndex inShift, const cha
 			else if (symcmp((char *)inName, SymbolName(sym)) == 0)
 			{
 				*outIndex = actualIndex;
-				return YES;
+				return true;
 			}
 			actualIndex += incr;
 			if (actualIndex >= inSize)
@@ -196,7 +196,7 @@ FindSymbol(Ref inSymbolTable[], ArrayIndex inSize, ArrayIndex inShift, const cha
 	}
 
 	// we didn’t find it
-	return NO;
+	return false;
 }
 
 
@@ -278,8 +278,8 @@ FSymbolCompareLex(RefArg inRcvr, RefArg inSym1, RefArg inSym2)
 	Args:		sym1		a symbol
 				sym2		a symbol to compare it with
 				hash		hash value of first symbol
-	Return:	bool		YES if symbol names are equal
-							NO  otherwise
+	Return:	bool		true if symbol names are equal
+							false  otherwise
 ----------------------------------------------------------------------*/
 
 bool
@@ -288,15 +288,15 @@ UnsafeSymbolEqual(Ref sym1, Ref sym2, ULong hash)
 	if (sym1 == kBadPackageRef)
 		ThrowErr(exFrames, kNSErrBadPackageRef);
 	if (sym1 == sym2)
-		return YES;
+		return true;
 
 	// if both symbols are in ROM they must have the same address to be equal
 /*
 	if (sym1 < ROM$$Size && sym2 < ROM$$Size)
-		return NO;
+		return false;
 */
 	if (((SymbolObject*)PTR(sym1))->hash != hash)
-		return NO;
+		return false;
 	return symcmp(((SymbolObject *)PTR(sym1))->name,
 					  ((SymbolObject *)PTR(sym2))->name) == 0;
 }
@@ -337,7 +337,6 @@ FSymbolName(RefArg inRcvr, RefArg inSym)
 
 
 #pragma mark -
-
 /*----------------------------------------------------------------------
 	Compare two symbol names. Case-insensitive.
 	Args:		s1			a symbol name
@@ -359,18 +358,12 @@ symcmp(const char * s1, const char * s2)
 			return (c2 == '\0') ? 0 : -1;
 		if (c2 == '\0')
 			break;
-		if ((c1 = toupper(c1)) != (c2 = toupper(c2)))
+		if ((c1 = tolower(c1)) != (c2 = tolower(c2)))
 			return (c1 > c2) ? 1 : -1;
 	}
 	return 1;
 }
-/*
-int
-toupper(int c)
-{
-	return (c >= 'a' && c <= 'z') ? c - ('a' - 'A') : c;
-}
-*/
+
 #pragma mark -
 
 /*----------------------------------------------------------------------

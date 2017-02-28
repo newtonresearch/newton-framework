@@ -11,7 +11,7 @@
 #include "Funcs.h"
 #include "NewtonScript.h"
 #include "NewtGlobals.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "REPTranslators.h"
 
 #include "AppWorld.h"
@@ -152,11 +152,11 @@ CNewtCardEventHandler::handleCardEvent(CCardMessage * inEvent)
 			if (inEvent->f0C == -8001)
 				CardEventPrompt(SYMA(SRAMCardReplaceBattery), inEvent->f10);
 			else
-				CardEventPrompt(SYMA(miscCardError), inEvent->f10, inEvent->f0C);
+				CardEventPrompt(SYMA(MiscCardError), inEvent->f10, inEvent->f0C);
 			break;
 
 		case 51:
-			CardEventPrompt(SYMA(cardRemoved), inEvent->f10);
+			CardEventPrompt(SYMA(CardRemoved), inEvent->f10);
 			break;
 
 		case 105:
@@ -291,7 +291,7 @@ CCardAsyncMsg::CCardAsyncMsg()
 NewtonErr
 CCardAsyncMsg::init(void)
 {
-	fMsg.init(YES);
+	fMsg.init(true);
 }
 
 
@@ -349,7 +349,7 @@ CNewCardAsyncMsg::init(void)
 	{
 		clear();
 		XFAIL(err = fEvent.init())
-		XFAIL(err = fMsg.init(YES))
+		XFAIL(err = fMsg.init(true))
 		fEvent.setEvent(kSysEvent_NewICCard);
 	}
 	XENDTRY;

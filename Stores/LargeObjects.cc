@@ -57,7 +57,7 @@ extern CUMonitor *	GetROMDomainUserMonitor(void);
 NewtonErr
 CreateLargeObject(PSSId * outId, CStore * inStore, size_t inSize, const char * inCompanderName, void * inCompanderParms, size_t inCompanderParmSize)
 {
-	return CreateLargeObject(outId, inStore, NULL, inSize, NO, inCompanderName, inCompanderParms, inCompanderParmSize, NULL, NO);
+	return CreateLargeObject(outId, inStore, NULL, inSize, false, inCompanderName, inCompanderParms, inCompanderParmSize, NULL, false);
 }
 
 
@@ -124,6 +124,7 @@ DuplicateLargeObject(PSSId * outId, CStore * inStore, PSSId inId, CStore * intoS
 	Map a large object to a virtual address.
 	The object is paged into memory from backing store when memory is faulted.
 	Args:		outAddr		on return, the virtual address of the large object
+				inStore		store for the object
 				inId			id of the object on store
 				inReadOnly	true => give the mapped memory RO permission
 	Return:	error code
@@ -214,7 +215,7 @@ AbortObject(CStore * inStore, PSSId inId)
 		err = um.invokeRoutine(kRDM_AbortObject, &parms);
 	}
 	else if (inStore->inSeparateTransaction(inId))
-		err = LODefaultDoTransaction(inStore, inId, 0, 1, YES);
+		err = LODefaultDoTransaction(inStore, inId, 0, 1, true);
 	return err;
 }
 
@@ -396,13 +397,13 @@ IsOnStoreAsPackage(VAddr inAddr)
 	PSSId			id;
 	if (VAddrToStore(&store, &id, inAddr) == noErr)
 		return IsOnStoreAsPackage(store, id);
-	return NO;
+	return false;
 }
 
 bool
 IsOnStoreAsPackage(CStore * inStore, PSSId inId)
 {
-	bool isSo = NO;
+	bool isSo = false;
 
 	XTRY
 	{
@@ -482,7 +483,7 @@ DeleteLargeObject(VAddr inAddr)
 ------------------------------------------------------------------------------*/
 const UniChar * g0C1016E4 = (const UniChar *)L"Patch";		// I think; it’s not defined in the original
 
-NewtonErr	InstallPackage(char*, SourceType, ULong*, bool*, bool*, CStore * inStore = NULL, ObjectId inId = kNoId);
+NewtonErr	InstallPackage(void*, SourceType, ULong*, bool*, bool*, CStore * inStore = NULL, ObjectId inId = kNoId);
 
 
 size_t
@@ -521,7 +522,7 @@ NewPackage(CPipe * inPipe, CStore * inStore, PSSId inId, ULong * outArg4, const 
 {
 // r0 r4 r5 r6 r9 r10 r8 r7
 	NewtonErr err;
-	bool sp00 = NO;	// isSystemPatch?
+	bool sp00 = false;	// isSystemPatch?
 	inStore->lockStore();	// sic -- ignoring any error
 	err = AllocatePackage(inPipe, inStore, inId, inCompanderName, inCompanderParms, inCompanderParmSize,  inCompressor, NULL);
 	if (err == noErr)
@@ -534,7 +535,7 @@ NewPackage(CPipe * inPipe, CStore * inStore, PSSId inId, ULong * outArg4, const 
 			{
 				XFAILIF(sp00, *outArg4 = 0; DeallocatePackage(inStore, inId);)	// not really an error
 				VAddr addr;
-				XFAILIF(MapLargeObject(&addr, inStore, inId, YES), DeallocatePackage(inStore, inId);)	// sic -- don’t record the err
+				XFAILIF(MapLargeObject(&addr, inStore, inId, true), DeallocatePackage(inStore, inId);)	// sic -- don’t record the err
 				XFAILIF(CommitObject(addr), DeallocatePackage(inStore, inId);)
 				UnmapLargeObject(addr);
 			}
@@ -586,13 +587,13 @@ AllocatePackage(CPipe * inPipe, CStore * inStore, PSSId inId, const char * inCom
 			// copy package data after that
 			newton_try
 			{
-				bool isEOF = NO;
+				bool isEOF = false;
 				size_t pkgDataSize = iter.packageSize() - iter.directorySize();
 				inPipe->readChunk(p + iter.directorySize(), pkgDataSize, isEOF);
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()data;
+				err = (NewtonErr)(long)CurrentException()data;
 			}
 			end_try;
 			XFAIL(err)
@@ -661,26 +662,26 @@ PackageAllocationOK(CStore * inStore, PSSId inId)
 NewtonErr
 PackageAvailable(CStore * inStore, PSSId inId, ULong * outArg3, bool * outArg4, bool * outArg5)
 {
+	if (!PackageAllocationOK(inStore, inId))
+		return kOSErrBadObject;
 #if 0
 	NewtonErr err;
 	XTRY
 	{
-		XFAILNOT(PackageAllocationOK(inStore, inId), err = kOSErrBadPackage)
-
-		SourceType	source;
 		RDMParams	parms;
 		CUMonitor	um(GetROMDomainManagerId());
-
 		parms.fStore = inStore;
 		parms.fObjId = inId;
 		parms.fPkgId = kNoId;
-		parms.fRO = YES;
-		parms.fDirty = NO;
+		parms.fRO = true;
+		parms.fDirty = false;
 		XFAIL(err = um.invokeRoutine(kRDM_MapLargeObject, &parms))
+
+		SourceType	source;
 		source.format = kRemovableMemory;
 		source.deviceKind = kStoreDevice;
 		source.deviceId = 0;
-		XFAIL(err = InstallPackage((Ptr)parms.fAddr, &source, outArg3, outArg4, outArg5, parms.fStore, parms.fObjId))
+		XFAIL(err = InstallPackage((void *)parms.fAddr, &source, outArg3, outArg4, outArg5, parms.fStore, parms.fObjId))
 		um.invokeRoutine(kRDM_UnmapLargeObject, &parms);
 	}
 	XENDTRY;
@@ -696,8 +697,8 @@ NewtonErr
 PackageAvailable(CStore * inStore, PSSId inId, ULong * outArg3)
 {
 	NewtonErr err;
-	bool sp00 = NO;
-	bool sp04 = NO;
+	bool sp00 = false;
+	bool sp04 = false;
 	err = PackageAvailable(inStore, inId, outArg3, &sp00, &sp04);
 	if (err == noErr)
 	{
@@ -721,7 +722,6 @@ PackageUnavailable(PSSId inPkgId)
 	NewtonErr	err;
 	RDMParams	parms;
 	CUMonitor	um(GetROMDomainManagerId());
-
 	parms.fStore = NULL;
 	parms.fObjId = 0;
 	parms.fPkgId = inPkgId;
@@ -742,6 +742,61 @@ PackageUnavailable(PSSId inPkgId)
 }
 
 
+/* -----------------------------------------------------------------------------
+	Install package.
+----------------------------------------------------------------------------- */
+
+NewtonErr
+InstallPackage(void * inPkgData, SourceType inSrcType, PSSId * outPkgId, bool * outArg4, bool * outArg5, CStore * inStore, ObjectId inId)
+{
+//r8 r1 r2 r4 r9 r7 r6 r10
+#if !defined(forFramework)
+	NewtonErr err;
+	if ((err = gPkgWorld->fork(NULL)) == noErr) {
+		PartSource src;
+		src.mem.buffer = inPkgData;
+		CPkBeginLoadEvent loadEvent(inSrcType, src, *gPkgWorld->getMyPort(), *gPkgWorld->getMyPort(), true);			//sp10
+#if 0
+		CUMonitor	um(GetROMDomainManagerId());	//sp08
+		CUPort pkgMgr(PackageManagerPortId());		//sp00
+		size_t replySize;
+
+		gPkgWorld->releaseMutex();
+		gPackageSemaphore->acquire(kWaitOnBlock);
+		
+		err = pkgMgr.sendRPC(&replySize, &loadEvent, sizeof(CPkBeginLoadEvent), &loadEvent, sizeof(CPkBeginLoadEvent));
+		if (err == noErr
+		&&  inStore != NULL
+		&& !loadEvent.f81) {
+			RDMParams	parms;
+			parms.fStore = inStore;
+			parms.fObjId = inId;
+			parms.fPkgId = loadEvent.fUniqueId;
+			err = um.invokeRoutine(kRDM_4, &parms);	// set package id
+		}
+
+		gPackageSemaphore->release();
+		gPkgWorld->acquireMutex();
+
+		*outPkgId = loadEvent.f81 ? 0 : loadEvent.fUniqueId;
+		if (outArg4)
+			*outArg4 = loadEvent.f81;
+		if (outArg5)
+			*outArg5 = loadEvent.f80;
+#endif
+	}
+	return err;
+#else
+	return noErr;
+#endif
+}
+
+/* no need for this if we use default arguments
+NewtonErr
+InstallPackage(void * inPkgData, SourceType inSrcType, PSSId * outPkgId, bool*, bool*)
+{ return noErr; }*/
+
+
 NewtonErr
 BackupPackage(CPipe * inPipe, PSSId inId)
 {
@@ -757,7 +812,8 @@ BackupPackage(CPipe * inPipe, PSSId inId)
 	{
 //		all these NewPtr()s were originally performed by:
 //		x = new char[KByte];	XFAIL(err = MemError())
-		XFAILNOT(companderBuffer = NewPtr(KByte), err = kOSErrNoMemory;)
+		companderBuffer = NewPtr(KByte);
+		XFAILIF(companderBuffer == NULL, err = kOSErrNoMemory;)
 
 		// locate package in memory
 		VAddr pkgAddr;
@@ -819,11 +875,11 @@ BackupPackage(CPipe * inPipe, PSSId inId)
 				chunkSize = KByte;
 			newton_try
 			{
-				inPipe->writeChunk(companderBuffer, chunkSize, NO);
+				inPipe->writeChunk(companderBuffer, chunkSize, false);
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;;
+				err = (NewtonErr)(long)CurrentException()->data;;
 			}
 			end_try;
 			XFAIL(err)
@@ -859,12 +915,13 @@ BackupPackage(CPipe * inPipe, CStore * inStore, PSSId inId, CLOCallback * inCall
 	{
 //		all these NewPtr()s were originally performed by:
 //		x = new char[KByte];	XFAIL(err = MemError())
-		XFAILNOT(companderBuffer = NewPtr(KByte), err = kOSErrNoMemory;)
+		companderBuffer = NewPtr(KByte);
+		XFAILIF(companderBuffer == NULL, err = kOSErrNoMemory;)
 
 		// map the package into memory
 		VAddr pkgAddr;
 		XFAIL(err = StoreToVAddr(&pkgAddr, inStore, inId))
-		XFAIL(err = MapLargeObject(&pkgAddr, inStore, inId, NO))
+		XFAIL(err = MapLargeObject(&pkgAddr, inStore, inId, false))
 
 		// fetch its uncompressed size
 		size_t pkgSize;
@@ -916,11 +973,11 @@ BackupPackage(CPipe * inPipe, CStore * inStore, PSSId inId, CLOCallback * inCall
 				chunkSize = KByte;
 			newton_try
 			{
-				inPipe->writeChunk(companderBuffer, chunkSize, NO);
+				inPipe->writeChunk(companderBuffer, chunkSize, false);
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;;
+				err = (NewtonErr)(long)CurrentException()->data;;
 			}
 			end_try;
 			XFAIL(err)
@@ -1006,10 +1063,10 @@ SafeToDeactivatePackage(PSSId inId, bool * outArg2)
 {
 #if 0
 	CPkSafeToDeactivateEvent deactivationEvent(inId);
-	CUPort pmPort(PackageManagerPortId());
+	CUPort pkgMgr(PackageManagerPortId());
 	size_t replySize;
 
-	NewtonErr err = pmPort.sendRPC(&replySize, &deactivationEvent, sizeof(deactivationEvent), &deactivationEvent, sizeof(deactivationEvent));
+	NewtonErr err = pkgMgr.sendRPC(&replySize, &deactivationEvent, sizeof(deactivationEvent), &deactivationEvent, sizeof(deactivationEvent));
 	if (!err)
 		*outArg2 = deactivationEvent.f14;
 	return err;
@@ -1028,7 +1085,7 @@ WrapPackage(CStore * inStore, PSSId inId)
 	NewtonErr	err;
 	RefVar		pkgRef;
 	VAddr			addr = 0;
-	if ((err = MapLargeObject(&addr, inStore, inId, YES)) == noErr)
+	if ((err = MapLargeObject(&addr, inStore, inId, true)) == noErr)
 	{
 		newton_try
 		{
@@ -1036,7 +1093,7 @@ WrapPackage(CStore * inStore, PSSId inId)
 		}
 		newton_catch_all
 		{
-			err = (NewtonErr)(unsigned long)CurrentException()->data;;
+			err = (NewtonErr)(long)CurrentException()->data;;
 		}
 		end_try;
 	}
@@ -1064,7 +1121,7 @@ StorePackage(CPipe * inPipe, CStore * inStore, CLOCallback * inCallback, PSSId *
 	}
 	newton_catch(exPipe)
 	{
-		err = (NewtonErr)(unsigned long)CurrentException()data;
+		err = (NewtonErr)(long)CurrentException()data;
 	}
 	end_try;
 
@@ -1079,7 +1136,7 @@ StorePackage(CPipe * inPipe, CStore * inStore, CLOCallback * inCallback, PSSId *
 			compressorName = "CLZRelocStoreDecompressor";
 		if (pipe.f08->packageFlags() & 0x08000000)
 			compressorName = "CXIPStoreCompander";
-		err = CreateLargeObject(outId, inStore, &pipe, 0, YES, compressorName, NULL, 0, inCallback, NO);
+		err = CreateLargeObject(outId, inStore, &pipe, 0, true, compressorName, NULL, 0, inCallback, false);
 	}
 #endif
 	return err;
@@ -1153,6 +1210,12 @@ VAddrToBase(VAddr * outBase, VAddr inAddr)
 /* -----------------------------------------------------------------------------
 	P l a i n   C   I n t e r f a c e
 ----------------------------------------------------------------------------- */
+#include "Globals.h"
+#include "ROMResources.h"
+
+extern NewtonErr	GetLargeObjectInfo(RDMParams * outParms, VAddr inAddr);
+extern ObjectId	GetROMDomainManagerId(void);
+
 
 extern "C" {
 Ref	FInstallPackage(RefArg inRcvr, RefArg inPkg);
@@ -1163,36 +1226,30 @@ Ref	FDeinstallPackage(RefArg inRcvr, RefArg inPkg);
 Ref
 FInstallPackage(RefArg inRcvr, RefArg inPkg)
 {
-#if 0
 	NewtonErr err;
-	//sp-38
 	Ptr			pkgData = BinaryData(inPkg);
-	ULong			sp34;
-	RDMParams	parms;	//sp18
-	CUMonitor	um(GetROMDomainManagerId());	//sp10
+	PSSId			pkgId;
+	RDMParams	parms;
+	CUMonitor	um(GetROMDomainManagerId());
 
-	GetLargeObjectInfo(&parms, pkgData);
+	GetLargeObjectInfo(&parms, (VAddr)pkgData);
 
-	SourceType source;	//sp00
-	bool sp08, sp0C;
+	SourceType source;
 	source.format = kRemovableMemory;
 	source.deviceKind = kStoreDeviceV2;
 	source.deviceId = 0;
+	bool sp08, sp0C;
 
-	if ((err = InstallPackage(pkgData, source, &sp34, &sp0C, &sp08, parms.fStore, parms.fObjId)) != noErr)
+	if ((err = InstallPackage(pkgData, source, &pkgId, &sp0C, &sp08, parms.fStore, parms.fObjId)) != noErr)
 		ThrowErr(exFrames, err);
 
 	if (!sp0C)
 	{
-		RefVar activePackages(GetFrameSlot(gVarFrame, SYMA(activePackageList));
+		RefVar activePackages(GetFrameSlot(RA(gVarFrame), SYMA(activePackageList)));
 		AddArraySlot(activePackages, inPkg);
 	}
 
-	return MAKEINT(sp34);
-
-#else
-	return MAKEINT(0);
-#endif
+	return MAKEINT(pkgId);
 }
 
 

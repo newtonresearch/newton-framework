@@ -27,9 +27,9 @@ CItemComparer : CItemTester
 
 CEvent : SingleObject
 
-CSystemEvent : CEvent
+CEventSystemEvent : CEvent
 
-CPowerEvent : CSystemEvent
+CPowerEvent : CEventSystemEvent
 
 CTimerEvent : CEvent
 

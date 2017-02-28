@@ -24,6 +24,14 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+struct RemoveObj
+{
+	RefStruct	obj;
+	Ptr			src;
+};
+typedef long		RemoveObjPtr;
+
+
 class CEventHandler;
 class CPartEventHandler;
 class CPkPartInstallEvent;
@@ -36,8 +44,8 @@ class CPipe;
 class CUAsyncMessage;
 
 ObjectId		PackageManagerPortId();
-NewtonErr	LoadPackage(CEndpointPipe * inPipe, ObjectId * outPackageId, bool inWillRemove = YES);
-NewtonErr	LoadPackage(CPipe * inPipe, ObjectId * outPackageId, bool inWillRemove = YES);
+NewtonErr	LoadPackage(CEndpointPipe * inPipe, ObjectId * outPackageId, bool inWillRemove = true);
+NewtonErr	LoadPackage(CPipe * inPipe, ObjectId * outPackageId, bool inWillRemove = true);
 
 NewtonErr	LoadPackage(Ptr buffer, SourceType inType, ObjectId * outPackageId);
 NewtonErr	LoadPackage(CEndpointPipe * inPipe, SourceType inType, ObjectId * outPackageId);

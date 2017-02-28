@@ -87,7 +87,7 @@ PlainSoupGetIndexes(RefArg inRcvr)
 	for (ArrayIndex i = 0, ii = 0; i < count; ++i)
 	{
 		index = GetArraySlot(soupIndexes, i);
-		if (!EQRef(GetFrameSlot(index, SYMA(path)), RSYM_uniqueId))
+		if (!EQ(GetFrameSlot(index, SYMA(path)), SYMA(_uniqueId)))
 			SetArraySlot(indexes, ii++, Clone(index));
 	}
 	return indexes;
@@ -871,7 +871,7 @@ PlainSoupRemoveFromStore(RefArg inRcvr)
 Ref
 PlainSoupAdd(RefArg inRcvr, RefArg inFrame)
 {
-	return CommonSoupAddEntry(inRcvr, inFrame, 0x06);
+	return CommonSoupAddEntry(inRcvr, inFrame, 0x06);	//flags: add _uniqueId, _modTime
 }
 
 
@@ -1042,7 +1042,7 @@ SlowCopyEntries(RefArg inFromSoup, RefArg inToSoup, RefArg inCallbackFn, Timeout
 					indexNextUId = uid;
 				PSSId id = kNoPSSId;
 				StorePermObject(entry, toStore, id, NULL, NULL);
-				AlterIndexes(1, inToSoup, entry, id);
+				AlterIndexes(true, inToSoup, entry, id);
 				nextErr = soupIndex->next(&indexKey, &indexData, 0, &indexKey, &indexData);
 				if (inCallbackInterval)
 				{
@@ -1163,7 +1163,7 @@ PlainSoupCopyEntriesWithCallBack(RefArg inRcvr, RefArg intoSoup, RefArg inCallba
 Ref
 PlainSoupDirty(RefArg inRcvr)
 {
-	SetFrameSlot(inRcvr, SYMA(dirty), RA(TRUEREF));
+	SetFrameSlot(inRcvr, SYMA(Dirty), RA(TRUEREF));
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(TStore));
 	storeWrapper->dirty();
 	return NILREF;
@@ -1183,7 +1183,7 @@ PlainSoupFlush(RefArg inRcvr)
 {
 	Ref isFlushed = NILREF;
 
-	if (NOTNIL(GetFrameSlot(inRcvr, SYMA(dirty))))
+	if (NOTNIL(GetFrameSlot(inRcvr, SYMA(Dirty))))
 	{
 		RefVar entry;
 		RefVar cache(GetFrameSlot(inRcvr, SYMA(cache)));
@@ -1196,7 +1196,7 @@ PlainSoupFlush(RefArg inRcvr)
 				isFlushed = TRUEREF;
 			}
 		}
-		SetFrameSlot(inRcvr, SYMA(dirty), RA(NILREF));
+		SetFrameSlot(inRcvr, SYMA(Dirty), RA(NILREF));
 	}
 
 	return isFlushed;

@@ -70,9 +70,9 @@ InstallWordRecognizer(CRecognitionManager * inManager)
 	XTRY
 	{
 		CUGestalt	gestalt;
-		ULong * hasParaGraphRecognizer;
-		XFAIL((hasParaGraphRecognizer = new ULong) == NULL)
-		*(bool*)hasParaGraphRecognizer = YES;
+		ULong * hasParaGraphRecognizer = new ULong;
+		XFAIL(hasParaGraphRecognizer == NULL)
+		*(bool*)hasParaGraphRecognizer = true;
 		gestalt.registerGestalt(kGestalt_Ext_ParaGraphRecognizer, hasParaGraphRecognizer, sizeof(hasParaGraphRecognizer));
 	}
 	XENDTRY;
@@ -108,10 +108,10 @@ WordRecognizerHandleUnit(CRecognizer * inRecognizer, CUnit * inUnit)
 CWRecDomain *
 CWRecDomain::make(CController * inController)
 {
-	CWRecDomain * domain;
+	CWRecDomain * domain = new CWRecDomain;
 	XTRY
 	{
-		XFAIL((domain = new CWRecDomain) == NULL)
+		XFAIL(domain == NULL)
 		newton_try
 		{
 			domain->iWRecDomain(inController);
@@ -163,7 +163,7 @@ CWRecDomain::iWRecDomain(CController * inController)
 
 bool
 CWRecDomain::group(CRecUnit * inUnit, RecDomainInfo * info)
-{return NO;}
+{return false;}
 
 
 void
@@ -403,10 +403,10 @@ CStdWordUnit::disposeTrainingData(Ptr inData)
 CWRecUnit *
 CWRecUnit::make(CRecDomain * inDomain, ULong inType, CArray * inAreas)
 {
-	CWRecUnit * wRecUnit;
+	CWRecUnit * wRecUnit = new CWRecUnit;
 	XTRY
 	{
-		XFAIL((wRecUnit = new CWRecUnit) == NULL)
+		XFAIL(wRecUnit == NULL)
 		XFAILIF(wRecUnit->iWRecUnit(inDomain, inType, inAreas) != noErr, wRecUnit->release(); wRecUnit = NULL;)
 	}
 	XENDTRY;
@@ -464,7 +464,7 @@ CWRecRecognizer::configureArea(CRecArea * inArea, RefArg inArg2)
 {
 	if (DomainOn(inArea, id()))
 	{
-		((CWRecDomain *)domain())->configureArea(inArg2, (OpaqueRef)inArea->getInfoFor('WREC', YES));
+		((CWRecDomain *)domain())->configureArea(inArg2, (OpaqueRef)inArea->getInfoFor('WREC', true));
 
 		CDictChain * sp00[3];
 		BuildChains(sp00, inArg2);
@@ -516,9 +516,9 @@ InTryString(UniChar inCh)
 	for (tryStr = gTryString; *tryStr != 0; tryStr++)
 	{
 		if (*tryStr == inCh)
-			return YES;
+			return true;
 	}
-	return NO;
+	return false;
 }
 
 
@@ -688,12 +688,12 @@ CWordList::find(UniChar * inWord)	// inWord was UniChar **
 	UniChar * wrd = fWords;
 	for (ArrayIndex index = 0, ch = *wrd; ch != kListDelimiter; index++)
 	{
-		bool isFound = YES;
+		bool isFound = true;
 		UniChar * wrdToFind = inWord;
 		while ((ch = *wrd++) != kWordDelimiter && ch != kListDelimiter)
 		{
 			if (*wrdToFind++ != ch)
-				isFound = NO;
+				isFound = false;
 		}
 		if (isFound && *wrdToFind == 0)
 			return index;

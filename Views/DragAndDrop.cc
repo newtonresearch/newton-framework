@@ -38,13 +38,13 @@ void
 CDragInfo::setItemDragTypes(long, RefArg)
 {}
 
-void
+bool
 CDragInfo::checkTypes(RefArg) const
-{}
+{ return false; }
 
-void
-CDragInfo::findType(long, RefArg) const
-{}
+Ref
+CDragInfo::findType(ArrayIndex, RefArg) const
+{ return NILREF; }
 
 void
 CDragInfo::getItemTypes(long) const

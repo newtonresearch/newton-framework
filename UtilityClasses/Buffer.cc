@@ -280,19 +280,19 @@ CBaseRingBuffer::~CBaseRingBuffer()
 
 CRingBuffer::CRingBuffer()
 {
-	fIsBufOurs = NO;
+	fIsBufOurs = false;
 	fBuf = NULL;
 	fBufEnd = NULL;
 	fBufSize = 0;
 	fWrPtr = NULL;
 	fRdPtr = NULL;
-	fIsShared = NO;
+	fIsShared = false;
 }
 
 CRingBuffer::~CRingBuffer()
 {
 	if (fIsBufOurs)
-		free(fBuf);
+		FreePtr((Ptr)fBuf);
 }
 
 NewtonErr
@@ -302,12 +302,13 @@ CRingBuffer::init(size_t inSize)
 	XTRY
 	{
 		if (fIsBufOurs)
-			free(fBuf);
+			FreePtr((Ptr)fBuf);
 		fBufSize = inSize + 1;
-		XFAILNOT(fBuf = (UByte *)NewPtr(fBufSize), err = MemError();)
+		fBuf = (UByte *)NewPtr(fBufSize);
+		XFAILIF(fBuf == NULL, err = MemError();)
 		fBufEnd = fBuf + fBufSize;
 		fRdPtr = fWrPtr = fBuf;
-		fIsBufOurs = YES;
+		fIsBufOurs = true;
 	}
 	XENDTRY;
 	return err;
@@ -325,7 +326,7 @@ CRingBuffer::makeShared(ULong inPermissions)
 	}
 	XENDTRY;
 	if (err == noErr)
-		fIsShared = YES;
+		fIsShared = true;
 	return err;
 }
 
@@ -335,7 +336,7 @@ CRingBuffer::unshare(void)
 	if (fIsShared)
 	{
 		fSharedMem.destroyObject();
-		fIsShared = NO;
+		fIsShared = false;
 	}
 	return noErr;
 }
@@ -519,7 +520,7 @@ CRingBuffer::copyIn(CPipe * inPipe, size_t & ioLength)
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;
+				err = (NewtonErr)(long)CurrentException()->data;
 			}
 			end_try;
 			if (err)
@@ -540,7 +541,7 @@ CRingBuffer::copyIn(CPipe * inPipe, size_t & ioLength)
 			}
 			newton_catch(exPipe)
 			{
-				err = (NewtonErr)(unsigned long)CurrentException()->data;
+				err = (NewtonErr)(long)CurrentException()->data;
 			}
 			end_try;
 			if (err)

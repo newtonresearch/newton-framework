@@ -19,19 +19,19 @@
 struct ConstNSData
 {
 	Ref	magicPointers;
-	Ref	sortTables;
-	Ref	rootContext;
-	Ref	vars;
-	Ref	initGlobalsFunc;
-	Ref	initScriptsFunc;
-	Ref	internalFunctions;
-	Ref	externalFunctions;
-	Ref	constantFunctions;
+	Ref	sortTables;				// -> RA(sortTables)
+	Ref	rootContext;			// -> RA(rootContext)
+	Ref	vars;						// -> RA(varsMapStarter)
+	Ref	initGlobalsFunc;		// -> RA(bootInitNSGlobals)
+	Ref	initScriptsFunc;		// -> RA(bootRunInitScripts)
+	Ref	internalFunctions;	// -> RA(builtinFunctions)
+	Ref	externalFunctions;	// -> RA(gFunky)			{ } for MessagePad, { OpenResFile, StuffHex,... } for NTK
+	Ref	constantFunctions;	//								{ LocObj, ButtonBounds,... } for NTK
 	Ref	plainCFunctions;
-	Ref	storeParent;
-	Ref	soupParent;
-	Ref	cursorParent;
-	Ref	clicks;
+	Ref	storeParent;			// -> RA(storePrototype)
+	Ref	soupParent;				// -> RA(soupPrototype)
+	Ref	cursorParent;			// -> RA(cursorPrototype)
+	Ref	clicks;					// -> RA(clicks)
 #if defined(forNTK)
 	Ref	formInstallScript;
 	Ref	formRemoveScript;

@@ -73,9 +73,11 @@ struct ScreenInfo
 
 struct ScreenParams
 {
-	UChar	pixShift[5];	// was @44
-	UChar	depthShift[5];	// was @65
-	UChar	pixMask[5];		// was @88
+	UChar	xShift[32+1];		// was @44	map bitsPerPixel 0..32 -> shift factor to translate x ordinate to word index in bitmap row
+	UChar	depthShift[4+1];	// was @65
+	ULong pixelMask[6+1];	// was @70
+	UChar	xMask[32+1];		// was @88	map bitsPerPixel 0..32 -> mask  to translate x ordinate to bit index in word
+	UChar	maskIndex[32+1];	// was @A9	map num of bits in pixel mask: 1 3 7 15 31 -> index into pixelMask
 };
 
 extern const ScreenParams	gScreenConstants;
@@ -94,8 +96,8 @@ void			SetOrientation(int inOrientation);
 void			SetGrafInfo(int inSelector, int inValue);
 NewtonErr	GetGrafInfo(int inSelector, void * outInfo);
 
-void			StartDrawing(PixelMap * inPixmap, Rect * inBounds);
-void			StopDrawing(PixelMap * inPixmap, Rect * inBounds);
+void			StartDrawing(NativePixelMap * inPixmap, Rect * inBounds);
+void			StopDrawing(NativePixelMap * inPixmap, Rect * inBounds);
 
 
 #endif	/* __SCREEN_H */

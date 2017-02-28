@@ -94,8 +94,7 @@ TabInitialize(const Rect & inBounds, CUPort * inPort)
 		if (gTablet == NULL)
 		{
 			CResistiveTablet::classInfo()->registerProtocol();
-			gTablet = (CTabletDriver *)CTabletDriver::make("CResistiveTablet");	// sic -- but why doesnÕt this work?
-			gTablet = (CTabletDriver *)CResistiveTablet::classInfo()->make();
+			gTablet = (CTabletDriver *)CTabletDriver::make("CResistiveTabletDriver");
 		}
 		err = gTablet->init(inBounds);
 	}

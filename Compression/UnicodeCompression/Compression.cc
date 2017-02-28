@@ -198,7 +198,7 @@ CUnicodeCompressor::flush(void)
 	XTRY
 	{
 		XFAIL(err = writeRun())
-		err = fWrite(fHandler, fBuf, fBufLen, YES);
+		err = fWrite(fHandler, fBuf, fBufLen, true);
 		fBufLen = 0;
 	}
 	XENDTRY;
@@ -229,7 +229,7 @@ CUnicodeCompressor::write(unsigned char inCh)
 	if (fBufLen >= 128)
 	{
 		// buffer is full, flush to store
-		err = fWrite(fHandler, fBuf, fBufLen, NO);
+		err = fWrite(fHandler, fBuf, fBufLen, false);
 		fBufLen = 0;
 	}
 	fBuf[fBufLen++] = inCh;
@@ -339,7 +339,7 @@ CUnicodeDecompressor::reset(void)
 	fCodeTable = 0;
 	fRunLen = 0;
 	fRunIndex = 0;
-	fIsEOF = NO;
+	fIsEOF = false;
 }
 
 
@@ -348,7 +348,7 @@ CUnicodeDecompressor::reset(void)
 	Args:		inDstBuf			Unicode text
 				ioDstLen			number of bytes, ie MUST be 2 * number of unichars
 									on exit, number of bytes actually read
-				outDone			YES => no more text available
+				outDone			true => no more text available
 	Return:	error code
 ----------------------------------------------------------------------------- */
 
@@ -362,7 +362,7 @@ CUnicodeDecompressor::readChunk(void * inDstBuf, size_t * ioDstLen, bool * outDo
 		// MUST be reading a whole number of UniChars
 		XFAILIF(ODD(*ioDstLen), err = kOSErrBadParameters;)
 
-		*outDone = NO;
+		*outDone = false;
 
 		size_t size;
 		unsigned char * s = (unsigned char *)inDstBuf;
@@ -434,7 +434,7 @@ CUnicodeDecompressor::readChunk(void * inDstBuf, size_t * ioDstLen, bool * outDo
 		}
 		if (fIsEOF && fRunLen == 0)
 			// no more compressed data, and no run in progress -- we’re done
-			*outDone = YES;
+			*outDone = true;
 	}
 	XENDTRY;
 

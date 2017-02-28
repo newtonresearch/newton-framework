@@ -104,8 +104,8 @@ public:
 											CUMsgToken * token = NULL,
 											ULong * outMsgType = NULL,
 											ULong inMsgFilter = kMsgType_MatchAll,
-											bool onMsgAvail = NO,
-											bool tokenOnly = NO);
+											bool onMsgAvail = false,
+											bool tokenOnly = false);
 	CTimerQueue *	getQueue(void);
 
 private:

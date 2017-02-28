@@ -38,5 +38,6 @@ protected:
 
 extern void		InitPowerManager(void);
 
+#define gPowerManager static_cast<CPowerManager*>(GetGlobals())
 
 #endif	/* __POWERMANAGER_H */

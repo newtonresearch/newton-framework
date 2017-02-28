@@ -122,7 +122,7 @@ ConstExprAST::dump(void)
 {
 	printf("<constant ");
 	PrintObject(value.value.ref, 0);
-	printf(">");
+	printf("> ");
 }
 
 
@@ -291,7 +291,7 @@ AssignExprAST::dump(void)
 {
 	printf("< ");
 	lhs->dump();
-	printf(" := ");
+	printf(":= ");
 	rhs->dump();
 	printf(">\n");
 }

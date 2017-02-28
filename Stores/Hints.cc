@@ -8,7 +8,7 @@
 
 #include "Objects.h"
 #include "UStringUtils.h"
-#include "ROMSymbols.h"
+#include "RSSymbols.h"
 #include "LargeBinaries.h"
 #include "Hints.h"
 
@@ -397,7 +397,7 @@ CObjTextDecompressor::slowDecompress(CStoreWrapper * inStoreWrapper, PSSId inObj
 	work on.
 	Args:		outBuffer
 				ioSize			size required
-				outEOF			YES => there is no more
+				outEOF			true => there is no more
 	Return:	error code
 ----------------------------------------------------------------------------- */
 
@@ -432,7 +432,7 @@ struct TextProcParms
 int
 CallLargeObjectTextProc(CStoreWrapper * inStoreWrapper, PSSId inId, StoreRef inClassRef, void * inParms)
 {
-	if (!IsSubclass(inStoreWrapper->referenceToSymbol(inClassRef), RSYMstring))
+	if (!IsSubclass(inStoreWrapper->referenceToSymbol(inClassRef), SYMA(string)))
 		return 0;
 
 	RefVar obj(LoadLargeBinary(inStoreWrapper, inId, inClassRef));
@@ -448,7 +448,7 @@ CallLargeObjectTextProc(CStoreWrapper * inStoreWrapper, PSSId inId, StoreRef inC
 				inTextProc
 				inTextProcData
 				ioRefCon
-	Return:	YES => success,	eg string object matches supplied text
+	Return:	true => success,	eg string object matches supplied text
 ----------------------------------------------------------------------------- */
 
 bool

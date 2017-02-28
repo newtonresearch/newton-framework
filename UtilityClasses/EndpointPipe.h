@@ -20,14 +20,14 @@ public:
 				~CEndpointPipe();
 
 	// initialisation
-	NewtonErr	init(CEndpoint * inEndpoint, size_t inGetBufSize, size_t inPutBufSize, Timeout inTimeout, bool);
-	NewtonErr	init(CEndpoint * inEndpoint, size_t inGetBufSize, size_t inPutBufSize, Timeout inTimeout, bool inFraming, CPipeCallback * inCalback);
+	void		init(CEndpoint * inEndpoint, size_t inGetBufSize, size_t inPutBufSize, Timeout inTimeout, bool);
+	void		init(CEndpoint * inEndpoint, size_t inGetBufSize, size_t inPutBufSize, Timeout inTimeout, bool inFraming, CPipeCallback * inCalback);
 
 	NewtonErr	addToAppWorld(void);
 	NewtonErr	removeFromAppWorld(void);
 
 	void		abort(void);
-	void		getTimeout(void);
+	Timeout	getTimeout(void);
 	void		setTimeout(Timeout inTimeout);
 	void		useFraming(bool);
 	bool		usingFraming(void);
