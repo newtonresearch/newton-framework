@@ -39,7 +39,7 @@
 		F42A24801DEC47AD00CD22AD /* ErrorString.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ErrorString.m; path = ../ErrorString.m; sourceTree = "<group>"; };
 		F434ACCE0C984BAC005AB44D /* Info-ResMaker.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info-ResMaker.plist"; sourceTree = "<group>"; };
 		F434ACCF0C984BAC005AB44D /* ResMaker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ResMaker.cc; sourceTree = "<group>"; };
-		F468AD061DEAFF29009DFF66 /* NTK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NTK.framework; path = "../../newton-toolkit/NTK/NTK.framework"; sourceTree = "<group>"; };
+		F468AD061DEAFF29009DFF66 /* NTK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NTK.framework; path = "../../newton-toolkit/NTK.framework"; sourceTree = "<group>"; };
 		F4C514421D7C2670008E5537 /* RefStar.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = RefStar.s; sourceTree = "<group>"; };
 		F4C5145A1D86B8F5008E5537 /* SymbolTable.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SymbolTable.cc; sourceTree = "<group>"; };
 		F4C5145C1D86BDAC008E5537 /* Reporting.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Reporting.cc; sourceTree = "<group>"; };
@@ -209,7 +209,7 @@
 		F4F928900C81CD920077CA66 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "/Users/simon/Projects/newton-toolkit/NTK/";
+				FRAMEWORK_SEARCH_PATHS = "/Users/simon/Projects/newton-toolkit/";
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "../**";
 			};
@@ -218,7 +218,7 @@
 		F4F928910C81CD920077CA66 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "/Users/simon/Projects/newton-toolkit/NTK/";
+				FRAMEWORK_SEARCH_PATHS = "/Users/simon/Projects/newton-toolkit/";
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "../**";
 			};
