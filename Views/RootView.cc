@@ -9,7 +9,6 @@
 #include "Geometry.h"
 
 #include "Objects.h"
-#include "ROMData.h"
 #include "ROMResources.h"
 #include "Lookup.h"
 #include "Funcs.h"

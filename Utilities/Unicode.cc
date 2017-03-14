@@ -15,7 +15,6 @@
 #include "RichStrings.h"
 #include "ItemTester.h"
 #include "ROMResources.h"
-#include "ROMData.h"
 
 extern "C" {
 Ref	FGetSortId(RefArg inRcvr, RefArg inArg2);

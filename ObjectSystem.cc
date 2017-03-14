@@ -19,7 +19,6 @@
 #include "Iterators.h"
 #include "REP.h"
 #include "ROMResources.h"
-#include "ROMData.h"
 #include "Interpreter.h"
 
 #define forDebug 1
@@ -73,7 +72,6 @@ void  InitObjectSystem(void);
 
 		 void			MakeROMResources(void);
 static void			InitBuiltInFunctions(void);
-static void			LoadNSData(void);
 static void			LoadDictionaries(void);
 
 
@@ -81,10 +79,7 @@ static void			LoadDictionaries(void);
 	D a t a
 ------------------------------------------------------------------------------*/
 
-void *			gConstNSDataStart, * gConstNSDataEnd;
-
-ConstNSData *  gConstNSData;
-char *			gDictData;
+char *			gDictData = NULL;
 int				gFramesInitialized = false;
 TaskGlobals		gMyTaskGlobals;
 NewtGlobals		gMyNewtGlobals;
@@ -228,7 +223,7 @@ InitObjectSystem(void)
 		gRootView->fContext.h = AllocateRefHandle(AllocateFrame());
 		gRootView->fContext.h->stackPos = 0;
 
-		gRootView->fContext = Clone(gConstNSData->rootContext);	// must make it mutable
+		gRootView->fContext = Clone(RA(rootContext));	// must make it mutable
 		SetFrameSlot(gRootView->fContext, SYMA(_proto), RA(viewRoot));
 		RefVar vwChildren(GetFrameSlot(RA(viewRoot), SYMA(viewChildren)));
 		FOREACH(vwChildren, child)
@@ -255,61 +250,14 @@ InitObjectSystem(void)
 
 
 /*------------------------------------------------------------------------------
-	Simulate NewtonScript ROM resources by loading NTK .pkg
-	and creating Refs from the elements in its array.
+	Simulate NewtonScript ROM resources by loading from disk.
 ------------------------------------------------------------------------------*/
 
 void
 MakeROMResources(void)
 {
-	LoadNSData();
 #if defined(forDarkStar)
-	LoadDictionaries();
-#endif
-}
-
-
-/*------------------------------------------------------------------------------
-	Mimic package installation by following object refs from each part base and
-	fixing up absolute addresses.  Create a Ref for each root frame/array in
-	each part.
-
-	NOTE!
-	NTK generates 32-bit Refs; we need to rebuild all Refs for a 64-bit world.
-
-------------------------------------------------------------------------------*/
-#include "NewtonPackage.h"
-
-static void
-LoadNSData(void)
-{
-	CFBundleRef newtBundle = CFBundleGetBundleWithIdentifier(kBundleId);
-	CFURLRef url = CFBundleCopyResourceURL(newtBundle, kNSDataPkg, NULL, NULL);
-	CFStringRef pkgPath = CFURLCopyFileSystemPath(url, kCFURLPOSIXPathStyle);
-//	const char * pathStr = CFStringGetCStringPtr(pkgPath, kCFStringEncodingMacRoman);	// can return NULL if space in the path
-	char pathStr[256];
-	CFStringGetCString(pkgPath, pathStr, 256, kCFStringEncodingUTF8);							// so use this instead
-
-	NewtonPackage pkg(pathStr);
-	gConstNSData = (ConstNSData *)&((ArrayObject *)PTR(pkg.partRef(0)))->slot[0];
-
-	gConstNSDataStart = pkg.partPkgData(0)->data;
-	gConstNSDataEnd = (char *)gConstNSDataStart + pkg.partPkgData(0)->size;
-
-	CFRelease(pkgPath);
-	CFRelease(url);
-}
-
-
-/*------------------------------------------------------------------------------
-	Load recognition/IA dictionaries.
-	Args:		--
-	Return:	--
-------------------------------------------------------------------------------*/
-#if defined(forDarkStar)
-static void
-LoadDictionaries(void)
-{
+//	Load recognition/IA dictionaries.
 	CFBundleRef newtBundle = CFBundleGetBundleWithIdentifier(kBundleId);
 	CFURLRef		url = CFBundleCopyResourceURL(newtBundle, kNSDictData, NULL, NULL);
 	CFStringRef dictPath = CFURLCopyFileSystemPath(url, kCFURLPOSIXPathStyle);
@@ -329,10 +277,16 @@ LoadDictionaries(void)
 		fread(gDictData, dictSize, 1, fp);
 		fclose(fp);
 	}
-}
 #endif
+}
 
 
+/*------------------------------------------------------------------------------
+	Load PNG image.
+	The busy box, caret, etc are now PNG not PICT.
+	Args:		--
+	Return:	--
+------------------------------------------------------------------------------*/
 #include <CoreGraphics/CoreGraphics.h>
 
 CGImageRef
