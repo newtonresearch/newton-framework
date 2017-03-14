@@ -89,7 +89,7 @@ UnRelocatePkg(void * inPkg, void * inROMBase)
 printf("Part %d at %p\n", partNumber, rObj);
 		Ref32 ref = CANONICAL_LONG(rObj->slot[0]);
 		if (IsPtr(ref) ) {
-			int pkgBase = (long)inPkg - (long)inROMBase;
+			int pkgBase = (int)((long)inPkg - (long)inROMBase);
 			Ref32 pkgRef = ref - pkgBase;
 			rObj->slot[0] = CANONICAL_LONG(pkgRef);
 			FixRef(ref, (Ptr)inROMBase, pkgBase);
@@ -115,8 +115,6 @@ IsPtr(Ref32 ref)
 				inPkgBase	offset to package in ROM image
 	Return:	--				the package is modified
 ----------------------------------------------------------------------------- */
-#define SIZEOF_ARRAY32OBJECT (sizeof(ObjHeader32) + sizeof(Ref32))
-#define ARRAY32LENGTH(_o) (ArrayIndex)(((((_o->size << 16) & 0x00FF0000) | ((_o->size) & 0x0000FF00) | ((_o->size >> 16) & 0x000000FF)) - SIZEOF_ARRAY32OBJECT) / sizeof(Ref32))
 #define	RPTR(_r)	(_r & ~3)
 
 static void

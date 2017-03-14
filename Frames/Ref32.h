@@ -77,8 +77,13 @@ struct StringObject32
 #define CANONICAL_SIZE(n) (n)
 #endif
 
-#define SIZEOF_ARRAYOBJECT32(_n) (sizeof(ObjHeader32) + sizeof(Ref32) + _n*sizeof(Ref32))
-#define ARRAY32LENGTH(_o) (ArrayIndex)((_o->size - SIZEOF_ARRAYOBJECT32(0)) / sizeof(Ref32))
+#define SIZEOF_BINARY32OBJECT (sizeof(ObjHeader32) + sizeof(Ref32))
+#define SIZEOF_ARRAY32OBJECT (sizeof(ObjHeader32) + sizeof(Ref32))
+#define SIZEOF_FRAMEMAP32OBJECT (sizeof(ObjHeader32) + sizeof(Ref32) + sizeof(Ref32))
+
+#define ARRAY32LENGTH(_o) (ArrayIndex)((CANONICAL_SIZE(_o->size) - SIZEOF_ARRAY32OBJECT) / sizeof(Ref32))
+#define BINARY32LENGTH(_o) (size_t)(CANONICAL_SIZE(_o->size) - SIZEOF_BINARY32OBJECT)
+
 
 #define k4ByteAlignmentFlag 0x00000001
 
