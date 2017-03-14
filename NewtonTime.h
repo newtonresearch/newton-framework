@@ -140,22 +140,22 @@ private:
 
 // GetGlobalTime -
 // returns a CTime moment representing the current time.
-extern "C" CTime	GetGlobalTime(void);
+CTime	GetGlobalTime(void);
 
 // GetTaskTime -
 // returns a CTime duration representing the time spent in the specified task.
-extern "C" CTime	GetTaskTime(ObjectId inTaskId = 0);
+CTime	GetTaskTime(ObjectId inTaskId = 0);
 
 // TimeFromNow -
 // returns a CTime moment representing a time in the future.
 // NOTE: You can only specify a moment up to 14 minutes into the future
 // using this method.  If you need a longer distance into the future,
 // simply add the future CTime duration to the current time from GetGlobalTime.
-extern "C" CTime	TimeFromNow(Timeout inDeltaTime);
+CTime	TimeFromNow(Timeout inDeltaTime);
 
-void		Wait(ULong inMilliseconds);
-void		Sleep(Timeout inTimeout);
-void		SleepTill(CTime * inFutureTime);
+void	Wait(ULong inMilliseconds);
+void	Sleep(Timeout inTimeout);
+void	SleepTill(CTime * inFutureTime);
 
 #endif	/* __cplusplus */
 
