@@ -8632,12 +8632,13 @@ extern Ref* RSSYMregister4;
 extern Ref* RSSYMcompilerCompatibility;
 extern Ref* RSSYMclosed;
 extern Ref* RSSYMDebugHashToName;
+extern Ref* RSSYMdbg1;
 
 /*-- for NTK --*/
+extern Ref* RSSYMGetKeyHandler;
 extern Ref* RSSYMRemoveScript;
 extern Ref* RSSYMpartData;
 extern Ref* RSSYMcontrol;
-extern Ref* RSSYMGetKeyHandler;
 extern Ref* RSSYMplatformFunctions;
 extern Ref* RSSYMplatformWeakFunctions;
 extern Ref* RSSYMplatformVariables;

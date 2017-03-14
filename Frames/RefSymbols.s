@@ -51776,6 +51776,12 @@ SYMDebugHashToName:	.long		kHeaderSize + 4 + 15 + kFlagsBinary
 		.long		0xB1057417
 		.asciz	"DebugHashToName"
 		.align	2
+		.globl	SYMdbg1
+SYMdbg1:	.long		kHeaderSize + 4 + 4 + kFlagsBinary
+		Ref		0, 0x55552
+		.long		0xFB0AC58E
+		.asciz	"dbg1"
+		.align	2
 
 /*-- for NTK --*/
 		.globl	SYMRemoveScript
@@ -51873,6 +51879,12 @@ SYMReadStreamFile:	.long		kHeaderSize + 4 + 14 + kFlagsBinary
 		Ref		0, 0x55552
 		.long		0xCFA2B1C8
 		.asciz	"ReadStreamFile"
+		.align	2
+		.globl	SYMLoadDataFile
+SYMLoadDataFile:	.long		kHeaderSize + 4 + 12 + kFlagsBinary
+		Ref		0, 0x55552
+		.long		0x45EDF60A
+		.asciz	"LoadDataFile"
 		.align	2
 		.globl	SYMSelection
 SYMSelection:	.long		kHeaderSize + 4 + 9 + kFlagsBinary

@@ -540,7 +540,7 @@ CFunctionState::makeCodeBlock(void)
 		SetArraySlot(cbf, kFunctionNumArgsIndex, MAKEINT(fNumOfArgs + (fNumOfVarLocs << 16)));
 		if (fFuncDepth < 0 && fKeepVarNames)	// no depth info but want var names anyway
 		{
-			RefVar	dbg(AllocateArray(MakeSymbol("dbg1"), 1));
+			RefVar	dbg(AllocateArray(SYMA(dbg1), 1));
 			CFunctionState *	func;
 			for (func = this; func != NULL; func = func->context())
 			{

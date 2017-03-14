@@ -25897,8 +25897,14 @@ _RSSYMclosed:	Ref	_RSYMclosed
 		.globl	_RSSYMDebugHashToName
 _RSYMDebugHashToName:		Ref	MAKEPTR(SYMDebugHashToName)
 _RSSYMDebugHashToName:	Ref	_RSYMDebugHashToName
+		.globl	_RSSYMdbg1
+_RSYMdbg1:		Ref	MAKEPTR(SYMdbg1)
+_RSSYMdbg1:	Ref	_RSYMdbg1
 
 /*-- for NTK --*/
+		.globl	_RSSYMGetKeyHandler
+_RSYMGetKeyHandler:		Ref	MAKEPTR(SYMGetKeyHandler)
+_RSSYMGetKeyHandler:	Ref	_RSYMGetKeyHandler
 		.globl	_RSSYMRemoveScript
 _RSYMRemoveScript:		Ref	MAKEPTR(SYMRemoveScript)
 _RSSYMRemoveScript:	Ref	_RSYMRemoveScript
@@ -25908,9 +25914,6 @@ _RSSYMpartData:	Ref	_RSYMpartData
 		.globl	_RSSYMcontrol
 _RSYMcontrol:		Ref	MAKEPTR(SYMcontrol)
 _RSSYMcontrol:	Ref	_RSYMcontrol
-		.globl	_RSSYMGetKeyHandler
-_RSYMGetKeyHandler:		Ref	MAKEPTR(SYMGetKeyHandler)
-_RSSYMGetKeyHandler:	Ref	_RSYMGetKeyHandler
 		.globl	_RSSYMplatformFunctions
 _RSYMplatformFunctions:		Ref	MAKEPTR(SYMplatformFunctions)
 _RSSYMplatformFunctions:	Ref	_RSYMplatformFunctions

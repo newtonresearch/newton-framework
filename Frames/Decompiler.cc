@@ -1178,7 +1178,7 @@ DumpCode(RefArg inFunc)
 	if (Length(inFunc) > kFunctionDebugIndex) {
 		debugInfo = GetArraySlot(inFunc, kFunctionDebugIndex);
 	}
-	if (!EQ(ClassOf(debugInfo), MakeSymbol("dbg1"))) {
+	if (!EQ(ClassOf(debugInfo), SYMA(dbg1))) {
 		debugInfo = NILREF;
 	}
 	ArrayIndex argCount = RINT(GetArraySlot(inFunc, kFunctionNumArgsIndex));
