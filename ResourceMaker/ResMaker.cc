@@ -67,6 +67,8 @@ The ROM has:
 
 #include "ROMExtension.h"
 #include "PackageParts.h"
+#include "NewtonPackage.h"
+#include "Iterators.h"
 
 
 /* -----------------------------------------------------------------------------
@@ -74,7 +76,7 @@ The ROM has:
 ----------------------------------------------------------------------------- */
 #define forROMExtensions 0
 #define forMagicPointers 1
-#define forRefStarData 0
+#define forRefStarData 1
 
 /* -----------------------------------------------------------------------------
 	F u n c t i o n   f r a m e   s l o t   i n d i c e s
@@ -93,6 +95,7 @@ enum
 extern void	UnRelocatePkg(void * inPkg, void * inBase);
 
 const char * PrintROMObject(FILE* inFP, const char * inName, Ref inTag, Ref inObj, bool inDefineObjects, bool inDefineSymbols);
+const char * PrintPkgObject(FILE* inFP, const char * inName, Ref inObj, bool inDefineObjects, bool inDefineSymbols);
 
 
 /*------------------------------------------------------------------------------
@@ -223,6 +226,10 @@ const char * kDataPreamble =
 "#define MAKEMAGICPTR(n) (n<<2)+3\n"
 "#define MAKEPTR(p) p+1\n\n";
 
+const char * kROMData =
+"		.globl	_gROMData%s\n"
+"_gROMData%s:\n\n";
+
 
 /* -----------------------------------------------------------------------------
 	String/symbol utilities.
@@ -267,17 +274,8 @@ MakeFourCharStr(ULong inVal, char * outStr)
 /* -----------------------------------------------------------------------------
 	Ref object functions that operate on ROM objects, ie 32-bit, no forwarding.
 ----------------------------------------------------------------------------- */
-#define BYTE_SWAP_24(n) (((n << 16) & 0x00FF0000) | ((n) & 0x0000FF00) | ((n >> 16) & 0x000000FF))
-
 #define REF32(_o) ((Ref32)((Ref32)(_o) + 1))
 #define PTR32(_o) ((ObjHeader32*)((Ref32)(_o) - 1))
-
-#define SIZEOF_BINARY32OBJECT (sizeof(ObjHeader32) + sizeof(Ref32))
-#define SIZEOF_ARRAY32OBJECT (sizeof(ObjHeader32) + sizeof(Ref32))
-#define SIZEOF_FRAMEMAP32OBJECT (sizeof(ObjHeader32) + sizeof(Ref32) + sizeof(Ref32))
-
-#define ARRAY32LENGTH(_o) (ArrayIndex)(((((_o->size << 16) & 0x00FF0000) | ((_o->size) & 0x0000FF00) | ((_o->size >> 16) & 0x000000FF)) - SIZEOF_ARRAY32OBJECT) / sizeof(Ref32))
-#define BINARY32LENGTH(_o) (size_t)((((_o->size << 16) & 0x00FF0000) | ((_o->size) & 0x0000FF00) | ((_o->size >> 16) & 0x000000FF)) - SIZEOF_BINARY32OBJECT)
 
 
 Ref
@@ -397,7 +395,7 @@ FindOffset1(Ref inMap, Ref tag, Ref * outMap)
 	while (depth >= 0)
 	{
 		Ref32 *	slotPtr = &map->slot[0];
-		for (ArrayIndex len = ((CANONICAL_SIZE(map->size) - SIZEOF_ARRAYOBJECT32(1)) / sizeof(Ref32)); len != 0; --len, ++slotPtr)
+		for (ArrayIndex len = ARRAY32LENGTH(map) - 1; len != 0; --len, ++slotPtr)	// length excluding supermap
 		{
 			Ref slotSym = FixPointerRef(CANONICAL_LONG(*slotPtr));
 			if (slotSym == tag || UnsafeSymbolEqual(slotSym, tag, hash))
@@ -455,7 +453,7 @@ GetProtoROMVariable(Ref inRcvr, Ref inTag, bool * outExists)
 	{
 		FrameObject32 * frPtr = (FrameObject32 *)(impl-1);
 		// must have a frame
-		if (NOTFRAME(frPtr))
+		if (!ISFRAME(frPtr))
 #if defined(forNTK)
 			break;
 #else
@@ -639,18 +637,6 @@ GetTag32(Ref inMap, ArrayIndex index, ArrayIndex * mapIndex)
 #pragma mark -
 
 const char *
-TranslateName(const char * inName)
-{
-//	for (const char ** s = cFunctionNameMap; *s != 0; s += 2) {
-//		if (symcmp(inName, *s) == 0) {
-//			return *(s+1);
-//		}
-//	}
-	return inName;
-}
-
-
-const char *
 MungeSymbol(const char * inSymbol)
 {
 	static char symName[128];
@@ -795,8 +781,7 @@ PrintFrameMap(FILE* inFP, const char * inName, Ref inMap)
 {
 	char nameStr[64];
 	FrameMapObject32 * frMap = (FrameMapObject32 *)(inMap-1);
-	ArrayIndex numOfSlots = (BYTE_SWAP_24(frMap->size) - SIZEOF_ARRAYOBJECT32(0)) / sizeof(Ref32);	// includes supermap
-	numOfSlots = ARRAY32LENGTH(frMap);
+	ArrayIndex numOfSlots = ARRAY32LENGTH(frMap);	// includes supermap
 	Ref supermapRef = CANONICAL_LONG(frMap->supermap);
 
 	if NOTNIL(supermapRef) {
@@ -812,9 +797,9 @@ PrintFrameMap(FILE* inFP, const char * inName, Ref inMap)
 	}
 	ArrayIndex fnCount = 0;
 #if defined(forNTK)
-	if (strcmp(inName, "builtinFunctions_map") == 0) {
-		// count C funtions
-		for (CSymbol * fn = gFunctionNames; fn != NULL; fn = fn->fNext) {
+	if (strcmp(inName, "gFunky_map") == 0) {
+		// count external funtions
+		for (CSymbol * fn = gFunctionNames; fn != NULL; fn = fn->fNext) {		// gExternalFunctionNames
 			++fnCount;
 		}
 	} else if (strcmp(inName, "MP0546_map") == 0) {
@@ -838,10 +823,10 @@ PrintFrameMap(FILE* inFP, const char * inName, Ref inMap)
 		}
 	}
 #if defined(forNTK)
-	// append C functions
+	// append external functions
 	if (fnCount > 0) {
-		if (strcmp(inName, "builtinFunctions_map") == 0) {
-			for (CSymbol * fn = gFunctionNames; fn != NULL; ) {
+		if (strcmp(inName, "gFunky_map") == 0) {
+			for (CSymbol * fn = gFunctionNames; fn != NULL; ) {	// gExternalFunctionNames
 				fprintf(inFP, "		Ref		");
 				for (ArrayIndex i = 0; i < 16 && fn != NULL; ++i, fn = fn->fNext) {
 					fprintf(inFP, "MAKEPTR(SYM%s)%c", fn->fName, (i < 15 && fn->fNext != NULL) ? ',' : '\n');
@@ -853,7 +838,38 @@ PrintFrameMap(FILE* inFP, const char * inName, Ref inMap)
 		}
 	}
 #endif
-return fnCount;
+	return fnCount;
+}
+
+void
+PrintPkgFrameMap(FILE* inFP, const char * inName, Ref inMap)
+{
+	char nameStr[64];
+	FrameMapObject * frMap = (FrameMapObject *)(inMap-1);
+	ArrayIndex numOfSlots = ARRAYLENGTH(frMap);	// includes supermap
+	Ref supermapRef = frMap->supermap;
+
+	if NOTNIL(supermapRef) {
+		Ref map = supermapRef;
+		if (ISREALPTR(map)) {
+			ObjHeader * elem = (ObjHeader *)(map-1);
+			if (!FLAGTEST(elem->flags, kObjMarked)) {
+				FLAGSET(elem->flags, kObjMarked);
+				sprintf(nameStr, "obj_%08X", supermapRef);
+				PrintPkgFrameMap(inFP, nameStr, map);
+			}
+		}
+	}
+	fprintf(inFP, "%s:	FrameMapObj(%d)\n", inName, numOfSlots-1);	// exclude supermap
+	Ref * p = &frMap->objClass;
+	for (ArrayIndex slotsRemaining = numOfSlots+1; slotsRemaining > 0; ) {
+		fprintf(inFP, "		Ref		");
+		for (ArrayIndex i = 0; i < 16 && slotsRemaining > 0; ++i, --slotsRemaining, ++p) {
+			Ref tag = *p;
+			sprintf(nameStr, "obj_%08X", *p);
+			fprintf(inFP, "%s%c", PrintPkgObject(inFP, nameStr, tag, false, false), (i < 15 && slotsRemaining > 1) ? ',' : '\n');
+		}
+	}
 }
 
 
@@ -1021,8 +1037,8 @@ print object -- if pointer object use name above
 							}
 						}
 #if defined(forNTK)
-						if (strcmp(inName, "builtinFunctions") == 0) {
-						// append C functions
+						if (strcmp(inName, "gFunky") == 0) {
+						// append external functions
 							for (CSymbol * fn = gFunctionNames; fn != NULL; ) {
 								fprintf(inFP, "		Ref		");
 								for (ArrayIndex i = 0; i < 16 && fn != NULL; ++i, fn = fn->fNext) {
@@ -1185,6 +1201,244 @@ print object -- if pointer object use name above
 }
 
 
+const char *
+PkgSymbolName(Ref r)
+{
+	const char * target[] =	{
+		"debuggerInfo","InstallScript",
+		0 };
+
+	SymbolObject * obj = (SymbolObject *)(r-1);
+	const char * sym = obj->name;
+	// apply case correction
+	for (const char ** s = target; *s != 0; ++s) {
+		if (symcmp(sym, *s) == 0) {
+			sym = *s;
+			break;
+		}
+	}
+	return sym;
+}
+
+
+/* -----------------------------------------------------------------------------
+	Extract const Ref* (RS) objects from package and print their definitions.
+	Args:		inFP			data file ref
+				inName			object name
+				inObj			object
+	Return:	--
+----------------------------------------------------------------------------- */
+
+const char *
+PrintPkgObject(FILE* inFP, const char * inName, Ref inObj, bool inDefineObjects, bool inDefineSymbols)
+{
+	Ref objClass;
+	ArrayIndex i, numOfSlots;
+	static char valueStr[256];
+	const char * rsValue = NULL;
+
+	switch (RTAG(inObj))
+	{
+	case kTagInteger:
+/*-- integer --*/
+		// cannot have integer Ref at top level
+
+	case kTagImmed:
+/*-- immediate --*/
+		// cannot have immediate Ref at top level
+		if (ISNIL(inObj))
+			sprintf(valueStr, "NILREF");
+		else if (ISCHAR(inObj))
+			sprintf(valueStr, "0x%04lX", inObj);
+		else
+			sprintf(valueStr, "0x%08lX", inObj);
+		rsValue = valueStr;
+		break;
+
+	case kTagPointer: {
+/*-- pointer --*/
+			Ref val;
+			char nameStr[64];
+			// switch on type of object: slotted (frame/array) or binary
+			unsigned flags = ObjectFlags(inObj);
+			if (FLAGTEST(flags, kObjSlotted)) {
+/*-- SLOTTED --*/
+				if (FLAGTEST(flags, kObjFrame)) {
+/*-- frame --*/
+					if (inDefineObjects) {
+						numOfSlots = Length(inObj);
+						Ref map = ((FrameObject *)(inObj-1))->map;
+						Ref * tagPtr = ((FrameMapObject *)(map-1))->slot;
+						Ref * p, * slotPtr = ((FrameObject *)(inObj-1))->slot;
+		// PASS 1: define pointer objects contained in the frame
+						for (i = 0, p = slotPtr; i < numOfSlots; ++i, ++p, ++tagPtr) {
+							val = *p;
+							if (ISREALPTR(val)) {
+								ObjHeader * elem = (ObjHeader *)(val-1);
+								if (!FLAGTEST(elem->flags, kObjMarked)) {
+									FLAGSET(elem->flags, kObjMarked);
+									sprintf(nameStr, "obj_%08X", *p);
+									PrintPkgObject(inFP, nameStr, val, true, false);
+								}
+							}
+						}
+
+		// PASS 2: define frame map
+						sprintf(nameStr, "%s_map", inName);
+						PrintPkgFrameMap(inFP, nameStr, ((FrameObject *)(inObj-1))->map);
+
+		// PASS 3: define frame
+						if (strncmp(inName, "obj_", 4) != 0) {
+							fprintf(inFP, "		.globl	%s\n", inName);
+						}
+						fprintf(inFP, "%s:	FrameObj(%d, %s_map)\n", inName, numOfSlots, inName);
+						p = slotPtr;
+						for (ArrayIndex slotsRemaining = numOfSlots; slotsRemaining > 0; ) {
+							fprintf(inFP, "		Ref		");
+							for (i = 0; i < 16 && slotsRemaining > 0; ++i, --slotsRemaining, ++p) {
+								val = *p;
+								sprintf(nameStr, "obj_%08X", *p);
+								fprintf(inFP, "%s%c", PrintPkgObject(inFP, nameStr, val, false, false), (i < 15 && slotsRemaining > 1) ? ',' : '\n');
+							}
+						}
+					}
+					sprintf(valueStr, "MAKEPTR(%s)", inName);
+					rsValue = valueStr;
+				}
+
+				// insanity check
+				else if (FLAGTEST(flags, kObjForward)) {
+					printf("<forwarding pointer #%08lX...WTF!!!>", inObj);
+				}
+
+				else {
+/*-- array --*/
+					if (inDefineObjects) {
+						objClass = ClassOf(inObj);
+					// print elements in array
+						numOfSlots = Length(inObj);
+						Ref * p, * slotPtr = ((FrameObject *)(inObj-1))->slot;
+		// PASS 1: define pointer objects contained in the array
+						for (i = 0, p = slotPtr; i < numOfSlots; ++i, ++p) {
+							val = *p;
+							if (ISREALPTR(val)) {
+								ObjHeader * elem = (ObjHeader *)(val-1);
+								if (!FLAGTEST(elem->flags, kObjMarked)) {
+									FLAGSET(elem->flags, kObjMarked);
+									sprintf(nameStr, "obj_%08X", *p);
+									PrintPkgObject(inFP, nameStr, val, true, false);
+								}
+							}
+						}
+
+		// PASS 2: define the array
+						if (strncmp(inName, "obj_", 4) != 0) {
+							fprintf(inFP, "		.globl	%s\n", inName);
+						}
+						fprintf(inFP, "%s:	ArrayObj(%d, %s)\n", inName, numOfSlots, PrintPkgObject(inFP, inName, objClass, false, false));
+						p = slotPtr;
+						for (ArrayIndex slotsRemaining = numOfSlots; slotsRemaining > 0; ) {
+							fprintf(inFP, "		Ref		");
+							for (i = 0; i < 16 && slotsRemaining > 0; ++i, --slotsRemaining, ++p) {
+								val = *p;
+								sprintf(nameStr, "obj_%08X", *p);
+								fprintf(inFP, "%s%c", PrintPkgObject(inFP, nameStr, val, false, false), (i < 15 && slotsRemaining > 1) ? ',' : '\n');
+							}
+						}
+					}
+					sprintf(valueStr, "MAKEPTR(%s)", inName);
+					rsValue = valueStr;
+				}
+			}
+
+			else {
+/*-- NOT SLOTTED --*/
+				objClass = ClassOf(inObj);
+
+				if (IsSymbol(inObj)) {
+/*-- symbol --*/
+					const char * sym = PkgSymbolName(inObj);
+					const char * symName = MungeSymbol(sym);
+					if (inDefineSymbols) {
+						PrintSymbol(inFP, symName, sym);
+					}
+					sprintf(valueStr, "MAKEPTR(SYM%s)", symName);
+					rsValue = valueStr;
+				}
+
+				else if (EQRef(objClass, SYMA(Real))) {
+/*-- real number --*/
+					if (inDefineObjects) {
+						// byte-swap double == 64 bits
+						uint32_t * p = (uint32_t *)BinaryData(inObj);
+
+						fprintf(inFP, "REAL%s:	.long		kHeaderSize + 8 + kFlagsBinary\n", inName);
+						fprintf(inFP, "		Ref		0, MAKEPTR(SYMreal)\n");
+						fprintf(inFP, "		.long		0x%08X,0x%08X\n", p[0],p[1]);
+						fprintf(inFP, "		.align	2\n");
+					}
+					sprintf(valueStr, "MAKEPTR(REAL%s)", inName);
+					rsValue = valueStr;
+				}
+
+//				else if (EQRef(objClass, SYMA(instructions)) && NOTNIL(GetFrameSlot(gVarFrame, SYMA(printInstructions)))) {
+/*-- codeblock --*/
+//					PrintInstructions(inObj);
+//				}
+
+				else if (IsSymbol(objClass)) {
+					if (IsSubclass(objClass, SYMA(string))) {
+/*-- string --*/
+						if (inDefineObjects) {
+							PrintString(inFP, inName, PrintPkgObject(inFP, inName, objClass, false, false), (UniChar *)BinaryData(inObj));
+						}
+						sprintf(valueStr, "MAKEPTR(%s)", inName);
+						rsValue = valueStr;
+					} else {
+/*-- specific binary object --*/
+						if (inDefineObjects) {
+							UChar * data = (UChar *)BinaryData(inObj);
+							ArrayIndex len = Length(inObj);
+							if (strncmp(inName, "obj_", 4) != 0) {
+								fprintf(inFP, "		.globl	%s\n", inName);
+							}
+							fprintf(inFP, "%s:	.long		kHeaderSize + %d + kFlagsBinary\n", inName, len);
+							fprintf(inFP, "		Ref		0, %s\n", PrintPkgObject(inFP, inName, objClass, false, false));
+							while (len > 0) {
+								fprintf(inFP, "		.byte		");
+								for (ArrayIndex i = 0; i < 16 && len > 0; ++i, --len) {
+									fprintf(inFP, "0x%02X%c", *data++, (i < 15 && len > 1) ? ',' : '\n');
+								}
+							}
+							fprintf(inFP, "		.align	2\n");
+						}
+						sprintf(valueStr, "MAKEPTR(%s)", inName);
+						rsValue = valueStr;
+					}
+				}
+
+				else {
+/*-- generic binary object --*/
+					printf("<binary, class ");
+					PrintPkgObject(inFP, inName, objClass, false, false);
+					printf(", length %d>", Length(inObj));
+				}
+			}
+		}
+		break;
+
+	case kTagMagicPtr:
+/*-- magic pointer --*/
+		sprintf(valueStr, "MAKEMAGICPTR(%ld)", RVALUE(inObj));
+		rsValue = valueStr;
+		break;
+	}
+
+	fflush(stdout);
+	return rsValue;
+}
+
+
 #pragma mark -
 /* -----------------------------------------------------------------------------
 	Command line options.
@@ -1272,7 +1526,7 @@ int
 main(int argc, const char * argv[])
 {
 	gCmdName = argv[0];
-	const char **  inputFilenameLimit = ParseOptions(&argv[1], &argv[argc]);
+	/*const char **  inputFilenameLimit =*/ ParseOptions(&argv[1], &argv[argc]);
 
 	gImageFilename = argv[1];
 	FILE * fp = fopen(gImageFilename, "r");
@@ -1352,7 +1606,7 @@ main(int argc, const char * argv[])
 	unsigned int rAddr;
 	Ref rRef;
 	Ref32 * rsRef;
-	char rsName[128];
+	char rsName[256];
 	const char * rsValue;
 
 /*== first handle magic pointers ==*/
@@ -1406,18 +1660,41 @@ main(int argc, const char * argv[])
 	fprintf(fp_h, kHeaderPreamble, "");
 	// scan address, name of object
 	rRef = NILREF;
-	while (fscanf(fp, "%8x R%s\n", &rAddr, rsName) != EOF)
-	{
-		fprintf(fp_h, "extern Ref* RS%s;\n", rsName);
-		if (strcmp(rsName, "symbolTable") == 0) {
-			rsRef = (Ref32 *)(ROMdata + rAddr);
-			rRef = FixPointerRef(CANONICAL_LONG(*rsRef));
+	int lineLen;
+	char line[300];
+	while (!feof(fp)) {
+		lineLen = 0;
+		line[0] = 0;
+		if (fgets(line, 300, fp) != NULL) {
+			if (line[0] != '\n') {
+				int	numOfItems = sscanf(line, "%8x%255s%n", &rAddr, rsName, &lineLen);
+				if (lineLen == 255) {
+					ExitWithMessage("input line too long in file “%s”", gSourceFilename);
+				}
+				if (numOfItems > 1 && line[0] != ';') {
+					if (strlen(rsName) > 254) {
+						ExitWithMessage("encountered function name longer than 254 characters in file “%s”", gSourceFilename);
+					}
+					fprintf(fp_h, "extern Ref* RS%s;\n", rsName);
+					if (strcmp(rsName, "symbolTable") == 0) {
+						rsRef = (Ref32 *)(ROMdata + rAddr);
+						rRef = FixPointerRef(CANONICAL_LONG(*rsRef));
+					}
+				}
+			}
 		}
 	}
+
 /*-- declare objects that the original created at runtime --*/
 	fprintf(fp_h, "extern Ref* RS%s;\n", "space");
 	fprintf(fp_h, "extern Ref* RS%s;\n", "cFunctionPrototype");
 	fprintf(fp_h, "extern Ref* RS%s;\n", "debugCFunctionPrototype");
+#if defined(forNTK)
+	fprintf(fp_h, "extern Ref* RS%s;\n", "constantFunctions");
+	fprintf(fp_h, "extern Ref* RS%s;\n", "formInstallScript");
+	fprintf(fp_h, "extern Ref* RS%s;\n", "formRemoveScript");
+	fprintf(fp_h, "extern Ref* RS%s;\n", "autoInstallScript");
+#endif
 	fclose(fp_h);
 
 /*-- build symbol data --*/
@@ -1443,11 +1720,12 @@ main(int argc, const char * argv[])
 	}
 
 /*-- symbols that don’t appear in the original symbol table but that we’d rather not MakeSymbol() --*/
-	const char * extraSym[] = { "compilerCompatibility", "closed", "DebugHashToName", 0 };
+	const char * extraSym[] = { "compilerCompatibility", "closed", "DebugHashToName", "dbg1", 0 };
 	for (const char ** symp = extraSym; *symp != 0; ++symp ) {
-		const char * symName = *symp;
+		const char * sym = *symp;
+		const char * symName = MungeSymbol(sym);
 		char rsValue[128];
-		PrintSymbol(fp_rd, symName, symName);
+		PrintSymbol(fp_rd, symName, sym);
 		sprintf(rsName, "SYM%s", symName);
 		sprintf(rsValue, "MAKEPTR(%s)", rsName);
 		PrintRefStar(fp_rs, rsName, rsValue);
@@ -1456,31 +1734,34 @@ main(int argc, const char * argv[])
 
 #if defined(forNTK)
 /*-- symbols used by NTK --*/
-	const char * ntkSym[] = { "RemoveScript","partData","control", "GetKeyHandler",
+	const char * ntkSym[] = { "GetKeyHandler","RemoveScript","partData","control",
 									  "platformFunctions","platformWeakFunctions","platformVariables",
 									  "protoEditor","protoProtoEditor",
-									  "__origFunctions","__origVars","__platform", 0 };
+									  "__origFunctions","__origVars","__platform",
+									   0 };
 	fprintf(fp_h, "\n/*-- for NTK --*/\n");
 	fprintf(fp_rs, "\n/*-- for NTK --*/\n");
 	fprintf(fp_rd, "\n/*-- for NTK --*/\n");
 	for (const char ** symp = ntkSym; *symp != 0; ++symp ) {
-		const char * symName = *symp;
+		const char * sym = *symp;
+		const char * symName = MungeSymbol(sym);
 		char rsValue[128];
-		if (strcmp(symName, "GetKeyHandler") != 0) {
-			PrintSymbol(fp_rd, symName, symName);
+		if (strcmp(symName, "GetKeyHandler") != 0) {	// GetKeyHandler has already been defined
+			PrintSymbol(fp_rd, symName, sym);
 		}
 		sprintf(rsName, "SYM%s", symName);
 		sprintf(rsValue, "MAKEPTR(%s)", rsName);
 		PrintRefStar(fp_rs, rsName, rsValue);
 		fprintf(fp_h, "extern Ref* RSSYM%s;\n", symName);
 	}
-	for (CSymbol * fn = gFunctionNames; fn != NULL; fn = fn->fNext) {
-		const char * symName = fn->fName;
-		if (strcmp(symName, "ReplaceSelection") != 0) {
-			PrintSymbol(fp_rd, symName, symName);
+	for (CSymbol * fn = gFunctionNames; fn != NULL; fn = fn->fNext) {	// should be NTKFunctions.newtonpkg > externalFunctions?
+		const char * sym = fn->fName;
+		const char * symName = MungeSymbol(sym);
+		if (strcmp(symName, "ReplaceSelection") != 0) {	// ReplaceSelection has already been defined
+			PrintSymbol(fp_rd, symName, sym);
 		}
 	}
-#endif
+#endif /* forNTK */
 
 	fclose(fp_rd);
 	fclose(fp_rs);
@@ -1491,26 +1772,55 @@ main(int argc, const char * argv[])
 	fprintf(fp_rs, kRSPreamble, "Data");
 	fp_rd = fopen("RefData.s", "w");
 	fprintf(fp_rd, kDataPreamble, "RefData");
+	fprintf(fp_rd, kROMData, "Start","Start");
 #if defined(forNTK)
-	// define C funtions
+	// define external functions
 	for (CSymbol * fn = gFunctionNames; fn != NULL; fn = fn->fNext) {
 		char fnName[64];
 		sprintf(fnName, "obj_%s", fn->fName);
 		PrintCFunction(fp_rd, fnName, fn->fCName, fn->fNumArgs);
 	}
-#endif
+
+#endif /* forNTK */
 	// scan address, name of object
 	fseek(fp, 0, SEEK_SET);
-	while (fscanf(fp, "%8x R%s\n", &rAddr, rsName) != EOF)
-	{
-		rsRef = (Ref32 *)(ROMdata + rAddr);
-		rRef = FixPointerRef(CANONICAL_LONG(*rsRef));
+	while (!feof(fp)) {
+		lineLen = 0;
+		line[0] = 0;
+		if (fgets(line, 300, fp) != NULL) {
+			if (line[0] != '\n') {
+				int numOfItems = sscanf(line, "%8x%255s%n", &rAddr, rsName, &lineLen);
+				if (numOfItems > 1 && line[0] != ';') {
+					rsRef = (Ref32 *)(ROMdata + rAddr);
+					rRef = FixPointerRef(CANONICAL_LONG(*rsRef));
 
-		rsValue = PrintROMObject(fp_rd, rsName, NILREF, rRef, true, false);
-		if (ISPTR(rRef) && rsValue) {
-			PrintRefStar(fp_rs, rsName, rsValue);
+					rsValue = PrintROMObject(fp_rd, rsName, NILREF, rRef, true, false);
+					if (ISPTR(rRef) && rsValue) {
+						PrintRefStar(fp_rs, rsName, rsValue);
+					}
+				}
+			}
 		}
 	}
+
+#if defined(forNTK)
+	NewtonPackage scriptPkg("NTKFunctions.newtonpkg");
+	// load constantFunctions
+	RefVar fns(GetArraySlot(scriptPkg.partRef(0), 1));
+	PrintPkgObject(fp_rd, "constantFunctions", fns, true, false);
+	PrintRefStar(fp_rs, "constantFunctions", "MAKEPTR(constantFunctions)");
+	// load install/remove scripts
+	RefVar scripts(GetArraySlot(scriptPkg.partRef(0), 2));
+	FOREACH_WITH_TAG(scripts, tag, fn)
+		// print the script
+		const char * fname = SymbolName(tag);
+		PrintPkgObject(fp_rd, fname, fn, true, false);
+
+		char rsValue[128];
+		sprintf(rsValue, "MAKEPTR(%s)", fname);
+		PrintRefStar(fp_rs, fname, rsValue);
+	END_FOREACH;
+#endif
 
 /*-- objects that the original created at runtime --*/
 	const UniChar STRspace[] = { CANONICAL_SHORT(' '), 0 };
@@ -1523,6 +1833,7 @@ main(int argc, const char * argv[])
 	PrintRefStar(fp_rs, "debugCFunctionPrototype", "MAKEPTR(debugCFunctionPrototype)");
 
 	fprintf(fp_rd,	"#include \"MagicPointers.s\"\n");
+	fprintf(fp_rd, kROMData, "End","End");
 
 	fclose(fp_rd);
 	fclose(fp_rs);
