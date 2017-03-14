@@ -7,11 +7,11 @@
 */
 
 #include "Quartz.h"
+#include "Objects.h"
 #include "QDPatterns.h"
 #include "QDDrawing.h"
 #include "Geometry.h"
 
-#include "Objects.h"
 #include "ViewFlags.h"
 #include "RSSymbols.h"
 

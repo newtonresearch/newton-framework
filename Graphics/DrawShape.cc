@@ -8,6 +8,7 @@
 
 #include "Quartz.h"
 #include "Geometry.h"
+#include "Objects.h"
 #include "DrawShape.h"
 #include "DrawText.h"
 

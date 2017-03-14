@@ -50,11 +50,11 @@ TextBounds(CRichString & inStr, RefArg inFont, Rect * ioRect, long inJustifyH)
 #include "Quartz.h"
 #include <CoreText/CoreText.h>
 #include "Geometry.h"
+#include "Objects.h"
 #include "DrawShape.h"
 #include "DrawText.h"
 #include "Ink.h"
 
-#include "Objects.h"
 #include "Globals.h"
 #include "ROMResources.h"
 #include "Lookup.h"
