@@ -46,7 +46,7 @@ struct ICachedItem
 class ICache
 {
 public:
-				ICache(long pwr);
+				ICache(int pwr);
 				~ICache();
 	void		clear(void);
 	void		clearSymbol(Ref sym, ULong hash);
@@ -67,13 +67,13 @@ private:
 };
 
 
-ICache * gGetVarCache;		// 0C105498
-ICache * gFindImplCache;	// 0C10549C
-ICache * gProtoCache;		// 0C1054A0
-ICache * gROProtoCache;		// 0C1054A4
+ICache * gGetVarCache;
+ICache * gFindImplCache;
+ICache * gProtoCache;
+ICache * gROProtoCache;
 
 
-ICache::ICache(long pwr)
+ICache::ICache(int pwr)
 {
 	numOfEntries = 1 << pwr;
 	shift = 32 - pwr;
@@ -97,7 +97,7 @@ void
 ICache::clear(void)
 {
 	ICachedItem *	p = cache;
-	for (ArrayIndex i = 0; i < numOfEntries; i++, p++)
+	for (ArrayIndex i = 0; i < numOfEntries; ++i, ++p)
 		p->value = INVALIDPTRREF;
 }
 
@@ -106,7 +106,7 @@ void
 ICache::clearSymbol(Ref sym, ULong hash)
 {
 	ICachedItem *	p = cache;
-	for (ArrayIndex i = 0; i < numOfEntries; i++, p++)
+	for (ArrayIndex i = 0; i < numOfEntries; ++i, ++p)
 	{
 		if (p->value != INVALIDPTRREF
 		 && p->hash == hash
@@ -121,7 +121,7 @@ ICache::clearFrame(Ref fr)
 {
 	Ptr				frPtr = SetupListEQ(fr);
 	ICachedItem *	p = cache;
-	for (ArrayIndex i = 0; i < numOfEntries; i++, p++)
+	for (ArrayIndex i = 0; i < numOfEntries; ++i, ++p)
 	{
 		if (p->value != INVALIDPTRREF && ListEQ(p->fr, fr, frPtr))
 			p->value = INVALIDPTRREF;
@@ -211,7 +211,7 @@ void
 ICache::update(void)
 {
 	ICachedItem *	p = cache;
-	for (ArrayIndex i = 0; i < numOfEntries; i++, p++)
+	for (ArrayIndex i = 0; i < numOfEntries; ++i, ++p)
 	{
 		if (p->value != INVALIDPTRREF)
 		{
@@ -251,8 +251,8 @@ ICache::DIYUpdateICache(void * self)
 void
 InitICache(void)
 {
-	gGetVarCache = new ICache(5);	// 32
-	gProtoCache = new ICache(6);	// 64
+	gGetVarCache = new ICache(5);		// 32
+	gProtoCache = new ICache(6);		// 64
 	gROProtoCache = new ICache(6);	// 64
 	gFindImplCache = new ICache(6);	// 64
 }
@@ -326,14 +326,14 @@ XFindImplementor(RefArg inRcvr, RefArg inTag, RefVar * outImpl, RefVar * value)
 		left = impl = ((FrameObject *)ObjectPtr(left))->slot[slotIndex];
 	}
 
-	bool useTheCacheLuke = true;	// spm00
+	bool useTheCacheLuke = true;
 	while (NOTNIL(impl))
 	{
-		Ref roProto = INVALIDPTRREF;
+		Ref roProto = INVALIDPTRREF;		// R/O refs cannot move so itÕs okay to use a Ref
 		while (NOTNIL(impl))
 		{
-			FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);	// r10
-			if (NOTFRAME(frPtr))
+			FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);
+			if (!ISFRAME(frPtr))
 				ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
 			if (roProto == INVALIDPTRREF && ISRO(frPtr)
@@ -409,11 +409,11 @@ XFindProtoImplementor(RefArg inRcvr, RefArg inTag, RefVar * outImpl, RefVar * va
 	// and it must be a frame
 	RefVar impl(inRcvr);
 	FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);
-	if (NOTFRAME(frPtr))
+	if (!ISFRAME(frPtr))
 		ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
 	RefVar frMap(frPtr->map);
-	Ref roProto = INVALIDPTRREF;
+	Ref roProto = INVALIDPTRREF;		// R/O refs cannot move so itÕs okay to use a Ref
 	for ( ; ; )
 	{
 		// look in _protoÉ
@@ -425,7 +425,7 @@ XFindProtoImplementor(RefArg inRcvr, RefArg inTag, RefVar * outImpl, RefVar * va
 		// Éwhich must be a frame
 		impl = ((FrameObject *)ObjectPtr(impl))->slot[slotIndex];
 		frPtr = (FrameObject *)ObjectPtr(impl);
-		if (NOTFRAME(frPtr))
+		if (!ISFRAME(frPtr))
 			ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
 		bool exists;
@@ -484,16 +484,16 @@ FindProtoImplementor(RefArg inRcvr, RefArg inTag)
 	Ref context, value;
 	bool exists;
 	ArrayIndex slotIndex;
-	if (gProtoCache->lookup(inRcvr, inTag, &context, &value, &exists, &slotIndex))	// 4 0 C 8
+	if (gProtoCache->lookup(inRcvr, inTag, &context, &value, &exists, &slotIndex))
 		return exists ? context : NILREF;
 
-	Ref roProto = INVALIDPTRREF;
+	Ref roProto = INVALIDPTRREF;		// R/O refs cannot move so itÕs okay to use a Ref
 	RefVar frMap;
 	RefVar impl(inRcvr);
 	while (NOTNIL(impl))
 	{
 		FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);
-		if (NOTFRAME(frPtr))
+		if (!ISFRAME(frPtr))
 			ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
 		if (roProto == INVALIDPTRREF && ISRO(frPtr)
@@ -566,8 +566,6 @@ XGetVariable(RefArg inRcvr, RefArg inTag, bool * outExists, int lookup)
 	ArrayIndex slotIndex;
 	RefVar	left(inRcvr);
 	RefVar	impl(inRcvr);
-if (lookup > kLexicalLookup)
-	printf("XGetVariable(lookup=%d)\n",lookup);
 	if (lookup == kLexicalLookup)
 	{
 		do
@@ -611,9 +609,9 @@ if (lookup > kLexicalLookup)
 	bool useTheCacheLuke = true;
 	while (NOTNIL(impl))
 	{
-		Ref roProto = INVALIDPTRREF;
+		Ref roProto = INVALIDPTRREF;		// R/O refs cannot move so itÕs okay to use a Ref
 		FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);
-		if (NOTFRAME(frPtr))
+		if (!ISFRAME(frPtr))
 			ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
 		if (roProto == INVALIDPTRREF && ISRO(frPtr)
@@ -764,7 +762,7 @@ GetProtoVariable(RefArg inRcvr, RefArg inTag, bool * outExists)
 	if (gProtoCache->lookupValue(inRcvr, inTag, &value, outExists))
 		return value;
 
-	Ref roProto = INVALIDPTRREF;
+	Ref roProto = INVALIDPTRREF;		// R/O refs cannot move so itÕs okay to use a Ref
 	RefVar frMap;
 	ArrayIndex slotIndex;
 	RefVar impl(inRcvr);
@@ -772,7 +770,7 @@ GetProtoVariable(RefArg inRcvr, RefArg inTag, bool * outExists)
 	{
 		FrameObject * frPtr = (FrameObject *)ObjectPtr(impl);
 		// must have a frame
-		if (NOTFRAME(frPtr))
+		if (!ISFRAME(frPtr))
 #if defined(forNTK)
 			break;
 #else
@@ -879,7 +877,7 @@ SetVariableOrGlobal(RefArg inRcvr, RefArg inTag, RefArg inValue, int inLookup)
 		for (impl = left; NOTNIL(impl); )
 		{
 			frPtr = (FrameObject *)ObjectPtr(impl);
-			if (NOTFRAME(frPtr))
+			if (!ISFRAME(frPtr))
 				ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
 
 			frMap = frPtr->map;

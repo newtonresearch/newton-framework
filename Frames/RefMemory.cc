@@ -14,7 +14,6 @@
 #include "Arrays.h"
 #include "LargeBinaries.h"
 #include "ROMResources.h"
-#include "ROMData.h"
 
 extern ObjHeader * ObjectPtr1(Ref inObj, long inTag, bool inDoFaultCheck);
 
@@ -54,18 +53,10 @@ ResolveMagicPtr(Ref r)
 
 	if (table == 0)		// table 0 is yer actual magic pointers
 	{
-#if 1
 		if (index < gROMMagicPointerTable.numOfPointers)
 		{
 			return ObjectPtr(gROMMagicPointerTable.magicPointer[index]);
 		}
-#else
-		ArrayObject *  mp = (ArrayObject *)PTR(gConstNSData->magicPointers);
-		if (index < ARRAYLENGTH(mp))
-		{
-			return ObjectPtr(mp->slot[index]);
-		}
-#endif
 	}
 	else if (table == 1)	// table 1 is globals - vars & functions
 	{
@@ -249,9 +240,10 @@ void
 DirtyObject(Ref r)
 {
 	ObjHeader * oPtr = ObjectPtr(r);
-
-	if (!FLAGTEST(oPtr->flags, kObjReadOnly))
+	if (!ISREADONLY(oPtr))
+	{
 		oPtr->flags |= kObjDirty;
+	}
 }
 
 
@@ -265,9 +257,10 @@ void
 UndirtyObject(Ref r)
 {
 	ObjHeader * oPtr = ObjectPtr(r);
-
-	if (!FLAGTEST(oPtr->flags, kObjReadOnly))
+	if (!ISREADONLY(oPtr))
+	{
 		oPtr->flags &= ~kObjDirty;
+	}
 }
 
 #pragma mark -
@@ -282,13 +275,13 @@ void
 LockRef(Ref r)
 {
 	ObjHeader * oPtr = ObjectPtr(r);
-
-	if (FLAGTEST(oPtr->flags, kObjReadOnly))
-		return;
-	if (oPtr->gc.count.locks == 0xFF)
-		return;
-	if (oPtr->gc.count.locks++ == 0)
-		oPtr->flags |= kObjLocked;
+	if (!ISREADONLY(oPtr))
+	{
+		if (oPtr->gc.count.locks == 0xFF)
+			return;
+		if (oPtr->gc.count.locks++ == 0)
+			oPtr->flags |= kObjLocked;
+	}
 }
 
 
@@ -302,13 +295,13 @@ void
 UnlockRef(Ref r)
 {
 	ObjHeader * oPtr = ObjectPtr(r);
-
-	if (FLAGTEST(oPtr->flags, kObjReadOnly))
-		return;
-	if (oPtr->gc.count.locks == 0xFF)
-		return;
-	if (--oPtr->gc.count.locks == 0)
-		oPtr->flags &= ~kObjLocked;
+	if (!ISREADONLY(oPtr))
+	{
+		if (oPtr->gc.count.locks == 0xFF)
+			return;
+		if (--oPtr->gc.count.locks == 0)
+			oPtr->flags &= ~kObjLocked;
+	}
 }
 
 

@@ -15,7 +15,6 @@
 #include "Arrays.h"
 #include "Frames.h"
 #include "ROMResources.h"
-#include "ROMData.h"
 
 /*------------------------------------------------------------------------------
 	P l a i n   C   F u n c t i o n   I n t e r f a c e
@@ -256,7 +255,7 @@ ArrayIndex
 FrameSlotPosition(Ref context, Ref tag)
 {
 	FrameObject *	fr = (FrameObject *)ObjectPtr(context);
-	if (NOTFRAME(fr))
+	if (!ISFRAME(fr))
 		ThrowBadTypeWithFrameData(kNSErrNotAFrame, MAKEPTR(fr));
 
 	return FindOffset(fr->map, tag);	// look up the name in the map
@@ -487,7 +486,7 @@ FrameHasSlotRef(Ref rcvr, Ref tag)
 			return SlowFrameHasSlot(rcvr, tag);
 		fr = (FrameObject *)ObjectPtr(rcvr);
 	}
-	if (NOTFRAME(fr))
+	if (!ISFRAME(fr))
 		ThrowBadTypeWithFrameData(kNSErrNotAFrame, rcvr);
 
 	return (FindOffset(fr->map, tag) != kIndexNotFound);
@@ -618,7 +617,7 @@ GetFrameSlotRef(Ref rcvr, Ref slot)
 			return SlowGetFrameSlot(rcvr, slot);
 		fr = (FrameObject *)ObjectPtr(rcvr);
 	}
-	if (NOTFRAME(fr))
+	if (!ISFRAME(fr))
 		ThrowBadTypeWithFrameData(kNSErrNotAFrame, rcvr);
 
 	ArrayIndex offset = FindOffset(fr->map, slot);
@@ -898,7 +897,7 @@ AddSlot(RefArg context, RefArg tag)
 
 	RefVar map(((FrameObject *)ObjectPtr(context))->map);
 	FrameMapObject * mapPtr = (FrameMapObject *)ObjectPtr(map);
-	if (FLAGTEST(mapPtr->objClass, kMapShared) || FLAGTEST(mapPtr->flags, kObjReadOnly))
+	if (ISSHARED(mapPtr) || ISREADONLY(mapPtr))
 	{
 		map = ExtendSharedMap(map, 1);
 		((FrameObject *)ObjectPtr(context))->map = map;
@@ -966,9 +965,9 @@ RemoveSlot(RefArg ioContext, RefArg tag)
 {
 	FrameObject * fr = (FrameObject *)ObjectPtr(ioContext);
 
-	if ((fr->flags & kObjMask) != kFrameObject)
+	if (!ISFRAME(fr))
 		ThrowBadTypeWithFrameData(kNSErrNotAFrame, ioContext);
-	if (fr->flags & kObjReadOnly)
+	if (ISREADONLY(fr))
 		ThrowExFramesWithBadValue(kNSErrObjectReadOnly, ioContext);
 	if (!IsSymbol(tag))
 		ThrowBadTypeWithFrameData(kNSErrNotASymbol, tag);
@@ -1004,7 +1003,7 @@ RemoveSlot(RefArg ioContext, RefArg tag)
 					map = mapPtr->supermap;
 					mapPtr = (FrameMapObject *)ObjectPtr(map);
 				}
-				if ((mapPtr->objClass & kMapShared) == 0 && (mapPtr->flags & kObjReadOnly) == 0)
+				if (!(ISSHARED(mapPtr) || ISREADONLY(mapPtr)))
 				{
 					// we can safely modify it
 					mapPtr->supermap = frMapPtr->supermap;
@@ -1022,7 +1021,7 @@ RemoveSlot(RefArg ioContext, RefArg tag)
 
 		// at this point we need to shrink the frame map
 		if (!EQ(implMap, frMap)
-		|| (frMapPtr->objClass & kMapShared) || (frMapPtr->flags & kObjReadOnly))
+		|| ISSHARED(frMapPtr) || ISREADONLY(frMapPtr))
 		{
 			// map is shared or read-only so we need to create a new one
 			RefVar	newMap = ShrinkSharedMap(frMap, implMap, index);
@@ -1167,9 +1166,9 @@ SetFrameSlot(RefArg context, RefArg tag, RefArg value)
 	FrameObject * fr = (FrameObject *)ObjectPtr(context);
 
 	// object must be a writable frame
-	if (NOTFRAME(fr))
+	if (!ISFRAME(fr))
 		ThrowBadTypeWithFrameData(kNSErrNotAFrame, context);
-	if (fr->flags & kObjReadOnly)
+	if (ISREADONLY(fr))
 		ThrowExFramesWithBadValue(kNSErrObjectReadOnly, context);
 
 	ArrayIndex i = FindOffset(fr->map, tag);
@@ -1205,7 +1204,7 @@ SharedFrameMap(RefArg inFrame)
 {
 	Ref					map = ((FrameObject *)ObjectPtr(inFrame))->map;
 	FrameMapObject *	mapPtr = (FrameMapObject *)ObjectPtr(map);
-	if ((mapPtr->objClass & kMapShared) == 0 && (mapPtr->flags & kObjReadOnly) == 0)
+	if (!(ISSHARED(mapPtr) || ISREADONLY(mapPtr)))
 		mapPtr->objClass |= kMapShared;
 	return map;
 }

@@ -192,18 +192,19 @@ typedef enum
 	kObjMask			= 0x03
 } ObjFlags;
 
-#define ISLARGEBINARY(_o)	((_o->flags & kObjMask) == kIndirectBinaryObject)
-#define ISSLOTTED(_o)	((_o->flags & kObjSlotted) != 0)
-#define ISARRAY(_o)	((_o->flags & kObjMask) == kArrayObject)
-#define ISFRAME(_o)	((_o->flags & kObjMask) == kFrameObject)
-#define NOTFRAME(_o)	((_o->flags & kObjMask) != kFrameObject)
-#define ISDIRTY(_o)	((_o->flags & kObjDirty) != 0)
+#define ISLARGEBINARY(_o) ((_o->flags & kObjMask) == kIndirectBinaryObject)
+#define ISSLOTTED(_o) ((_o->flags & kObjSlotted) != 0)
+#define ISARRAY(_o) ((_o->flags & kObjMask) == kArrayObject)
+#define ISFRAME(_o) ((_o->flags & kObjMask) == kFrameObject)
+#define ISREADONLY(_o) ((_o->flags & kObjReadOnly) != 0)
+#define ISDIRTY(_o) ((_o->flags & kObjDirty) != 0)
 
 #define kMapPlain		MAKEINT(0)
 #define kMapSorted	MAKEINT(1 << 0)
 #define kMapShared	MAKEINT(1 << 1)
 #define kMapProto		MAKEINT(1 << 2)
 
+#define ISSHARED(_o) ((_o->objClass & kMapShared) != 0)
 
 /*----------------------------------------------------------------------
 	R e f   < - >   P o i n t e r   C o n v e r s i o n

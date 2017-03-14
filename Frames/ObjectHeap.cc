@@ -271,6 +271,7 @@ ComputeMapSize(Ref inMap)
 /*----------------------------------------------------------------------
 	Set the length of an array object.
 	Unsafe in that it doesn’t check the type of Ref passed in.
+	It might be a frame.
 	In:		obj		the object
 				length	number of slots
 	Return:	void		(the object is modified)
@@ -458,18 +459,12 @@ TotalClone1(RefArg obj, CPrecedents & originals, CPrecedents & clones, bool doSh
 		return clones.get(index);
 	originals.add(obj);
 	
-	if (!gHeap->inHeap(obj) || NOTINROM(obj))
+	if (gHeap->inHeap(obj) || ISINROM(obj.h->ref))
 	{
-		if (IsSymbol(obj))
-			objClone = MakeSymbol(SymbolName(obj));
-		else
-			objClone = Clone(obj);
-	}
-	else
-	{
+		// it’s internal so no need to clone
 		if (doShare)
 		{
-			if ((ObjectFlags(obj) & kObjReadOnly) != 0)
+			if (FLAGTEST(ObjectFlags(obj), kObjReadOnly))
 			{
 				clones.add(obj);
 				return NILREF;		//	don’t descend into package or ROM
@@ -480,10 +475,17 @@ TotalClone1(RefArg obj, CPrecedents & originals, CPrecedents & clones, bool doSh
 		else
 			objClone = Clone(obj);
 	}
+	else
+	{
+		if (IsSymbol(obj))
+			objClone = MakeSymbol(SymbolName(obj));
+		else
+			objClone = Clone(obj);
+	}
 	clones.add(obj);
 
 	ArrayIndex count;
-	if ((ObjectFlags(obj) & kObjSlotted) != 0)
+	if (FLAGTEST(ObjectFlags(obj), kObjSlotted))
 		count = Length(obj) + 1;
 	else
 		count = 1;
@@ -510,9 +512,10 @@ TotalClone(RefArg obj)
 	{
 		if (IsSymbol(r))
 		{
-			if (!gHeap->inHeap(r) || NOTINROM(r))
-				return MakeSymbol(SymbolName(r));
-			return r;
+			if (gHeap->inHeap(r) || ISINROM(r))
+				// it’s internal so no need to clone
+				return r;
+			return MakeSymbol(SymbolName(r));
 		}
 		CPrecedents	o1, o2;
 		r = TotalClone1(obj, o1, o2, false);
@@ -529,9 +532,10 @@ EnsureInternal(RefArg obj)
 	{
 		if (IsSymbol(r))
 		{
-			if (!gHeap->inHeap(r) || NOTINROM(r))
-				return MakeSymbol(SymbolName(r));
-			return r;
+			if (gHeap->inHeap(r) || ISINROM(r))
+				// it’s already internal
+				return r;
+			return MakeSymbol(SymbolName(r));
 		}
 		CPrecedents	o1, o2;
 		r = TotalClone1(obj, o1, o2, true);
@@ -1386,7 +1390,7 @@ if (newSize == 0)
 		}
 		else
 		{
-			if ((obj->flags & kObjLocked) != 0)
+			if (FLAGTEST(obj->flags, kObjLocked))
 				ThrowExFramesWithBadValue(kNSErrCouldntResizeLockedObject, MAKEPTR(obj));
 
 			objRoot = MAKEPTR(obj);
@@ -1589,6 +1593,7 @@ CObjectHeap::resizeObject(RefArg inObj, size_t inSize)
 	Set the length of an array.
 	If the array is lengthened, fill the new elements with NILREF.
 	Unsafe in that it doesn’t check the type of Ref passed in.
+	It might be a frame.
 ----------------------------------------------------------------------*/
 
 void
@@ -1663,7 +1668,7 @@ CObjectHeap::clone(RefArg inObj)
 		if (flags == kFrameObject)
 		{
 			FrameMapObject * mapPtr = (FrameMapObject *)ObjectPtr(((FrameObject *)obj)->map);
-			if ((mapPtr->objClass & kMapShared) == 0 && (mapPtr->flags & kObjReadOnly) == 0)
+			if (!(ISSHARED(mapPtr) || ISREADONLY(mapPtr)))
 				mapPtr->objClass |= kMapShared;
 		}
 		return MAKEPTR(clonedObj);
@@ -1687,7 +1692,7 @@ CObjectHeap::replace(Ref ref1, Ref ref2)
 	if (ref1 != ref2)
 	{
 		ForwardingObject * fo = (ForwardingObject *)NoFaultObjectPtr(ref1);
-		if ((fo->flags & kObjReadOnly) != 0)
+		if (ISREADONLY(fo))
 			ThrowExFramesWithBadValue(kNSErrObjectReadOnly, ref1);
 		splitBlock((ObjHeader *)fo, sizeof(ForwardingObject));
 		fo->flags = kObjForward;
