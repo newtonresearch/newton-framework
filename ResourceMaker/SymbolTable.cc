@@ -35,7 +35,7 @@ CHashTable::CHashTable(int inSize)
 //	ASSERT(fTable != NULL);
 }
 
-unsigned long
+unsigned
 CHashTable::hash(CHashTableEntry * inEntry)
 {
 	return ((unsigned long)inEntry >> 8) & (fSize - 1);
@@ -106,10 +106,10 @@ CHashTable::search(CHashTableEntry * inEntry)
 	C S y m b o l T a b l e
 ------------------------------------------------------------------------------*/
 
-unsigned long
+unsigned
 CSymbolTable::hash(CHashTableEntry * inEntry)
 {
-	unsigned long  result = 0;
+	unsigned			result = 0;
 	const char *	symbol = static_cast<CSymbol*>(inEntry)->fName;
 	for (int i = 8; *symbol != 0 && i != 0; symbol++, i--) {
 		result = result * 37 + tolower(*symbol);
@@ -232,7 +232,7 @@ FillSymbolTable(CSymbolTable * inTable, CSymbol ** outFunctionNames, CSymbol ** 
 	C P o i n t e r T a b l e
 ------------------------------------------------------------------------------*/
 
-unsigned long
+unsigned
 CPointerTable::hash(CHashTableEntry * inEntry)
 {
 	if (fFindName) {

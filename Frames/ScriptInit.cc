@@ -15,7 +15,6 @@
 #include "MagicPointers.h"
 #include "RAMInfo.h"
 #include "ROMResources.h"
-#include "ROMData.h"
 
 #if !defined(correct)
 extern void			MakeROMResources(void);
@@ -122,7 +121,7 @@ InitScriptGlobals(void)
 	gTagCache = Slots(RA(slotCacheTable));
 
 //	Add extra global functions
-	CObjectIterator	funcIter(gConstNSData->externalFunctions);	//RA(gFunky)
+	CObjectIterator	funcIter(RA(gFunky));	//gConstNSData->externalFunctions
 	for ( ; !funcIter.done(); funcIter.next())
 	{
 		tag = funcIter.tag();
@@ -132,7 +131,7 @@ InitScriptGlobals(void)
 
 #if defined(hasPureFunctionSupport)
 //	Add constant functions
-	SetFrameSlot(RA(gVarFrame), SYMA(constantFunctions), Clone(gConstNSData->constantFunctions));
+	SetFrameSlot(RA(gVarFrame), SYMA(constantFunctions), Clone(RA(constantFunctions)));	//gConstNSData->constantFunctions
 #endif
 
 // •• This has already been done by REPInit()

@@ -28,7 +28,7 @@ public:
 								CHashTable(int inSize);
 	//							~CHashTable();
 
-	virtual unsigned long	hash(CHashTableEntry * inEntry);
+	virtual unsigned		hash(CHashTableEntry * inEntry);
 	virtual int				compare(CHashTableEntry * inEntry1, CHashTableEntry * inEntry2);
 	void						add(CHashTableEntry * inEntry);
 	void						remove(CHashTableEntry * inEntry);
@@ -65,7 +65,7 @@ class CSymbolTable : public CHashTable
 public:
 								CSymbolTable(int inSize)	:  CHashTable(inSize)  { }
 
-	virtual unsigned long	hash(CHashTableEntry * inEntry);
+	virtual unsigned		hash(CHashTableEntry * inEntry);
 	virtual int				compare(CHashTableEntry * inEntry1, CHashTableEntry * inEntry2);
 	CSymbol *				find(const char * inName);
 };
@@ -97,7 +97,7 @@ class CPointerTable : public CHashTable
 public:
 								CPointerTable(int inSize)	:  CHashTable(inSize)  { }
 
-	virtual unsigned long	hash(CHashTableEntry * inEntry);
+	virtual unsigned		hash(CHashTableEntry * inEntry);
 	virtual int				compare(CHashTableEntry * inEntry1, CHashTableEntry * inEntry2);
 	CPointer *				find(const char * inName);
 	CPointer *				find(uint32_t inFuncPtr);
