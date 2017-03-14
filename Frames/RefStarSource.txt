@@ -23,11 +23,6 @@
 ; protocols
 00680cb4 protocolInstancePrototype
 0068022c classInfoPrototype
-;if defined(forNTK)
-;xxxxxxx	formInstallScript
-;xxxxxxx	formRemoveScript
-;xxxxxxx	autoInstallScript
-;endif
 
 ; the symbol table
 00681b24 symbolTable
@@ -1024,7 +1019,6 @@
 0067ff64 protoDictionary
 0067ff6c protoIOCategory
 0067ff94 edgeDrawer
-0067ffdc analogTimePopup
 00680024 canonicalParaCaretInfo
 0068004c protoTracer
 0068006c protoCategoryRollCategory
