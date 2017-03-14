@@ -10,6 +10,7 @@
 #define __FRAMES__ 1
 
 #include "ObjHeader.h"
+#include "Objects.h"
 
 //	useful symbol hash values
 #define k_protoHash  0x6622439B

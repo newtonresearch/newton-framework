@@ -6,6 +6,7 @@
 	Written by:	Newton Research Group.
 */
 
+#include "Objects.h"
 #include "PSSManager.h"
 #include "MemObjManager.h"
 #include "MuxStore.h"

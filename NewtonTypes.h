@@ -54,17 +54,6 @@ typedef struct
 	Ref	stackPos;
 } RefHandle;
 
-#if defined(__cplusplus)
-class RefVar;
-typedef const RefVar & RefArg;
-#else
-typedef RefHandle * RefVar;
-typedef RefVar RefStruct;
-typedef const RefVar RefArg;
-#endif
-
-typedef Ref (*MapSlotsFunction)(RefArg tag, RefArg value, unsigned long anything);
-
 
 #if !defined(__MACTYPES__)
 /* From MacTypes.h */

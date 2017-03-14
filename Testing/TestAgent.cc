@@ -8,6 +8,7 @@
 
 #include "TestAgent.h"
 #include "Debugger.h"
+#include "Objects.h"
 #include "Funcs.h"
 #include "Dates.h"
 #include "Unicode.h"

@@ -144,7 +144,6 @@ class RefVar
 public:
 				RefVar();
 				RefVar(Ref r);
-				RefVar(const Ref * r);	// for use ONLY by RA macro
 				RefVar(const RefVar & o);
 				~RefVar();
 
@@ -168,9 +167,6 @@ inline	RefVar::RefVar(const RefVar & o)
 inline	RefVar::~RefVar()
 { DisposeRefHandle(h); }
 
-inline	RefVar::RefVar(const Ref * r)
-{/* h = (RefHandle *)r; */}
-
 inline	RefVar &	RefVar::operator=(Ref r)
 { h->ref = r; return *this; }
 
@@ -182,10 +178,10 @@ inline				RefVar::operator	long() const
 
 //______________________________________________________________________________
 
-inline void * operator new(size_t, Ref ** prv) { return prv; }
+typedef const RefVar& RefArg;
 
-#define RA(r) (*new(&RS##r) RefVar(&RNILREF))
-#define SYMA(name) RA(SYM##name)
+#define RA(_rs) *reinterpret_cast<RefVar*>(&RS##_rs)
+#define SYMA(_name) RA(SYM##_name)
 
 extern	Ref	RNILREF;
 extern	Ref *	RSNILREF;
@@ -353,7 +349,8 @@ extern	ArrayIndex	Length(Ref obj);		// Length in bytes or slots
 // MapSlots calls a function on each slot of an array or frame object, giving it
 // the tag (integer or symbol) and contents of each slot.  "Anything" is passed to
 // func.  If func returns anything but NILREF, MapSlots terminates.
-extern	void		MapSlots(RefArg obj, MapSlotsFunction func, unsigned anything);
+typedef	Ref	 (*MapSlotsFunction)(RefArg tag, RefArg value, unsigned long anything);
+extern	void		MapSlots(RefArg obj, MapSlotsFunction func, unsigned long anything);
 extern	void		RemoveSlot(RefArg frame, RefArg tag);
 extern	void		SetFramePath(RefArg obj, RefArg thePath, RefArg value);
 extern	void		SetFrameSlot(RefArg obj, RefArg slot, RefArg value);

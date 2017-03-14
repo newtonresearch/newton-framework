@@ -2358,7 +2358,7 @@ CInterpreter::unsafeDoSend(RefArg rcvr, RefArg impl, RefArg fn, ArrayIndex numAr
 #if defined(correct)
 	if (ISREALPTR(fn) && ISRO(fn))
 	{
-		// function is in package or ROM
+		// function is in package or ROM so we can optimise message send
 		Ref *	funSlot = ((FrameObject *)PTR(fn))->slot;
 		Ref	funClass = funSlot[kFunctionClassIndex];
 		if (funClass == kPlainFuncClass)
@@ -2439,7 +2439,7 @@ CInterpreter::unsafeDoCall(Ref func, ArrayIndex numArgs)		// yes, really a Ref!
 #if defined(correct)
 	if (ISREALPTR(func) && ISRO(func))
 	{
-		// function is in package or ROM
+		// function is in package or ROM so we can optimise function call
 		Ref * funSlot = ((FrameObject *)PTR(func))->slot;
 		Ref	funClass = funSlot[kFunctionClassIndex];
 		if (funClass == kPlainFuncClass)
@@ -2526,8 +2526,10 @@ CInterpreter::send(RefArg rcvr, RefArg impl, RefArg func, ArrayIndex numArgs)
 {
 // trace message send
 	TraceFunction trace;
-	if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL)
-		trace(&vm->func, func, STACKINDEX(ctrlStack), gCurrentStackPos >> 16, 1, gFramesFunctionProfilerData);
+	if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL) {
+		Ref * RSfn = &vm->func;
+		trace(RA(fn), func, STACKINDEX(ctrlStack), gCurrentStackPos >> 16, 1, gFramesFunctionProfilerData);
+	}
 
 	vm->pc = MAKEINT(instructionOffset);
 
@@ -2590,9 +2592,10 @@ CInterpreter::call(RefArg func, ArrayIndex numArgs)
 {
 // trace function entry
 	TraceFunction trace;
-	if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL)
-		trace(&vm->func, func, STACKINDEX(ctrlStack), gCurrentStackPos >> 16, 0, gFramesFunctionProfilerData);
-
+	if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL) {
+		Ref * RSfn = &vm->func;
+		trace(RA(fn), func, STACKINDEX(ctrlStack), gCurrentStackPos >> 16, 0, gFramesFunctionProfilerData);
+	}
 	vm->pc = MAKEINT(instructionOffset);
 
 	Ref funClass = GetArraySlot(func, kFunctionClassIndex);
@@ -2660,9 +2663,10 @@ CInterpreter::topLevelCall(RefArg func, RefArg args)
 {
 // trace function entry
 	TraceFunction trace;
-	if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL)
-		trace(&vm->func, func, STACKINDEX(ctrlStack), gCurrentStackPos >> 16, 0, gFramesFunctionProfilerData);
-
+	if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL) {
+		Ref * RSfn = &vm->func;
+		trace(RA(fn), func, STACKINDEX(ctrlStack), gCurrentStackPos >> 16, 0, gFramesFunctionProfilerData);
+	}
 	// despatch to appropriate function flavour
 	Ref	funClass = GetArraySlot(func, kFunctionClassIndex);
 	if (funClass == kPlainFuncClass)
@@ -2884,8 +2888,10 @@ CInterpreter::callPlainCFunction(RefArg func, ArrayIndex numArgs)
 
 // trace C function return
 	TraceFunction trace;
-	if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL)
-		trace(&vm->func, func, STACKINDEX(ctrlStack), gCurrentStackPos >> 16, 2, gFramesFunctionProfilerData);
+	if (gFramesFunctionProfilingEnabled == kProfilingEnabled && (trace = gFramesFunctionProfiler) != NULL) {
+		Ref * RSfn = &vm->func;
+		trace(RA(fn), func, STACKINDEX(ctrlStack), gCurrentStackPos >> 16, 2, gFramesFunctionProfilerData);
+	}
 }
 
 
@@ -3295,7 +3301,9 @@ CInterpreter::handleException(Exception * inException, int inDepth, StackState &
 							VMState * prevVM = vm;
 							vm = ctrlStack.pop();
 							
-							trace(&vm->func, &prevVM->func, STACKINDEX(ctrlStack), stackPos, 3, gFramesFunctionProfilerData);
+							Ref * RSfn = &vm->func;
+							Ref * RSprevFn = &prevVM->func;
+							trace(RA(fn), RA(prevFn), STACKINDEX(ctrlStack), stackPos, 3, gFramesFunctionProfilerData);
 						}
 					}
 
@@ -3328,7 +3336,9 @@ CInterpreter::handleException(Exception * inException, int inDepth, StackState &
 			vm = ctrlStack.pop();
 			stackDepth -= kNumOfItemsInStackFrame;
 
-			trace(&vm->func, &prevVM->func, stackDepth, stackPos, 3, gFramesFunctionProfilerData);
+			Ref * RSfn = &vm->func;
+			Ref * RSprevFn = &prevVM->func;
+			trace(RA(fn), RA(prevFn), stackDepth, stackPos, 3, gFramesFunctionProfilerData);
 		}
 	}
 
