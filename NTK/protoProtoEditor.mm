@@ -140,7 +140,7 @@ SetSelection(RefArg inRcvr, RefArg inStart, RefArg inLength)
 #if debugLevel > 0
 NSLog(@"SetSelection(%d, %d)", RINT(inStart), RINT(inLength));
 #endif
-	[txView setSelectedRange: NSMakeRange(RINT(inStart), RINT(inLength))];
+	[txView setSelectedRange:NSMakeRange(RINT(inStart), RINT(inLength))];
 	return NILREF;
 }
 
@@ -157,7 +157,7 @@ ReplaceSelection(RefArg inRcvr, RefArg inString)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	[txView insertText: MakeNSString(inString)];
+	[txView insertText:MakeNSString(inString)];
 	return inString;
 }
 
@@ -294,7 +294,7 @@ CharacterRangeAtLine(NSTextView * inView, NSUInteger inLine)
 	NSString * str = [inView string];
 	ArrayIndex lineIndex, charIndex, strLength = str.length;
 	for (charIndex = 0, lineIndex = 0; charIndex < strLength && lineIndex <= inLine; lineIndex++) {
-		lineRange = [str lineRangeForRange: NSMakeRange(charIndex, 0)];
+		lineRange = [str lineRangeForRange:NSMakeRange(charIndex, 0)];
 		charIndex = NSMaxRange(lineRange);
 	}
 
@@ -395,7 +395,7 @@ PointToOffset(RefArg inRcvr, RefArg inH, RefArg inV)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSUInteger index = [txView characterIndexForPoint: NSMakePoint(RINT(inH), RINT(inV))];
+	NSUInteger index = [txView characterIndexForPoint:NSMakePoint(RINT(inH), RINT(inV))];
 #if debugLevel > 0
 NSLog(@"PointToOffset({%d,%d}) -> %d", RINT(inH), RINT(inV), index);
 #endif
@@ -434,7 +434,7 @@ Peek(RefArg inRcvr, RefArg inOffset)
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	return MAKECHAR([txView.string characterAtIndex: RINT(inOffset)]);
+	return MAKECHAR([txView.string characterAtIndex:RINT(inOffset)]);
 }
 
 
@@ -547,13 +547,13 @@ CharacterClass(unichar inChar)
 	static NSCharacterSet * whitespaceSet = nil;
 
 	if (literalSet == nil)
-		literalSet = [[NSCharacterSet characterSetWithCharactersInString: @"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"] retain];
-	if ([literalSet characterIsMember: inChar])
+		literalSet = [[NSCharacterSet characterSetWithCharactersInString:@"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"] retain];
+	if ([literalSet characterIsMember:inChar])
 		return 1;
 
 	if (whitespaceSet == nil)
 		whitespaceSet = [[NSCharacterSet whitespaceAndNewlineCharacterSet] retain];
-	if ([whitespaceSet characterIsMember: inChar])
+	if ([whitespaceSet characterIsMember:inChar])
 		return 0;
 
 	return 2;
@@ -603,11 +603,11 @@ TokenStart(RefArg inRcvr, RefArg inOffset)
 	NSString * str = txView.string;
 	ArrayIndex offset = RINT(inOffset);
 	// assert offset is in range of str
-	unichar charCode = [str characterAtIndex: offset];
+	unichar charCode = [str characterAtIndex:offset];
 	int charClass = CharacterClass(charCode);
 
 	for ( ; offset > 0; offset--) {
-		charCode = [str characterAtIndex: offset-1];
+		charCode = [str characterAtIndex:offset-1];
 		if (CharacterClass(charCode) != charClass) {
 			break;
 		}
@@ -633,11 +633,11 @@ TokenEnd(RefArg inRcvr, RefArg inOffset)
 	NSString * str = txView.string;
 	ArrayIndex len = str.length, offset = RINT(inOffset);
 	// assert offset is in range of str
-	unichar charCode = [str characterAtIndex: offset];
+	unichar charCode = [str characterAtIndex:offset];
 	int charClass = CharacterClass(charCode);
 
 	for ( ; offset < len-1; offset++) {
-		charCode = [str characterAtIndex: offset+1];
+		charCode = [str characterAtIndex:offset+1];
 		if (CharacterClass(charCode) != charClass) {
 			break;
 		}
@@ -673,7 +673,7 @@ TellUser(RefArg inRcvr, RefArg inString)
 	Return:	an integer
 
 	NSLayoutManager * layoutMgr = [txView layoutManager];
-	NSRect txRect = [layoutMgr lineFragmentRectForGlyphAtIndex: index effectiveRange: NULL];
+	NSRect txRect = [layoutMgr lineFragmentRectForGlyphAtIndex:index effectiveRange:NULL];
 ------------------------------------------------------------------------------*/
 
 Ref
@@ -681,7 +681,7 @@ VisibleTop(RefArg inRcvr) // Top of visible portion of view
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSRect boundsBox = [txView bounds];
+	NSRect boundsBox = txView.bounds;
 	int v = boundsBox.origin.y + boundsBox.size.height;
 	return MAKEINT(v);
 }
@@ -692,7 +692,7 @@ VisibleLeft(RefArg inRcvr) // Left edge of visible portion of view
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSRect boundsBox = [txView bounds];
+	NSRect boundsBox = txView.bounds;
 	int h = boundsBox.origin.x;
 	return MAKEINT(h);
 }
@@ -703,7 +703,7 @@ VisibleHeight(RefArg inRcvr) // Height of visible portion of view
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSRect boundsBox = [txView bounds];
+	NSRect boundsBox = txView.bounds;
 	int v = boundsBox.size.height;
 	return MAKEINT(v);
 }
@@ -714,7 +714,7 @@ VisibleWidth(RefArg inRcvr) // Width of visible portion of view
 {
 	NSTextView * txView = (NSTextView *)(Ref) GetFrameSlot(inRcvr, SYMA(viewCObject));
 
-	NSRect boundsBox = [txView bounds];
+	NSRect boundsBox = txView.bounds;
 	int h = boundsBox.size.width;
 	return MAKEINT(h);
 }
