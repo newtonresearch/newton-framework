@@ -12,10 +12,10 @@
 		F42A247D1DEB05B300CD22AD /* NTK.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = F468AD061DEAFF29009DFF66 /* NTK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F42A247F1DEB2B8700CD22AD /* ObjectPrinter.cc in Sources */ = {isa = PBXBuildFile; fileRef = F42A247E1DEB2B8700CD22AD /* ObjectPrinter.cc */; };
 		F42A24811DEC47AD00CD22AD /* ErrorString.m in Sources */ = {isa = PBXBuildFile; fileRef = F42A24801DEC47AD00CD22AD /* ErrorString.m */; };
-		F434ACD10C984BAC005AB44D /* ResMaker.cc in Sources */ = {isa = PBXBuildFile; fileRef = F434ACCF0C984BAC005AB44D /* ResMaker.cc */; };
 		F4C514431D7C2670008E5537 /* RefStar.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514421D7C2670008E5537 /* RefStar.s */; };
 		F4C5145B1D86B8F5008E5537 /* SymbolTable.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C5145A1D86B8F5008E5537 /* SymbolTable.cc */; };
 		F4C5145E1D86BDAC008E5537 /* Reporting.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C5145C1D86BDAC008E5537 /* Reporting.cc */; };
+		F4E496B31E72E927000CD622 /* ResMaker.cc in Sources */ = {isa = PBXBuildFile; fileRef = F434ACCF0C984BAC005AB44D /* ResMaker.cc */; };
 		F4F9F7E11D9173F3008E611B /* UnRelocate.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4F9F7E01D9173F3008E611B /* UnRelocate.cc */; };
 /* End PBXBuildFile section */
 
@@ -127,6 +127,7 @@
 		F4BA0CCA069482A200BE8E9A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastUpgradeCheck = 0820;
 			};
 			buildConfigurationList = F4F9288F0C81CD920077CA66 /* Build configuration list for PBXProject "ResMaker" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -164,9 +165,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				F4F9F7E11D9173F3008E611B /* UnRelocate.cc in Sources */,
+				F4E496B31E72E927000CD622 /* ResMaker.cc in Sources */,
 				F42A247F1DEB2B8700CD22AD /* ObjectPrinter.cc in Sources */,
 				F4C5145B1D86B8F5008E5537 /* SymbolTable.cc in Sources */,
-				F434ACD10C984BAC005AB44D /* ResMaker.cc in Sources */,
 				F4C5145E1D86BDAC008E5537 /* Reporting.cc in Sources */,
 				F4C514431D7C2670008E5537 /* RefStar.s in Sources */,
 				F42A24811DEC47AD00CD22AD /* ErrorString.m in Sources */,
@@ -209,7 +210,27 @@
 		F4F928900C81CD920077CA66 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "/Users/simon/Projects/newton-toolkit/";
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/../../newton-toolkit/";
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "../**";
 			};
@@ -218,7 +239,25 @@
 		F4F928910C81CD920077CA66 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "/Users/simon/Projects/newton-toolkit/";
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/../../newton-toolkit/";
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "../**";
 			};
