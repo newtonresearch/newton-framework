@@ -51886,6 +51886,18 @@ SYMLoadDataFile:	.long		kHeaderSize + 4 + 12 + kFlagsBinary
 		.long		0x45EDF60A
 		.asciz	"LoadDataFile"
 		.align	2
+		.globl	SYMDisasm
+SYMDisasm:	.long		kHeaderSize + 4 + 6 + kFlagsBinary
+		Ref		0, 0x55552
+		.long		0x7F4C7D79
+		.asciz	"Disasm"
+		.align	2
+		.globl	SYMDisasmRange
+SYMDisasmRange:	.long		kHeaderSize + 4 + 11 + kFlagsBinary
+		Ref		0, 0x55552
+		.long		0x14650A3E
+		.asciz	"DisasmRange"
+		.align	2
 		.globl	SYMSelection
 SYMSelection:	.long		kHeaderSize + 4 + 9 + kFlagsBinary
 		Ref		0, 0x55552

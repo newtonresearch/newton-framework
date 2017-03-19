@@ -85,6 +85,18 @@ obj_LoadDataFile_map:	FrameMapObj(3)
 obj_LoadDataFile:	FrameObj(3, obj_LoadDataFile_map)
 		Ref		0x00000132,_FLoadDataFile,MAKEINT(2)
 		.align	2
+		.globl	obj_Disasm
+obj_Disasm_map:	FrameMapObj(3)
+		Ref		0,NILREF,MAKEPTR(SYMclass),MAKEPTR(SYMfuncPtr),MAKEPTR(SYMnumArgs)
+obj_Disasm:	FrameObj(3, obj_Disasm_map)
+		Ref		0x00000132,_FDisasm,MAKEINT(1)
+		.align	2
+		.globl	obj_DisasmRange
+obj_DisasmRange_map:	FrameMapObj(3)
+		Ref		0,NILREF,MAKEPTR(SYMclass),MAKEPTR(SYMfuncPtr),MAKEPTR(SYMnumArgs)
+obj_DisasmRange:	FrameObj(3, obj_DisasmRange_map)
+		Ref		0x00000132,_FDisasmRange,MAKEINT(3)
+		.align	2
 		.globl	obj_Selection
 obj_Selection_map:	FrameMapObj(3)
 		Ref		0,NILREF,MAKEPTR(SYMclass),MAKEPTR(SYMfuncPtr),MAKEPTR(SYMnumArgs)
@@ -13265,16 +13277,16 @@ builtinFunctions:	FrameObj(1357, builtinFunctions_map)
 		Ref		MAKEPTR(obj_0041FBA5),MAKEPTR(obj_0052CCF1),MAKEPTR(obj_0041C181),MAKEPTR(obj_0041CE91),MAKEPTR(obj_0041C3CD),MAKEPTR(obj_0041B049),MAKEPTR(obj_0049B2A1),MAKEPTR(obj_006312B9),MAKEPTR(obj_0041D139),MAKEPTR(obj_00628871),MAKEPTR(obj_00476E3D),MAKEPTR(obj_004801CD),MAKEPTR(obj_00436F89),MAKEPTR(obj_006312D1),MAKEPTR(obj_0041C199),MAKEPTR(obj_0062EE95)
 		Ref		MAKEPTR(obj_0041D575),MAKEPTR(obj_00628145),MAKEPTR(obj_0055A3C1),MAKEPTR(obj_0055A635),MAKEPTR(obj_004D3935),MAKEPTR(obj_00628839),MAKEPTR(obj_003C61C1),MAKEPTR(obj_005633CD),MAKEPTR(obj_004631B5),MAKEPTR(obj_0041E729),MAKEPTR(obj_0041C37D),MAKEPTR(obj_006312E9),MAKEPTR(obj_00631301),MAKEPTR(obj_0050455D),MAKEPTR(obj_00568439),MAKEPTR(obj_00631319)
 		Ref		MAKEPTR(obj_00631331),MAKEPTR(obj_00631349),MAKEPTR(obj_00558F11),MAKEPTR(obj_00631361),MAKEPTR(obj_00631379),MAKEPTR(obj_00535F35),MAKEPTR(obj_006299C9),MAKEPTR(obj_00631391),MAKEPTR(obj_0041FC55),MAKEPTR(obj_006313A9),MAKEPTR(obj_0041C071),MAKEPTR(obj_003C6135),MAKEPTR(obj_003C6569)
-gFunky_map:	FrameMapObj(40)
+gFunky_map:	FrameMapObj(42)
 		Ref		0x00000008,NILREF
-		Ref		MAKEPTR(SYMDefineGlobalConstant),MAKEPTR(SYMUnDefineGlobalConstant),MAKEPTR(SYMDefPureFn),MAKEPTR(SYMStuffHex),MAKEPTR(SYMReadStreamFile),MAKEPTR(SYMLoadDataFile),MAKEPTR(SYMSelection),MAKEPTR(SYMSelectionOffset),MAKEPTR(SYMSelectionLength),MAKEPTR(SYMSetSelection),MAKEPTR(SYMReplaceSelection),MAKEPTR(SYMTextString),MAKEPTR(SYMTextLength),MAKEPTR(SYMFindLine),MAKEPTR(SYMLineStart),MAKEPTR(SYMNumberOfLines)
-		Ref		MAKEPTR(SYMLineTop),MAKEPTR(SYMLineBottom),MAKEPTR(SYMLineBaseline),MAKEPTR(SYMLeftEdge),MAKEPTR(SYMRightEdge),MAKEPTR(SYMPointToOffset),MAKEPTR(SYMMapChars),MAKEPTR(SYMSearchChars),MAKEPTR(SYMPeek),MAKEPTR(SYMSetKeyHandler),MAKEPTR(SYMGetKeyHandler),MAKEPTR(SYMSetMetaBit),MAKEPTR(SYMQuoteCharacter),MAKEPTR(SYMCharacterClass),MAKEPTR(SYMSetCharacterClass),MAKEPTR(SYMTokenStart)
-		Ref		MAKEPTR(SYMTokenEnd),MAKEPTR(SYMTellUser),MAKEPTR(SYMVisibleTop),MAKEPTR(SYMVisibleLeft),MAKEPTR(SYMVisibleHeight),MAKEPTR(SYMVisibleWidth),MAKEPTR(SYMSetVisibleTop),MAKEPTR(SYMSetVisibleLeft)
+		Ref		MAKEPTR(SYMDefineGlobalConstant),MAKEPTR(SYMUnDefineGlobalConstant),MAKEPTR(SYMDefPureFn),MAKEPTR(SYMStuffHex),MAKEPTR(SYMReadStreamFile),MAKEPTR(SYMLoadDataFile),MAKEPTR(SYMDisasm),MAKEPTR(SYMDisasmRange),MAKEPTR(SYMSelection),MAKEPTR(SYMSelectionOffset),MAKEPTR(SYMSelectionLength),MAKEPTR(SYMSetSelection),MAKEPTR(SYMReplaceSelection),MAKEPTR(SYMTextString),MAKEPTR(SYMTextLength),MAKEPTR(SYMFindLine)
+		Ref		MAKEPTR(SYMLineStart),MAKEPTR(SYMNumberOfLines),MAKEPTR(SYMLineTop),MAKEPTR(SYMLineBottom),MAKEPTR(SYMLineBaseline),MAKEPTR(SYMLeftEdge),MAKEPTR(SYMRightEdge),MAKEPTR(SYMPointToOffset),MAKEPTR(SYMMapChars),MAKEPTR(SYMSearchChars),MAKEPTR(SYMPeek),MAKEPTR(SYMSetKeyHandler),MAKEPTR(SYMGetKeyHandler),MAKEPTR(SYMSetMetaBit),MAKEPTR(SYMQuoteCharacter),MAKEPTR(SYMCharacterClass)
+		Ref		MAKEPTR(SYMSetCharacterClass),MAKEPTR(SYMTokenStart),MAKEPTR(SYMTokenEnd),MAKEPTR(SYMTellUser),MAKEPTR(SYMVisibleTop),MAKEPTR(SYMVisibleLeft),MAKEPTR(SYMVisibleHeight),MAKEPTR(SYMVisibleWidth),MAKEPTR(SYMSetVisibleTop),MAKEPTR(SYMSetVisibleLeft)
 		.globl	gFunky
-gFunky:	FrameObj(40, gFunky_map)
-		Ref		MAKEPTR(obj_DefineGlobalConstant),MAKEPTR(obj_UnDefineGlobalConstant),MAKEPTR(obj_DefPureFn),MAKEPTR(obj_StuffHex),MAKEPTR(obj_ReadStreamFile),MAKEPTR(obj_LoadDataFile),MAKEPTR(obj_Selection),MAKEPTR(obj_SelectionOffset),MAKEPTR(obj_SelectionLength),MAKEPTR(obj_SetSelection),MAKEPTR(obj_ReplaceSelection),MAKEPTR(obj_TextString),MAKEPTR(obj_TextLength),MAKEPTR(obj_FindLine),MAKEPTR(obj_LineStart),MAKEPTR(obj_NumberOfLines)
-		Ref		MAKEPTR(obj_LineTop),MAKEPTR(obj_LineBottom),MAKEPTR(obj_LineBaseline),MAKEPTR(obj_LeftEdge),MAKEPTR(obj_RightEdge),MAKEPTR(obj_PointToOffset),MAKEPTR(obj_MapChars),MAKEPTR(obj_SearchChars),MAKEPTR(obj_Peek),MAKEPTR(obj_SetKeyHandler),MAKEPTR(obj_GetKeyHandler),MAKEPTR(obj_SetMetaBit),MAKEPTR(obj_QuoteCharacter),MAKEPTR(obj_CharacterClass),MAKEPTR(obj_SetCharacterClass),MAKEPTR(obj_TokenStart)
-		Ref		MAKEPTR(obj_TokenEnd),MAKEPTR(obj_TellUser),MAKEPTR(obj_VisibleTop),MAKEPTR(obj_VisibleLeft),MAKEPTR(obj_VisibleHeight),MAKEPTR(obj_VisibleWidth),MAKEPTR(obj_SetVisibleTop),MAKEPTR(obj_SetVisibleLeft)
+gFunky:	FrameObj(42, gFunky_map)
+		Ref		MAKEPTR(obj_DefineGlobalConstant),MAKEPTR(obj_UnDefineGlobalConstant),MAKEPTR(obj_DefPureFn),MAKEPTR(obj_StuffHex),MAKEPTR(obj_ReadStreamFile),MAKEPTR(obj_LoadDataFile),MAKEPTR(obj_Disasm),MAKEPTR(obj_DisasmRange),MAKEPTR(obj_Selection),MAKEPTR(obj_SelectionOffset),MAKEPTR(obj_SelectionLength),MAKEPTR(obj_SetSelection),MAKEPTR(obj_ReplaceSelection),MAKEPTR(obj_TextString),MAKEPTR(obj_TextLength),MAKEPTR(obj_FindLine)
+		Ref		MAKEPTR(obj_LineStart),MAKEPTR(obj_NumberOfLines),MAKEPTR(obj_LineTop),MAKEPTR(obj_LineBottom),MAKEPTR(obj_LineBaseline),MAKEPTR(obj_LeftEdge),MAKEPTR(obj_RightEdge),MAKEPTR(obj_PointToOffset),MAKEPTR(obj_MapChars),MAKEPTR(obj_SearchChars),MAKEPTR(obj_Peek),MAKEPTR(obj_SetKeyHandler),MAKEPTR(obj_GetKeyHandler),MAKEPTR(obj_SetMetaBit),MAKEPTR(obj_QuoteCharacter),MAKEPTR(obj_CharacterClass)
+		Ref		MAKEPTR(obj_SetCharacterClass),MAKEPTR(obj_TokenStart),MAKEPTR(obj_TokenEnd),MAKEPTR(obj_TellUser),MAKEPTR(obj_VisibleTop),MAKEPTR(obj_VisibleLeft),MAKEPTR(obj_VisibleHeight),MAKEPTR(obj_VisibleWidth),MAKEPTR(obj_SetVisibleTop),MAKEPTR(obj_SetVisibleLeft)
 stackFrameInfoFramePrototype_map:	FrameMapObj(5)
 		Ref		0x00000000,NILREF,MAKEPTR(SYMclass),MAKEPTR(SYMCodeBlock),MAKEPTR(SYMprogramCounter),MAKEPTR(SYMreceiver),MAKEPTR(SYMcontextFrame)
 		.globl	stackFrameInfoFramePrototype
@@ -21788,7 +21800,7 @@ constantFunctions_map:	FrameMapObj(0)
 		Ref		0x00000008,NILREF
 		.globl	constantFunctions
 constantFunctions:	FrameObj(0, constantFunctions_map)
-obj_030135B9:	.long		kHeaderSize + 92 + kFlagsBinary
+obj_0301C9B9:	.long		kHeaderSize + 92 + kFlagsBinary
 		Ref		0, MAKEPTR(SYMinstructions)
 		.byte		0x70,0x19,0x91,0xA4,0x7C,0x1A,0x29,0x6F,0x00,0x3D,0x7C,0x22,0xC7,0x00,0x11,0xA6
 		.byte		0x5F,0x00,0x34,0x7E,0x24,0xC2,0xA5,0x7D,0x1B,0x91,0x7B,0x1B,0x91,0xC4,0x6F,0x00
@@ -21797,45 +21809,45 @@ obj_030135B9:	.long		kHeaderSize + 92 + kFlagsBinary
 		.byte		0x08,0x1F,0x00,0x09,0x2A,0x6F,0x00,0x55,0x7B,0x7B,0x1F,0x00,0x08,0x39,0x00,0x7B
 		.byte		0x1F,0x00,0x08,0x22,0x98,0x7B,0x1F,0x00,0x0A,0x22,0x99,0x02
 		.align	2
-obj_03013711:	.long		kHeaderSize + 28 + kFlagsBinary
+obj_0301CB11:	.long		kHeaderSize + 28 + kFlagsBinary
 		Ref		0, MAKEPTR(SYMstring)
 		.short	0x4500,0x7800,0x7400,0x7200,0x6100,0x7300,0x2000,0x4400,0x7200,0x6100,0x7700,0x6500,0x7200,0
 		.align	2
-obj_03013761:	.long		kHeaderSize + 266 + kFlagsBinary
+obj_0301CB61:	.long		kHeaderSize + 266 + kFlagsBinary
 		Ref		0, MAKEPTR(SYMstring)
 		.short	0x5400,0x6800,0x6500,0x2000,0x6100,0x7000,0x7000,0x6C00,0x6900,0x6300,0x6100,0x7400,0x6900,0x6F00,0x6E00,0x2000,0x7900,0x6F00,0x7500,0x2000,0x6A00,0x7500,0x7300,0x7400,0x2000,0x6900,0x6E00,0x7300,0x7400,0x6100,0x6C00,0x6C00,0x6500,0x6400,0x2000,0x6300,0x6F00,0x6E00,0x6600,0x6C00,0x6900,0x6300,0x7400,0x7300,0x2000,0x7700,0x6900,0x7400,0x6800,0x2000,0x6100,0x6E00,0x6F00,0x7400,0x6800,0x6500,0x7200,0x2000,0x6100,0x7000,0x7000,0x6C00,0x6900,0x6300,0x6100,0x7400,0x6900,0x6F00,0x6E00,0x2E00,0x2000,0x5000,0x6C00,0x6500,0x6100,0x7300,0x6500,0x2000,0x6300,0x6F00,0x6E00,0x7400,0x6100,0x6300,0x7400,0x2000,0x7400,0x6800,0x6500,0x2000,0x6100,0x7000,0x7000,0x6C00,0x6900,0x6300,0x6100,0x7400,0x6900,0x6F00,0x6E00,0x2000,0x7600,0x6500,0x6E00,0x6400,0x6F00,0x7200,0x2000,0x6600,0x6F00,0x7200,0x2000,0x6100,0x6E00,0x2000,0x7500,0x7000,0x6400,0x6100,0x7400,0x6500,0x6400,0x2000,0x7600,0x6500,0x7200,0x7300,0x6900,0x6F00,0x6E00,0x2E00,0
 		.align	2
-obj_03013629:	ArrayObj(11, MAKEPTR(SYMliterals))
-		Ref		MAKEPTR(SYMvars),MAKEPTR(SYMextras),MAKEPTR(SYMIsArray),MAKEPTR(SYMapp),MAKEPTR(obj_03013711),MAKEPTR(obj_03013761),MAKEPTR(SYMGetRoot),MAKEPTR(SYMNotify),MAKEPTR(SYMdevInstallScript),MAKEPTR(SYMHasSlot),MAKEPTR(SYMInstallScript)
+obj_0301CA29:	ArrayObj(11, MAKEPTR(SYMliterals))
+		Ref		MAKEPTR(SYMvars),MAKEPTR(SYMextras),MAKEPTR(SYMIsArray),MAKEPTR(SYMapp),MAKEPTR(obj_0301CB11),MAKEPTR(obj_0301CB61),MAKEPTR(SYMGetRoot),MAKEPTR(SYMNotify),MAKEPTR(SYMdevInstallScript),MAKEPTR(SYMHasSlot),MAKEPTR(SYMInstallScript)
 formInstallScript_map:	FrameMapObj(5)
 		Ref		0x00000000,NILREF,MAKEPTR(SYMclass),MAKEPTR(SYMinstructions),MAKEPTR(SYMliterals),MAKEPTR(SYMargFrame),MAKEPTR(SYMnumArgs)
 		.globl	formInstallScript
 formInstallScript:	FrameObj(5, formInstallScript_map)
-		Ref		0x00000032,MAKEPTR(obj_030135B9),MAKEPTR(obj_03013629),NILREF,0x000C0004
-obj_03013971:	.long		kHeaderSize + 16 + kFlagsBinary
+		Ref		0x00000032,MAKEPTR(obj_0301C9B9),MAKEPTR(obj_0301CA29),NILREF,0x000C0004
+obj_0301CD71:	.long		kHeaderSize + 16 + kFlagsBinary
 		Ref		0, MAKEPTR(SYMinstructions)
 		.byte		0x7B,0x18,0x19,0x2A,0x6F,0x00,0x0E,0x7B,0x7B,0x18,0x39,0x5F,0x00,0x0F,0x22,0x02
 		.align	2
-obj_03013995:	ArrayObj(2, MAKEPTR(SYMliterals))
+obj_0301CD95:	ArrayObj(2, MAKEPTR(SYMliterals))
 		Ref		MAKEPTR(SYMdevRemoveScript),MAKEPTR(SYMHasSlot)
 formRemoveScript_map:	FrameMapObj(5)
 		Ref		0x00000000,NILREF,MAKEPTR(SYMclass),MAKEPTR(SYMinstructions),MAKEPTR(SYMliterals),MAKEPTR(SYMargFrame),MAKEPTR(SYMnumArgs)
 		.globl	formRemoveScript
 formRemoveScript:	FrameObj(5, formRemoveScript_map)
-		Ref		0x00000032,MAKEPTR(obj_03013971),MAKEPTR(obj_03013995),NILREF,0x00000004
-obj_03013A1D:	.long		kHeaderSize + 16 + kFlagsBinary
+		Ref		0x00000032,MAKEPTR(obj_0301CD71),MAKEPTR(obj_0301CD95),NILREF,0x00000004
+obj_0301CE1D:	.long		kHeaderSize + 16 + kFlagsBinary
 		Ref		0, MAKEPTR(SYMinstructions)
 		.byte		0x7B,0x18,0x91,0x19,0x81,0x1A,0x29,0xA4,0x7B,0x7C,0x7B,0x1B,0x3A,0x00,0x7C,0x02
 		.align	2
-obj_03013A75:	ArrayObj(2, 0x00000008)
+obj_0301CE75:	ArrayObj(2, 0x00000008)
 		Ref		NILREF,MAKEPTR(SYMremoveScript)
-obj_03013A41:	ArrayObj(4, MAKEPTR(SYMliterals))
-		Ref		MAKEPTR(SYMdevRemoveScript),MAKEPTR(obj_03013A75),MAKEPTR(SYMEnsureInternal),MAKEPTR(SYMdevInstallScript)
+obj_0301CE41:	ArrayObj(4, MAKEPTR(SYMliterals))
+		Ref		MAKEPTR(SYMdevRemoveScript),MAKEPTR(obj_0301CE75),MAKEPTR(SYMEnsureInternal),MAKEPTR(SYMdevInstallScript)
 autoInstallScript_map:	FrameMapObj(5)
 		Ref		0x00000000,NILREF,MAKEPTR(SYMclass),MAKEPTR(SYMinstructions),MAKEPTR(SYMliterals),MAKEPTR(SYMargFrame),MAKEPTR(SYMnumArgs)
 		.globl	autoInstallScript
 autoInstallScript:	FrameObj(5, autoInstallScript_map)
-		Ref		0x00000032,MAKEPTR(obj_03013A1D),MAKEPTR(obj_03013A41),NILREF,0x00000008
+		Ref		0x00000032,MAKEPTR(obj_0301CE1D),MAKEPTR(obj_0301CE41),NILREF,0x00000008
 		.globl	space
 space:	.long		kHeaderSize + 4 + kFlagsBinary
 		Ref		0, MAKEPTR(SYMstring)
