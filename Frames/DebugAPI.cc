@@ -507,17 +507,42 @@ const char * paramInstrs[] =
 
 /* -----------------------------------------------------------------------------
 	P l a i n   C   I n t e r f a c e
+	Originally part of the NS Debug Tools.pkg which includes breakpoint and
+	other extended debugging functions.
+	We don’t respect the global NSDParamFrame (Newton Toolkit User’s Guide 7-23)
+		verbose
+		disasmInstWidth
+		disasmArgWidth
 ----------------------------------------------------------------------------- */
-extern "C" Ref FDisasm(RefArg rcvr, RefArg inFunc);
+extern "C" {
+Ref FDisasm(RefArg rcvr, RefArg inFunc);
+Ref FDisasmRange(RefArg rcvr, RefArg inFunc, RefArg inStart, RefArg inEnd);
+}
 
 void Disassemble(RefArg inFunc);
+void Disassemble(RefArg inFunc, ArrayIndex inStart, ArrayIndex inEnd);
 ArrayIndex PrintInstruction(bool in_function, unsigned char * instruction, RefArg inLiterals, RefArg inArgs, RefArg inDebugInfo);
 
 
 Ref
 FDisasm(RefArg rcvr, RefArg inFunc)
 {
-	Disassemble(inFunc);
+	Disassemble(inFunc, 0, kIndexNotFound);
+	return NILREF;
+}
+
+Ref
+FDisasmRange(RefArg rcvr, RefArg inFunc, RefArg inStart, RefArg inEnd)
+{
+	ArrayIndex start = 0;
+	ArrayIndex end = kIndexNotFound;
+	if (ISINT(inStart)) {
+		start = RVALUE(inStart);
+	}
+	if (ISINT(inEnd)) {
+		end = RVALUE(inEnd);
+	}
+	Disassemble(inFunc, start, end);
 	return NILREF;
 }
 
@@ -530,6 +555,12 @@ FDisasm(RefArg rcvr, RefArg inFunc)
 
 void
 Disassemble(RefArg inFunc)
+{
+	Disassemble(inFunc, 0, kIndexNotFound);
+}
+
+void
+Disassemble(RefArg inFunc, ArrayIndex inStart, ArrayIndex inEnd)
 {
 	Ref funcClass = ClassOf(inFunc);
 
@@ -548,11 +579,18 @@ Disassemble(RefArg inFunc)
 		debugInfo = NILREF;
 	}
 
+	if (inEnd == kIndexNotFound || inEnd > Length(instructions)) {
+		inEnd = Length(instructions);
+	}
+	if (inStart > inEnd) {
+		inStart = inEnd;
+	}
+
 	CDataPtr instrData(instructions);
-	unsigned char * instrPtr = (unsigned char *)instrData;
+	unsigned char * instrPtr = (unsigned char *)instrData + inStart;
 	ArrayIndex instrLen = 0;
 	bool is_function = EQ(funcClass, SYMA(_function));
-	for (ArrayIndex i = 0, count = Length(instructions); i < count; i += instrLen, instrPtr += instrLen) {
+	for (ArrayIndex i = inStart; i < inEnd; i += instrLen, instrPtr += instrLen) {
 		REPprintf("%4d: ", i);
 		instrLen = PrintInstruction(is_function, instrPtr, literals, args, debugInfo);
 		REPprintf("\n");

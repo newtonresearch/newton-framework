@@ -24,6 +24,7 @@ extern "C" {
 #if defined(hasGlobalConstantFunctions)
 Ref	FDefineGlobalConstant(RefArg inRcvr, RefArg inTag, RefArg inObj);
 Ref	FUnDefineGlobalConstant(RefArg inRcvr, RefArg inTag);
+Ref	FIsGlobalConstant(RefArg inRcvr, RefArg inTag);
 #endif
 #if defined(hasPureFunctionSupport)
 Ref	FDefPureFn(RefArg inRcvr, RefArg inTag, RefArg inFn);
@@ -78,6 +79,12 @@ FUnDefineGlobalConstant(RefArg inRcvr, RefArg inTag)
 {
 	RemoveSlot(RA(gConstantsFrame), inTag);
 	return NILREF;
+}
+
+Ref
+FIsGlobalConstant(RefArg inRcvr, RefArg inTag)
+{
+	return FrameHasSlot(RA(gConstantsFrame), inTag);
 }
 #endif
 

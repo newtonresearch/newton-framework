@@ -6,7 +6,13 @@ ntkC
 ;
 DefineGlobalConstant _FDefineGlobalConstant 2
 UnDefineGlobalConstant _FUnDefineGlobalConstant 1
+IsGlobalConstant _FIsGlobalConstant 1
 DefPureFn _FDefPureFn 2
 StuffHex _FStuffHex 2
-ReadStreamFile _FReadStreamFile 1
+GetLayout _FGetLayout 1
+SetPartFrameSlot _FSetPartFrameSlot 2
+GetPartFrameSlot _FGetPartFrameSlot 1
 LoadDataFile _FLoadDataFile 2
+ReadStreamFile _FReadStreamFile 1
+Disasm _FDisasm 1
+DisasmRange _FDisasmRange 3
