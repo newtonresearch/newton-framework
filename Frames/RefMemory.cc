@@ -9,6 +9,7 @@
 #include "Objects.h"
 #include "ObjHeader.h"
 #include "Globals.h"
+#include "NewtGlobals.h"
 #include "RefMemory.h"
 #include "Frames.h"
 #include "Arrays.h"
@@ -106,15 +107,14 @@ ObjHeader *
 ObjectPtr(Ref r)
 {
 	long tag = RTAG(r);
-	if (tag == kTagPointer)
-	{
-		if (ISRO(r))
+	if (tag == kTagPointer) {
+		if (ISRO(r)) {
 			return PTR(r);
-		if (r == gCached.ref)
+		}
+		if (r == gCached.ref) {
 			return gCached.ptr;
-	}
-	else if (tag == kTagMagicPtr)
-	{
+		}
+	} else if (tag == kTagMagicPtr) {
 		return ResolveMagicPtr(r);
 	}
 	return ObjectPtr1(r, tag, false);
@@ -125,15 +125,14 @@ ObjHeader *
 FaultCheckObjectPtr(Ref r)
 {
 	long tag = RTAG(r);
-	if (tag == kTagPointer)
-	{
-		if (ISRO(r))
+	if (tag == kTagPointer) {
+		if (ISRO(r)) {
 			return PTR(r);
-		if (r == gCached.ref)
+		}
+		if (r == gCached.ref) {
 			return gCached.ptr;
-	}
-	else if (tag == kTagMagicPtr)
-	{
+		}
+	} else if (tag == kTagMagicPtr) {
 		return ResolveMagicPtr(r);
 	}
 	return ObjectPtr1(r, tag, true);	// only difference from ObjectPtr()
@@ -151,12 +150,9 @@ ObjHeader *
 NoFaultObjectPtr(Ref r)
 {
 	long tag = RTAG(r);
-	if (tag == kTagPointer)
-	{
+	if (tag == kTagPointer) {
 		return PTR(ForwardReference(r));
-	}
-	else if (tag == kTagMagicPtr)
-	{
+	} else if (tag == kTagMagicPtr) {
 		return ResolveMagicPtr(r);
 	}
 	return ObjectPtr1(r, tag, false);
@@ -174,11 +170,11 @@ static Ref ForwardReference1(ForwardingObject * foPtr);
 Ref
 ForwardReference(Ref r)
 {
-	if (ISREALPTR(r))
-	{
+	if (ISREALPTR(r)) {
 		ForwardingObject * foPtr = (ForwardingObject *)PTR(r);
-		if (FLAGTEST(foPtr->flags, kObjForward))
+		if (FLAGTEST(foPtr->flags, kObjForward)) {
 			return ForwardReference1(foPtr);
+		}
 	}
 	return r;
 }
@@ -193,25 +189,26 @@ ForwardReference(Ref r)
 static Ref
 ForwardReference1(ForwardingObject * foPtr)
 {
-	Ref ref, fr = INVALIDPTRREF;
+	Ref ref, finalRef = INVALIDPTRREF;
 	ForwardingObject * fo = foPtr;
 
+	// follow the forwarding chain
 	do {
 		ref = fo->obj;
-		if (ISREALPTR(ref))
-		{
+		if (ISREALPTR(ref)) {
 			fo = (ForwardingObject *)PTR(ref);
-		}
-		else
-		{
-			fr = ref;
+		} else {
+			finalRef = ref;
 			fo = (ForwardingObject *)NoFaultObjectPtr(ref);
 		}
 	} while (FLAGTEST(fo->flags, kObjForward));
+	// fo is now the final object
 	ref = MAKEPTR(fo);
-	if (fr == INVALIDPTRREF)
-		fr = ref;
-	foPtr->obj = fr;
+	if (finalRef == INVALIDPTRREF) {
+		finalRef = ref;
+	}
+	// collapse the forwarding chain so ref forwards to final object
+	foPtr->obj = finalRef;
 	return ref;
 }
 
