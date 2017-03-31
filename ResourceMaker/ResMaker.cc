@@ -560,6 +560,7 @@ ROMSymbolName(Ref r)
 		"Aref","SetAref","Length","Clone","Stringer","Map","Send","GetIndexChar","GetLetterIndex","GC",
 		"SetClass","AddArraySlot","GetSlot","SetSlot","GetPath","SetPath","HasVar","HasPath",
 		"NewIterator","ModalState","Translate","GetCardInfo","SetSortId",
+		"stepAllocateContext","preAllocatedContext",
 		0 };
 
 	SymbolObject32 * obj = (SymbolObject32 *)(r-1);
@@ -702,7 +703,7 @@ void
 PrintSymbol(FILE* inFP, const char * inName, const char * inSymbol)
 {
 	fprintf(inFP, "		.globl	SYM%s\n", inName);
-	fprintf(inFP, "SYM%s:	.long		kHeaderSize + 4 + %ld + kFlagsBinary\n", inName, strlen(inSymbol));
+	fprintf(inFP, "SYM%s:	.long		kHeaderSize + 4 + %ld + kFlagsBinary\n", inName, strlen(inSymbol)+1);
 	fprintf(inFP, "		Ref		0, 0x55552\n");
 	fprintf(inFP, "		.long		0x%08X\n", SymbolHashFunction(inSymbol));
 	fprintf(inFP, "		.asciz	\"%s\"\n", inSymbol);
@@ -712,12 +713,13 @@ PrintSymbol(FILE* inFP, const char * inName, const char * inSymbol)
 
 /* -----------------------------------------------------------------------------
 	Print source of a string object.
+	Assume UniChars are in host byte order.
 ----------------------------------------------------------------------------- */
 
 void
 PrintString(FILE* inFP, const char * inName, const char * inClass, const UniChar * inString)
 {
-	ArrayIndex len = Ustrlen(inString);	// yes will be big-endian but we’re only looking for nul
+	ArrayIndex len = Ustrlen(inString);
 	if (strncmp(inName, "obj_", 4) != 0) {
 		fprintf(inFP, "		.globl	%s\n", inName);
 	}
@@ -725,7 +727,7 @@ PrintString(FILE* inFP, const char * inName, const char * inClass, const UniChar
 	fprintf(inFP, "		Ref		0, %s\n", inClass);
 	fprintf(inFP, "		.short	");
 	for (ArrayIndex i = 0; i < len; ++i) {
-		UniChar ch = CANONICAL_SHORT(inString[i]);
+		UniChar ch = inString[i];
 		if (ch == '\\') {
 			fprintf(inFP, "'\\\\',");
 		} else if (ch >= 0x20 && ch <= 0x7E) {
@@ -1152,7 +1154,13 @@ print object -- if pointer object use name above
 					if (IsROMSubclass(objClass, "string")) {
 /*-- string --*/
 						if (inDefineObjects) {
-							PrintString(inFP, inName, PrintROMObject(inFP, inName, NILREF, objClass, false, false), (UniChar *)ROMBinaryData(inObj));
+							// byte-swap UniChar
+							UniChar * s = (UniChar *)ROMBinaryData(inObj);
+							ArrayIndex len = ROMLength(inObj)/sizeof(UniChar);
+							for (ArrayIndex i = 0; i < len; ++i, ++s) {
+								*s = CANONICAL_SHORT(*s);
+							}
+							PrintString(inFP, inName, PrintROMObject(inFP, inName, NILREF, objClass, false, false), s);
 						}
 						sprintf(valueStr, "MAKEPTR(%s)", inName);
 						rsValue = valueStr;
@@ -1390,6 +1398,7 @@ PrintPkgObject(FILE* inFP, const char * inName, Ref inObj, bool inDefineObjects,
 					if (IsSubclass(objClass, SYMA(string))) {
 /*-- string --*/
 						if (inDefineObjects) {
+							// the package loader has already helpfully byte-swapped UniChar
 							PrintString(inFP, inName, PrintPkgObject(inFP, inName, objClass, false, false), (UniChar *)BinaryData(inObj));
 						}
 						sprintf(valueStr, "MAKEPTR(%s)", inName);
@@ -1735,9 +1744,10 @@ main(int argc, const char * argv[])
 #if defined(forNTK)
 /*-- symbols used by NTK --*/
 	const char * ntkSym[] = { "GetKeyHandler","RemoveScript","partData","control",
-									  "platformFunctions","platformWeakFunctions","platformVariables",
-									  "protoEditor","protoProtoEditor",
 									  "__origFunctions","__origVars","__platform",
+									  "platformFunctions","platformWeakFunctions","platformVariables","platformConstants",
+									  "SetPartFrameSlot","GetPartFrameSlot","thisView","beforeScript","afterScript",
+									  "protoEditor","protoProtoEditor",
 									   0 };
 	fprintf(fp_h, "\n/*-- for NTK --*/\n");
 	fprintf(fp_rs, "\n/*-- for NTK --*/\n");
