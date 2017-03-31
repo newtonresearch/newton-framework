@@ -510,7 +510,7 @@ CObjectReader::read(void)
 	unsigned char	streamVersion;
 	fPipe >> streamVersion;
 	if (streamVersion != kNSOFVersion)
-		ThrowErr(exStore, kNSErrUnknownStreamFormat);
+		ThrowOSErr(kNSErrUnknownStreamFormat);
 	return scan();
 }
 
@@ -523,7 +523,7 @@ CObjectReader::size(void)
 	unsigned char	streamVersion;
 	fPipe >> streamVersion;
 	if (streamVersion != kNSOFVersion)
-		ThrowErr(exStore, kNSErrUnknownStreamFormat);
+		ThrowOSErr(kNSErrUnknownStreamFormat);
 	objSize = sizeof(streamVersion) + scanSize();
 	fPipe.readSeek(here, SEEK_SET);
 	return objSize;
@@ -782,7 +782,7 @@ Ref
 CObjectReader::readLargeBinary(void)
 {
 	if (fStore == NULL)
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 
 	ArrayIndex	index = fPrecedents->add(NILREF);	// placeholder
 

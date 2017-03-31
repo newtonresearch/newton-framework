@@ -57,7 +57,7 @@ PlainSoupMakeKey(RefArg inRcvr, RefArg inKey, RefArg inPath)
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	RefVar indexDesc(IndexPathToIndexDesc(soupIndexInfo, inPath, NULL));
 	if (ISNIL(indexDesc))
-		ThrowErr(exStore, kNSErrNoSuchIndex);
+		ThrowOSErr(kNSErrNoSuchIndex);
 
 	SKey sKey;
 	RefVar indexType(GetFrameSlot(indexDesc, SYMA(type)));
@@ -78,7 +78,7 @@ PlainSoupGetIndexes(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	RefVar soupIndexes(GetFrameSlot(soupIndexInfo, SYMA(indexes)));
 	ArrayIndex count = Length(soupIndexes);
@@ -106,7 +106,7 @@ PlainSoupIndexSizes(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	RefVar soupIndexes(GetFrameSlot(soupIndexInfo, SYMA(indexes)));
 	ArrayIndex ii, count = Length(soupIndexes);
@@ -135,7 +135,7 @@ PlainSoupAddIndex(RefArg inRcvr, RefArg index)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	if (NOTNIL(IndexPathToIndexDesc(soupIndexInfo, GetFrameSlot(index, SYMA(path)), NULL)))
 	{
@@ -182,15 +182,15 @@ PlainSoupRemoveIndex(RefArg inRcvr, RefArg index)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	if (EQ(index, SYMA(_uniqueId)))
-		ThrowErr(exStore, kNSErrCantRemoveUIdIndex);
+		ThrowOSErr(kNSErrCantRemoveUIdIndex);
 
 	int huh;
 	RefVar indexDesc(IndexPathToIndexDesc(soupIndexInfo, index, &huh));
 	if (ISNIL(indexDesc))
-		ThrowErr(exStore, kNSErrNoSuchIndex);
+		ThrowOSErr(kNSErrNoSuchIndex);
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(TStore));
 	CheckWriteProtect(storeWrapper->store());
@@ -240,7 +240,7 @@ PlainSoupHasTags(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	return MAKEBOOLEAN(NOTNIL(GetTagsIndexDesc(soupIndexInfo)));
 }
@@ -292,13 +292,13 @@ PlainSoupAddTags(RefArg inRcvr, RefArg inTags)
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	RefVar tagsIndexDesc(GetTagsIndexDesc(soupIndexInfo));
 	if (ISNIL(tagsIndexDesc))
-		ThrowErr(exStore, kNSErrNoTags);
+		ThrowOSErr(kNSErrNoTags);
 
 	RefVar soupTags(GetFrameSlot(tagsIndexDesc, SYMA(tags)));
 	bool isTagsArray = IsArray(inTags);
 	ArrayIndex i, numOfNewTags = isTagsArray ? Length(soupTags) : 1;
 	if (CountTags(soupTags) + numOfNewTags > 624)
-		ThrowErr(exStore, kNSErrInvalidTagsCount);
+		ThrowOSErr(kNSErrInvalidTagsCount);
 
 	bool isTagsChanged = false;
 	if (isTagsArray)
@@ -340,7 +340,7 @@ PlainSoupRemoveTags(RefArg inRcvr, RefArg inTags)
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	RefVar tagsIndexDesc(GetTagsIndexDesc(soupIndexInfo));
 	if (ISNIL(tagsIndexDesc))
-		ThrowErr(exStore, kNSErrNoTags);
+		ThrowOSErr(kNSErrNoTags);
 
 	RefVar cursor(QueryEntriesWithTags(inRcvr, inTags));
 	int i, count = Length(inTags);
@@ -416,14 +416,14 @@ PlainSoupModifyTag(RefArg inRcvr, RefArg inOldTag, RefArg inNewTag)
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	RefVar tagsIndexDesc(GetTagsIndexDesc(soupIndexInfo));
 	if (ISNIL(tagsIndexDesc))
-		ThrowErr(exStore, kNSErrNoTags);
+		ThrowOSErr(kNSErrNoTags);
 
 	if (EQ(inOldTag, inNewTag))
 		return NILREF;
 
 	RefVar soupTags(GetFrameSlot(tagsIndexDesc, SYMA(tags)));
 	if (ISINT(FSetContains(RA(NILREF), soupTags, inNewTag)))
-		ThrowErr(exStore, kNSErrInvalidTagSpec);
+		ThrowOSErr(kNSErrInvalidTagSpec);
 
 	RefVar tagIndex(FSetContains(RA(NILREF), soupTags, inOldTag));
 	if (NOTINT(tagIndex))
@@ -481,7 +481,7 @@ PlainSoupGetInfo(RefArg inRcvr, RefArg inTag)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	RefVar info;
 	if (FrameHasSlot(soupIndexInfo, SYMA(info)))
@@ -504,7 +504,7 @@ PlainSoupSetInfo(RefArg inRcvr, RefArg inTag, RefArg inValue)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	CheckWriteProtect(PlainSoupGetStore(inRcvr));
 
@@ -538,7 +538,7 @@ PlainSoupGetAllInfo(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	RefVar info(GetFrameSlot(soupIndexInfo, SYMA(info)));
 	return Clone(info);
@@ -561,7 +561,7 @@ PlainSoupSetAllInfo(RefArg inRcvr, RefArg info)
 
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	CheckWriteProtect(PlainSoupGetStore(inRcvr));
 
@@ -586,7 +586,7 @@ PlainSoupGetSignature(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	return GetFrameSlot(soupIndexInfo, SYMA(signature));
 }
@@ -605,7 +605,7 @@ PlainSoupSetSignature(RefArg inRcvr, RefArg inSignature)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	CheckWriteProtect(PlainSoupGetStore(inRcvr));
 
@@ -673,14 +673,14 @@ PlainSoupGetSize(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(TStore));
 	CSoupIndex * soupIndex = GetSoupIndexObject(inRcvr, 0);
 	GetSizeParms parms = { storeWrapper, 0 };
 	NewtonErr err = soupIndex->search(1, NULL, NULL, GetSizeStopFn, &parms, NULL, NULL);
 	if (err < 0)
-		ThrowErr(exStore, err);
+		ThrowOSErr(err);
 
 	// add in sizes of indexes
 	RefVar indexSizes(PlainSoupIndexSizes(inRcvr));
@@ -703,7 +703,7 @@ Ref
 PlainSoupSetName(RefArg inRcvr, RefArg inName)
 {
 	if (!IsString(inName))
-		ThrowErr(exStore, kNSErrNotAString);
+		ThrowOSErr(kNSErrNotAString);
 	if (IsRichString(inName))
 		ThrowBadTypeWithFrameData(kNSErrNotAPlainString, inName);
 	if (Length(inName) / sizeof(UniChar) > 40)
@@ -718,7 +718,7 @@ PlainSoupSetName(RefArg inRcvr, RefArg inName)
 		return inName;
 
 	if (ISTRUE(StoreHasSoup(PlainSoupGetStore(inRcvr), inName)))
-		ThrowErr(exStore, kNSErrDuplicateSoupName);
+		ThrowOSErr(kNSErrDuplicateSoupName);
 
 	FaultObject * soupObj = (FaultObject *)NoFaultObjectPtr(GetFrameSlot(inRcvr, SYMA(_proto)));
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)soupObj->store;
@@ -748,7 +748,7 @@ PlainSoupSetName(RefArg inRcvr, RefArg inName)
 		{
 			if (err > noErr)
 				err = kNSErrInternalError;
-			ThrowErr(exStore, err);
+			ThrowOSErr(err);
 		}
 
 		name = GetUString(soupName);	// sp158
@@ -759,7 +759,7 @@ PlainSoupSetName(RefArg inRcvr, RefArg inName)
 		{
 			if (err > noErr)
 				err = kNSErrInternalError;
-			ThrowErr(exStore, err);
+			ThrowOSErr(err);
 		}
 	}
 	newton_catch_all
@@ -792,7 +792,7 @@ PlainSoupRemoveFromStore(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	FaultObject * soupObj = (FaultObject *)NoFaultObjectPtr(soupIndexInfo);
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)soupObj->store;
@@ -841,7 +841,7 @@ PlainSoupRemoveFromStore(RefArg inRcvr)
 		{
 			if (err > 0)
 				err = kNSErrInternalError;
-			ThrowErr(exStore, err);
+			ThrowOSErr(err);
 		}
 
 		SetFrameSlot(inRcvr, SYMA(_proto), RA(NILREF));
@@ -910,7 +910,7 @@ PlainSoupRemoveAllEntries(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(TStore));
 	CheckWriteProtect(storeWrapper->store());
@@ -925,7 +925,7 @@ PlainSoupRemoveAllEntries(RefArg inRcvr)
 		CSoupIndex * soupIndex = GetSoupIndexObject(inRcvr, 0);
 		NewtonErr err = soupIndex->search(1, NULL, NULL, RemoveEntryStopFn, storeWrapper, NULL, NULL);
 		if (err < 0)
-			ThrowErr(exStore, err);
+			ThrowOSErr(err);
 		RefVar soupIndexes(GetFrameSlot(soupIndexInfo, SYMA(indexes)));
 		RefVar index;
 		for (ArrayIndex i = 0, count = Length(soupIndexes); i < count; ++i)
@@ -1081,14 +1081,14 @@ PlainSoupCopyEntriesWithCallBack(RefArg inRcvr, RefArg intoSoup, RefArg inCallba
 {
 	RefVar fromProto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(fromProto))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	RefVar toProto(GetFrameSlot(intoSoup, SYMA(_proto)));
 	if (ISNIL(toProto))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	if (FrameHasSlot(intoSoup, SYMA(soupList)))
-		ThrowErr(exStore, kNSErrCantCopyToUnionSoup);
+		ThrowOSErr(kNSErrCantCopyToUnionSoup);
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(TStore));
 	CheckWriteProtect(storeWrapper->store());
@@ -1126,7 +1126,7 @@ PlainSoupCopyEntriesWithCallBack(RefArg inRcvr, RefArg intoSoup, RefArg inCallba
 		CSoupIndex * soupIndex = GetSoupIndexObject(inRcvr, 0);
 		NewtonErr err = soupIndex->search(1, NULL, NULL, CopyEntriesStopFn, &parms, NULL, NULL);
 		if (err < 0)
-			ThrowErr(exStore, err);
+			ThrowOSErr(err);
 		storeWrapper->endCopyMaps_Symbols();
 
 		qsort(parms.map, parms.aIndex, sizeof(PSSIdMapping), ComparePSSIdMapping);

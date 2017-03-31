@@ -326,15 +326,15 @@ CCursor::buildSoupsInfo(void)
 			infoPtr->fSoup = NOTNIL(theList) ? GetArraySlot(theList, i) : fSoup;
 			soupProto = GetFrameSlot(infoPtr->fSoup, SYMA(_proto));
 			if (ISNIL(soupProto))
-				ThrowErr(exStore, kNSErrInvalidSoup);
+				ThrowOSErr(kNSErrInvalidSoup);
 			soupIndex = IndexPathToIndexDesc(soupProto, fIndexPath, NULL);
 			if (ISNIL(soupIndex))
-				ThrowErr(exStore, kNSErrNoSuchIndex);
+				ThrowOSErr(kNSErrNoSuchIndex);
 			if (i == 0)
 			{
 				fIndexType = GetFrameSlot(soupIndex, SYMA(type));
 				if (EQ(fIndexType, SYMA(tags)))
-					ThrowErr(exStore, kNSErrBadIndexDesc);
+					ThrowOSErr(kNSErrBadIndexDesc);
 				if ((fQuerySpecBits & kQueryByKey) != 0)
 				{
 					//sp-54
@@ -373,7 +373,7 @@ CCursor::buildSoupsInfo(void)
 			{
 				tagsIndex = GetTagsIndexDesc(soupProto);
 				if (ISNIL(tagsIndex))
-					ThrowErr(exStore, kNSErrNoTags);
+					ThrowOSErr(kNSErrNoTags);
 				infoPtr->fTags = EncodeQueryTags(tagsIndex, fTagSpec);
 			}
 		}
@@ -1054,7 +1054,7 @@ Ref
 CCursor::gotoEntry(RefArg inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 	if (fSoupInfo == NULL)
 		return NILREF;
 

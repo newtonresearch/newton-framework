@@ -561,7 +561,7 @@ FLBAllocCompressed(RefArg inStoreWrapper, RefArg inClass, RefArg inLength, RefAr
 	store = storeWrapper->store();
 	CheckWriteProtect(store);
 	if (!storeWrapper->hasEphemerals())
-		ThrowErr(exStore, kNSErrOldStoreFormat);
+		ThrowOSErr(kNSErrOldStoreFormat);
 
 	companderName = NOTNIL(inCompanderName) ? BinaryData(ASCIIString(inCompanderName)) : "CSimpleStoreCompander";
 	companderParms = NULL;

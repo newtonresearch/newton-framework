@@ -130,7 +130,7 @@ FollowFaultBlock(RefArg inRcvr)
 {
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inRcvr);
 	if (obj->store == INVALIDPTRREF)
-		ThrowErr(exStore, kNSErrInvalidFaultBlock);
+		ThrowOSErr(kNSErrInvalidFaultBlock);
 	if (obj->store == NILREF)
 		return ForwardEntryMessage(inRcvr, SYMA(EntryAccess));
 
@@ -194,7 +194,7 @@ void
 WriteFaultBlock(RefArg inRcvr)
 {
 	if (!IsFaultBlock(inRcvr))
-		ThrowErr(exStore, kNSErrNotAFaultBlock);
+		ThrowOSErr(kNSErrNotAFaultBlock);
 
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inRcvr);
 	RefVar object(obj->object);
@@ -230,7 +230,7 @@ void
 InvalFaultBlock(RefArg inRcvr)
 {
 	if (!IsFaultBlock(inRcvr))
-		ThrowErr(exStore, kNSErrNotAFaultBlock);
+		ThrowOSErr(kNSErrNotAFaultBlock);
 
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inRcvr);
 	obj->store = INVALIDPTRREF;
@@ -289,11 +289,11 @@ StorePermObject(RefArg inObj, CStoreWrapper * inStoreWrapper, PSSId & ioId, CDyn
 	bool			isRO;
 
 	if (inStoreWrapper == NULL)
-		ThrowErr(exStore, kNSErrInvalidFaultBlock);
+		ThrowOSErr(kNSErrInvalidFaultBlock);
 	if ((err = inStoreWrapper->store()->isReadOnly(&isRO)) != noErr)
 		ThrowOSErr(err);
 	if (isRO)
-		ThrowErr(exStore, kStoreErrWriteProtected);
+		ThrowOSErr(kStoreErrWriteProtected);
 
 	CStoreObjectWriter writer(inObj, inStoreWrapper, ioId);
 

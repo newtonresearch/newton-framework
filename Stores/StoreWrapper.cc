@@ -59,7 +59,7 @@ CStoreWrapper *
 StoreWrapper(RefArg inRcvr)
 {
 	if (ISNIL(GetFrameSlot(inRcvr, SYMA(_proto))))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	return (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
 }
 
@@ -67,7 +67,7 @@ CStore *
 StoreFromWrapper(RefArg inRcvr)
 {
 	if (ISNIL(GetFrameSlot(inRcvr, SYMA(_proto))))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
 	return storeWrapper->store();
 }
@@ -213,7 +213,7 @@ StoreGetSignature(RefArg inRcvr)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	return GetFrameSlot(proto, SYMA(signature));
 }
 
@@ -222,7 +222,7 @@ StoreSetSignature(RefArg inRcvr, RefArg inSignature)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	StoreCheckWriteProtect(inRcvr);
 	SetFrameSlot(proto, SYMA(signature), inSignature);
 	WriteFaultBlock(proto);
@@ -234,7 +234,7 @@ StoreGetName(RefArg inRcvr)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	return GetFrameSlot(proto, SYMA(name));
 }
 
@@ -243,7 +243,7 @@ StoreSetName(RefArg inRcvr, RefArg inName)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	StoreCheckWriteProtect(inRcvr);
 	SetFrameSlot(proto, SYMA(name), inName);
 	WriteFaultBlock(proto);
@@ -255,7 +255,7 @@ StoreGetInfo(RefArg inRcvr, RefArg inTag)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	if (FrameHasSlot(proto, SYMA(info)))
 	{
 		RefVar	info(GetFrameSlot(proto, SYMA(info)));
@@ -269,7 +269,7 @@ StoreSetInfo(RefArg inRcvr, RefArg inTag, RefArg inValue)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	StoreCheckWriteProtect(inRcvr);
 	RefVar	tag(EnsureInternal(inTag));
 	RefVar	value(TotalClone(inValue));
@@ -293,7 +293,7 @@ StoreGetAllInfo(RefArg inRcvr)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	return Clone(GetFrameSlot(proto, SYMA(info)));
 }
 
@@ -305,7 +305,7 @@ StoreSetAllInfo(RefArg inRcvr, RefArg info)
 
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 	StoreCheckWriteProtect(inRcvr);
 	SetFrameSlot(proto, SYMA(info), TotalClone(info));
 	WriteFaultBlock(proto);
@@ -344,11 +344,11 @@ StoreCreateSoup(RefArg inRcvr, RefArg inName, RefArg indexes)
 	}
 
 	if (ISTRUE(StoreHasSoup(inRcvr, inName)))
-		ThrowErr(exStore, kNSErrDuplicateSoupName);
+		ThrowOSErr(kNSErrDuplicateSoupName);
 
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 
 	CStoreWrapper *	storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
 	CheckWriteProtect(storeWrapper->store());
@@ -386,7 +386,7 @@ StoreCreateSoup(RefArg inRcvr, RefArg inName, RefArg indexes)
 		nameData = (int)objId;
 		// add that info to the soup name index
 		if ((err = soupIndex.add(&nameKey, &nameData)) != noErr)
-			ThrowErr(exStore, err > 0 ? kNSErrInternalError : err);
+			ThrowOSErr(err > 0 ? kNSErrInternalError : err);
 
 		theSoup = StoreGetSoup(inRcvr, inName);
 		AddToUnionSoup(inName, theSoup);
@@ -453,7 +453,7 @@ StoreGetSoupNames(RefArg inRcvr)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
 	CSoupIndex soupIndex;
@@ -476,7 +476,7 @@ StoreGetSoupId(RefArg inRcvr, RefArg inName)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(store));
 	CSoupIndex soupIndex;
@@ -506,7 +506,7 @@ StoreGetSoup(RefArg inRcvr, RefArg inName)
 {
 	RefVar	proto(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 
 	// first look in the cache
 	RefVar soups(GetFrameSlot(inRcvr, SYMA(soups)));
@@ -532,6 +532,9 @@ StoreGetSoup(RefArg inRcvr, RefArg inName)
 			// we found the persistent soup object; load it
 			soupObj = LoadPermObject(storeWrapper, soupId, NULL);
 			soupObj = MakeFaultBlock(RA(NILREF), storeWrapper, soupId, soupObj);
+REPprintf("StoreGetSoup(\"%s\")\n", BinaryData(ASCIIString(inName)));
+PrintObject(soupObj, 0);
+REPprintf("\n");
 			// create soup object for the NewtonScript world
 			theSoup = Clone(RA(plainSoupPrototype));
 			SetFrameSlot(theSoup, SYMA(_proto), soupObj);
@@ -551,7 +554,7 @@ StoreGetSoup(RefArg inRcvr, RefArg inName)
 				ULong uid;
 				CSoupIndex * indexObj = GetSoupIndexObject(theSoup, 0);
 				if (indexObj->last((SKey *)&uid, (SKey *)NULL) != 0)
-					ThrowErr(exStore, kNSErrInternalError);
+					ThrowOSErr(kNSErrInternalError);
 				nextUId = MAKEINT(uid + 1);
 			}
 			SetFrameSlot(theSoup, SYMA(indexNextUId), nextUId);

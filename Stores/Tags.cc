@@ -257,7 +257,7 @@ SKeyToKey(const SKey & inKey, RefArg inType, short * outp)
 	}
 
 	else
-		ThrowErr(exStore, kNSErrUnknownIndexType);
+		ThrowOSErr(kNSErrUnknownIndexType);
 
 	return keyObj;
 }
@@ -275,12 +275,12 @@ KeyToSKey(RefArg inKey, RefArg inType, SKey * outKey, short * outSize, bool * ou
 	}
 
 	else if (!((ISINT(inKey) && EQ(inType, SYMA(real))) || IsInstance(inKey, inType)))	// allow int keys where real specified
-		ThrowErr(exStore, kNSErrKeyHasWrongType);
+		ThrowOSErr(kNSErrKeyHasWrongType);
 
 	else if (EQ(inType, SYMA(string)))
 	{
 		if (IsLargeBinary(inKey))
-			ThrowErr(exStore, kNSErrVBOKey);
+			ThrowOSErr(kNSErrVBOKey);
 		if (IsRichString(inKey))
 		{
 			RichStringToSKey(inKey, outKey);
@@ -322,7 +322,7 @@ KeyToSKey(RefArg inKey, RefArg inType, SKey * outKey, short * outSize, bool * ou
 	}
 
 	else
-		ThrowErr(exStore, kNSErrUnknownIndexType);
+		ThrowOSErr(kNSErrUnknownIndexType);
 
 	if (outIsComplexKey)
 		*outIsComplexKey = isNonNumericKey;
@@ -547,7 +547,7 @@ EncodeQueryTags(RefArg indexDesc, RefArg inQuerySpec)
 	&&  EncodeTag(tagDesc, inQuerySpec, SYMA(none), kTagsNone, tagList))
 	{
 		if (Length(tagList) == 0)
-			ThrowErr(exStore, kNSErrInvalidTagSpec);
+			ThrowOSErr(kNSErrInvalidTagSpec);
 		return tagList;
 	}
 	return NILREF;
@@ -590,7 +590,7 @@ TagsValidTest(CSoupIndex & index, RefArg inTags, PSSId inTagsId)
 		return false;
 	}
 	else
-		ThrowErr(exStore, kNSErrInvalidQueryType);
+		ThrowOSErr(kNSErrInvalidQueryType);
 	return false;	// just to keep the compiler quiet
 }
 
@@ -681,7 +681,7 @@ AlterTagsIndex(bool inAdd, CSoupIndex & ioSoupIndex, PSSId inId, RefArg inKey, R
 		else
 			err = ioSoupIndex.Delete(&tagsKey, &tagsData);
 		if (err != noErr)
-			ThrowErr(exStore, kNSErrInternalError);
+			ThrowOSErr(kNSErrInternalError);
 	}
 }
 
@@ -731,7 +731,7 @@ UpdateTagsIndex(RefArg inSoup, RefArg indexDesc, RefArg inOldTags, RefArg inNewT
 		XENDTRY;
 		XDOFAIL(err)
 		{
-			ThrowErr(exStore, kNSErrInternalError);
+			ThrowOSErr(kNSErrInternalError);
 		}
 		XENDFAIL;
 		return true;

@@ -288,7 +288,7 @@ UnionSoupAddTags(RefArg inRcvr, RefArg inTags)
 {
 	CheckStoresWriteProtect(inRcvr);
 	if (ISFALSE(UnionSoupHasTags(inRcvr)))
-		ThrowErr(exStore, kNSErrNoTags);
+		ThrowOSErr(kNSErrNoTags);
 
 	RefVar	soupList(GetFrameSlot(inRcvr, SYMA(soupList)));
 	RefVar	theSoup;
@@ -368,7 +368,7 @@ UnionSoupModifyTag(RefArg inRcvr, RefArg inOldTag, RefArg inNewTag)
 {
 	CheckStoresWriteProtect(inRcvr);
 	if (ISFALSE(UnionSoupHasTags(inRcvr)))
-		ThrowErr(exStore, kNSErrNoTags);
+		ThrowOSErr(kNSErrNoTags);
 
 	RefVar	soupList(GetFrameSlot(inRcvr, SYMA(soupList)));
 	RefVar	theSoup;
@@ -386,7 +386,7 @@ UnionSoupRemoveTags(RefArg inRcvr, RefArg inTags)
 {
 	CheckStoresWriteProtect(inRcvr);
 	if (ISFALSE(UnionSoupHasTags(inRcvr)))
-		ThrowErr(exStore, kNSErrNoTags);
+		ThrowOSErr(kNSErrNoTags);
 
 	RefVar	soupList(GetFrameSlot(inRcvr, SYMA(soupList)));
 	RefVar	theSoup;

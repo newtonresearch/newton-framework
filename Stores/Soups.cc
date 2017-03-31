@@ -224,7 +224,7 @@ SoupGetFlags(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 	return GetFrameSlot(soupIndexInfo, SYMA(flags));
 }
 
@@ -234,7 +234,7 @@ SoupSetFlags(RefArg inRcvr, RefArg inFlags)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 	CheckWriteProtect(PlainSoupGetStore(inRcvr));
 	
 	SetFrameSlot(soupIndexInfo, SYMA(flags), inFlags);
@@ -248,7 +248,7 @@ SoupGetIndexesModTime(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 	return GetFrameSlot(soupIndexInfo, SYMA(indexesModTime));
 }
 
@@ -258,7 +258,7 @@ SoupGetInfoModTime(RefArg inRcvr)
 {
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 	return GetFrameSlot(soupIndexInfo, SYMA(infoModTime));
 }
 
@@ -295,7 +295,7 @@ CommonSoupAddEntry(RefArg inRcvr, RefArg inFrame, unsigned char inFlags)	// the 
 
 	RefVar soupIndexInfo(GetFrameSlot(inRcvr, SYMA(_proto)));
 	if (ISNIL(soupIndexInfo))
-		ThrowErr(exStore, kNSErrInvalidSoup);
+		ThrowOSErr(kNSErrInvalidSoup);
 
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)GetFrameSlot(inRcvr, SYMA(TStore));
 	CheckWriteProtect(storeWrapper->store());

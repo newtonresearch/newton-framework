@@ -558,7 +558,7 @@ CSoupIndex::kfAssembleKeyField(KeyField * outField, void * inKey, void * inData)
 		dataLen = 0;
 
 	if ((SKey::kOffsetToData + keyLen + SKey::kOffsetToData + dataLen) > kKeyFieldBufSize)
-		ThrowErr(exStore, kNSErrInternalError);
+		ThrowOSErr(kNSErrInternalError);
 
 	outField->type = KeyField::kData;
 	outField->length = KeyField::kOffsetToData + keyLen + dataLen;	// length includes (short) type/length header
@@ -1269,7 +1269,7 @@ void
 CSoupIndex::putKeyIntoNode(KeyField * inField, ULong inArg2, NodeHeader * ioNode, int inSlot)
 {
 	if (!roomInNode(ioNode, inField))
-		ThrowErr(exStore, kNSErrInternalError);
+		ThrowOSErr(kNSErrInternalError);
 
 	char * r10 = keyFieldBase(ioNode) - inField->length;
 	memmove(r10, inField, inField->length);
@@ -1291,7 +1291,7 @@ void
 CSoupIndex::deleteKeyFromNode(NodeHeader * ioNode, int inSlot)
 {
 	if (inSlot < 0 || inSlot >= ioNode->numOfSlots)
-		ThrowErr(exStore, kNSErrInternalError);
+		ThrowOSErr(kNSErrInternalError);
 
 	setNodeNo(ioNode, inSlot+1, leftNodeNo(ioNode, inSlot));
 	KeyField * kf = keyFieldAddr(ioNode, inSlot);
@@ -3299,7 +3299,7 @@ AlterIndexes(bool inAdd, RefArg inSoup, RefArg inEntry, PSSId inId)
 				else
 					err = soupIndex->Delete(&theKey, (SKey *)&inId);
 				if (err != noErr)
-					ThrowErr(exStore, kNSErrInternalError);
+					ThrowOSErr(kNSErrInternalError);
 			}
 		}
 	}
@@ -3440,7 +3440,7 @@ UpdateIndexes(RefArg inSoup, RefArg inArg2, RefArg inArg3, PSSId inId, bool * ou
 			XENDTRY;
 			XDOFAIL(err)
 			{
-				ThrowErr(exStore, kNSErrInternalError);
+				ThrowOSErr(kNSErrInternalError);
 			}
 			XENDFAIL;
 		}
@@ -3549,7 +3549,7 @@ CopySoupIndexes(RefArg inFromSoup, RefArg inToSoup, PSSIdMapping * inIdMap, Arra
 
 		NewtonErr err;
 		if ((err = srcSoupIndex->search(1, NULL, NULL, CopyIndexStopFn, &parms, NULL, NULL)) < noErr)
-			ThrowErr(exStore, err);
+			ThrowOSErr(err);
 		dstSoupIndex->nodeCache()->commit(dstSoupIndex);
 	}
 }
@@ -3576,7 +3576,7 @@ NewIndexDesc(RefArg inSoup, RefArg inStore, RefArg indexSpec)
 	//args: r6, r5, r4
 	RefVar indexPath(GetFrameSlot(indexSpec, SYMA(path)));	// sp04
 	if (NOTNIL(IndexPathToIndexDesc(inSoup, indexPath, NULL)))
-		ThrowErr(exStore, kNSErrDuplicateIndex);
+		ThrowOSErr(kNSErrDuplicateIndex);
 
 	//sp-04
 	RefVar indexType(GetFrameSlot(indexSpec, SYMA(type)));	//sp00
@@ -3588,16 +3588,16 @@ NewIndexDesc(RefArg inSoup, RefArg inStore, RefArg indexSpec)
 	{
 		isMultiSlot = true;
 		if (!(EQ(ClassOf(indexPath), SYMA(array)) && IsArray(indexType)))
-			ThrowErr(exStore, kNSErrBadIndexDesc);
+			ThrowOSErr(kNSErrBadIndexDesc);
 		if (Length(indexPath) != Length(indexType))
-			ThrowErr(exStore, kNSErrBadIndexDesc);
+			ThrowOSErr(kNSErrBadIndexDesc);
 		if (Length(indexPath) > 6)
-			ThrowErr(exStore, kNSErrBadIndexDesc);
+			ThrowOSErr(kNSErrBadIndexDesc);
 	}
 	else
 	{
 		if (!EQ(indexStructure, SYMA(slot)))
-			ThrowErr(exStore, kNSErrUnknownKeyStructure);
+			ThrowOSErr(kNSErrUnknownKeyStructure);
 	}
 
 	// sp-04
@@ -3605,7 +3605,7 @@ NewIndexDesc(RefArg inSoup, RefArg inStore, RefArg indexSpec)
 	if (EQ(indexType, SYMA(tags)))
 	{
 		if (NOTNIL(GetTagsIndexDesc(inSoup)))
-			ThrowErr(exStore, kNSErrDuplicateIndex);
+			ThrowOSErr(kNSErrDuplicateIndex);
 		if (ISNIL(GetFrameSlot(indexDesc, SYMA(tags))))
 			SetFrameSlot(indexDesc, SYMA(tags), MakeArray(0));
 	}
@@ -3706,7 +3706,7 @@ IndexDescToIndexInfo(RefArg indexDesc, IndexInfo * outInfo)
 			outInfo->x10 = 0;
 		}
 		else
-			ThrowErr(exStore, kNSErrUnknownIndexType);
+			ThrowOSErr(kNSErrUnknownIndexType);
 
 		if (isAnArray)
 		{
@@ -3763,7 +3763,7 @@ IndexEntries(RefArg inSoup, RefArg indexDesc)
 			if (GetEntrySKey(sp0004, indexDesc, &sp00000, NULL))
 			{
 				if (r6->addInTransaction(&sp00000, (SKey *)&entryId) != noErr)
-					ThrowErr(exStore, kNSErrInternalError);
+					ThrowOSErr(kNSErrInternalError);
 			}
 		}
 	}

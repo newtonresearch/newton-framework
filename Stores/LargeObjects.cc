@@ -425,11 +425,11 @@ WrapLargeObject(CStore * inStore, PSSId inId, RefArg inClass, VAddr inAddr)
 {
 	RefVar	storeObject(ToObject(inStore));
 	if (ISNIL(storeObject))
-		ThrowErr(exStore, kNSErrInvalidStore);
+		ThrowOSErr(kNSErrInvalidStore);
 
 	CStoreWrapper *	storeWrapper = (CStoreWrapper *)GetFrameSlot(storeObject, SYMA(store));
 	if (ISNIL(storeWrapper))	// orginal checks storeWrapper == NULL
-		ThrowErr(exStore, kNSErrOldStoreFormat);
+		ThrowOSErr(kNSErrOldStoreFormat);
 
 	CheckWriteProtect(storeWrapper->store());
 	storeWrapper->addEphemeral(inId);
@@ -1245,7 +1245,7 @@ FInstallPackage(RefArg inRcvr, RefArg inPkg)
 
 	if (!sp0C)
 	{
-		RefVar activePackages(GetFrameSlot(RA(gVarFrame), SYMA(activePackageList)));
+		RefVar activePackages(GetGlobalVar(SYMA(activePackageList)));
 		AddArraySlot(activePackages, inPkg);
 	}
 

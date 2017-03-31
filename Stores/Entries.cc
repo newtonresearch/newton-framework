@@ -130,7 +130,7 @@ Ref
 EntrySoup(RefArg inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	if (IsProxyEntry(inEntry))
 		return ForwardEntryMessage(inEntry, SYMA(EntrySoup));
@@ -226,7 +226,7 @@ void
 EntryChangeCommon(RefArg inEntry, int inSelector)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	if (inSelector & 0x02)
 		SetFrameSlot(inEntry, SYMA(_modTime), MAKEINT(RealClock() & 0x1FFFFFFF));
@@ -238,14 +238,14 @@ EntryChangeCommon(RefArg inEntry, int inSelector)
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)obj->store;	// r6
 	PSSId id = RINT(obj->id);	// sp10
 //	if (storeWrapper == NULL)
-//		ThrowErr(exStore, kNSErrInvalidEntry);
+//		ThrowOSErr(kNSErrInvalidEntry);
 	CheckWriteProtect(storeWrapper->store());
 //sp-08
 	bool	r7;
 	bool	sp0C = false;
 	RefVar proto(GetFrameSlot(soupObj, SYMA(_proto)));	// sp08
 	if (ISNIL(proto))
-		ThrowErr(exStore, kNSErrInvalidEntry);
+		ThrowOSErr(kNSErrInvalidEntry);
 	if (NOTNIL(frame))
 	{
 		frame = EnsureEntryInternal(frame);
@@ -360,7 +360,7 @@ void
 EntryRemoveFromSoup(RefArg inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	if (IsProxyEntry(inEntry))
 		ForwardEntryMessage(inEntry, SYMA(EntryRemoveFromSoup));
@@ -369,7 +369,7 @@ EntryRemoveFromSoup(RefArg inEntry)
 		FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inEntry);
 		CStoreWrapper * storeWrapper = (CStoreWrapper *)obj->store;
 		if (storeWrapper == NULL)
-			ThrowErr(exStore, kNSErrInvalidEntry);
+			ThrowOSErr(kNSErrInvalidEntry);
 		CheckWriteProtect(storeWrapper->store());
 		RefVar soupObj(obj->handler);
 		PSSId id = RINT(obj->id);
@@ -416,7 +416,7 @@ void
 EntryReplaceCommon(RefArg inEntry, RefArg inNewEntry, int inSelector)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	if (IsProxyEntry(inEntry))
 		ForwardEntryMessage(inEntry, (inSelector == 0) ? SYMA(EntryReplace) : SYMA(EntryReplaceWithModTime), inNewEntry);
@@ -429,7 +429,7 @@ EntryReplaceCommon(RefArg inEntry, RefArg inNewEntry, int inSelector)
 			FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inEntry);
 			CStoreWrapper * storeWrapper = (CStoreWrapper *)obj->store;
 		//	if (storeWrapper == NULL)
-		//		ThrowErr(exStore, kNSErrInvalidEntry);	// not in the original, but done in EntryMove; a good idea?
+		//		ThrowOSErr(kNSErrInvalidEntry);	// not in the original, but done in EntryMove; a good idea?
 			CheckWriteProtect(storeWrapper->store());
 			if (IsFaultBlock(inNewEntry))
 			{
@@ -471,7 +471,7 @@ void
 EntryUndoChanges(RefArg inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	if (IsProxyEntry(inEntry))
 		ForwardEntryMessage(inEntry, SYMA(EntryUndoChanges));
@@ -498,7 +498,7 @@ void
 EntryMove(RefArg inEntry, RefArg inSoup)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	if (IsProxyEntry(inEntry))
 		ForwardEntryMessage(inEntry, SYMA(EntryMove), inSoup);
@@ -511,7 +511,7 @@ EntryMove(RefArg inEntry, RefArg inSoup)
 
 		CStoreWrapper * storeWrapper = (CStoreWrapper *)obj->store;
 		if (storeWrapper == NULL)
-			ThrowErr(exStore, kNSErrInvalidEntry);
+			ThrowOSErr(kNSErrInvalidEntry);
 		CheckWriteProtect(storeWrapper->store());
 
 		RefVar soupObj(obj->handler);
@@ -576,7 +576,7 @@ size_t
 EntrySize(RefArg inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inEntry);
 	if (ISNIL(obj->store))
@@ -589,7 +589,7 @@ size_t
 EntrySizeWithoutVBOs(RefArg inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inEntry);
 	if (ISNIL(obj->store))
@@ -602,7 +602,7 @@ size_t
 EntryTextSize(RefArg inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inEntry);
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)obj->store;
@@ -622,7 +622,7 @@ ULong
 EntryUniqueId(RefArg inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inEntry);
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)obj->store;
@@ -639,7 +639,7 @@ ULong
 EntryModTime(RefArg inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 
 	FaultObject * obj = (FaultObject *)NoFaultObjectPtr(inEntry);
 	CStoreWrapper * storeWrapper = (CStoreWrapper *)obj->store;
@@ -703,7 +703,7 @@ bool
 EntryIsResident(Ref inEntry)
 {
 	if (!IsFaultBlock(inEntry))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 	return NOTNIL(((FaultObject *)NoFaultObjectPtr(inEntry))->object);
 }
 
@@ -738,7 +738,7 @@ void
 CheckProxyEntry(RefArg inEntry)
 {
 	if (!(IsFaultBlock(inEntry) && IsProxyEntry(inEntry)))
-		ThrowErr(exStore, kNSErrNotASoupEntry);
+		ThrowOSErr(kNSErrNotASoupEntry);
 }
 
 

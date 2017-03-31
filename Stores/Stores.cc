@@ -244,7 +244,7 @@ RemoveStore(CStore * inStore)
 			return;
 		}
 	}
-	ThrowErr(exStore, kNSErrStoreNotRegistered);
+	ThrowOSErr(kNSErrStoreNotRegistered);
 }
 
 
@@ -410,9 +410,9 @@ MakeStoreObject(CStore * inStore)
 			// we already have this store - read in its root data
 			OSERRIF(ReadStoreRootData(storeWrapper->store(), rootId, &storeRoot, NULL));
 			if (storeRoot.signature != 'WALY')
-				ThrowErr(exStore, kNSErrNotAFrameStore);
+				ThrowOSErr(kNSErrNotAFrameStore);
 			if (storeRoot.version > kStoreVersion)
-				ThrowErr(exStore, kNSErrNewStoreFormat);
+				ThrowOSErr(kNSErrNewStoreFormat);
 			if ((storeWrapper->fMapTable = new CStoreHashTable(storeWrapper->store(), storeRoot.mapTableId)) == NULL)
 				OutOfMemory();
 			if ((storeWrapper->fSymbolTable = new CStoreHashTable(storeWrapper->store(), storeRoot.symbolTableId)) == NULL)
@@ -553,7 +553,7 @@ StoreErase(RefArg inRcvr)
 	// reformat it
 	err = store->format();
 	if (err)
-		ThrowErr(exStore, err);
+		ThrowOSErr(err);
 	// reregister it
 	RefVar storeRef(RegisterStore(store));
 	ArrayIndex storeIndex;
@@ -647,10 +647,10 @@ CheckWriteProtect(CStore * inStore)
 {
 	bool isRO;
 	if (inStore->isROM())
-		ThrowErr(exStore, kNSErrStoreIsROM);
+		ThrowOSErr(kNSErrStoreIsROM);
 	OSERRIF(inStore->isReadOnly(&isRO));
 	if (isRO)
-		ThrowErr(exStore, kStoreErrWriteProtected);
+		ThrowOSErr(kStoreErrWriteProtected);
 }
 
 

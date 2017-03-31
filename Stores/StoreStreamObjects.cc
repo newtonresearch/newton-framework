@@ -877,7 +877,7 @@ CStoreObjectReader::scan1(void)
 		break;
 
 	default:
-		ThrowErr(exStore, kNSErrObjectCorrupted);
+		ThrowOSErr(kNSErrObjectCorrupted);
 	}
 	return obj;
 }
@@ -974,7 +974,7 @@ CStoreObjectReader::eachLargeObjectDo(VBOProcPtr inProc, void * inParms)
 		break;
 
 	default:
-		ThrowErr(exStore, kNSErrObjectCorrupted);
+		ThrowOSErr(kNSErrObjectCorrupted);
 	}
 	return 0;
 }

@@ -399,7 +399,7 @@ extern	Ref		MakeReal(double d);
 //______________________________________________________________________________
 // Exception Handling Functions
 
-extern	void		ThrowOSErr(NewtonErr err);
+extern	void		ThrowOSErr(NewtonErr err);			// Object Store, not Operating System
 
 extern	void		ThrowRefException(ExceptionName name, RefArg data);
 extern	void		ThrowOutOfBoundsException(RefArg obj, ArrayIndex index);
