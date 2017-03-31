@@ -9,6 +9,7 @@
 #include "Objects.h"
 #include "ObjHeader.h"
 #include "Globals.h"
+#include "NewtGlobals.h"
 #include "RefMemory.h"
 #include "Lookup.h"
 #include "Symbols.h"
@@ -86,6 +87,20 @@ FIsGlobalConstant(RefArg inRcvr, RefArg inTag)
 {
 	return FrameHasSlot(RA(gConstantsFrame), inTag);
 }
+
+#if defined(forNTK)
+Ref
+GetGlobalConstant(RefArg inTag)
+{
+	return GetFrameSlot(RA(gConstantsFrame), inTag);
+}
+
+Ref
+GetAllGlobalConstants(void)
+{
+	return Clone(RA(gConstantsFrame));
+}
+#endif
 #endif
 
 #if defined(hasPureFunctionSupport)
@@ -145,7 +160,7 @@ GlobalFunctionLookup(Ref fnSym)
 #endif
 
 	gFunctionFrame = fns;
-	return GetFrameSlotRef(RA(builtinFunctions), fnSym);	//gConstNSData->internalFunctions
+	return GetFrameSlotRef(RA(builtinFunctions), fnSym);
 }
 
 #pragma mark -
