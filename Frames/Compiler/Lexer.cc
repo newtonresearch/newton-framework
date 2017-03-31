@@ -486,7 +486,7 @@ CCompiler::consumeToken(void)
 				ASSERTMSG(s <= &str[254], "Symbol too big");
 				*s++ = A_CONST_CHAR(theChar);
 				consumeChar();
-			} while (IsAlphaNumeric(theChar) || theChar == '_');
+			} while (theChar != (UniChar)EOF && (IsAlphaNumeric(theChar) || theChar == '_'));
 			*s = 0;
 			if (wordcmp(str, "nil") == 0)
 				return makeBooleanToken(false);
