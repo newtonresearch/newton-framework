@@ -229,7 +229,6 @@ Ref FGetCapability(RefArg rcvr);
 Ref FGetChannelInputGain(RefArg rcvr);
 Ref FGetChannelVolume(RefArg rcvr);
 Ref FGetHiliteWeight(RefArg rcvr);
-Ref FGetPkgInfoFromPSSid(RefArg rcvr);
 Ref FGetSiblingSlot(RefArg rcvr);
 Ref FGetStoreCardSlot(RefArg rcvr);
 Ref FGetStoreCardType(RefArg rcvr);
@@ -441,7 +440,6 @@ Ref FComputeParagraphHeight(RefArg rcvr);
 Ref FAddHist(RefArg rcvr);
 Ref FWRecIsBeingUsed(RefArg rcvr);
 Ref FDumpDict(RefArg rcvr);
-Ref FGetPkgInfoFromPssid(RefArg rcvr);
 Ref FHaveZones(RefArg rcvr);
 Ref DSTagString(RefArg rcvr);
 Ref FPolyContainsInk(RefArg rcvr);
@@ -978,7 +976,6 @@ Ref FGetCapability(RefArg rcvr) { return NILREF; }
 Ref FGetChannelInputGain(RefArg rcvr) { return NILREF; }
 Ref FGetChannelVolume(RefArg rcvr) { return NILREF; }
 Ref FGetHiliteWeight(RefArg rcvr) { return NILREF; }
-Ref FGetPkgInfoFromPSSid(RefArg rcvr) { return NILREF; }
 Ref FGetSiblingSlot(RefArg rcvr) { return NILREF; }
 Ref FGetStoreCardSlot(RefArg rcvr) { return NILREF; }
 Ref FGetStoreCardType(RefArg rcvr) { return NILREF; }
@@ -1190,7 +1187,6 @@ Ref FComputeParagraphHeight(RefArg rcvr) { return NILREF; }
 Ref FAddHist(RefArg rcvr) { return NILREF; }
 Ref FWRecIsBeingUsed(RefArg rcvr) { return NILREF; }
 Ref FDumpDict(RefArg rcvr) { return NILREF; }
-Ref FGetPkgInfoFromPssid(RefArg rcvr) { return NILREF; }
 Ref FHaveZones(RefArg rcvr) { return NILREF; }
 Ref DSTagString(RefArg rcvr) { return NILREF; }
 Ref FPolyContainsInk(RefArg rcvr) { return NILREF; }
