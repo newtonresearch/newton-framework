@@ -18,6 +18,7 @@
 #include "Frames.h"
 #include "LargeBinaries.h"
 #include "Globals.h"
+#include "NewtGlobals.h"
 #include "RefMemory.h"
 #include "ROMResources.h"
 
@@ -1159,28 +1160,36 @@ CObjectHeap::~CObjectHeap()
 ----------------------------------------------------------------------*/
 #define NUMOFREFHANDLES ((refHBlock->size - sizeof(ObjHeader)) / sizeof(RefHandle))
 
+int gLogObjectHeapAllocations = 0;
+
 RefHandle *
 CObjectHeap::allocateRefHandle(Ref inRef)
 {
 if (refHIndex > NUMOFREFHANDLES) {
-	printf("\nCObjectHeap::allocateRefHandle() refHIndex=%ud\n", refHIndex);
+	printf("\nCObjectHeap::allocateRefHandle() refHIndex=%u\n", refHIndex);
 }
+
 	// point to next free RefHandle
 	RefHandle * refh = refHBlock->data + refHIndex;
 	// …which points to the next
 	ArrayIndex nxFree = RVALUE(refh->ref);
 
+// sanity check -- ref handle MUST NOT be in use
+if (refh->stackPos != MAKEINT(kIndexNotFound)) {
+	printf("\nCObjectHeap::allocateRefHandle() handle in use!\n");
+}
 if (nxFree == kIndexNotFound) {
 	printf("==== LAST REF HANDLE ====\n");
 } else if (nxFree > NUMOFREFHANDLES) {
 	printf("---- BAD REF HANDLE ----\n");
 }
-	// update index to next free refHandle
-	refHIndex = nxFree;
-
 	// populate this RefHandle
 	refh->ref = inRef;
 	refh->stackPos = MAKEINT(nxFree);
+if (gLogObjectHeapAllocations) { printf("allocating #%p, refHIndex=%u->%u\n", refh, refHIndex, nxFree); }
+
+	// update index to next free refHandle
+	refHIndex = nxFree;
 
 	// The last free RefHandle has a ref of kIndexNotFound.
 	// When this is reached it’s time to expand the RefHandle table.
@@ -1200,18 +1209,19 @@ void
 CObjectHeap::disposeRefHandle(RefHandle * inRefHandle)
 {
 	if (inRefHandle != NULL) {	// original doesn’t check
-		ArrayIndex x = refHIndex;
 if (refHIndex > NUMOFREFHANDLES) {
-	printf("\nCObjectHeap::disposeRefHandle() refHIndex=%ud\n", refHIndex);
+	printf("\nCObjectHeap::disposeRefHandle() refHIndex=%u\n", refHIndex);
 }
-		if (x < 0) {
-			x = -1;
+		ArrayIndex nxFree = refHIndex;
+		if (nxFree < 0) {
+			nxFree = -1;
 		}
-		inRefHandle->ref = MAKEINT(x);
+		inRefHandle->ref = MAKEINT(nxFree);
 		inRefHandle->stackPos = MAKEINT(kIndexNotFound);
 		refHIndex = inRefHandle - refHBlock->data;
+if (gLogObjectHeapAllocations) { printf(" disposing #%p, refHIndex=%u\n", inRefHandle, refHIndex); }
 if (refHIndex > NUMOFREFHANDLES) {
-	printf("\nCObjectHeap::disposeRefHandle() refHIndex=%ud\n", refHIndex);
+	printf("\nCObjectHeap::disposeRefHandle() refHIndex=%u\n", refHIndex);
 }
 	}
 }
@@ -1247,9 +1257,10 @@ printf("CObjectHeap::expandObjectTable(#%p)\n", inRefHandle);
 void
 CObjectHeap::clearRefHandles(void)
 {
-	ArrayIndex count = (refHBlock->size - sizeof(ObjHeader)) / sizeof(RefHandle);
+	ArrayIndex count = NUMOFREFHANDLES;
 	ArrayIndex currentInterpreter = gCurrentStackPos >> 16;
 	ArrayIndex currentStackPos = gCurrentStackPos & 0xFFFF;
+printf("CObjectHeap::clearRefHandles > %u\n", currentStackPos);
 	RefHandle * rhp = refHBlock->data;
 	for (ArrayIndex i = 0; i < count - 1; ++i, ++rhp) {	// last RefHandle is reserved
 		ArrayIndex x = RVALUE(rhp->stackPos);
