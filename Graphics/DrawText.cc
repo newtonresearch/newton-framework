@@ -111,7 +111,7 @@ CreateTextStyleRecord(RefArg inFontSpec, StyleRecord * outRec)
 	else if (IsFrame(inFontSpec))
 	{
 		RefVar	family(GetFrameSlot(inFontSpec, SYMA(family)));
-		RefVar	fonts(GetFrameSlot(gVarFrame, SYMA(fonts)));
+		RefVar	fonts(GetGlobalVar(SYMA(fonts)));
 		outRec->fontFamily = GetProtoVariable(fonts, family);
 		outRec->fontSize = RINT(GetFrameSlot(inFontSpec, SYMA(size)));
 		outRec->fontFace = RINT(GetFrameSlot(inFontSpec, SYMA(face)));
@@ -141,7 +141,7 @@ CreateTextStyleRecord(RefArg inFontSpec, StyleRecord * outRec)
 		else  // MUST be a frame
 		{
 			RefVar	family(GetFrameSlot(userFont, SYMA(family)));
-			RefVar	fonts(GetFrameSlot(gVarFrame, SYMA(fonts)));
+			RefVar	fonts(GetGlobalVar(SYMA(fonts)));
 			outRec->fontFamily = GetProtoVariable(fonts, family);
 		}
 	}

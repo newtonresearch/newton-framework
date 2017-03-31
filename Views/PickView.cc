@@ -1481,7 +1481,7 @@ CPickView::setupForm(void)
 	//sp-0C -28 -30
 	int spx08 = RINT(getProto(SYMA(pickMaxWidth))) - fCommandKeySpace;
 	//sp2C = gVarFrame
-	RefVar spx04(GetFrameSlot(RA(gVarFrame), SYMA(_hiliteMenuItem)));
+	RefVar spx04(GetGlobalVar(SYMA(_hiliteMenuItem)));
 	//sp28 = gRootView
 	bool spx00 = gRootView->commandKeyboardConnected() && NOTNIL(spx04) && fNumOfItems != 0;
 	fPicked.index = kIndexNotFound;
@@ -1758,7 +1758,7 @@ CPickView::setupForm(void)
 
 	// adjust bounds to app area -- may have button bar top/left of screen
 	//sp-04
-	RefVar displayParms(GetFrameSlot(RA(gVarFrame), SYMA(displayParams)));
+	RefVar displayParms(GetGlobalVar(SYMA(displayParams)));
 	dh = -RINT(GetProtoVariable(displayParms, SYMA(appAreaGlobalLeft)));
 	dv = -RINT(GetProtoVariable(displayParms, SYMA(appAreaGlobalTop)));
 	OffsetRect(&bBox, dh, dv);

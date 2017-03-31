@@ -349,9 +349,9 @@ FClicker(RefArg inRcvr)
 {
 	if (NOTNIL(GetPreference(SYMA(penSoundEffects))))
 	{
-		RefVar	curClick(GetFrameSlot(gVarFrame, SYMA(_curClick)));
+		RefVar	curClick(GetGlobalVar(SYMA(_curClick)));
 		ArrayIndex	index = ISINT(curClick) ? RINT(curClick) : 0;
-		RefVar	song(GetFrameSlot(gVarFrame, SYMA(_clickSong)));
+		RefVar	song(GetGlobalVar(SYMA(_clickSong)));
 		if (ISNIL(song))
 			song = *RS_clickSong;
 // there are 6 tones in 17 notes of the song: 1,4,2,2,5,0,5,5,3,2,4,0,4,2,3,2,5
@@ -361,7 +361,7 @@ FClicker(RefArg inRcvr)
 		if (ISINT(note))
 			note = GetArraySlot(RA(clicks), RINT(note));
 		FPlaySoundIrregardless(RA(NILREF), note);
-		SetFrameSlot(gVarFrame, SYMA(_curClick), MAKEINT(index));
+		DefGlobalVar(SYMA(_curClick), MAKEINT(index));
 	}
 	return NILREF;
 }

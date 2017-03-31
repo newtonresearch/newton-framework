@@ -7,6 +7,7 @@
 */
 
 #include "Objects.h"
+#include "NewtGlobals.h"
 #include "RefMemory.h"
 #include "Iterators.h"
 #include "Lookup.h"
@@ -193,36 +194,32 @@ PrintObjectAux(Ref obj, int indent, int depth)
 				REPprintf("<%d>", depth - i);
 
 			} else {
-				Ref	prLenRef;
-				int	printDepth, printLength;
-				bool	doPrettyPrint;
-				unsigned	flags;
-				
 				// add this object to the precedent stack
 				if (depth < kPrecedentStackSize)
 					SetArraySlotRef(gPrecedentStack, depth, obj);
 
 				// get print parameters
-				printDepth = RINT(GetFrameSlot(gVarFrame, SYMA(printDepth)));
+				int printDepth = RINT(GetGlobalVar(SYMA(printDepth)));
 				if (printDepth > kPrecedentStackSize-1)
 					printDepth = kPrecedentStackSize-1;
-				prLenRef = GetFrameSlot(gVarFrame, SYMA(printLength));
-				printLength = NOTNIL(prLenRef) ? RINT(prLenRef) : -1;
-				doPrettyPrint = NOTNIL(GetFrameSlot(gVarFrame, SYMA(prettyPrint)));
+				Ref prLenRef = GetGlobalVar(SYMA(printLength));
+				int printLength = NOTNIL(prLenRef) ? RINT(prLenRef) : -1;
+				bool doPrettyPrint = NOTNIL(GetGlobalVar(SYMA(prettyPrint)));
+				bool doPrintCode = NOTNIL(GetGlobalVar(SYMA(printInstructions)));
 				// switch on type of object: slotted (frame/array) or binary
-				flags = ObjectFlags(obj);
+				unsigned	flags = ObjectFlags(obj);
 				if (FLAGTEST(flags, kObjSlotted)) {
 					if (FLAGTEST(flags, kObjFrame)) {
 						if (IsFunction(obj) && doPrettyPrint) {
 							RefVar fnClass = ClassOf(obj);
-							if (EQ(fnClass, SYMA(CodeBlock)) || EQ(fnClass, SYMA(_function))) {
+							if ((EQ(fnClass, SYMA(CodeBlock)) || EQ(fnClass, SYMA(_function))) && doPrintCode) {
 								PrintCode(obj);
 							} else {
 								ArrayIndex argCount = GetFunctionArgCount(obj);
 								const char * argPlural = (argCount == 1) ? "" : "s";
 								int saveTrace = gInterpreter->tracing;		// | not original
 								gInterpreter->tracing = kTraceNothing;		// | but required to prevent infinite loop in IsNativeFunction > ClassOf > GetProtoVariable > gInterpreter->TraceGet
-								REPprintf(IsNativeFunction(obj) ? "<native" : "<");
+								REPprintf(IsNativeFunction(obj) ? "<native " : "<");
 								gInterpreter->tracing = saveTrace;			// |
 								REPprintf("function, %ld arg%s, #%p>", argCount, argPlural, obj);
 							}
@@ -420,7 +417,7 @@ PrintObjectAux(Ref obj, int indent, int depth)
 					} else if (EQ(objClass, SYMA(real))) {
 						REPprintf("%#g", *(double*)BinaryData(obj));
 
-					} else if (EQ(objClass, SYMA(instructions)) && NOTNIL(GetFrameSlot(gVarFrame, SYMA(printInstructions)))) {
+					} else if (EQ(objClass, SYMA(instructions)) && doPrintCode) {
 						PrintInstructions(obj);
 
 					} else if (IsSymbol(objClass)) {
@@ -496,14 +493,11 @@ void
 SafelyPrintString(UniChar * str)
 {
 	char	buf[256];
-	int	bufLen, len = Ustrlen(str);
-
-	while (len > 0)
+	int	bufLen;
+	for (int len = Ustrlen(str); len > 0; len -= bufLen, str += bufLen)
 	{
 		bufLen = MIN(len, 255);
 		ConvertFromUnicode(str, buf, bufLen);
-		str += bufLen;
-		len -= bufLen;
 		REPprintf("%s", buf);
 	}
 }

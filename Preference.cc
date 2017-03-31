@@ -16,7 +16,7 @@
 Ref
 GetPreference(RefArg inTag)
 {
-	RefVar	config(GetFrameSlot(gVarFrame, SYMA(userConfiguration)));
+	RefVar	config(GetGlobalVar(SYMA(userConfiguration)));
 	return GetProtoVariable(config, inTag);
 }
 
@@ -24,7 +24,7 @@ GetPreference(RefArg inTag)
 void
 SetPreference(RefArg inTag, RefArg inValue)
 {
-	RefVar	config(GetFrameSlot(gVarFrame, SYMA(userConfiguration)));
+	RefVar	config(GetGlobalVar(SYMA(userConfiguration)));
 	SetFrameSlot(config, inTag, inValue);
 }
 

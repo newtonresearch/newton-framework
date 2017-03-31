@@ -41,7 +41,7 @@ GlobalSoundChannel(void)
 			ThrowErr(exFrames, err);
 
 		int		outputDeviceNumber = kSoundDefaultDevice;
-		RefVar	outputDevice(GetFrameSlot(gVarFrame, SYMA(userConfiguration)));
+		RefVar	outputDevice(GetGlobalVar(SYMA(userConfiguration)));
 		outputDevice = GetProtoVariable(outputDevice, SYMA(outputDevice), NULL);
 		if (ISINT(outputDevice))
 			outputDeviceNumber = RINT(outputDevice);

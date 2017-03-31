@@ -1670,7 +1670,7 @@ FOffsetView(RefArg inRcvr, RefArg indX, RefArg indY)
 void
 GetAppAreaBounds(Rect * outBounds)
 {
-	RefVar displayParams(GetFrameSlot(RA(gVarFrame), SYMA(displayParams)));
+	RefVar displayParams(GetGlobalVar(SYMA(displayParams)));
 	outBounds->top = RINT(GetProtoVariable(displayParams, SYMA(appAreaGlobalTop)));
 	outBounds->left = RINT(GetProtoVariable(displayParams, SYMA(appAreaGlobalLeft)));
 	outBounds->bottom = outBounds->top + RINT(GetProtoVariable(displayParams, SYMA(appAreaHeight)));

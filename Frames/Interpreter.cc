@@ -1264,10 +1264,10 @@ CInterpreter::run1(ArrayIndex initialStackDepth)
 		/*------------------------------
 			push-constant
 			-- value
-			This is the ONLY time b is signed.
+			b is always unsigned (Newton Formats 2-11)
 		------------------------------*/
 			case 047:
-				b = *(char *)instrPtr++ << 8;
+				b = *(unsigned char *)instrPtr++ << 8;
 				b += *instrPtr++;
 			case 040:
 			case 041:
@@ -3013,7 +3013,7 @@ CInterpreter::taciturnPrintObject(Ref obj, int indent)
 void
 CInterpreter::traceSetOptions(void)
 {
-	RefVar trace(GetFrameSlot(RA(gVarFrame), SYMA(trace)));
+	RefVar trace(GetGlobalVar(SYMA(trace)));
 	if (ISNIL(trace))
 		tracing = kTraceNothing;
 
@@ -3270,7 +3270,7 @@ CInterpreter::handleException(Exception * inException, int inDepth, StackState &
 {
 	const char * xName = inException->name;
 
-	if (!DeveloperNotified(inException) && NOTNIL(GetFrameSlot(RA(gVarFrame), SYMA(breakOnThrows))))
+	if (!DeveloperNotified(inException) && NOTNIL(GetGlobalVar(SYMA(breakOnThrows))))
 	{
 		gREPout->exceptionNotify(inException);
 		DoBlock(GetFrameSlot(RA(gFunctionFrame), SYMA(BreakLoop)), RA(NILREF));

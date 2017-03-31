@@ -98,9 +98,9 @@ CFunctionState::CFunctionState(CCompiler * inCompiler, RefArg inArgs, CFunctionS
 		fConstants = gConstantsFrame;		// global constants
 
 	if (FrameHasSlot(gVarFrame, MakeSymbol("dbgNoVarNames")))
-		fKeepVarNames = ISNIL(GetFrameSlot(gVarFrame, MakeSymbol("dbgNoVarNames")));
+		fKeepVarNames = ISNIL(GetGlobalVar(MakeSymbol("dbgNoVarNames")));
 	else if (FrameHasSlot(gVarFrame, MakeSymbol("dbgKeepVarNames")))
-		fKeepVarNames = NOTNIL(GetFrameSlot(gVarFrame, MakeSymbol("dbgKeepVarNames")));
+		fKeepVarNames = NOTNIL(GetGlobalVar(MakeSymbol("dbgKeepVarNames")));
 	else
 		fKeepVarNames = false;
 }

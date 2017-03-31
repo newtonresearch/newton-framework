@@ -8,6 +8,7 @@
 
 #include "Objects.h"
 #include "UserGlobals.h"
+#include "NewtGlobals.h"
 #include "ROMResources.h"
 #include "Interpreter.h"
 #include "OSErrors.h"
@@ -207,7 +208,7 @@ FIsSubexception(RefArg rcvr, RefArg inName, RefArg inSuper)
 
 
 /*----------------------------------------------------------------------
-	O S   E r r o r
+	O b j e c t   S t o r e   E r r o r
 ----------------------------------------------------------------------*/
 
 void
@@ -274,10 +275,10 @@ ExceptionNotify(Exception * inException)
 	}
 	excName = MakeStringFromCString((const char *)inException->name);
 
-	SetFrameSlot(RA(gVarFrame), SYMA(lastEx), excName);
-	SetFrameSlot(RA(gVarFrame), SYMA(lastExMessage), excMessage);
-	SetFrameSlot(RA(gVarFrame), SYMA(lastExError), MAKEINT(excError));
-	SetFrameSlot(RA(gVarFrame), SYMA(lastExData), excData);
+	DefGlobalVar(SYMA(lastEx), excName);
+	DefGlobalVar(SYMA(lastExMessage), excMessage);
+	DefGlobalVar(SYMA(lastExError), MAKEINT(excError));
+	DefGlobalVar(SYMA(lastExData), excData);
 #if !defined(forFramework)
 //	SetPort(gScreenPort);
 //	ReleaseScreenLock();

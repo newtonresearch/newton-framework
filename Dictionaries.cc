@@ -242,7 +242,7 @@ InitDictionaries(void)
 	CDictionary * dict;
 	RefVar aDictionary;
 	RefVar dictionaries(Clone(RA(dictionaryList)));
-	SetFrameSlot(gVarFrame, SYMA(dictionaries), dictionaries);
+	DefGlobalVar(SYMA(dictionaries), dictionaries);
 
 	// populate that list with data
 	gDictList = CDArray::make(sizeof(DictListEntry), 0);
@@ -483,7 +483,7 @@ InitROMDictionaryData(void)
 Ref
 Dictionaries(void)
 {
-	return GetFrameSlot(gVarFrame, SYMA(dictionaries));
+	return GetGlobalVar(SYMA(dictionaries));
 }
 
 

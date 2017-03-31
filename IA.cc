@@ -1602,7 +1602,7 @@ RemoveTrailingPunct(RefArg inStr)	// RefArg inRcvr stripped
 Ref
 MapSymToFrame(RefArg inSym)	// RefArg inRcvr stripped
 {
-	RefVar frame = GetFrameSlot(RA(gVarFrame), inSym);
+	RefVar frame = GetGlobalVar(inSym);
 	if (ISNIL(frame))
 		frame = GetFrameSlot(RA(assistFrames), inSym);
 	return frame;
@@ -1724,11 +1724,11 @@ FRegTaskTemplate(RefArg inRcvr, RefArg inTemplate)
 		RefVar theTemplate(TotalClone(inTemplate));
 		for (ArrayIndex i = 0, count = Length(theSignature); i < count; ++i)
 			MakePhrasalLexEntry(GetArraySlot(theSignature, i));
-		RefVar dynaTemplates(GetFrameSlot(RA(gVarFrame), SYMA(dynaTemplates)));
+		RefVar dynaTemplates(GetGlobalVar(SYMA(dynaTemplates)));
 		if (!IsArray(dynaTemplates))
 			dynaTemplates = MakeArray(0);
 		dynaTemplates = Append(dynaTemplates, theTemplate);
-		SetFrameSlot(RA(gVarFrame), SYMA(dynaTemplates), dynaTemplates);
+		DefGlobalVar(SYMA(dynaTemplates), dynaTemplates);
 		return theTemplate;
 	}
 	return NILREF;
@@ -1750,7 +1750,7 @@ FUnRegTaskTemplate(RefArg inRcvr, RefArg inTemplate)
 	{
 		for (ArrayIndex i = 0, count = Length(theSignature); i < count; ++i)
 			RemovePhrasalLexEntry(GetArraySlot(theSignature, i));
-		RefVar dynaTemplates(GetFrameSlot(RA(gVarFrame), SYMA(dynaTemplates)));
+		RefVar dynaTemplates(GetGlobalVar(SYMA(dynaTemplates)));
 		if (IsArray(dynaTemplates))
 			return FSetRemove(RA(NILREF), dynaTemplates, inTemplate);
 	}
@@ -1859,7 +1859,7 @@ FParseUtter(RefArg inRcvr, RefArg inString)
 		RefVar taskList(Clone(GetFrameSlot(RA(assistFrames), SYMA(task_list))));
 //sp-0C [-18]
 		// add any user-registered ones
-		RefVar dynaTemplates(GetFrameSlot(RA(gVarFrame), SYMA(dynaTemplates)));
+		RefVar dynaTemplates(GetGlobalVar(SYMA(dynaTemplates)));
 		if (IsArray(dynaTemplates))
 			taskList = UniqueAppendListGen(dynaTemplates, taskList);
 
@@ -2318,7 +2318,7 @@ Ref
 FGenFullCommands(RefArg inRcvr)
 {
 	RefVar taskList(Clone(GetFrameSlot(RA(assistFrames), SYMA(task_list))));
-	RefVar dynaTemplates(GetFrameSlot(RA(gVarFrame), SYMA(dynaTemplates)));
+	RefVar dynaTemplates(GetGlobalVar(SYMA(dynaTemplates)));
 	if (IsArray(dynaTemplates))
 		taskList = UniqueAppendListGen(dynaTemplates, taskList);
 

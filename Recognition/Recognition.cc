@@ -260,7 +260,7 @@ InitCorrection(RefArg ioInfo)
 static Ref
 CorrectInfo(void)
 {
-	return GetFrameSlot(RA(gVarFrame), SYMA(correctInfo));
+	return GetGlobalVar(SYMA(correctInfo));
 }
 
 
@@ -1587,7 +1587,7 @@ PrepRecConfig(CView * inView, RefArg inConfig)
 	RefVar recConfig(Clone(RA(protoRecConfig)));
 	SetFrameSlot(recConfig, SYMA(_proto), inConfig);
 
-	RefVar userConfig(GetFrameSlot(gVarFrame, SYMA(userConfiguration)));
+	RefVar userConfig(GetGlobalVar(SYMA(userConfiguration)));
 
 	RefVar settings;
 	if (inView)
@@ -1714,7 +1714,7 @@ BuildRecConfig(CView * inView, ULong inFlags)
 
 	if ((inFlags & vAnythingAllowed) == vAnythingAllowed)
 	{
-		RefVar userConfig(GetFrameSlot(gVarFrame, SYMA(userConfiguration)));
+		RefVar userConfig(GetGlobalVar(SYMA(userConfiguration)));
 		config = GetFrameSlot(userConfig, SYMA(testConfig));
 	}
 	else if (inView)

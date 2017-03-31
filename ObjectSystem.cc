@@ -212,7 +212,7 @@ InitObjectSystem(void)
 		RunInitScripts();
 
 //		Override debug print defaults set in init script
-		SetFrameSlot(RA(gVarFrame), SYMA(printDepth), MAKEINT(7));
+		DefGlobalVar(SYMA(printDepth), MAKEINT(7));
 
 #if defined(forDarkStar)
 		InitDarkStar(RA(gFunctionFrame), RA(NILREF));
@@ -227,7 +227,7 @@ InitObjectSystem(void)
 		SetFrameSlot(gRootView->fContext, SYMA(_proto), RA(viewRoot));
 		RefVar vwChildren(GetFrameSlot(RA(viewRoot), SYMA(viewChildren)));
 		FOREACH(vwChildren, child)
-			RefVar contextTag(GetFrameSlot(child, SYMA(preallocatedContext)));
+			RefVar contextTag(GetFrameSlot(child, SYMA(preAllocatedContext)));
 			if (NOTNIL(contextTag))
 			{
 				RefVar mutableChild(Clone(child));

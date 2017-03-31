@@ -9,8 +9,6 @@
 #if !defined(__GLOBALS__)
 #define __GLOBALS__ 1
 
-#include "NewtGlobals.h"
-
 
 /*------------------------------------------------------------------------------
 	G l o b a l   V a r i a b l e s
@@ -18,6 +16,9 @@
 
 extern Ref		gVarFrame;
 extern Ref *	RSgVarFrame;
+
+inline Ref		DefGlobalVar(RefArg tag, RefArg value) { SetFrameSlot(RA(gVarFrame), tag, value); return value; }
+inline Ref		GetGlobalVar(RefArg tag) { return GetFrameSlot(RA(gVarFrame), tag); }
 
 
 /* -----------------------------------------------------------------------------

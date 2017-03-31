@@ -10,6 +10,7 @@
 
 #include "Objects.h"
 #include "Globals.h"
+#include "NewtGlobals.h"
 #include "REPTranslators.h"
 #include "Funcs.h"
 #include "ROMResources.h"
@@ -220,12 +221,12 @@ REPInit(void)
 	if (gREPin == NULL)
 		ThrowErr(exCompiler, kNSErrNoREP);
 
-	SetFrameSlot(RA(gVarFrame), SYMA(vars), RA(gVarFrame));
-	SetFrameSlot(RA(gVarFrame), SYMA(functions), RA(gFunctionFrame));
+	DefGlobalVar(SYMA(vars), RA(gVarFrame));
+	DefGlobalVar(SYMA(functions), RA(gFunctionFrame));
 
-	SetFrameSlot(RA(gVarFrame), SYMA(trace), RA(NILREF));
-	SetFrameSlot(RA(gVarFrame), SYMA(printDepth), MAKEINT(3));
-	SetFrameSlot(RA(gVarFrame), SYMA(prettyPrint), RA(TRUEREF));
+	DefGlobalVar(SYMA(trace), RA(NILREF));
+	DefGlobalVar(SYMA(printDepth), MAKEINT(3));
+	DefGlobalVar(SYMA(prettyPrint), RA(TRUEREF));
 
 	gREPContext = gVarFrame;
 	AddGCRoot(&gREPContext);
@@ -336,7 +337,7 @@ REPAcceptLine(void)
 			int		indent;
 			RefVar	result;
 			RefVar	codeBlock(gREPin->produceFrame(0));
-			if (NOTNIL(GetFrameSlot(gVarFrame, MakeSymbol("showCodeBlocks"))))
+			if (NOTNIL(GetGlobalVar(MakeSymbol("showCodeBlocks"))))
 			{
 				gREPout->consumeFrame(codeBlock, 0, 0);
 				gREPout->putc(0x0D);

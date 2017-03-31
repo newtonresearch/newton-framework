@@ -210,7 +210,6 @@ ParseString(RefArg inStr)
 	RefVar					codeBlock;
 	CStringInputStream	stream(inStr);
 	CCompiler				compiler(&stream, false);
-
 	newton_try
 	{
 		codeBlock = compiler.compile();
@@ -221,7 +220,6 @@ ParseString(RefArg inStr)
 		stream.~CStringInputStream();
 	}
 	end_try;
-
 	return codeBlock;
 }
 
@@ -253,7 +251,7 @@ CompileFile(const char * inFilename)
 		{
 			codeBlock = compiler.compile();
 
-			if (NOTNIL(GetFrameSlot(RA(gVarFrame), MakeSymbol("showCodeBlocks"))))
+			if (NOTNIL(GetGlobalVar(MakeSymbol("showCodeBlocks"))))
 			{
 				gREPout->print("(#%X) ", (Ref)codeBlock);
 				PrintObject(codeBlock, 0);
@@ -311,7 +309,7 @@ ParseFile(const char * inFilename)
 		{
 			codeBlock = compiler.compile();
 
-			if (NOTNIL(GetFrameSlot(RA(gVarFrame), MakeSymbol("showCodeBlocks"))))
+			if (NOTNIL(GetGlobalVar(MakeSymbol("showCodeBlocks"))))
 			{
 				gREPout->print("(#%X) ", (Ref)codeBlock);
 				PrintObject(codeBlock, 0);
@@ -321,7 +319,7 @@ ParseFile(const char * inFilename)
 
 			result = NOTNIL(codeBlock) ? InterpretBlock(codeBlock, RA(NILREF)) : NILREF;
 
-			if (NOTNIL(GetFrameSlot(RA(gVarFrame), MakeSymbol("showLoadResults"))))
+			if (NOTNIL(GetGlobalVar(MakeSymbol("showLoadResults"))))
 			{
 				gREPout->print("(#%-6X) ", (Ref)result);
 				PrintObject(result, 0);
@@ -441,11 +439,11 @@ CCompiler::CCompiler(CInputStream * inStream, bool inDoConstituents)
 		AddGCRoot(&yylval);
 
 		AddGCRoot(&gConstFuncFrame);
-		gConstFuncFrame = GetFrameSlot(gVarFrame, SYMA(constantFunctions));
+		gConstFuncFrame = GetGlobalVar(SYMA(constantFunctions));
 		if (ISNIL(gConstFuncFrame))
 		{
 			gConstFuncFrame = AllocateFrame();
-			SetFrameSlot(gVarFrame, SYMA(constantFunctions), gConstFuncFrame);
+			DefGlobalVar(SYMA(constantFunctions), gConstFuncFrame);
 		}
 
 		AddGCRoot(&gFreqFuncNames);
@@ -477,7 +475,7 @@ Ref
 CCompiler::compile(void)
 {
 // experimental
-	if (NOTNIL(GetFrameSlot(gVarFrame, MakeSymbol("LLVM"))))
+	if (NOTNIL(GetGlobalVar(MakeSymbol("LLVM"))))
 	{
 		ExprAST * ast = parse();
 		if (ast)
@@ -507,7 +505,7 @@ CCompiler::compile(void)
 	if (err)
 		return NILREF;
 
-	Ref cc = GetFrameSlot(gVarFrame, SYMA(compilerCompatibility));
+	Ref cc = GetGlobalVar(SYMA(compilerCompatibility));
 	gCompilerCompatibility = ISINT(cc) ? RINT(cc) : 1;
 
 	newFunctionState(MakeArray(0), func, funcDepthPtr);
@@ -1370,9 +1368,10 @@ break;
 	else
 		yystate = yydgoto[yym];
 #if YYDEBUG
-	if (yydebug)
+	if (yydebug) {
 		printf("yydebug: after reduction, shifting to state %d\n",
 				 yystate);
+	}
 #endif
 	if (yyssp >= &yyss[stackSize-1] && parserStackOverflow()) goto yyoverflow;
 	*++yyssp = yystate;
@@ -1468,7 +1467,7 @@ CCompiler::getToken(void)
 		 || token == '}'
 		 || token == ','
 		 || token == TOKENuntil
-		 || token == TOKENconst)
+		 || token == TOKENonexception)
 			return token;
 		stackedToken = theToken;
 		return ';';

@@ -9,6 +9,7 @@
 #include "Objects.h"
 #include "ObjHeader.h"
 #include "Lookup.h"
+#include "NewtGlobals.h"
 #include "Interpreter.h"
 #include "RefMemory.h"
 #include "ROMResources.h"
@@ -915,7 +916,7 @@ SetVariableOrGlobal(RefArg inRcvr, RefArg inTag, RefArg inValue, int inLookup)
 	{
 		if (gInterpreter->tracing >= 2)
 			gInterpreter->traceSet(RA(gVarFrame), RA(gVarFrame), inTag, inValue);
-		SetFrameSlot(RA(gVarFrame), inTag, inValue);
+		DefGlobalVar(inTag, inValue);
 		return true;
 	}
 
@@ -931,7 +932,7 @@ SetVariableOrGlobal(RefArg inRcvr, RefArg inTag, RefArg inValue, int inLookup)
 	{
 		if (gInterpreter->tracing >= 2)
 			gInterpreter->traceSet(RA(gVarFrame), RA(gVarFrame), inTag, inValue);
-		SetFrameSlot(RA(gVarFrame), inTag, inValue);
+		DefGlobalVar(inTag, inValue);
 		return true;
 	}
 

@@ -357,10 +357,10 @@ REPStackTrace(void * interpreter)
 	if (numOfStackFrames > 0)
 	{
 		//sp14 = gVarFrame
-		Ref savePrintDepth = GetFrameSlot(RA(gVarFrame), SYMA(printDepth));
+		Ref savePrintDepth = GetGlobalVar(SYMA(printDepth));
 		//sp-10
-		Ref stackTracePrintDepth = GetFrameSlot(RA(gVarFrame), MakeSymbol("stackTracePrintDepth"));
-		SetFrameSlot(gVarFrame, SYMA(printDepth), ISINT(stackTracePrintDepth) ? stackTracePrintDepth : MAKEINT(0));
+		Ref stackTracePrintDepth = GetGlobalVar(MakeSymbol("stackTracePrintDepth"));
+		DefGlobalVar(SYMA(printDepth), ISINT(stackTracePrintDepth) ? stackTracePrintDepth : MAKEINT(0));
 
 		if (!debugAPI.accurateStack())
 			REPprintf("WARNING:  Inaccurate stack trace.  Use SetDebugMode(true) for accurate stack traces.\n");
@@ -451,7 +451,7 @@ REPStackTrace(void * interpreter)
 			}
 			end_try;
 		}
-		SetFrameSlot(RA(gVarFrame), SYMA(printDepth), savePrintDepth);
+		DefGlobalVar(SYMA(printDepth), savePrintDepth);
 	}
 }
 

@@ -125,7 +125,7 @@ GetTaskStackInfo(const CUTask * inTask, VAddr * outStackTop, VAddr * outStackBas
 void
 SetActionDescription(long inDescr)
 {
-	SetFrameSlot(RA(gVarFrame), SYMA(actionDescription), MAKEINT(inDescr));
+	DefGlobalVar(SYMA(actionDescription), MAKEINT(inDescr));
 }
 
 

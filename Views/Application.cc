@@ -612,7 +612,7 @@ FEventPause(RefArg inRcvr, RefArg inArg)
 {
 	CTime now(GetGlobalTime());
 
-	if (NOTNIL(GetFrameSlot(RA(gVarFrame), SYMA(ioBusy))))
+	if (NOTNIL(GetGlobalVar(SYMA(ioBusy))))
 		gLastIOEvent = now;
 
 	CTime mostRecentEvent;

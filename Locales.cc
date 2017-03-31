@@ -97,7 +97,7 @@ InitInternationalUtils(void)
 Ref
 IntlResources(void)
 {
-	return GetFrameSlot(gVarFrame, SYMA(international));
+	return GetGlobalVar(SYMA(international));
 }
 
 

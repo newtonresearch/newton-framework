@@ -485,7 +485,7 @@ CView::buildContext(RefArg inProto, bool inArg2)
 		if (ISNIL(vwClass))
 			ThrowErr(exRootException, -8502);  // NULL view class
 
-		stdForm = GetFrameSlot(gVarFrame, SYMA(stdForms));
+		stdForm = GetGlobalVar(SYMA(stdForms));
 		stdForm = GetProtoVariable(stdForm, vwClass);
 		if (ISNIL(stdForm))
 			ThrowErr(exRootException, -8503);  // bad view class
@@ -586,7 +586,7 @@ CView::realDoCommand(RefArg inCmd)
 			RefVar args(MakeArray(1));
 			SetArraySlot(args, 0, AddressToRef((void *)CommandParameter(inCmd)));
 
-SetFrameSlot(RA(gVarFrame), SYMA(trace), SYMA(functions));
+DefGlobalVar(SYMA(trace), SYMA(functions));
 EnableFramesFunctionProfiling(true);
 
 			RefVar clik(runCacheScript(kIndexViewClickScript, args));
@@ -609,7 +609,7 @@ EnableFramesFunctionProfiling(true);
 		SetArraySlot(args, 0, AddressToRef((void *)CommandParameter(inCmd)));
 		isHandled = NOTNIL(runScript(SYMA(viewStrokeScript), args));
 		CommandSetResult(inCmd, isHandled);
-		SetFrameSlot(RA(gVarFrame), SYMA(lastTextChanged), RA(NILREF));
+		DefGlobalVar(SYMA(lastTextChanged), RA(NILREF));
 		}
 		break;
 
@@ -641,7 +641,7 @@ EnableFramesFunctionProfiling(true);
 		SetArraySlot(args, 0, AddressToRef((void *)CommandParameter(inCmd)));
 		isHandled = NOTNIL(runScript(SYMA(viewWordScript), args));
 		CommandSetResult(inCmd, isHandled);
-		SetFrameSlot(RA(gVarFrame), SYMA(lastTextChanged), RA(NILREF));
+		DefGlobalVar(SYMA(lastTextChanged), RA(NILREF));
 		}
 		break;
 
@@ -723,19 +723,19 @@ EnableFramesFunctionProfiling(true);
 
 	case aeScrollUp:
 		runScript(SYMA(viewScrollUpScript), RA(NILREF), true);
-		SetFrameSlot(RA(gVarFrame), SYMA(lastTextChanged), RA(NILREF));
+		DefGlobalVar(SYMA(lastTextChanged), RA(NILREF));
 		isHandled = true;
 		break;
 
 	case aeScrollDown:
 		runScript(SYMA(viewScrollDownScript), RA(NILREF), true);
-		SetFrameSlot(RA(gVarFrame), SYMA(lastTextChanged), RA(NILREF));
+		DefGlobalVar(SYMA(lastTextChanged), RA(NILREF));
 		isHandled = true;
 		break;
 
 	case aeOverview:
 		runScript(SYMA(viewOverviewScript), RA(NILREF), true);
-		SetFrameSlot(RA(gVarFrame), SYMA(lastTextChanged), RA(NILREF));
+		DefGlobalVar(SYMA(lastTextChanged), RA(NILREF));
 		isHandled = true;
 		break;
 
@@ -758,7 +758,7 @@ EnableFramesFunctionProfiling(true);
 		}
 		else
 			CommandSetParameter(inCmd, 0);
-		SetFrameSlot(RA(gVarFrame), SYMA(lastTextChanged), RA(NILREF));
+		DefGlobalVar(SYMA(lastTextChanged), RA(NILREF));
 		isHandled = true;
 		}
 		break;
@@ -776,7 +776,7 @@ EnableFramesFunctionProfiling(true);
 			CommandSetFrameParameter(undoCmd, targetViewData);
 			gApplication->postUndoCommand(undoCmd);
 		}
-		SetFrameSlot(RA(gVarFrame), SYMA(lastTextChanged), RA(NILREF));
+		DefGlobalVar(SYMA(lastTextChanged), RA(NILREF));
 		isHandled = true;
 		}
 		break;
@@ -793,7 +793,7 @@ EnableFramesFunctionProfiling(true);
 		CommandSetIndexParameter(undoCmd, 1, -*(short *)&delta.v);
 		gApplication->postUndoCommand(undoCmd);
 		
-		SetFrameSlot(RA(gVarFrame), SYMA(lastTextChanged), RA(NILREF));
+		DefGlobalVar(SYMA(lastTextChanged), RA(NILREF));
 		isHandled = true;
 		}
 		break;
@@ -884,7 +884,7 @@ EnableFramesFunctionProfiling(true);
 			CommandSetId(inCmd, aeMoveData);
 			targetView->realDoCommand(inCmd);
 		}
-		SetFrameSlot(RA(gVarFrame), SYMA(lastTextChanged), RA(NILREF));
+		DefGlobalVar(SYMA(lastTextChanged), RA(NILREF));
 		isHandled = true;
 		}
 		break;
@@ -1285,7 +1285,7 @@ CView::transferCopyProtection(RefArg inView)
 			RefVar stny(GetProtoVariable(inView, SYMA(viewStationery)));
 			if (NOTNIL(stny))
 			{
-				RefVar stdForms(GetFrameSlot(gVarFrame, SYMA(stdForms)));
+				RefVar stdForms(GetGlobalVar(SYMA(stdForms)));
 				stny = GetProtoVariable(stdForms, stny);
 				if (NOTNIL(stny))
 					vwFlags = GetProtoVariable(stny, SYMA(viewFlags));
@@ -1845,7 +1845,7 @@ CView::justifyBounds(Rect * ioBounds)
 		if (fParent == gRootView && this != gRootView)
 		{
 		// this is a child of the root view - justify WRT the entire display
-			RefVar	displayParams(GetFrameSlot(RA(gVarFrame), SYMA(displayParams)));
+			RefVar	displayParams(GetGlobalVar(SYMA(displayParams)));
 			bounds.top = RINT(GetProtoVariable(displayParams, SYMA(appAreaGlobalTop)));
 			bounds.left = RINT(GetProtoVariable(displayParams, SYMA(appAreaGlobalLeft)));
 			origin = *(Point *)&bounds;
