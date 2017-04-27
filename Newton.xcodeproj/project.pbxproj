@@ -140,7 +140,6 @@
 		F46133B518E6027200D3E03C /* FlashBlock.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4AABD6311E3239A00D47682 /* FlashBlock.cc */; };
 		F46133B718E6029600D3E03C /* FlashStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = F486CD0A10B69CBC00176ED0 /* FlashStore.cc */; };
 		F4687F8A06F3B7B800E7C8A2 /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 66B1B68204D03ED60086C7ED /* ApplicationServices.framework */; };
-		F468AD021DE34D90009DFF66 /* ROMData.h in Headers */ = {isa = PBXBuildFile; fileRef = F4AE56C41B0203DC00F15F10 /* ROMData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F46AC1891C442ED600C3CDAD /* EndpointPipe.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4AF0E8410F78518003CE609 /* EndpointPipe.cc */; };
 		F46D67D01CB04504004FD0A6 /* Regions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 66DF10BD054BDA6800A80002 /* Regions.cc */; };
 		F470E8DB071BD820006487E0 /* Compiler.cc in Sources */ = {isa = PBXBuildFile; fileRef = 66393DBB04C7F08100A80002 /* Compiler.cc */; };
@@ -422,7 +421,6 @@
 		F4D2F9C4128D5D99009D5BA5 /* CardServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D2F9C3128D5D99009D5BA5 /* CardServer.cc */; };
 		F4D2F9C5128D5E22009D5BA5 /* PartHandler.cc in Sources */ = {isa = PBXBuildFile; fileRef = F45C69911143B6640025CE32 /* PartHandler.cc */; };
 		F4D2FAAE128FFD50009D5BA5 /* Alerts.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4571AF911B410AB00B144C7 /* Alerts.cc */; };
-		F4D3BBE90E0B92A500A89465 /* NTKConstData.newtonpkg in Resources */ = {isa = PBXBuildFile; fileRef = F4D3BBE80E0B92A500A89465 /* NTKConstData.newtonpkg */; };
 		F4D44ED30BE8DF04004937CC /* RefIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = F45D401F0BA42CB6005EC25C /* RefIO.cc */; };
 		F4D61139190A9C160041C087 /* SerialNumber.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D61137190A9C160041C087 /* SerialNumber.cc */; };
 		F4D6113A190A9C160041C087 /* SerialNumber.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D61137190A9C160041C087 /* SerialNumber.cc */; };
@@ -495,7 +493,6 @@
 		F4D8F7440C1D8D82009E4CA3 /* StoreCompanderWrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4D8F73B0C1D7717009E4CA3 /* StoreCompanderWrapper.cc */; };
 		F4DA4B900C848CA400FF7B9C /* appicon.icns in Resources */ = {isa = PBXBuildFile; fileRef = F4DA4B8E0C848C0300FF7B9C /* appicon.icns */; };
 		F4DB123A12686220003F8A10 /* DictData in Resources */ = {isa = PBXBuildFile; fileRef = F491EA49119C833300F781BF /* DictData */; };
-		F4DB124212686254003F8A10 /* NSConstData.newtonpkg in Resources */ = {isa = PBXBuildFile; fileRef = F4D3B0330E08033700A89465 /* NSConstData.newtonpkg */; };
 		F4DB143F126B02A7003F8A10 /* SoundServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4F9297C0C82D1D20077CA66 /* SoundServer.cc */; };
 		F4DB171E126D8EB1003F8A10 /* SoundDriver.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4DB171D126D8BFA003F8A10 /* SoundDriver.cc */; };
 		F4DB1882126E306E003F8A10 /* ViewStubs.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4DB1836126E19AD003F8A10 /* ViewStubs.cc */; };
@@ -522,7 +519,7 @@
 		F4E6113C1056A190007E700A /* NodeCache.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4E6113A1056A190007E700A /* NodeCache.cc */; };
 		F4E6113F1056A1D8007E700A /* Tags.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4E6113E1056A1D8007E700A /* Tags.cc */; };
 		F4E9461F0CB8EB8400A77FD6 /* StoreStreamObjects.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4FA711809A3321000B62DDB /* StoreStreamObjects.cc */; };
-		F4EA5C2D0F4EB2F7000CB26B /* NSConstData.newtonpkg in Resources */ = {isa = PBXBuildFile; fileRef = F4D3B0330E08033700A89465 /* NSConstData.newtonpkg */; };
+		F4EA9BDC1E8D1F49005EA8A3 /* Globals.h in Headers */ = {isa = PBXBuildFile; fileRef = 66393DC504C7F08100A80002 /* Globals.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F4ECC2EB0DE492E70023D27A /* NewtonQD.h in Headers */ = {isa = PBXBuildFile; fileRef = F4B80F2D06F3022C0042F1D4 /* NewtonQD.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F4ECC2EC0DE492E70023D27A /* Newton.h in Headers */ = {isa = PBXBuildFile; fileRef = 66393E2404C7F0F400A80002 /* Newton.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F4ECC2ED0DE492E70023D27A /* NewtonDebug.h in Headers */ = {isa = PBXBuildFile; fileRef = 66393E2804C7F0F400A80002 /* NewtonDebug.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -1255,6 +1252,7 @@
 		F4E751670E54A06600AB14B6 /* MNPService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MNPService.h; path = CommServices/MNPService.h; sourceTree = SOURCE_ROOT; };
 		F4E9461A0CB7B3DB00A77FD6 /* UnicodeCompression.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UnicodeCompression.h; sourceTree = "<group>"; };
 		F4E9BA251C8F090600410B8D /* PartPipe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PartPipe.h; sourceTree = "<group>"; };
+		F4EA9BDA1E805364005EA8A3 /* NTKSupport.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = NTKSupport.mm; path = NTK/NTKSupport.mm; sourceTree = "<group>"; };
 		F4ECC35D0DE492E70023D27A /* NTK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = NTK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F4EDBBBE056E2F6A00E0B1E4 /* Interrupt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Interrupt.h; sourceTree = "<group>"; };
 		F4EFBA920C74B986005319F8 /* DTMFCodec.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DTMFCodec.cc; sourceTree = "<group>"; };
@@ -2093,6 +2091,7 @@
 				F4A58FC318BB6A81008B0832 /* NTK.cc */,
 				F4A58FC618BB6A81008B0832 /* protoProtoEditor.h */,
 				F4A58FC718BB6A81008B0832 /* protoProtoEditor.mm */,
+				F4EA9BDA1E805364005EA8A3 /* NTKSupport.mm */,
 			);
 			name = NTK;
 			sourceTree = "<group>";
@@ -2318,9 +2317,9 @@
 				F4ECC2EB0DE492E70023D27A /* NewtonQD.h in Headers */,
 				F4ECC2EC0DE492E70023D27A /* Newton.h in Headers */,
 				F4ECC2ED0DE492E70023D27A /* NewtonDebug.h in Headers */,
+				F4EA9BDC1E8D1F49005EA8A3 /* Globals.h in Headers */,
 				F4ECC2EE0DE492E70023D27A /* NewtonErrors.h in Headers */,
 				F4ECC2EF0DE492E70023D27A /* NewtonExceptions.h in Headers */,
-				F468AD021DE34D90009DFF66 /* ROMData.h in Headers */,
 				F4ECC2F00DE492E70023D27A /* NewtonMemory.h in Headers */,
 				F4ECC2F10DE492E70023D27A /* NewtonTime.h in Headers */,
 				F4AE56D51B0249F100F15F10 /* NewtonPackage.h in Headers */,
@@ -2463,7 +2462,6 @@
 				F43E1DBA1E535C9500EFADB2 /* Main.storyboard in Resources */,
 				F43E1DB91E535C9500EFADB2 /* Localizable.strings in Resources */,
 				F4C4C1E31A40C133002B8821 /* caret.png in Resources */,
-				F4DB124212686254003F8A10 /* NSConstData.newtonpkg in Resources */,
 				F43E1DB81E535C9500EFADB2 /* InfoPlist.strings in Resources */,
 				F4DB1CC412730BA7003F8A10 /* MessagePadHelp in Resources */,
 				F43E1DBB1E535C9500EFADB2 /* MainMenu.xib in Resources */,
@@ -2474,7 +2472,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F4EA5C2D0F4EB2F7000CB26B /* NSConstData.newtonpkg in Resources */,
 				F491EA4B119C833300F781BF /* DictData in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2483,7 +2480,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F4D3BBE90E0B92A500A89465 /* NTKConstData.newtonpkg in Resources */,
 				F4AEFE10184BBE790072ACAA /* NTK.rex in Resources */,
 				F491EA4A119C833300F781BF /* DictData in Resources */,
 			);
