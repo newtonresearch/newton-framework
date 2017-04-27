@@ -120,10 +120,10 @@ CFlashRange::CFlashRange(CFlashDriver * inDriver, VAddr inFlashAddr, VAddr inRea
 
 	ArrayIndex numOfLanes = 0;
 	ULong laneMask = 0xFF;
-	for (ArrayIndex i = 0; i < 4; i++, laneMask <<= 8)		// kMaxMemoryLanes?
-	{
-		if ((inLanes & laneMask) != 0)
+	for (ArrayIndex i = 0; i < 4; i++, laneMask <<= 8) {		// kMaxMemoryLanes?
+		if ((inLanes & laneMask) != 0) {
 			numOfLanes++;
+		}
 	}
 	fDataFactor = numOfLanes / info.x0C;
 	fRangeSize = info.x10 * fDataFactor;
@@ -137,12 +137,10 @@ CFlashRange::CFlashRange(CFlashDriver * inDriver, VAddr inFlashAddr, VAddr inRea
 	// might want to delete this if it already exists so we always start from scratch
 	bool isNew = false;
 	fd = open(fpath, O_RDWR);
-	if (fd < 0)
-	{
+	if (fd < 0) {
 		// create new backing file EINVAL
 		fd = open(fpath, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU|S_IRWXG);
-		if (fd < 0)
-		{
+		if (fd < 0) {
 			printf("FAILED TO CREATE STORE BACKING FILE!\n");
 			exit(1);
 		}
@@ -151,8 +149,12 @@ CFlashRange::CFlashRange(CFlashDriver * inDriver, VAddr inFlashAddr, VAddr inRea
 	}
 	fReadVAddr = fWriteVAddr = (VAddr)mmap(NULL, fRangeSize, PROT_READ|PROT_WRITE, MAP_FILE|MAP_SHARED, fd, 0);
 //	DEBUG: always start with a virgin store
-	if (isNew)
+#if !defined(forNTK)
+	isNew = true;
+#endif
+	if (isNew) {
 		memset((void *)fWriteVAddr, 0xFF, fRangeSize);	// set virgin bits
+	}
 	close(fd);
 #endif
 }
