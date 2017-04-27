@@ -14,6 +14,7 @@
 #include "RefMemory.h"
 #include "Iterators.h"
 #include "Lookup.h"
+#include "NewtGlobals.h"
 #include "Interpreter.h"
 #include "RichStrings.h"
 #include "UStringUtils.h"
