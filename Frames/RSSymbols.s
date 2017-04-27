@@ -4246,9 +4246,9 @@ _RSSYMrecogLastNamesDictionary:	Ref	_RSYMrecogLastNamesDictionary
 		.globl	_RSSYMjangling
 _RSYMjangling:		Ref	MAKEPTR(SYMjangling)
 _RSSYMjangling:	Ref	_RSYMjangling
-		.globl	_RSSYMpreallocatedContext
-_RSYMpreallocatedContext:		Ref	MAKEPTR(SYMpreallocatedContext)
-_RSSYMpreallocatedContext:	Ref	_RSYMpreallocatedContext
+		.globl	_RSSYMpreAllocatedContext
+_RSYMpreAllocatedContext:		Ref	MAKEPTR(SYMpreAllocatedContext)
+_RSSYMpreAllocatedContext:	Ref	_RSYMpreAllocatedContext
 		.globl	_RSSYMopCode
 _RSYMopCode:		Ref	MAKEPTR(SYMopCode)
 _RSSYMopCode:	Ref	_RSYMopCode
@@ -17452,9 +17452,9 @@ _RSSYMdescription:	Ref	_RSYMdescription
 		.globl	_RSSYMcurrentChecks
 _RSYMcurrentChecks:		Ref	MAKEPTR(SYMcurrentChecks)
 _RSSYMcurrentChecks:	Ref	_RSYMcurrentChecks
-		.globl	_RSSYMstepallocatecontext
-_RSYMstepallocatecontext:		Ref	MAKEPTR(SYMstepallocatecontext)
-_RSSYMstepallocatecontext:	Ref	_RSYMstepallocatecontext
+		.globl	_RSSYMstepAllocateContext
+_RSYMstepAllocateContext:		Ref	MAKEPTR(SYMstepAllocateContext)
+_RSSYMstepAllocateContext:	Ref	_RSYMstepAllocateContext
 		.globl	_RSSYMReBoot
 _RSYMReBoot:		Ref	MAKEPTR(SYMReBoot)
 _RSSYMReBoot:	Ref	_RSYMReBoot
@@ -25914,21 +25914,6 @@ _RSSYMpartData:	Ref	_RSYMpartData
 		.globl	_RSSYMcontrol
 _RSYMcontrol:		Ref	MAKEPTR(SYMcontrol)
 _RSSYMcontrol:	Ref	_RSYMcontrol
-		.globl	_RSSYMplatformFunctions
-_RSYMplatformFunctions:		Ref	MAKEPTR(SYMplatformFunctions)
-_RSSYMplatformFunctions:	Ref	_RSYMplatformFunctions
-		.globl	_RSSYMplatformWeakFunctions
-_RSYMplatformWeakFunctions:		Ref	MAKEPTR(SYMplatformWeakFunctions)
-_RSSYMplatformWeakFunctions:	Ref	_RSYMplatformWeakFunctions
-		.globl	_RSSYMplatformVariables
-_RSYMplatformVariables:		Ref	MAKEPTR(SYMplatformVariables)
-_RSSYMplatformVariables:	Ref	_RSYMplatformVariables
-		.globl	_RSSYMprotoEditor
-_RSYMprotoEditor:		Ref	MAKEPTR(SYMprotoEditor)
-_RSSYMprotoEditor:	Ref	_RSYMprotoEditor
-		.globl	_RSSYMprotoProtoEditor
-_RSYMprotoProtoEditor:		Ref	MAKEPTR(SYMprotoProtoEditor)
-_RSSYMprotoProtoEditor:	Ref	_RSYMprotoProtoEditor
 		.globl	_RSSYM__origFunctions
 _RSYM__origFunctions:		Ref	MAKEPTR(SYM__origFunctions)
 _RSSYM__origFunctions:	Ref	_RSYM__origFunctions
@@ -25938,3 +25923,36 @@ _RSSYM__origVars:	Ref	_RSYM__origVars
 		.globl	_RSSYM__platform
 _RSYM__platform:		Ref	MAKEPTR(SYM__platform)
 _RSSYM__platform:	Ref	_RSYM__platform
+		.globl	_RSSYMplatformFunctions
+_RSYMplatformFunctions:		Ref	MAKEPTR(SYMplatformFunctions)
+_RSSYMplatformFunctions:	Ref	_RSYMplatformFunctions
+		.globl	_RSSYMplatformWeakFunctions
+_RSYMplatformWeakFunctions:		Ref	MAKEPTR(SYMplatformWeakFunctions)
+_RSSYMplatformWeakFunctions:	Ref	_RSYMplatformWeakFunctions
+		.globl	_RSSYMplatformVariables
+_RSYMplatformVariables:		Ref	MAKEPTR(SYMplatformVariables)
+_RSSYMplatformVariables:	Ref	_RSYMplatformVariables
+		.globl	_RSSYMplatformConstants
+_RSYMplatformConstants:		Ref	MAKEPTR(SYMplatformConstants)
+_RSSYMplatformConstants:	Ref	_RSYMplatformConstants
+		.globl	_RSSYMSetPartFrameSlot
+_RSYMSetPartFrameSlot:		Ref	MAKEPTR(SYMSetPartFrameSlot)
+_RSSYMSetPartFrameSlot:	Ref	_RSYMSetPartFrameSlot
+		.globl	_RSSYMGetPartFrameSlot
+_RSYMGetPartFrameSlot:		Ref	MAKEPTR(SYMGetPartFrameSlot)
+_RSSYMGetPartFrameSlot:	Ref	_RSYMGetPartFrameSlot
+		.globl	_RSSYMthisView
+_RSYMthisView:		Ref	MAKEPTR(SYMthisView)
+_RSSYMthisView:	Ref	_RSYMthisView
+		.globl	_RSSYMbeforeScript
+_RSYMbeforeScript:		Ref	MAKEPTR(SYMbeforeScript)
+_RSSYMbeforeScript:	Ref	_RSYMbeforeScript
+		.globl	_RSSYMafterScript
+_RSYMafterScript:		Ref	MAKEPTR(SYMafterScript)
+_RSSYMafterScript:	Ref	_RSYMafterScript
+		.globl	_RSSYMprotoEditor
+_RSYMprotoEditor:		Ref	MAKEPTR(SYMprotoEditor)
+_RSSYMprotoEditor:	Ref	_RSYMprotoEditor
+		.globl	_RSSYMprotoProtoEditor
+_RSYMprotoProtoEditor:		Ref	MAKEPTR(SYMprotoProtoEditor)
+_RSSYMprotoProtoEditor:	Ref	_RSYMprotoProtoEditor
