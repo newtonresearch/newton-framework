@@ -1174,7 +1174,7 @@
 006813b4 asciiBreak
 006813c4 ioIndices
 006813cc unicode
-006813dc getSerialNumber
+006813dc GetSerialNumber
 0068140c dictionaryList
 00681444 protoConfirm
 0068144c protoZonesTable
