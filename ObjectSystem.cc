@@ -239,7 +239,7 @@ InitObjectSystem(void)
 					SetFrameSlot(mutableChild, SYMA(assistLine), assistLine);
 				}
 			}
-		END_FOREACH;
+		END_FOREACH
 #endif
 #else
 		ResetFromResetSwitch();
