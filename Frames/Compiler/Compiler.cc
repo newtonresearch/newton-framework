@@ -125,33 +125,9 @@ short *	yyss;				// +24	state stack base
 
 
 #pragma mark Public interface
-/*------------------------------------------------------------------------------
+/* -----------------------------------------------------------------------------
 	P l a i n   C   F u n c t i o n   I n t e r f a c e
-
-	The NewtonScript protoEditor frame, pre-compiled in the EditorCommands
-	stream file, which is read by NTK at launch, defines EvaluateSelection()
-	which (unsurprisingly perhaps) evaluates the current text selection:
-		EvaluateSelection: func(selOffset, selLength)
-			begin
-			...
-			local text := :Selection();
-			...
-			local code := Compile(text);
-			vars.this := self;
-			local result := call code with ();
-			vars.this := nil;
-			Print(result)
-			end
-	However--
-		the FCompile() function we have here is disassembled from the Newton
-		ROM and does not have the behaviour we see in NTK
-	So--
-		we must assume that for NTK FCompile() compiles line-by-line more like
-		ParseFile()
-	and yet--
-		FCompile() must return a codeblock, not the result of interpreting that
-		block...?
-------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------- */
 extern void Disassemble(RefArg inFunc);
 Ref	ParseString(RefArg inStr);
 Ref	ParseFile(const char * inFilename);
@@ -159,26 +135,6 @@ Ref	ParseFile(const char * inFilename);
 extern "C" Ref
 FCompile(RefArg inRcvr, RefArg inStr)
 {
-// experimental
-#if 0
-	RefVar					codeBlock;
-	CStringInputStream	stream(inStr);
-	CCompiler				compiler(&stream, false);
-
-	newton_try
-	{
-		compiler.parse();
-	}
-	cleanup
-	{
-		compiler.~CCompiler();
-		stream.~CStringInputStream();
-	}
-	end_try;
-
-	return codeBlock;
-#endif
-
 	return ParseString(inStr);
 }
 
@@ -221,64 +177,6 @@ ParseString(RefArg inStr)
 	}
 	end_try;
 	return codeBlock;
-}
-
-
-/*------------------------------------------------------------------------------
-	Compile a file.
-	Top-level expressions are compiled in sequence.
-	Exceptions are caught and notified to gREPout but not rethrown.
-	Args:		inFilename		path of file containing NewtonScript
-	Return:	result of final codeblock execution
-------------------------------------------------------------------------------*/
-
-Ref
-CompileFile(const char * inFilename)
-{
-	RefVar result;
-	RefVar codeBlock;
-
-	FILE * fd = fopen(inFilename, "r");
-	if (fd == NULL)
-		ThrowMsg("couldn't open file");
-
-	CStdioInputStream stream(fd, inFilename);
-	CCompiler compiler(&stream, true);
-
-	newton_try
-	{
-		while (!feof(fd))
-		{
-			codeBlock = compiler.compile();
-
-			if (NOTNIL(GetGlobalVar(MakeSymbol("showCodeBlocks"))))
-			{
-				gREPout->print("(#%X) ", (Ref)codeBlock);
-				PrintObject(codeBlock, 0);
-				gREPout->print("\n");
-				Disassemble(codeBlock);		// not original
-			}
-		}
-	}
-	newton_catch(exRefException)
-	{
-		RefVar data(*(RefStruct *)CurrentException()->data);
-		if (IsFrame(data)
-		&&  ISNIL(GetFrameSlot(data, SYMA(filename))))
-		{
-			SetFrameSlot(data, SYMA(filename), MakeStringFromCString(stream.fileName()));
-			SetFrameSlot(data, SYMA(lineNumber), MAKEINT(compiler.lineNo()));
-		}
-		gREPout->exceptionNotify(CurrentException());
-	}
-	newton_catch_all
-	{
-		gREPout->exceptionNotify(CurrentException());
-	}
-	end_try;
-
-	fclose(fd);
-	return result;
 }
 
 
@@ -410,21 +308,21 @@ AllocatePT5(int inToken, RefArg inP1, RefArg inP2, RefArg inP3, RefArg inP4, Ref
 	globals.
 	NOTE:		This class uses malloc rather than NewPtr for portability reasons.
 	Args:		inStream				the input stream (string or file)
-				inDoConstituents	true => stop compiling when first constituent
+				inByExpressions	true => stop compiling when first expression
 												 terminated, so all declarations/functions
 												 in a file are evaluated by repeatedly
 												 calling compile(); InterpretBlock();
 												 until EOF.
 ------------------------------------------------------------------------------*/
 
-CCompiler::CCompiler(CInputStream * inStream, bool inDoConstituents)
+CCompiler::CCompiler(CInputStream * inStream, bool inByExpressions)
 {
 	func = NULL;
 	stackSize = kInitYaccStackSize;
 	stream = inStream;
 	yaccStack = AllocateArray(SYMA(yaccStack), kInitYaccStackSize);
 	sStack = (short *)malloc(kInitYaccStackSize * sizeof(short));
-	doConstituents = inDoConstituents;
+	is1Expression = inByExpressions;
 	funcDepthPtr = NULL;
 	tokenQueueIndex = 0;
 	stackedToken.id = 0;
@@ -432,25 +330,27 @@ CCompiler::CCompiler(CInputStream * inStream, bool inDoConstituents)
 	stackedToken.value.ref = NILREF;
 	LockRef(yaccStack);
 	vStack = Slots(yaccStack);
-	if (!gCompilerIsInitialized)
-	{
+	if (!gCompilerIsInitialized) {
 		gCompilerIsInitialized = true;
 		AddGCRoot(&yyval);
 		AddGCRoot(&yylval);
 
 		AddGCRoot(&gConstFuncFrame);
 		gConstFuncFrame = GetGlobalVar(SYMA(constantFunctions));
-		if (ISNIL(gConstFuncFrame))
-		{
+		if (ISNIL(gConstFuncFrame)) {
 			gConstFuncFrame = AllocateFrame();
 			DefGlobalVar(SYMA(constantFunctions), gConstFuncFrame);
 		}
 
 		AddGCRoot(&gFreqFuncNames);
 		gFreqFuncNames = AllocateFrame();
-		for (ArrayIndex i = 0; i < gNumFreqFuncs; ++i)
+		for (ArrayIndex i = 0; i < gNumFreqFuncs; ++i) {
 			SetFrameSlot(gFreqFuncNames, MakeSymbol(gFreqFuncInfo[i].name), MAKEINT(i));
+		}
 	}
+	// prime the input stream
+	lineNumber = 1; colmNumber = 0;
+	consumeChar();
 }
 
 
@@ -692,10 +592,6 @@ CCompiler::parser(void)
 	yyvsp = vStack;
 	*sStack = 0;
 
-	// prime the input stream
-	lineNumber = 1; colmNumber = 0;
-	consumeChar();
-
 yyloop:
 	if ((yyn = yydefred[yystate]) != 0) goto yyreduce;
 	if (yychar < 0)
@@ -816,7 +712,7 @@ case 3:
 						SetArraySlot(yyval, 0, yyvsp[0]); }
 break;
 case 4:
-					{	yyval = yyvsp[-1];  if (doConstituents) YYACCEPT; }
+					{	yyval = yyvsp[-1];  if (is1Expression) YYACCEPT; }
 break;
 case 5:
 					{	yyval = yyvsp[-3];  AddArraySlot(yyval, yyvsp[0]); }
@@ -1444,21 +1340,10 @@ CCompiler::parserStackOverflow(void)
 int
 CCompiler::getToken(void)
 {
-	int token;
-
-	if (stackedToken.id != 0)
-	{
-		theToken = stackedToken;
-		stackedToken.id = 0;
-		stackedToken.value.type = TYPEnone;
-		stackedToken.value.ref = NILREF;
-		return theToken.id;
-	}
-
-	token = consumeToken();
+	int token = consumeToken();
 	if (token == ';')
 	{
-		token = consumeToken();
+		token = peekToken();
 		if (token == EOF			// ignore trailing ';'
 		 || token == TOKENend
 		 || token == TOKENelse
@@ -1467,18 +1352,18 @@ CCompiler::getToken(void)
 		 || token == '}'
 		 || token == ','
 		 || token == TOKENuntil
-		 || token == TOKENonexception)
+		 || token == TOKENonexception) {
+			consumeToken();
 			return token;
-		stackedToken = theToken;
+		}
 		return ';';
-	}
-	else if (token == ',')
-	{
-		token = consumeToken();
+	} else if (token == ',') {
+		token = peekToken();
 		if (token == '}'			// similarly trailing ','
-		 || token == ']')
+		 || token == ']') {
+			consumeToken();
 			return token;
-		stackedToken = theToken;
+		}
 		return ',';
 	}
 	return token;

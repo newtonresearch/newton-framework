@@ -159,7 +159,7 @@ private:
 	RefStruct	yaccStack;				// +10
 	Ref *			vStack;					// +14	parser value stack
 	short *		sStack;					// +18	parser state stack
-	bool			doConstituents;		// +1C	interpret constituent-at-a-time
+	bool			is1Expression;			// +1C	interpret expression-at-a-time
 //	int32_t		x20;						// +20	never referenced
 	int *			funcDepthPtr;			// +24
 //	bool			isStackedToken;		// +28
