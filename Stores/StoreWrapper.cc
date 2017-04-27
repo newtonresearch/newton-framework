@@ -532,9 +532,8 @@ StoreGetSoup(RefArg inRcvr, RefArg inName)
 			// we found the persistent soup object; load it
 			soupObj = LoadPermObject(storeWrapper, soupId, NULL);
 			soupObj = MakeFaultBlock(RA(NILREF), storeWrapper, soupId, soupObj);
-REPprintf("StoreGetSoup(\"%s\")\n", BinaryData(ASCIIString(inName)));
-PrintObject(soupObj, 0);
-REPprintf("\n");
+//REPprintf("StoreGetSoup(\"%s\")\npss soup object = ", BinaryData(ASCIIString(inName)));
+//PrintObject(soupObj, 0);
 			// create soup object for the NewtonScript world
 			theSoup = Clone(RA(plainSoupPrototype));
 			SetFrameSlot(theSoup, SYMA(_proto), soupObj);
@@ -547,9 +546,13 @@ REPprintf("\n");
 			SetFrameSlot(theSoup, SYMA(cache), MakeEntryCache());
 			SetFrameSlot(theSoup, SYMA(cursors), MakeEntryCache());
 			CreateSoupIndexObjects(theSoup);
+//REPprintf("\nNewtonScript soup = ");
+//PrintObject(theSoup, 0);
+//REPprintf("\n");
 			RefVar nextUId(GetFrameSlot(soupObj, SYMA(lastUId)));
 			if (ISNIL(nextUId))
 			{
+//REPprintf("#### no cached lastUId\n");
 				// no cached lastUId; look for the last uid on store
 				ULong uid;
 				CSoupIndex * indexObj = GetSoupIndexObject(theSoup, 0);
@@ -557,6 +560,7 @@ REPprintf("\n");
 					ThrowOSErr(kNSErrInternalError);
 				nextUId = MAKEINT(uid + 1);
 			}
+//REPprintf("nextUId = %d\n",RVALUE(nextUId));
 			SetFrameSlot(theSoup, SYMA(indexNextUId), nextUId);
 			// cache this soup object
 			PutEntryIntoCache(soups, theSoup);
