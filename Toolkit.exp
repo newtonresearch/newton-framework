@@ -13,3 +13,4 @@ LoadDataFile _FLoadDataFile 2
 ReadStreamFile _FReadStreamFile 1
 Disasm _FDisasm 1
 DisasmRange _FDisasmRange 3
+VerboseGC _FVerboseGC 1
