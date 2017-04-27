@@ -1209,7 +1209,7 @@ DumpCode(RefArg inFunc)
 				litrl.erase(0,1);
 			}
 			varNames.push_back(litrl);
-		END_FOREACH;
+		END_FOREACH
 	}
 	// if we have no debug info then make up arg and local names
 	if (varNames.size() < 3 + argCount + localCount) {
@@ -1283,7 +1283,7 @@ DumpCode(RefArg inFunc)
 					literalStrs.push_back(litrl);
 				}
 			}
-		END_FOREACH;
+		END_FOREACH
 	}
 
 
