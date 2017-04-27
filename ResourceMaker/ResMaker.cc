@@ -1155,12 +1155,12 @@ print object -- if pointer object use name above
 /*-- string --*/
 						if (inDefineObjects) {
 							// byte-swap UniChar
-							UniChar * s = (UniChar *)ROMBinaryData(inObj);
-							ArrayIndex len = ROMLength(inObj)/sizeof(UniChar);
-							for (ArrayIndex i = 0; i < len; ++i, ++s) {
+							UniChar * str = (UniChar *)ROMBinaryData(inObj);
+							UniChar * s = str;
+							for (ArrayIndex i = 0, len = ROMLength(inObj)/sizeof(UniChar); i < len; ++i, ++s) {
 								*s = CANONICAL_SHORT(*s);
 							}
-							PrintString(inFP, inName, PrintROMObject(inFP, inName, NILREF, objClass, false, false), s);
+							PrintString(inFP, inName, PrintROMObject(inFP, inName, NILREF, objClass, false, false), str);
 						}
 						sprintf(valueStr, "MAKEPTR(%s)", inName);
 						rsValue = valueStr;
