@@ -44,6 +44,9 @@ Ref	FStats(RefArg inRcvr);
 Ref	FGetHeapStats(RefArg rcvr, RefArg inOptions);
 Ref	FUriah(RefArg inRcvr);
 Ref	FUriahBinaryObjects(RefArg inRcvr, RefArg inDoFile);
+#if defined(forNTK)
+Ref	FVerboseGC(RefArg rcvr, RefArg on);
+#endif
 }
 
 
@@ -887,6 +890,15 @@ FGC(RefArg inRcvr)
 	return NILREF;
 }
 
+#if defined(forNTK)
+Ref
+FVerboseGC(RefArg rcvr, RefArg on)
+{
+	bool prevState = gGC.verbose;
+	gGC.verbose = NOTNIL(on);
+	return MAKEBOOLEAN(prevState);
+}
+#endif
 
 #pragma mark -
 /*----------------------------------------------------------------------
@@ -1193,8 +1205,9 @@ if (gLogObjectHeapAllocations) { printf("allocating #%p, refHIndex=%u->%u\n", re
 
 	// The last free RefHandle has a ref of kIndexNotFound.
 	// When this is reached it’s time to expand the RefHandle table.
-	if (nxFree == kIndexNotFound)
+	if (nxFree == kIndexNotFound) {
 		return expandObjectTable(refh);
+	}
 	return refh;
 }
 
@@ -1212,13 +1225,13 @@ CObjectHeap::disposeRefHandle(RefHandle * inRefHandle)
 if (refHIndex > NUMOFREFHANDLES) {
 	printf("\nCObjectHeap::disposeRefHandle() refHIndex=%u\n", refHIndex);
 }
-		ArrayIndex nxFree = refHIndex;
+		int nxFree = refHIndex;
 		if (nxFree < 0) {
 			nxFree = -1;
 		}
 		inRefHandle->ref = MAKEINT(nxFree);
 		inRefHandle->stackPos = MAKEINT(kIndexNotFound);
-		refHIndex = inRefHandle - refHBlock->data;
+		refHIndex = (ArrayIndex)(inRefHandle - refHBlock->data);
 if (gLogObjectHeapAllocations) { printf(" disposing #%p, refHIndex=%u\n", inRefHandle, refHIndex); }
 if (refHIndex > NUMOFREFHANDLES) {
 	printf("\nCObjectHeap::disposeRefHandle() refHIndex=%u\n", refHIndex);
@@ -1236,7 +1249,9 @@ if (refHIndex > NUMOFREFHANDLES) {
 RefHandle *
 CObjectHeap::expandObjectTable(RefHandle * inRefHandle)
 {
-printf("CObjectHeap::expandObjectTable(#%p)\n", inRefHandle);
+	if (gGC.verbose) {
+		REPprintf(">>>> expanding RefHandle block");
+	}
 	size_t originalSize = refHBlock->size;
 	refHBlockSize = LONGALIGN(originalSize + kIncrHandlesInBlock * sizeof(RefHandle));
 	GC();
@@ -1245,6 +1260,9 @@ printf("CObjectHeap::expandObjectTable(#%p)\n", inRefHandle);
 	{
 		refHIndex = - (long)(&refHBlock->data[0]) / sizeof(RefHandle);	// sic -- but pointless since we WILL crash hard
 		OutOfMemory();
+	}
+	if (gGC.verbose) {
+		REPprintf("<<<< number of RefHandles %d -> %d\n", (originalSize-sizeof(ObjHeader))/sizeof(RefHandle), NUMOFREFHANDLES);
 	}
 	return inRefHandle;
 }
@@ -1257,17 +1275,19 @@ printf("CObjectHeap::expandObjectTable(#%p)\n", inRefHandle);
 void
 CObjectHeap::clearRefHandles(void)
 {
-	ArrayIndex count = NUMOFREFHANDLES;
 	ArrayIndex currentInterpreter = gCurrentStackPos >> 16;
 	ArrayIndex currentStackPos = gCurrentStackPos & 0xFFFF;
-printf("CObjectHeap::clearRefHandles > %u\n", currentStackPos);
+REPprintf("CObjectHeap::clearRefHandles > %u|%u", currentInterpreter,currentStackPos);
 	RefHandle * rhp = refHBlock->data;
-	for (ArrayIndex i = 0; i < count - 1; ++i, ++rhp) {	// last RefHandle is reserved
+	for (ArrayIndex i = 0, count = NUMOFREFHANDLES; i < count - 1; ++i, ++rhp) {	// last RefHandle is reserved
 		ArrayIndex x = RVALUE(rhp->stackPos);
+REPprintf("\n%u: %u|%u ", i, x>>16, x&0xFFFF);
 		if (x != 0 && (x >> 16) == currentInterpreter && (x & 0xFFFF) > currentStackPos) {
+REPprintf("disposed!", currentStackPos);
 			DisposeRefHandle(rhp);
 		}
 	}
+REPprintf("\n\n");
 }
 
 
@@ -1845,8 +1865,7 @@ ENTER_FUNC
 	gCached.lenRef = INVALIDPTRREF;
 	FindOffsetCacheClear();
 
-	if (gGC.verbose)
-	{
+	if (gGC.verbose) {
 		size_t free, largest;
 		heapStatistics(&free, &largest);
 		REPprintf("\n[ GC! start %ld/%ld...", free, largest);
@@ -1938,8 +1957,7 @@ if (free > kHeapSize)
 REPprintf("wacko free heap size %d!\n",free);
 	}
 
-	if (gGC.verbose)
-	{
+	if (gGC.verbose) {
 		size_t	free, largest;
 		heapStatistics(&free, &largest);
 		REPprintf("finish %ld/%ld ]\n", free, largest);
