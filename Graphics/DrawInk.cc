@@ -11,10 +11,10 @@
 
 #include "Quartz.h"
 #include "Paths.h"
+#include "Objects.h"
 #include "DrawShape.h"
 #include "Ink.h"
 
-#include "Objects.h"
 #include "Iterators.h"
 #include "RSSymbols.h"
 #include "OSErrors.h"
