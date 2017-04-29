@@ -57,7 +57,7 @@ The ROM has:
 #include "Reporting.h"
 
 #define hasByteSwapping 1
-#define forNTK 1
+#define forNTK 0
 
 #include "Objects.h"
 #include "ObjHeader.h"
@@ -454,7 +454,7 @@ GetProtoROMVariable(Ref inRcvr, Ref inTag, bool * outExists)
 		FrameObject32 * frPtr = (FrameObject32 *)(impl-1);
 		// must have a frame
 		if (!ISFRAME(frPtr))
-#if defined(forNTK)
+#if forNTK
 			break;
 #else
 			ThrowBadTypeWithFrameData(kNSErrNotAFrame, impl);
@@ -741,7 +741,7 @@ PrintString(FILE* inFP, const char * inName, const char * inClass, const UniChar
 }
 
 
-#if defined(forNTK)
+#if forNTK
 /* -----------------------------------------------------------------------------
 	Print protoProtoEditor frame.
 ----------------------------------------------------------------------------- */
@@ -798,7 +798,7 @@ PrintFrameMap(FILE* inFP, const char * inName, Ref inMap)
 		}
 	}
 	ArrayIndex fnCount = 0;
-#if defined(forNTK)
+#if forNTK
 	if (strcmp(inName, "gFunky_map") == 0) {
 		// count external funtions
 		for (CSymbol * fn = gFunctionNames; fn != NULL; fn = fn->fNext) {		// gExternalFunctionNames
@@ -824,7 +824,7 @@ PrintFrameMap(FILE* inFP, const char * inName, Ref inMap)
 			fprintf(inFP, "%s%c", PrintROMObject(inFP, nameStr, NILREF, tag, false, false), (i < 15 && slotsRemaining > 1) ? ',' : '\n');
 		}
 	}
-#if defined(forNTK)
+#if forNTK
 	// append external functions
 	if (fnCount > 0) {
 		if (strcmp(inName, "gFunky_map") == 0) {
@@ -1038,7 +1038,7 @@ print object -- if pointer object use name above
 								}
 							}
 						}
-#if defined(forNTK)
+#if forNTK
 						if (strcmp(inName, "gFunky") == 0) {
 						// append external functions
 							for (CSymbol * fn = gFunctionNames; fn != NULL; ) {
@@ -1605,9 +1605,10 @@ main(int argc, const char * argv[])
 
 /*== read implemented plain C function names into symbol table ==*/
 	gSymbolTable = new CSymbolTable(4*KByte);
+#if forNTK
 	if (FillSymbolTable(gSymbolTable, &gFunctionNames, &gEditorFunctionNames))		// Toolkit.exp and Editor.exp
 		ExitWithMessage("unable to build a valid function name table");
-
+#endif
 	gCSymbolTable = new CPointerTable(16*KByte);
 	if (FillSymbolTable(gCSymbolTable))							// 717006.cfunctions
 		ExitWithMessage("unable to build a valid function pointer table");
@@ -1698,7 +1699,7 @@ main(int argc, const char * argv[])
 	fprintf(fp_h, "extern Ref* RS%s;\n", "space");
 	fprintf(fp_h, "extern Ref* RS%s;\n", "cFunctionPrototype");
 	fprintf(fp_h, "extern Ref* RS%s;\n", "debugCFunctionPrototype");
-#if defined(forNTK)
+#if forNTK
 	fprintf(fp_h, "extern Ref* RS%s;\n", "constantFunctions");
 	fprintf(fp_h, "extern Ref* RS%s;\n", "formInstallScript");
 	fprintf(fp_h, "extern Ref* RS%s;\n", "formRemoveScript");
@@ -1741,7 +1742,7 @@ main(int argc, const char * argv[])
 		fprintf(fp_h, "extern Ref* RSSYM%s;\n", symName);
 	}
 
-#if defined(forNTK)
+#if forNTK
 /*-- symbols used by NTK --*/
 	const char * ntkSym[] = { "GetKeyHandler","RemoveScript","partData","control",
 									  "__origFunctions","__origVars","__platform",
@@ -1783,7 +1784,7 @@ main(int argc, const char * argv[])
 	fp_rd = fopen("RefData.s", "w");
 	fprintf(fp_rd, kDataPreamble, "RefData");
 	fprintf(fp_rd, kROMData, "Start","Start");
-#if defined(forNTK)
+#if forNTK
 	// define external functions
 	for (CSymbol * fn = gFunctionNames; fn != NULL; fn = fn->fNext) {
 		char fnName[64];
@@ -1813,7 +1814,7 @@ main(int argc, const char * argv[])
 		}
 	}
 
-#if defined(forNTK)
+#if forNTK
 	NewtonPackage scriptPkg("NTKFunctions.newtonpkg");
 	// load constantFunctions
 	RefVar fns(GetArraySlot(scriptPkg.partRef(0), 1));
