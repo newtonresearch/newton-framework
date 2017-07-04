@@ -267,7 +267,7 @@ CMainDisplayDriver::blit(NativePixelMap * inPixmap, Rect * inSrcBounds, Rect * i
 	CGColorSpaceRelease(colorSpace);
 	CGColorSpaceRelease(baseColorSpace);
 
-printf("CMainDisplayDriver::blit(pixmap={w:%lu,h:%lu}, srcBounds={t:%d,l:%d,b:%d,r:%d}, dstBounds={t:%d,l:%d,b:%d,r:%d}, mode=%d) -- ", pixmapWidth,pixmapHeight, inSrcBounds->top,inSrcBounds->left,inSrcBounds->bottom,inSrcBounds->right, inDstBounds->top,inDstBounds->left,inDstBounds->bottom,inDstBounds->right, inTransferMode);
+printf("CMainDisplayDriver::blit(pixmap={w:%lu,h:%lu}, srcBounds={t:%d,l:%d,b:%d,r:%d}, dstBounds={t:%d,l:%d,b:%d,r:%d}, mode=%d)\n", pixmapWidth,pixmapHeight, inSrcBounds->top,inSrcBounds->left,inSrcBounds->bottom,inSrcBounds->right, inDstBounds->top,inDstBounds->left,inDstBounds->bottom,inDstBounds->right, inTransferMode);
 	if (image) {
 		CGRect imageRect = MakeCGRect(*inDstBounds);
 		if (inTransferMode == 0) {
