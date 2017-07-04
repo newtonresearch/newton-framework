@@ -56,8 +56,7 @@ The ROM has:
 #include "SymbolTable.h"
 #include "Reporting.h"
 
-#define hasByteSwapping 1
-#define forNTK 0
+#define forNTK 1
 
 #include "Objects.h"
 #include "ObjHeader.h"
@@ -1815,7 +1814,7 @@ main(int argc, const char * argv[])
 	}
 
 #if forNTK
-	NewtonPackage scriptPkg("NTKFunctions.newtonpkg");
+	NewtonPackage scriptPkg("../ResourceMaker/NTKFunctions.newtonpkg");
 	// load constantFunctions
 	RefVar fns(GetArraySlot(scriptPkg.partRef(0), 1));
 	PrintPkgObject(fp_rd, "constantFunctions", fns, true, false);
