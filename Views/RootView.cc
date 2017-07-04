@@ -295,7 +295,7 @@ CRootView::init(RefArg inProto, CView * inView)
 		gKeyboardConnected = true;
 #endif
 	
-	RefVar context(Clone(RA(rootConText)));
+	RefVar context(Clone(RA(rootContext)));
 	SetFrameSlot(context, SYMA(_proto), inProto);		// RA(viewRoot) = SYS_rootProto = @287
 	CView::init(context, this);
 

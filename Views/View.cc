@@ -2232,7 +2232,7 @@ CView::addChild(RefArg inContext)
 CView *
 CView::addView(RefArg inView)
 {
-	RefVar	context(GetProtoVariable(inView, SYMA(preallocatedContext)));
+	RefVar	context(GetProtoVariable(inView, SYMA(preAllocatedContext)));
 	if (ISNIL(context))
 		context = buildContext(inView, false);
 	else

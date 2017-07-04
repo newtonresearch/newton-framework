@@ -6,9 +6,9 @@
 	Written by:	Newton Research Group.
 */
 
-#include "DrawShape.h"
-#include "DrawText.h"
 #include "Geometry.h"
+#include "DrawText.h"
+#include "DrawShape.h"
 
 #include "ObjHeader.h"
 #include "Objects.h"
@@ -320,7 +320,7 @@ GetView(RefArg inContext, RefArg inView)
 		{
 			RefVar  context;
 			if (NOTNIL(inContext))
-				context = GetProtoVariable(inContext, SYMA(preallocatedContext));
+				context = GetProtoVariable(inContext, SYMA(preAllocatedContext));
 			if (NOTNIL(context))
 				context = GetVariable(inContext, context);
 			view = GetView(context);
@@ -640,7 +640,7 @@ FExtractData(RefArg rcvr, RefArg inViews, RefArg inSepStr, RefArg inPrintLength)
 			else if (ISNIL(viewStny)  ||  EQ(viewStny, SYMA(para)))
 				viewText = NILREF;
 			else
-				viewText = RSdataName;
+				viewText = *RSdataName;
 			if (NOTNIL(viewText))
 			{
 				SetArraySlot(viewDescr, viewStrIndex++, viewText);
