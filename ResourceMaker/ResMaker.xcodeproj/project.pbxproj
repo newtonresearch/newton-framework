@@ -7,15 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F40C7A951F0BDC23004B81D1 /* NewtonPackage.cc in Sources */ = {isa = PBXBuildFile; fileRef = F40C7A941F0BDC23004B81D1 /* NewtonPackage.cc */; };
 		F41EF3D50695ED8E00430084 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F41EF3D40695ED8E00430084 /* CoreServices.framework */; };
 		F42A247B1DEB030000CD22AD /* NTK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F468AD061DEAFF29009DFF66 /* NTK.framework */; };
-		F42A247D1DEB05B300CD22AD /* NTK.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = F468AD061DEAFF29009DFF66 /* NTK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F42A247F1DEB2B8700CD22AD /* ObjectPrinter.cc in Sources */ = {isa = PBXBuildFile; fileRef = F42A247E1DEB2B8700CD22AD /* ObjectPrinter.cc */; };
 		F42A24811DEC47AD00CD22AD /* ErrorString.m in Sources */ = {isa = PBXBuildFile; fileRef = F42A24801DEC47AD00CD22AD /* ErrorString.m */; };
 		F4C514431D7C2670008E5537 /* RefStar.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514421D7C2670008E5537 /* RefStar.s */; };
 		F4C5145B1D86B8F5008E5537 /* SymbolTable.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C5145A1D86B8F5008E5537 /* SymbolTable.cc */; };
 		F4C5145E1D86BDAC008E5537 /* Reporting.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C5145C1D86BDAC008E5537 /* Reporting.cc */; };
 		F4E496B31E72E927000CD622 /* ResMaker.cc in Sources */ = {isa = PBXBuildFile; fileRef = F434ACCF0C984BAC005AB44D /* ResMaker.cc */; };
+		F4E706FE1EB8FC2C000C8120 /* NTK.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = F468AD061DEAFF29009DFF66 /* NTK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F4F9F7E11D9173F3008E611B /* UnRelocate.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4F9F7E01D9173F3008E611B /* UnRelocate.cc */; };
 /* End PBXBuildFile section */
 
@@ -26,20 +27,21 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				F42A247D1DEB05B300CD22AD /* NTK.framework in CopyFiles */,
+				F4E706FE1EB8FC2C000C8120 /* NTK.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F40C7A941F0BDC23004B81D1 /* NewtonPackage.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NewtonPackage.cc; path = ../NewtonPackage.cc; sourceTree = "<group>"; };
 		F41EF3D40695ED8E00430084 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = /System/Library/Frameworks/CoreServices.framework; sourceTree = "<absolute>"; };
 		F42998F5069580EB00CAA2A8 /* ResMaker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResMaker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F42A247E1DEB2B8700CD22AD /* ObjectPrinter.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ObjectPrinter.cc; sourceTree = "<group>"; };
 		F42A24801DEC47AD00CD22AD /* ErrorString.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ErrorString.m; path = ../ErrorString.m; sourceTree = "<group>"; };
 		F434ACCE0C984BAC005AB44D /* Info-ResMaker.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info-ResMaker.plist"; sourceTree = "<group>"; };
 		F434ACCF0C984BAC005AB44D /* ResMaker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ResMaker.cc; sourceTree = "<group>"; };
-		F468AD061DEAFF29009DFF66 /* NTK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NTK.framework; path = "../../newton-toolkit/NTK.framework"; sourceTree = "<group>"; };
+		F468AD061DEAFF29009DFF66 /* NTK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NTK.framework; sourceTree = "<group>"; };
 		F4C514421D7C2670008E5537 /* RefStar.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = RefStar.s; sourceTree = "<group>"; };
 		F4C5145A1D86B8F5008E5537 /* SymbolTable.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SymbolTable.cc; sourceTree = "<group>"; };
 		F4C5145C1D86BDAC008E5537 /* Reporting.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Reporting.cc; sourceTree = "<group>"; };
@@ -73,6 +75,7 @@
 				F4F9F7E01D9173F3008E611B /* UnRelocate.cc */,
 				F42A24801DEC47AD00CD22AD /* ErrorString.m */,
 				F42A247E1DEB2B8700CD22AD /* ObjectPrinter.cc */,
+				F40C7A941F0BDC23004B81D1 /* NewtonPackage.cc */,
 				F434ACCF0C984BAC005AB44D /* ResMaker.cc */,
 				F41EF3D40695ED8E00430084 /* CoreServices.framework */,
 				F468AD061DEAFF29009DFF66 /* NTK.framework */,
@@ -167,6 +170,7 @@
 				F4F9F7E11D9173F3008E611B /* UnRelocate.cc in Sources */,
 				F4E496B31E72E927000CD622 /* ResMaker.cc in Sources */,
 				F42A247F1DEB2B8700CD22AD /* ObjectPrinter.cc in Sources */,
+				F40C7A951F0BDC23004B81D1 /* NewtonPackage.cc in Sources */,
 				F4C5145B1D86B8F5008E5537 /* SymbolTable.cc in Sources */,
 				F4C5145E1D86BDAC008E5537 /* Reporting.cc in Sources */,
 				F4C514431D7C2670008E5537 /* RefStar.s in Sources */,
@@ -183,6 +187,10 @@
 				COPY_PHASE_STRIP = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INFOPLIST_FILE = "Info-ResMaker.plist";
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-DhasByteSwapping",
+				);
 				PRODUCT_NAME = ResMaker;
 				WARNING_CFLAGS = (
 					"-Wmost",
@@ -198,6 +206,10 @@
 				COPY_PHASE_STRIP = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INFOPLIST_FILE = "Info-ResMaker.plist";
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-DhasByteSwapping",
+				);
 				PRODUCT_NAME = ResMaker;
 				WARNING_CFLAGS = (
 					"-Wmost",
@@ -222,7 +234,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/../../newton-toolkit/";
+				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}";
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -250,7 +262,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/../../newton-toolkit/";
+				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}";
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
