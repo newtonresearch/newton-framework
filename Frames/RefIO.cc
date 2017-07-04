@@ -155,9 +155,6 @@ FReadStreamFile(RefArg inRcvr, RefArg inFilename)
 	end_try;
 	return obj;
 }
-#else
-extern "C" Ref
-FReadStreamFile(RefArg inRcvr, RefArg inFilename) { return NILREF; }		// lose this when we build RefData correctly 
 
 #endif
 
