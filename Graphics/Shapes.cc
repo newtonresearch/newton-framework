@@ -8,8 +8,8 @@
 
 #include "View.h"
 #include "Geometry.h"
-#include "DrawShape.h"
 #include "DrawText.h"
+#include "DrawShape.h"
 
 #include "Objects.h"
 #include "ROMResources.h"

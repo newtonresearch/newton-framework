@@ -6,10 +6,10 @@
 	Written by:	Newton Research Group, 2007.
 */
 
-#include "DrawShape.h"
 
 #include "Objects.h"
 #include "SplashScreen.h"
+#include "DrawShape.h"
 
 
 /*------------------------------------------------------------------------------

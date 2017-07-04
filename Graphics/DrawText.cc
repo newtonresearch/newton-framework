@@ -51,8 +51,8 @@ TextBounds(CRichString & inStr, RefArg inFont, Rect * ioRect, long inJustifyH)
 #include <CoreText/CoreText.h>
 #include "Geometry.h"
 #include "Objects.h"
-#include "DrawShape.h"
 #include "DrawText.h"
+#include "DrawShape.h"
 #include "Ink.h"
 
 #include "Globals.h"
