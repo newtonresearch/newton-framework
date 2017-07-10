@@ -41,6 +41,8 @@
 		F42A24801DEC47AD00CD22AD /* ErrorString.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ErrorString.m; path = ../ErrorString.m; sourceTree = "<group>"; };
 		F434ACCE0C984BAC005AB44D /* Info-ResMaker.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info-ResMaker.plist"; sourceTree = "<group>"; };
 		F434ACCF0C984BAC005AB44D /* ResMaker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ResMaker.cc; sourceTree = "<group>"; };
+		F4530D021F13C475001E6B75 /* 717006.cfunctions */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = 717006.cfunctions; sourceTree = "<group>"; };
+		F4530D031F13C475001E6B75 /* rom.image */ = {isa = PBXFileReference; lastKnownFileType = file; path = rom.image; sourceTree = "<group>"; };
 		F468AD061DEAFF29009DFF66 /* NTK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NTK.framework; sourceTree = "<group>"; };
 		F4C514421D7C2670008E5537 /* RefStar.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = RefStar.s; sourceTree = "<group>"; };
 		F4C5145A1D86B8F5008E5537 /* SymbolTable.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SymbolTable.cc; sourceTree = "<group>"; };
@@ -63,6 +65,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F4530D061F13C4C3001E6B75 /* ROM Source */ = {
+			isa = PBXGroup;
+			children = (
+				F4530D021F13C475001E6B75 /* 717006.cfunctions */,
+				F4530D031F13C475001E6B75 /* rom.image */,
+			);
+			name = "ROM Source";
+			sourceTree = "<group>";
+		};
 		F4BA0CC6069482A200BE8E9A = {
 			isa = PBXGroup;
 			children = (
@@ -77,6 +88,7 @@
 				F42A247E1DEB2B8700CD22AD /* ObjectPrinter.cc */,
 				F40C7A941F0BDC23004B81D1 /* NewtonPackage.cc */,
 				F434ACCF0C984BAC005AB44D /* ResMaker.cc */,
+				F4530D061F13C4C3001E6B75 /* ROM Source */,
 				F41EF3D40695ED8E00430084 /* CoreServices.framework */,
 				F468AD061DEAFF29009DFF66 /* NTK.framework */,
 				F4BA0CE306948A3B00BE8E9A /* Products */,

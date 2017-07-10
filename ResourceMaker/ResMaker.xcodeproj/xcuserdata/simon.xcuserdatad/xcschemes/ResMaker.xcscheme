@@ -64,11 +64,11 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "&quot;/Users/simon/Projects/DisARM/ROM Images/rom.image&quot; -s &quot;RefStarSource.txt&quot; -sym &quot;/Users/simon/Projects/DisARM/ROM Images/717006.cfunctions&quot;"
+            argument = "&quot;../ResourceMaker/rom.image&quot; -s &quot;RefStarSource.txt&quot; -sym &quot;../ResourceMaker/717006.cfunctions&quot;"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&quot;/Users/simon/Projects/DisARM/ROM Images/rom.image&quot; -s &quot;RefStarSource.txt&quot; -via &quot;/Users/simon/Projects/newton-framework/Toolkit.exp&quot; -via &quot;/Users/simon/Projects/newton-framework/Editor.exp&quot; -sym &quot;/Users/simon/Projects/DisARM/ROM Images/717006.cfunctions&quot;"
+            argument = "&quot;../ResourceMaker/rom.image&quot; -s &quot;RefStarSource.txt&quot; -via &quot;../Toolkit.exp&quot; -via &quot;../Editor.exp&quot; -sym &quot;../ResourceMaker/717006.cfunctions&quot;"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
