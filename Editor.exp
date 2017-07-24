@@ -4,45 +4,45 @@ editorC
 ;    e.g. “ Call myModuleName.aFunction with (...) ”
 ; Below, add one line per function naming each of your plain C NewtonScript interface functions.
 ;
-Selection _Selection 0
-SelectionOffset _SelectionOffset 0
-SelectionLength _SelectionLength 0
-SetSelection _SetSelection 2
-ReplaceSelection _ReplaceSelection 1
+Selection 0
+SelectionOffset 0
+SelectionLength 0
+SetSelection 2
+ReplaceSelection 1
 ;
-TextString _TextString 0
-TextLength _TextLength 0
+TextString 0
+TextLength 0
 ;
-FindLine _FindLine 1
-LineStart _LineStart 1
-NumberOfLines _NumberOfLines 0
-LineTop _LineTop 1
-LineBottom _LineBottom 1
-LineBaseline _LineBaseline 1
-LeftEdge _LeftEdge 1
-RightEdge _RightEdge 1
+FindLine 1
+LineStart 1
+NumberOfLines 0
+LineTop 1
+LineBottom 1
+LineBaseline 1
+LeftEdge 1
+RightEdge 1
 ;
-PointToOffset _PointToOffset 2
+PointToOffset 2
 ;
-MapChars _MapChars 3
-SearchChars _SearchChars 3
-Peek _Peek 1
-SetKeyHandler _SetKeyHandler 2
-GetKeyHandler _GetKeyHandler 1
+MapChars 3
+SearchChars 3
+Peek 1
+SetKeyHandler 2
+GetKeyHandler 1
 ;
-SetMetaBit _SetMetaBit 0
-QuoteCharacter _QuoteCharacter 0
-CharacterClass _CharacterClass 1
-SetCharacterClass _SetCharacterClass 2
+SetMetaBit 0
+QuoteCharacter 0
+CharacterClass 1
+SetCharacterClass 2
 ;
-TokenStart _TokenStart 1
-TokenEnd _TokenEnd 1
+TokenStart 1
+TokenEnd 1
 ;
-TellUser _TellUser 1
+TellUser 1
 ;
-VisibleTop _VisibleTop 0
-VisibleLeft _VisibleLeft 0
-VisibleHeight _VisibleHeight 0
-VisibleWidth _VisibleWidth 0
-SetVisibleTop _SetVisibleTop 1
-SetVisibleLeft _SetVisibleLeft 1
+VisibleTop 0
+VisibleLeft 0
+VisibleHeight 0
+VisibleWidth 0
+SetVisibleTop 1
+SetVisibleLeft 1

@@ -4,13 +4,13 @@ ntkC
 ;    e.g. “ Call myModuleName.aFunction with (...) ”
 ; Below, add one line per function naming each of your plain C NewtonScript interface functions.
 ;
-DefineGlobalConstant _FDefineGlobalConstant 2
-UnDefineGlobalConstant _FUnDefineGlobalConstant 1
-IsGlobalConstant _FIsGlobalConstant 1
-DefPureFn _FDefPureFn 2
-StuffHex _FStuffHex 2
-LoadDataFile _FLoadDataFile 2
-ReadStreamFile _FReadStreamFile 1
-Disasm _FDisasm 1
-DisasmRange _FDisasmRange 3
-VerboseGC _FVerboseGC 1
+FDefineGlobalConstant 2
+FUnDefineGlobalConstant 1
+FIsGlobalConstant 1
+FDefPureFn 2
+FStuffHex 2
+FLoadDataFile 2
+FReadStreamFile 1
+FDisasm 1
+FDisasmRange 3
+FVerboseGC 1
