@@ -174,6 +174,22 @@
 		F48BD4CB1A0B995000098DEE /* FlashRange.cc in Sources */ = {isa = PBXBuildFile; fileRef = F48BD4C71A0B995000098DEE /* FlashRange.cc */; };
 		F491EA4A119C833300F781BF /* DictData in Resources */ = {isa = PBXBuildFile; fileRef = F491EA49119C833300F781BF /* DictData */; };
 		F491EA4B119C833300F781BF /* DictData in Resources */ = {isa = PBXBuildFile; fileRef = F491EA49119C833300F781BF /* DictData */; };
+		F497CB841F179EDE00884F98 /* RefData.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB801F179EDE00884F98 /* RefData.s */; };
+		F497CB851F179EDE00884F98 /* RefSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB811F179EDE00884F98 /* RefSymbols.s */; };
+		F497CB861F179EDE00884F98 /* RSData.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB821F179EDE00884F98 /* RSData.s */; };
+		F497CB871F179EDE00884F98 /* RSSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB831F179EDE00884F98 /* RSSymbols.s */; };
+		F497CB9E1F1A585800884F98 /* RSData.h in Headers */ = {isa = PBXBuildFile; fileRef = F497CB9C1F1A585800884F98 /* RSData.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F497CB9F1F1A585800884F98 /* RSData.h in Headers */ = {isa = PBXBuildFile; fileRef = F497CB9C1F1A585800884F98 /* RSData.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F497CBA01F1A585800884F98 /* RSSymbols.h in Headers */ = {isa = PBXBuildFile; fileRef = F497CB9D1F1A585800884F98 /* RSSymbols.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F497CBA11F1A585800884F98 /* RSSymbols.h in Headers */ = {isa = PBXBuildFile; fileRef = F497CB9D1F1A585800884F98 /* RSSymbols.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F497CBA21F1A59CE00884F98 /* RefData.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB881F179F0300884F98 /* RefData.s */; };
+		F497CBA31F1A59CE00884F98 /* RefSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB891F179F0300884F98 /* RefSymbols.s */; };
+		F497CBA41F1A59CE00884F98 /* RSData.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB8A1F179F0300884F98 /* RSData.s */; };
+		F497CBA51F1A59CE00884F98 /* RSSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB8B1F179F0300884F98 /* RSSymbols.s */; };
+		F497CBA61F1A59CF00884F98 /* RefData.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB881F179F0300884F98 /* RefData.s */; };
+		F497CBA71F1A59CF00884F98 /* RefSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB891F179F0300884F98 /* RefSymbols.s */; };
+		F497CBA81F1A59CF00884F98 /* RSData.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB8A1F179F0300884F98 /* RSData.s */; };
+		F497CBA91F1A59CF00884F98 /* RSSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F497CB8B1F179F0300884F98 /* RSSymbols.s */; };
 		F4980ADB1176FD6400142AFC /* IA.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C18816071447A20049FE3F /* IA.cc */; };
 		F49FAB5E18DE1FD400E1CD50 /* MuxStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4312AF309B451A700742BE0 /* MuxStore.cc */; };
 		F49FAB6018DF6A6B00E1CD50 /* StoreObjRef.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4AA2F9211D662C300D04DF0 /* StoreObjRef.cc */; };
@@ -383,20 +399,6 @@
 		F4C4C1DC1A374D42002B8821 /* FakePointers.cc in Sources */ = {isa = PBXBuildFile; fileRef = F45661220DB897D2003B7D17 /* FakePointers.cc */; };
 		F4C4C1E11A40BE15002B8821 /* busy.png in Resources */ = {isa = PBXBuildFile; fileRef = F4C4C1E01A40BE15002B8821 /* busy.png */; };
 		F4C4C1E31A40C133002B8821 /* caret.png in Resources */ = {isa = PBXBuildFile; fileRef = F4C4C1E21A40C133002B8821 /* caret.png */; };
-		F4C514491D7C3F4F008E5537 /* RefData.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514441D7C3F4F008E5537 /* RefData.s */; };
-		F4C5144A1D7C3F4F008E5537 /* RefData.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514441D7C3F4F008E5537 /* RefData.s */; };
-		F4C5144B1D7C3F4F008E5537 /* RefData.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514441D7C3F4F008E5537 /* RefData.s */; };
-		F4C5144C1D7C3F4F008E5537 /* RSData.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514451D7C3F4F008E5537 /* RSData.s */; };
-		F4C5144D1D7C3F4F008E5537 /* RSData.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514451D7C3F4F008E5537 /* RSData.s */; };
-		F4C5144E1D7C3F4F008E5537 /* RSData.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514451D7C3F4F008E5537 /* RSData.s */; };
-		F4C514521D7C3F4F008E5537 /* RSSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514471D7C3F4F008E5537 /* RSSymbols.s */; };
-		F4C514531D7C3F4F008E5537 /* RSSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514471D7C3F4F008E5537 /* RSSymbols.s */; };
-		F4C514541D7C3F4F008E5537 /* RSSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514471D7C3F4F008E5537 /* RSSymbols.s */; };
-		F4C514551D7C3F4F008E5537 /* RefSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514481D7C3F4F008E5537 /* RefSymbols.s */; };
-		F4C514561D7C3F4F008E5537 /* RefSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514481D7C3F4F008E5537 /* RefSymbols.s */; };
-		F4C514571D7C3F4F008E5537 /* RefSymbols.s in Sources */ = {isa = PBXBuildFile; fileRef = F4C514481D7C3F4F008E5537 /* RefSymbols.s */; };
-		F4C514581D7C4509008E5537 /* RSSymbols.h in Headers */ = {isa = PBXBuildFile; fileRef = F4C514461D7C3F4F008E5537 /* RSSymbols.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		F4C514591D7C450A008E5537 /* RSSymbols.h in Headers */ = {isa = PBXBuildFile; fileRef = F4C514461D7C3F4F008E5537 /* RSSymbols.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F4C514621D86EED9008E5537 /* Stubs.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C514611D86EED9008E5537 /* Stubs.cc */; };
 		F4C514631D86EED9008E5537 /* Stubs.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C514611D86EED9008E5537 /* Stubs.cc */; };
 		F4C514641D86EED9008E5537 /* Stubs.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4C514611D86EED9008E5537 /* Stubs.cc */; };
@@ -1012,6 +1014,16 @@
 		F4942C520D9120780075B6AA /* EndpointClient.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = EndpointClient.cc; path = Communications/EndpointClient.cc; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		F4942C570D9121130075B6AA /* EndpointClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = EndpointClient.h; path = Communications/EndpointClient.h; sourceTree = SOURCE_ROOT; };
 		F4942C6A0D9174E00075B6AA /* EndpointEvents.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EndpointEvents.cc; path = Communications/EndpointEvents.cc; sourceTree = SOURCE_ROOT; };
+		F497CB801F179EDE00884F98 /* RefData.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = RefData.s; path = ROMData/forNTK/RefData.s; sourceTree = SOURCE_ROOT; };
+		F497CB811F179EDE00884F98 /* RefSymbols.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = RefSymbols.s; path = ROMData/forNTK/RefSymbols.s; sourceTree = SOURCE_ROOT; };
+		F497CB821F179EDE00884F98 /* RSData.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = RSData.s; path = ROMData/forNTK/RSData.s; sourceTree = SOURCE_ROOT; };
+		F497CB831F179EDE00884F98 /* RSSymbols.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = RSSymbols.s; path = ROMData/forNTK/RSSymbols.s; sourceTree = SOURCE_ROOT; };
+		F497CB881F179F0300884F98 /* RefData.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = RefData.s; path = ROMData/forNewton/RefData.s; sourceTree = SOURCE_ROOT; };
+		F497CB891F179F0300884F98 /* RefSymbols.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = RefSymbols.s; path = ROMData/forNewton/RefSymbols.s; sourceTree = SOURCE_ROOT; };
+		F497CB8A1F179F0300884F98 /* RSData.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = RSData.s; path = ROMData/forNewton/RSData.s; sourceTree = SOURCE_ROOT; };
+		F497CB8B1F179F0300884F98 /* RSSymbols.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = RSSymbols.s; path = ROMData/forNewton/RSSymbols.s; sourceTree = SOURCE_ROOT; };
+		F497CB9C1F1A585800884F98 /* RSData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RSData.h; sourceTree = "<group>"; };
+		F497CB9D1F1A585800884F98 /* RSSymbols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RSSymbols.h; sourceTree = "<group>"; };
 		F49808E91162085000142AFC /* Dictionaries.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Dictionaries.cc; sourceTree = "<group>"; };
 		F49808EA1162095800142AFC /* Dictionaries.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Dictionaries.h; sourceTree = "<group>"; };
 		F4986578056A677E009DAB27 /* TaskGlobals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TaskGlobals.h; sourceTree = "<group>"; };
@@ -1084,7 +1096,6 @@
 		F4AE155F10591B1200F1AB5A /* NArray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NArray.h; sourceTree = "<group>"; };
 		F4AE156510591BC000F1AB5A /* Ink.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Ink.cc; sourceTree = "<group>"; };
 		F4AE156610591BC000F1AB5A /* Ink.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Ink.h; sourceTree = "<group>"; };
-		F4AE56C41B0203DC00F15F10 /* ROMData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ROMData.h; sourceTree = "<group>"; };
 		F4AEFE0F184BBE790072ACAA /* NTK.rex */ = {isa = PBXFileReference; lastKnownFileType = file; name = NTK.rex; path = OS/NTK.rex; sourceTree = "<group>"; };
 		F4AEFE12184E23DE0072ACAA /* UserDomain.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UserDomain.cc; sourceTree = "<group>"; };
 		F4AEFE1518523FEB0072ACAA /* StackManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StackManager.h; sourceTree = "<group>"; };
@@ -1139,11 +1150,6 @@
 		F4C222DB1B7BA74C00086F70 /* gsm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = gsm.h; path = "gsm-1.0-pl12/inc/gsm.h"; sourceTree = "<group>"; };
 		F4C4C1E01A40BE15002B8821 /* busy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = busy.png; path = Resources/busy.png; sourceTree = "<group>"; };
 		F4C4C1E21A40C133002B8821 /* caret.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = caret.png; path = Resources/caret.png; sourceTree = "<group>"; };
-		F4C514441D7C3F4F008E5537 /* RefData.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = RefData.s; sourceTree = "<group>"; };
-		F4C514451D7C3F4F008E5537 /* RSData.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = RSData.s; sourceTree = "<group>"; };
-		F4C514461D7C3F4F008E5537 /* RSSymbols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RSSymbols.h; sourceTree = "<group>"; };
-		F4C514471D7C3F4F008E5537 /* RSSymbols.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = RSSymbols.s; sourceTree = "<group>"; };
-		F4C514481D7C3F4F008E5537 /* RefSymbols.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = RefSymbols.s; sourceTree = "<group>"; };
 		F4C514611D86EED9008E5537 /* Stubs.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stubs.cc; sourceTree = "<group>"; };
 		F4C56D2007FD40740061170B /* SafeHeap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SafeHeap.h; sourceTree = "<group>"; };
 		F4C6F2821067EB4000EE03CF /* MNPService.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MNPService.cc; path = CommServices/MNPService.cc; sourceTree = SOURCE_ROOT; };
@@ -1168,9 +1174,7 @@
 		F4D2F9B5128D596F009D5BA5 /* TraceEvents.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TraceEvents.cc; sourceTree = "<group>"; };
 		F4D2F9C3128D5D99009D5BA5 /* CardServer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CardServer.cc; path = Cards/CardServer.cc; sourceTree = "<group>"; };
 		F4D2F9C7128D9F98009D5BA5 /* Alerts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Alerts.h; path = Views/Alerts.h; sourceTree = "<group>"; };
-		F4D3B0330E08033700A89465 /* NSConstData.newtonpkg */ = {isa = PBXFileReference; lastKnownFileType = file; name = NSConstData.newtonpkg; path = NS/NSConstData.newtonpkg; sourceTree = "<group>"; };
 		F4D3BBA30E0B0DF600A89465 /* Toolkit.exp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.exports; lineEnding = 0; path = Toolkit.exp; sourceTree = "<group>"; };
-		F4D3BBE80E0B92A500A89465 /* NTKConstData.newtonpkg */ = {isa = PBXFileReference; lastKnownFileType = file; name = NTKConstData.newtonpkg; path = NS/NTKConstData.newtonpkg; sourceTree = "<group>"; };
 		F4D4509B0BECC6B6004937CC /* RAMInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RAMInfo.h; sourceTree = "<group>"; };
 		F4D61137190A9C160041C087 /* SerialNumber.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SerialNumber.cc; path = ../SerialNumber.cc; sourceTree = "<group>"; };
 		F4D61138190A9C160041C087 /* SerialNumber.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SerialNumber.h; path = ../SerialNumber.h; sourceTree = "<group>"; };
@@ -1211,7 +1215,6 @@
 		F4D8F4140C15911A009E4CA3 /* RDM.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RDM.h; sourceTree = "<group>"; };
 		F4D8F5330C172ED1009E4CA3 /* StoreCompander.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StoreCompander.h; sourceTree = "<group>"; };
 		F4D8F73B0C1D7717009E4CA3 /* StoreCompanderWrapper.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StoreCompanderWrapper.cc; sourceTree = "<group>"; };
-		F4D986E01D72F01A00398130 /* RSData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RSData.h; sourceTree = "<group>"; };
 		F4DA4B8E0C848C0300FF7B9C /* appicon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = appicon.icns; path = Resources/appicon.icns; sourceTree = "<group>"; };
 		F4DB13D9126A0113003F8A10 /* DTMFCodec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DTMFCodec.h; sourceTree = "<group>"; };
 		F4DB1719126CDD96003F8A10 /* SoundDriver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SoundDriver.h; sourceTree = "<group>"; };
@@ -1471,7 +1474,6 @@
 				F4D2F995128C5A9E009D5BA5 /* Startup.cc */,
 				F4CE81C61AEAB0BA004726AD /* NewtonPackage.h */,
 				F4CE81C51AEAB0BA004726AD /* NewtonPackage.cc */,
-				F4AE56C41B0203DC00F15F10 /* ROMData.h */,
 				F4B809E706F21C2A0042F1D4 /* ObjectSystem.cc */,
 				F4C514611D86EED9008E5537 /* Stubs.cc */,
 				F4863FCE1DA66ED300C5B484 /* NTKStubs.cc */,
@@ -1540,12 +1542,10 @@
 				66393DE204C7F08100A80002 /* Symbols.h */,
 				F434AC4B0C97D5D2005AB44D /* FrameDefs.h */,
 				F434AC910C9828EE005AB44D /* ROMResources.h */,
-				F4D986E01D72F01A00398130 /* RSData.h */,
-				F4C514451D7C3F4F008E5537 /* RSData.s */,
-				F4C514441D7C3F4F008E5537 /* RefData.s */,
-				F4C514461D7C3F4F008E5537 /* RSSymbols.h */,
-				F4C514471D7C3F4F008E5537 /* RSSymbols.s */,
-				F4C514481D7C3F4F008E5537 /* RefSymbols.s */,
+				F497CB9C1F1A585800884F98 /* RSData.h */,
+				F497CB9D1F1A585800884F98 /* RSSymbols.h */,
+				F497CB7F1F179E9100884F98 /* ROMData forNewton */,
+				F497CB7E1F179E7B00884F98 /* ROMData forNTK */,
 				F4F37416090A5C1D000F707C /* ScriptInit.cc */,
 				F4A1F59309142282001F1A9B /* PrecedentsForIO.h */,
 				F4F37450090B760D000F707C /* StreamObjects.h */,
@@ -2071,6 +2071,28 @@
 			path = OS;
 			sourceTree = "<group>";
 		};
+		F497CB7E1F179E7B00884F98 /* ROMData forNTK */ = {
+			isa = PBXGroup;
+			children = (
+				F497CB801F179EDE00884F98 /* RefData.s */,
+				F497CB811F179EDE00884F98 /* RefSymbols.s */,
+				F497CB821F179EDE00884F98 /* RSData.s */,
+				F497CB831F179EDE00884F98 /* RSSymbols.s */,
+			);
+			name = "ROMData forNTK";
+			sourceTree = "<group>";
+		};
+		F497CB7F1F179E9100884F98 /* ROMData forNewton */ = {
+			isa = PBXGroup;
+			children = (
+				F497CB881F179F0300884F98 /* RefData.s */,
+				F497CB891F179F0300884F98 /* RefSymbols.s */,
+				F497CB8A1F179F0300884F98 /* RSData.s */,
+				F497CB8B1F179F0300884F98 /* RSSymbols.s */,
+			);
+			name = "ROMData forNewton";
+			sourceTree = "<group>";
+		};
 		F4A58FB018BB685F008B0832 /* Protocols */ = {
 			isa = PBXGroup;
 			children = (
@@ -2240,8 +2262,6 @@
 				F4FD7DE91AB1EEAE006294D8 /* VarsFrame.ns */,
 				F4FD7DDC1AB1EEAE006294D8 /* FunctionsFrame.ns */,
 				F4FD7DE71AB1EEAE006294D8 /* NSConstDefinitions.ns */,
-				F4D3B0330E08033700A89465 /* NSConstData.newtonpkg */,
-				F4D3BBE80E0B92A500A89465 /* NTKConstData.newtonpkg */,
 				F491EA49119C833300F781BF /* DictData */,
 				F4AEFE0F184BBE790072ACAA /* NTK.rex */,
 			);
@@ -2301,10 +2321,11 @@
 				F4131079090572A100881447 /* Iterators.h in Headers */,
 				F413107D090572FB00881447 /* NewtonScript.h in Headers */,
 				F413107E0905738700881447 /* PackageParts.h in Headers */,
-				F4C514581D7C4509008E5537 /* RSSymbols.h in Headers */,
 				F413107F090573C100881447 /* Unicode.h in Headers */,
 				F4131080090573CB00881447 /* UStringUtils.h in Headers */,
 				F4D18CCE1B0DCA2D007971CA /* Ref32.h in Headers */,
+				F497CBA01F1A585800884F98 /* RSSymbols.h in Headers */,
+				F497CB9E1F1A585800884F98 /* RSData.h in Headers */,
 				F4242897093DF14400B9659F /* Pipes.h in Headers */,
 				F4B73F0009DBE711003027C2 /* OSErrors.h in Headers */,
 			);
@@ -2327,14 +2348,15 @@
 				F4FD7DD71AADCA8C006294D8 /* ObjHeader.h in Headers */,
 				F4ECC2F30DE492E70023D27A /* NewtonWidgets.h in Headers */,
 				F4ECC2F40DE492E70023D27A /* FakeFrames.h in Headers */,
+				F497CB9F1F1A585800884F98 /* RSData.h in Headers */,
 				F4ECC2F50DE492E70023D27A /* Objects.h in Headers */,
 				F4ECC2F60DE492E70023D27A /* Iterators.h in Headers */,
 				F4A5F21A17CF54240004B6DB /* Funcs.h in Headers */,
 				F4ECC2F70DE492E70023D27A /* NewtonScript.h in Headers */,
 				F4AE56C61B020B6B00F15F10 /* ObjectHeap.h in Headers */,
+				F497CBA11F1A585800884F98 /* RSSymbols.h in Headers */,
 				F4ECC2F80DE492E70023D27A /* PackageParts.h in Headers */,
 				F4ECC2F90DE492E70023D27A /* Unicode.h in Headers */,
-				F4C514591D7C450A008E5537 /* RSSymbols.h in Headers */,
 				F4ECC2FA0DE492E70023D27A /* UStringUtils.h in Headers */,
 				F4ECC2FD0DE492E70023D27A /* Pipes.h in Headers */,
 				F4D18CCF1B0DCA31007971CA /* Ref32.h in Headers */,
@@ -2533,7 +2555,6 @@
 				F4A8B54C057381D5004D6931 /* KernelMonitor.cc in Sources */,
 				F47F861B1C44F2D200640B81 /* Endpoint.cc in Sources */,
 				F4A8B54D057381D5004D6931 /* KernelObjects.cc in Sources */,
-				F4C514521D7C3F4F008E5537 /* RSSymbols.s in Sources */,
 				F4A8B54E057381D5004D6931 /* KernelPhys.cc in Sources */,
 				F4A8B54F057381D5004D6931 /* KernelPorts.cc in Sources */,
 				F4DBB0801B7910F300B6E8F8 /* SoundChannel.cc in Sources */,
@@ -2675,8 +2696,8 @@
 				F4C21D8D0CFC27BA00A46B34 /* SimpleStoreCompander.cc in Sources */,
 				F4D6116E191ABAB80041C087 /* DockerDynArray.cc in Sources */,
 				F458FCDE1247579400539427 /* Buffer.cc in Sources */,
-				F4C5144C1D7C3F4F008E5537 /* RSData.s in Sources */,
 				F458FCDF1247579800539427 /* BufferList.cc in Sources */,
+				F497CBA51F1A59CE00884F98 /* RSSymbols.s in Sources */,
 				F458FCE01247579A00539427 /* BufferPipe.cc in Sources */,
 				F4D6115A191AB4170041C087 /* FlashStore.cc in Sources */,
 				F458FCE1124757A300539427 /* BufferSegment.cc in Sources */,
@@ -2692,6 +2713,7 @@
 				F458FCF01247582900539427 /* ErrorString.m in Sources */,
 				F458FCF71247586400539427 /* Hints.cc in Sources */,
 				F458FCF81247586600539427 /* IA.cc in Sources */,
+				F497CBA31F1A59CE00884F98 /* RefSymbols.s in Sources */,
 				F4C514621D86EED9008E5537 /* Stubs.cc in Sources */,
 				F458FCF91247586A00539427 /* Indexes.cc in Sources */,
 				F458FCFA1247586E00539427 /* Ink.cc in Sources */,
@@ -2700,7 +2722,6 @@
 				F458FCFC1247588500539427 /* Journal.cc in Sources */,
 				F458FCFD124758BF00539427 /* MemoryPipe.cc in Sources */,
 				F458FD00124758F100539427 /* NodeCache.cc in Sources */,
-				F4C514551D7C3F4F008E5537 /* RefSymbols.s in Sources */,
 				F4AEFE13184E23DE0072ACAA /* UserDomain.cc in Sources */,
 				F458FD011247590C00539427 /* OptionArray.cc in Sources */,
 				F458FD021247591F00539427 /* PlainSoup.cc in Sources */,
@@ -2713,6 +2734,7 @@
 				F458FD0F1247599C00539427 /* Soups.cc in Sources */,
 				F458FD11124759BB00539427 /* StoreDriver.cc in Sources */,
 				F458FD15124759C800539427 /* StoreProto.s in Sources */,
+				F497CBA41F1A59CE00884F98 /* RSData.s in Sources */,
 				F458FD16124759CE00539427 /* StoreStreamObjects.cc in Sources */,
 				F458FD17124759D900539427 /* Stroker.cc in Sources */,
 				F458FD18124759E300539427 /* TabletBuffer.cc in Sources */,
@@ -2744,8 +2766,8 @@
 				F4DB1882126E306E003F8A10 /* ViewStubs.cc in Sources */,
 				F4DB1885126E4013003F8A10 /* KeyboardView.cc in Sources */,
 				F4DB1886126E401E003F8A10 /* ParagraphView.cc in Sources */,
-				F4C514491D7C3F4F008E5537 /* RefData.s in Sources */,
 				F4DB1887126E4022003F8A10 /* GaugeView.cc in Sources */,
+				F497CBA21F1A59CE00884F98 /* RefData.s in Sources */,
 				F4DB1BE71271C6A9003F8A10 /* Power.cc in Sources */,
 				F4F003F212845E4E005BFF92 /* SortedArrays.cc in Sources */,
 				F4D2F98A128C59A9009D5BA5 /* Voyager.cc in Sources */,
@@ -2826,6 +2848,7 @@
 				F4F37423090A5F21000F707C /* ScriptInit.cc in Sources */,
 				F4F3744D090ABC8B000F707C /* StreamObjects.cc in Sources */,
 				F4A1F5890912D8F9001F1A9B /* Packages.cc in Sources */,
+				F497CBA71F1A59CF00884F98 /* RefSymbols.s in Sources */,
 				F411B9E118CB3D05009D3046 /* NTK.cc in Sources */,
 				F4A1F6200916DAB6001F1A9B /* Pipes.cc in Sources */,
 				F4D851411E085C990021D442 /* NTKStubs.cc in Sources */,
@@ -2846,11 +2869,13 @@
 				F4D44ED30BE8DF04004937CC /* RefIO.cc in Sources */,
 				F4D8F3920C0ECEB5009E4CA3 /* CachedReadStore.cc in Sources */,
 				F4D8F66F0C1C7301009E4CA3 /* LZStoreCompander.cc in Sources */,
+				F497CBA91F1A59CF00884F98 /* RSSymbols.s in Sources */,
 				F4D8F6AA0C1C7D4F009E4CA3 /* LZCompressor.cc in Sources */,
 				F4A58FBE18BB69E2008B0832 /* ProtocolProto.s in Sources */,
 				F4D8F7440C1D8D82009E4CA3 /* StoreCompanderWrapper.cc in Sources */,
 				F4D89ADE0C4FEFB6002620D7 /* InkCompr.c in Sources */,
 				F4F92A020C83227F0077CA66 /* DTMFCodec.cc in Sources */,
+				F497CBA81F1A59CF00884F98 /* RSData.s in Sources */,
 				F4BC0ABA195C71BB0096738D /* Lexer.cc in Sources */,
 				F4A7AEBD0CAC0DAF00EE4067 /* PackageStore.cc in Sources */,
 				F4A7AF0A0CAC22C300EE4067 /* Soups.cc in Sources */,
@@ -2861,7 +2886,6 @@
 				F4E296D20CDB6AC900166666 /* CObjectBinaries.cc in Sources */,
 				F4C21D8C0CFC27BA00A46B34 /* SimpleStoreCompander.cc in Sources */,
 				F4E572000EAF947500684AD3 /* UnionSoup.cc in Sources */,
-				F4C5144D1D7C3F4F008E5537 /* RSData.s in Sources */,
 				F4B6B883187D75CA000FAB26 /* MagicPointers.cc in Sources */,
 				F4E5745B0EB49ACC00684AD3 /* Cursors.cc in Sources */,
 				F4E5749D0EB4EB2A00684AD3 /* Entries.cc in Sources */,
@@ -2882,12 +2906,12 @@
 				F4AE156710591BC000F1AB5A /* Ink.cc in Sources */,
 				F4D61155191AB4160041C087 /* FlashProto.s in Sources */,
 				F486D31D10CFFA9D00176ED0 /* ROMDomainManager.cc in Sources */,
+				F497CBA61F1A59CF00884F98 /* RefData.s in Sources */,
 				F486D31F10CFFCF800176ED0 /* Timers.cc in Sources */,
 				F4D851421E085E670021D442 /* Parser.cc in Sources */,
 				F486D33F10D0129300176ED0 /* PhysicalMemory.cc in Sources */,
 				F4AF1864111065C8003CE609 /* Relocation.cc in Sources */,
 				F4980ADB1176FD6400142AFC /* IA.cc in Sources */,
-				F4C5144A1D7C3F4F008E5537 /* RefData.s in Sources */,
 				F4571ADE11B3D52100B144C7 /* CardEvents.cc in Sources */,
 				F4571B2311B446B700B144C7 /* ErrorString.m in Sources */,
 				F47D4483121092D300061FD8 /* DrawImage.cc in Sources */,
@@ -2896,12 +2920,10 @@
 				F47D4486121092D600061FD8 /* DrawText.cc in Sources */,
 				F44A8CD11994D87F008BB3D3 /* StoreDriver.cc in Sources */,
 				F42E47191212CA4500D49B5D /* Geometry.cc in Sources */,
-				F4C514561D7C3F4F008E5537 /* RefSymbols.s in Sources */,
 				F4D61153191AB4060041C087 /* Flash.cc in Sources */,
 				F42E53F5122E94FA00D49B5D /* InkGeometry.cc in Sources */,
 				F4CAAF6D1237DD00005179CD /* Array.cc in Sources */,
 				F4CAAF6E1237DD0B005179CD /* RecArea.cc in Sources */,
-				F4C514531D7C3F4F008E5537 /* RSSymbols.s in Sources */,
 				F4D6114B191AB3EF0041C087 /* FlashCache.cc in Sources */,
 				F4CAAF701237DD0F005179CD /* RecObject.cc in Sources */,
 				F4CAAF721237DD1B005179CD /* RecType.cc in Sources */,
@@ -2945,6 +2967,7 @@
 				F4ECC30F0DE492E70023D27A /* RichStrings.cc in Sources */,
 				F49FAB6018DF6A6B00E1CD50 /* StoreObjRef.cc in Sources */,
 				F48BD4CB1A0B995000098DEE /* FlashRange.cc in Sources */,
+				F497CB841F179EDE00884F98 /* RefData.s in Sources */,
 				F4ECC3100DE492E70023D27A /* Symbols.cc in Sources */,
 				F4AEFE11184CBC8C0072ACAA /* Power.cc in Sources */,
 				F4ECC3110DE492E70023D27A /* ObjectSystem.cc in Sources */,
@@ -2971,6 +2994,7 @@
 				F4ECC3200DE492E70023D27A /* InputStreams.cc in Sources */,
 				F4ECC3210DE492E70023D27A /* y.tab.c in Sources */,
 				F4ECC3220DE492E70023D27A /* ScriptInit.cc in Sources */,
+				F497CB871F179EDE00884F98 /* RSSymbols.s in Sources */,
 				F4A58FB818BB69DA008B0832 /* Protocols.cc in Sources */,
 				F4ECC3230DE492E70023D27A /* StreamObjects.cc in Sources */,
 				F4863FCF1DA66ED300C5B484 /* NTKStubs.cc in Sources */,
@@ -3006,7 +3030,6 @@
 				F4ECC3390DE492E70023D27A /* LZStoreCompander.cc in Sources */,
 				F4ECC33A0DE492E70023D27A /* LZCompressor.cc in Sources */,
 				F4A58FC118BB69E3008B0832 /* ProtocolProto.s in Sources */,
-				F4C5144E1D7C3F4F008E5537 /* RSData.s in Sources */,
 				F4ECC33B0DE492E70023D27A /* StoreCompanderWrapper.cc in Sources */,
 				F46133B718E6029600D3E03C /* FlashStore.cc in Sources */,
 				F4ECC3470DE492E70023D27A /* PackageStore.cc in Sources */,
@@ -3032,7 +3055,6 @@
 				F44039DF118330AF001392CD /* StoreProto.s in Sources */,
 				F44039E811833153001392CD /* QDCompression.cc in Sources */,
 				F4C514641D86EED9008E5537 /* Stubs.cc in Sources */,
-				F4C5144B1D7C3F4F008E5537 /* RefData.s in Sources */,
 				F44039E911833159001392CD /* Relocation.cc in Sources */,
 				F47C21DA1A1D12900001759F /* FakePointers.cc in Sources */,
 				F44039ED118331D3001392CD /* Dates.cc in Sources */,
@@ -3040,13 +3062,13 @@
 				F44039F0118331F3001392CD /* Dictionaries.cc in Sources */,
 				F4BA206018E1F5E300681C49 /* StoreDriver.cc in Sources */,
 				F44039F6118332CD001392CD /* NArray.cc in Sources */,
+				F497CB851F179EDE00884F98 /* RefSymbols.s in Sources */,
+				F497CB861F179EDE00884F98 /* RSData.s in Sources */,
 				F474A010184372AD002986CB /* TestAgent.cc in Sources */,
-				F4C514571D7C3F4F008E5537 /* RefSymbols.s in Sources */,
 				F42E4D83118B239E0065D7AC /* ErrorString.m in Sources */,
 				F4F003F412845E4E005BFF92 /* SortedArrays.cc in Sources */,
 				F474A05218437CC6002986CB /* Printing.cc in Sources */,
 				F49FAB6218DF6C2800E1CD50 /* FlashTracker.cc in Sources */,
-				F4C514541D7C3F4F008E5537 /* RSSymbols.s in Sources */,
 				F4A5F20C17CF519A0004B6DB /* QDDrawing.cc in Sources */,
 				F4A5F20D17CF51BC0004B6DB /* Screen.cc in Sources */,
 				F4BC0ABB195C71BC0096738D /* Lexer.cc in Sources */,
