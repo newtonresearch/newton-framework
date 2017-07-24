@@ -1038,7 +1038,7 @@ extern Ref* RSvalidSlots;
 extern Ref* RSasciiBreak;
 extern Ref* RSioIndices;
 extern Ref* RSunicode;
-extern Ref* RSgetSerialNumber;
+extern Ref* RSGetSerialNumber;
 extern Ref* RSdictionaryList;
 extern Ref* RSprotoConfirm;
 extern Ref* RSprotoZonesTable;
@@ -1108,6 +1108,8 @@ extern Ref* RSioProtoShowByButton;
 extern Ref* RSspace;
 extern Ref* RScFunctionPrototype;
 extern Ref* RSdebugCFunctionPrototype;
+
+/*-- for NTK --*/
 extern Ref* RSconstantFunctions;
 extern Ref* RSformInstallScript;
 extern Ref* RSformRemoveScript;

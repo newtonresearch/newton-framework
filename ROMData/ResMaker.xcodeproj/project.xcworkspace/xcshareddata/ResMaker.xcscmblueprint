@@ -1,0 +1,30 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "E2DEE2D20B8E4CD3EED416565AC08C0618642099",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "E2DEE2D20B8E4CD3EED416565AC08C0618642099" : 9223372036854775807,
+    "A4E936C8679A32FF4FB020B0A362202883ADF968" : 9223372036854775807
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "BAE38A26-546F-4C1A-AC35-AD72B426672C",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "E2DEE2D20B8E4CD3EED416565AC08C0618642099" : "newton-framework\/",
+    "A4E936C8679A32FF4FB020B0A362202883ADF968" : "newton-toolkit\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "ResMaker",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "ResourceMaker\/ResMaker.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/newtonresearch\/newton-toolkit.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "A4E936C8679A32FF4FB020B0A362202883ADF968"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/newtonresearch\/newton-framework.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "E2DEE2D20B8E4CD3EED416565AC08C0618642099"
+    }
+  ]
+}
