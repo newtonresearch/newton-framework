@@ -2,8 +2,6 @@
 The Newton OS in a framework.
 Well, enough of it to enable the Newton Connection and Newton Toolkit apps.
 
-By Simon Bell <simon@newtonresearch.org>.
-
 
 ##NOTES ON THE NEWTON SOURCE
 Let's make no bones about it, the source is derived from close inspection of the symbols included in the Newton ROM v2.2,
