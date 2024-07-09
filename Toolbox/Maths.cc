@@ -89,7 +89,7 @@ FDivide(RefArg inRcvr, RefArg a, RefArg b)
 	{
 		if (RVALUE(b) != 0)
 		{
-			div_t result = div(RVALUE(a), RVALUE(b));
+			auto result = div(RVALUE(a), RVALUE(b));
 			if (result.rem == 0)
 				return MAKEINT(result.quot);
 		}

@@ -345,7 +345,7 @@ IsSubclass(Ref obj, Ref super)
 		return true;
 
 	const char * superName, * subName;
-	char * dot;
+	const char * dot;
 
 	superName = SymbolName(super);
 	if (*superName == 0)

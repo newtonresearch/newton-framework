@@ -2393,7 +2393,6 @@
 				F4B8094606F217930042F1D4 /* Resources */,
 				F4B8094706F217930042F1D4 /* Sources */,
 				F4B8094806F217930042F1D4 /* Frameworks */,
-				F43E1DC61E5457BB00EFADB2 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -2434,16 +2433,14 @@
 				ORGANIZATIONNAME = "Newton Research";
 				TargetAttributes = {
 					F4A8B53005738194004D6931 = {
-						DevelopmentTeam = SH44Z8RDF2;
+						DevelopmentTeam = BK4ST6N599;
 						ProvisioningStyle = Automatic;
 					};
 					F4B8094406F217930042F1D4 = {
-						DevelopmentTeam = SH44Z8RDF2;
-						ProvisioningStyle = Automatic;
+						ProvisioningStyle = Manual;
 					};
 					F4ECC2E90DE492E70023D27A = {
-						DevelopmentTeam = SH44Z8RDF2;
-						ProvisioningStyle = Automatic;
+						ProvisioningStyle = Manual;
 					};
 				};
 			};
@@ -2508,23 +2505,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		F43E1DC61E5457BB00EFADB2 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "IDENTITY=\"Mac Developer: simonbell@mac.com (9LSGH9XGY7)\"\ncodesign --verbose --force --sign \"$IDENTITY\" \"${BUILT_PRODUCTS_DIR}/Newton.framework/Versions/A/Newton\"";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		F4A8B52E05738194004D6931 /* Sources */ = {
@@ -3145,9 +3125,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = SH44Z8RDF2;
+				DEVELOPMENT_TEAM = BK4ST6N599;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(PROJECT_DIR)/Frames/ConfigFrames.h";
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
@@ -3155,13 +3136,14 @@
 				INIT_ROUTINE = "";
 				INSTALL_PATH = "$(USER_APPS_DIR)";
 				MACH_O_TYPE = mh_execute;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CPLUSPLUSFLAGS = (
 					"-DforMac",
 					"-DforDarkStar",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.newton.messagepad;
 				PRODUCT_NAME = MessagePad;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRIP_STYLE = "non-global";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)";
 			};
@@ -3171,9 +3153,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = SH44Z8RDF2;
+				DEVELOPMENT_TEAM = BK4ST6N599;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(PROJECT_DIR)/Frames/ConfigFrames.h";
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
@@ -3181,13 +3164,14 @@
 				INIT_ROUTINE = "";
 				INSTALL_PATH = "$(USER_APPS_DIR)";
 				MACH_O_TYPE = mh_execute;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				OTHER_CPLUSPLUSFLAGS = (
 					"-DforMac",
 					"-DforDarkStar",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.newton.messagepad;
 				PRODUCT_NAME = MessagePad;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRIP_STYLE = "non-global";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)";
 			};
@@ -3196,8 +3180,10 @@
 		F4367936093B7565001AE880 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = SH44Z8RDF2;
+				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 11;
 				DYLIB_CURRENT_VERSION = 11;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -3211,6 +3197,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.newton.objects;
 				PRODUCT_NAME = Newton;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)";
 			};
 			name = Debug;
@@ -3218,8 +3205,10 @@
 		F4367937093B7565001AE880 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = SH44Z8RDF2;
+				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 11;
 				DYLIB_CURRENT_VERSION = 11;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -3234,6 +3223,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.newton.objects;
 				PRODUCT_NAME = Newton;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)";
 			};
 			name = Release;
@@ -3241,6 +3231,7 @@
 		F436793A093B7565001AE880 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = x86_64;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
@@ -3265,8 +3256,10 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INIT_ROUTINE = _InitObjects;
 				MACH_O_TYPE = mh_dylib;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "-Wl,-ld_classic";
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -3274,6 +3267,7 @@
 		F436793B093B7565001AE880 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = x86_64;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
@@ -3296,7 +3290,9 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INIT_ROUTINE = _InitObjects;
 				MACH_O_TYPE = mh_dylib;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "-Wl,-ld_classic";
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -3305,8 +3301,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = SH44Z8RDF2;
+				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 11;
 				DYLIB_CURRENT_VERSION = 11;
 				GCC_PREFIX_HEADER = "$(PROJECT_DIR)/Frames/ConfigFrames.h";
@@ -3321,6 +3318,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.newton.objects;
 				PRODUCT_NAME = NTK;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRIP_STYLE = "non-global";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)";
 			};
@@ -3330,8 +3328,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = SH44Z8RDF2;
+				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 11;
 				DYLIB_CURRENT_VERSION = 11;
 				GCC_PREFIX_HEADER = "$(PROJECT_DIR)/Frames/ConfigFrames.h";
@@ -3346,6 +3345,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.newton.objects;
 				PRODUCT_NAME = NTK;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRIP_STYLE = "non-global";
 				USER_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)";
 			};
