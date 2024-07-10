@@ -209,8 +209,8 @@ public:
 				CLicenseeVAddress(const CLicenseeVAddress &);
 				~CLicenseeVAddress();
 
-//	void		operator=(const CUPhys &);
-	void		operator=(const CLicenseeVAddress &);
+//	CLicenseeVAddress&  operator=(const CUPhys &);
+    CLicenseeVAddress&  operator=(const CLicenseeVAddress &);
 
 	void		addDomainToEnvironment(void);
 	void		setupDomain(void);
