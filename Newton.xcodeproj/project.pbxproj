@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C93D1DB92D30A52700D88DE1 /* Progress.txt in Resources */ = {isa = PBXBuildFile; fileRef = C93D1DB82D30A52700D88DE1 /* Progress.txt */; };
 		F401FFFB1B8E0A8700555CBC /* CommTool.cc in Sources */ = {isa = PBXBuildFile; fileRef = F402DEC8109366110004B70B /* CommTool.cc */; };
 		F401FFFD1B8F5E7B00555CBC /* CommOptions.cc in Sources */ = {isa = PBXBuildFile; fileRef = F401FFFC1B8F5E7B00555CBC /* CommOptions.cc */; };
 		F404E0840CBF617A0008EF03 /* Hints.cc in Sources */ = {isa = PBXBuildFile; fileRef = F404E0800CBF5E9C0008EF03 /* Hints.cc */; };
@@ -836,6 +837,7 @@
 		66FE933304D5742A00CB80AF /* DoubleQ.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = DoubleQ.h; sourceTree = "<group>"; };
 		66FE933504D59C8D00CB80AF /* Queues.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = Queues.cc; sourceTree = "<group>"; };
 		66FE933704D6628500CB80AF /* List.cc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = List.cc; sourceTree = "<group>"; };
+		C93D1DB82D30A52700D88DE1 /* Progress.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Progress.txt; sourceTree = "<group>"; };
 		F400438A0BC411070076F480 /* ErrorNotify.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ErrorNotify.h; path = Views/ErrorNotify.h; sourceTree = "<group>"; };
 		F401FFFC1B8F5E7B00555CBC /* CommOptions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CommOptions.cc; path = CommAPI/CommOptions.cc; sourceTree = SOURCE_ROOT; };
 		F402DB2A107F34D50004B70B /* BufferList.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BufferList.cc; sourceTree = "<group>"; };
@@ -1424,6 +1426,7 @@
 		6617816E020F1EE40039A44D = {
 			isa = PBXGroup;
 			children = (
+				C93D1DB82D30A52700D88DE1 /* Progress.txt */,
 				F4241FB017400A9700F4D699 /* MessagePad.entitlements */,
 				F42E518F1227B3D500D49B5D /* Info-Newton.plist */,
 				F458FCB81247510C00539427 /* Info-MessagePad.plist */,
@@ -1487,7 +1490,10 @@
 				66103786022801D10003E189 /* External Frameworks */,
 				66109D37021143E900E30176 /* Products */,
 			);
+			indentWidth = 3;
 			sourceTree = "<group>";
+			tabWidth = 3;
+			usesTabs = 1;
 		};
 		66393DB704C7F08100A80002 /* Frames */ = {
 			isa = PBXGroup;
@@ -2481,6 +2487,7 @@
 				F4C4C1E11A40BE15002B8821 /* busy.png in Resources */,
 				F43E1DBA1E535C9500EFADB2 /* Main.storyboard in Resources */,
 				F43E1DB91E535C9500EFADB2 /* Localizable.strings in Resources */,
+				C93D1DB92D30A52700D88DE1 /* Progress.txt in Resources */,
 				F4C4C1E31A40C133002B8821 /* caret.png in Resources */,
 				F43E1DB81E535C9500EFADB2 /* InfoPlist.strings in Resources */,
 				F4DB1CC412730BA7003F8A10 /* MessagePadHelp in Resources */,
@@ -3140,6 +3147,10 @@
 				INSTALL_PATH = "$(USER_APPS_DIR)";
 				MACH_O_TYPE = mh_execute;
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				OTHER_CFLAGS = (
+					"-DforMac",
+					"-DforDarkStar",
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"-DforMac",
 					"-DforDarkStar",
@@ -3169,6 +3180,10 @@
 				INSTALL_PATH = "$(USER_APPS_DIR)";
 				MACH_O_TYPE = mh_execute;
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				OTHER_CFLAGS = (
+					"-DforMac",
+					"-DforDarkStar",
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"-DforMac",
 					"-DforDarkStar",

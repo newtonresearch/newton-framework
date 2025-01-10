@@ -1,0 +1,28 @@
+
+Create by Matt on Jan 10 2025
+
+So far we have one version of the Framework with all assembler code replaced
+with C++. The compiler, interpreter, and decompiler are test for basic
+functionality and work on ARM64. Objective-C code was replaced with C++ so
+the Framework can compile on MSWindows and Linux. The framework is built
+using a C++ file.
+
+Getting the MessagePad project to run is more involved because the scheduler
+was rewritten in ARM32 and Intel32/64, but not ARM64. To stay independent of
+future CPUs that may be used, we need to rewrite al machine code in (modern)
+C++.
+
+So as of tody (Jan 10 2025), the MessagePad project compiles on 64bit Intel,
+Xcode 15.2, and runs under macOS Venture 13.17.1 . We do get audio output,
+but no screen output. The app locks up in `LoadHighROMFramesPackages()`, which
+is pretty far down the boot process.
+
+So far, there are no Newton QuickDraw routins implemented. The startup note
+is drawn using Cocoa calls.
+
+Next:
+- Check if the routine to copy disply changes to the frame buffer is ever launched.
+- Check if the timer is running and the display task can be triggered
+- Check if the display task does copy pixels to the Cocoa screen and if those
+  pixels become visible.
+  
