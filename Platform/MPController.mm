@@ -199,7 +199,7 @@ WeAreDirty(void)
     ((MPView *)wc.window.contentView).needsDisplay = true;
 #else
     dispatch_async(dispatch_get_main_queue(), ^{
-        ((MPView *)wc.window.contentView).needsDisplay = true;
+		 ((MPView *)wc.window.contentView).needsDisplay = true;
     });
 #endif
 }
