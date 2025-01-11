@@ -122,9 +122,9 @@ public:
 	void	set(ULong amount, TimeUnits units);
 	ULong	convertTo(TimeUnits units);
 
-	CTime operator=  (int64_t b)			{ CTime ret(*this); ret.fTime = b; return ret; }
-	CTime operator+  (const CTime& b)	{ CTime ret(*this); ret.fTime += b.fTime; return ret; }
-	CTime operator-  (const CTime& b)	{ CTime ret(*this); ret.fTime -= b.fTime; return ret; }
+	CTime& operator=(int64_t b)		{ this->fTime = b; return *this; }
+	CTime& operator+(const CTime& b)	{ this->fTime += b.fTime; return *this; }
+	CTime& operator-(const CTime& b)	{ this->fTime -= b.fTime; return *this; }
 
 	bool	operator== (const CTime& b) const	{ return fTime == b.fTime; }
 	bool	operator!= (const CTime& b) const	{ return fTime != b.fTime; }

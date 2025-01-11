@@ -38,7 +38,7 @@ class CUPhys : public CUObject
 {
 public:
 					CUPhys(ObjectId id = 0);
-	void			operator=(const CUPhys & inCopy);
+    CUPhys&			operator=(const CUPhys & inCopy);
 	NewtonErr	init(PAddr inBase, size_t inSize, bool inReadOnly = false, bool inCache = true);
 
 	// change any mappings associated with this phys
@@ -66,7 +66,11 @@ public:
 ------------------------------------------------------------------------------*/
 
 inline	CUPhys::CUPhys(ObjectId id) : CUObject(id)  { }
-inline	CUPhys::operator=(const CUPhys & inCopy)  { copyObject(inCopy); }
+inline CUPhys& CUPhys::operator=(const CUPhys & inCopy)
+{
+    copyObject(inCopy);
+    return *this;
+}
 
 
 #endif __USERPHYS_H

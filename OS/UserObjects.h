@@ -46,8 +46,8 @@ public:
 				~CUObject();
 
 				operator	ObjectId()	const;
-	void		operator=(ObjectId id);
-	void		operator=(const CUObject & inCopy);
+    CUObject&	operator=(ObjectId id);
+    CUObject&	operator=(const CUObject & inCopy);
 
 	NewtonErr	makeObject(ObjectTypes inObjectType, struct ObjectMessage * inMsg, size_t inMsgSize);
 	void		destroyObject(void);
@@ -73,8 +73,16 @@ protected:
 inline			CUObject::CUObject(ObjectId id)  { fObjectCreatedByUs = false; fId = id; }
 inline			CUObject::CUObject(CUObject & inCopy)	{ fObjectCreatedByUs = false; fId = inCopy.fId; }
 inline			CUObject::operator ObjectId()	const  { return fId; }
-inline void		CUObject::operator=(ObjectId id)  { copyObject(id); }
-inline void		CUObject::operator=(const CUObject & inCopy)  { copyObject(inCopy); }
+inline CUObject& CUObject::operator=(ObjectId id)
+{
+    copyObject(id);
+    return *this;
+}
+inline CUObject& CUObject::operator=(const CUObject & inCopy)
+{
+    copyObject(inCopy);
+    return *this;
+}
 inline void		CUObject::copyObject(const CUObject & inCopy)  { copyObject(inCopy.fId); }
 inline void		CUObject::denyOwnership(void)  { fObjectCreatedByUs = false; }
 inline bool		CUObject::isExtPage(void)  { return ObjectType(fId) == kExtPhysType; }

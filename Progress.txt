@@ -1,0 +1,52 @@
+
+Create by Matt on Jan 10 2025
+
+So far we have one version of the Framework with all assembler code replaced
+with C++. The compiler, interpreter, and decompiler are test for basic
+functionality and work on ARM64. Objective-C code was replaced with C++ so
+the Framework can compile on MSWindows and Linux. The framework is built
+using a C++ file.
+
+Getting the MessagePad project to run is more involved because the scheduler
+was rewritten in ARM32 and Intel32/64, but not ARM64. To stay independent of
+future CPUs that may be used, we need to rewrite al machine code in (modern)
+C++.
+
+So as of today (Jan 10 2025), the MessagePad project compiles on 64bit Intel,
+Xcode 15.2, and runs under macOS Venture 13.17.1 . We do get audio output,
+but no screen output. The app locks up in `LoadHighROMFramesPackages()`, which
+is pretty far down the boot process.
+
+So far, there are no Newton QuickDraw routins implemented. The startup note
+is drawn using Cocoa/CoreGraphics calls.
+
+Next:
+- Check if the routine to copy disply changes to the frame buffer is ever launched.
+- Check if the timer is running and the display task can be triggered
+- Check if the display task does copy pixels to the Cocoa screen and if those
+  pixels become visible.
+
+CMainDisplayDriver::screenSetup() is called from CNewtWorld::mainConstructor()
+via InitScreen(). fPixMap.baseAddr points to the screen bitmap and is set to a
+striped pattern. SetupScreenPixelMap() sets up gScreenPixelMap for QD access
+and gAlertScreenInfo. Pixel data is stored in gScreenPixelMap.baseAddr.
+
+InitScreenTask() sets up a bunch of semaphores and starts the task
+ScreenUpdateTask() which is commented out here. The task, managed by two
+semaphores, would have looped every 30ms and called UpdateHardwareScreen()
+which copies dirty pixels from the unrotated screen to the hardware buffer
+(see BlitToScreens(), see CMainDisplayDriver::blit()).
+
+Eventually StartDrawing() in CNewtWorld::mainConstructor() calls Semaphore
+gScreen.f24 which would then unlock the ScreenUpdateTask().
+
+blit() eventually calls CGContextDrawImage(quartz, ...), but is that enough to
+get actual pixels onto the screen?
+
+WeAreDirty() should tell Cocoa to finally update what's on the macOS screen.
+
+We can trigger blit with the current code by clicking on the screen which
+calls CInker::drawInk() and then CLiveInker::stopLiveInk(). It *does* call
+WeAreDirty(), but nothing is drawn on the macOS screen.
+
+Note: when we get there: InitFonts() is commented out.

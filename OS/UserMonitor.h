@@ -32,7 +32,7 @@ public:
 				CUMonitor(ObjectId id = 0);
 				~CUMonitor();
 
-	void		operator=(const CUMonitor & inCopy);
+    CUMonitor&  operator=(const CUMonitor & inCopy);
 
 	NewtonErr	init(MonitorProcPtr inMonitorProc, size_t inStackSize, void * inContext = NULL,
 							ObjectId inEnvironmentId = 0, bool inFaultMonitor = false, ULong inName = 'MNTR',
@@ -49,7 +49,11 @@ public:
 ------------------------------------------------------------------------------*/
 
 inline			CUMonitor::CUMonitor(ObjectId id) : CUObject(id)  { }
-inline void		CUMonitor::operator=(const CUMonitor & inCopy) { copyObject(inCopy.fId); }
+inline CUMonitor& CUMonitor::operator=(const CUMonitor & inCopy)
+{
+    copyObject(inCopy.fId);
+    return *this;
+}
 inline void		CUMonitor::setDestroyKernelObject(bool inNewStatus)  { fObjectCreatedByUs = inNewStatus; }
 inline NewtonErr	CUMonitor::invokeRoutine(int inSelector, void * ioMsg)  { return MonitorDispatchSWI(fId, inSelector, (OpaqueRef)ioMsg); }
 

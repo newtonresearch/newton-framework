@@ -497,7 +497,7 @@ UnhandledNonUserModeException(ExceptionName name, void * data, ExceptionDestruct
 bool
 Subexception(ExceptionName name, ExceptionName super)
 {
-	char * delim;
+	const char * delim;
 	do
 	{
 		if (strncmp(super, name, strlen(super)) == 0)

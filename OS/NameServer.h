@@ -201,14 +201,24 @@ public:
 					CResOwnerInfo();
 					~CResOwnerInfo();
 
-	void			operator=(ObjectId id);		// why is this not inherited from CUObject????
-	void			operator=(const CResOwnerInfo & inCopy);
+    CResOwnerInfo&			operator=(ObjectId id);		// why is this not inherited from CUObject????
+    CResOwnerInfo&			operator=(const CResOwnerInfo & inCopy);
 
 	char *		f08;	// name?
 	long			f0C;	// size?
 };
-inline void		CResOwnerInfo::operator=(ObjectId id)  { copyObject(id); }
-inline void		CResOwnerInfo::operator=(const CResOwnerInfo & inCopy)  { copyObject(inCopy.fId); }
+
+inline CResOwnerInfo& CResOwnerInfo::operator=(ObjectId id) 
+{
+    copyObject(id);
+    return *this;
+}
+
+inline CResOwnerInfo& CResOwnerInfo::operator=(const CResOwnerInfo & inCopy)
+{
+    copyObject(inCopy.fId); 
+    return *this;
+}
 
 
 class CSysEventItemComparer : public CItemComparer
