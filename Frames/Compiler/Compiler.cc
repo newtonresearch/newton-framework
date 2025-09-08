@@ -2643,7 +2643,7 @@ CCompiler::walkForPath(RefArg inGraph, int * ioThrowIfNilObject)
 		if (RINT(GetArraySlot(right, 0)) == TOKENconst
 		&&  IsSymbol(GetArraySlot(right, 1)))
 		{
-			if (RINT(GetArraySlot(left, 0) == '.'))
+			if (RINT(GetArraySlot(left, 0)) == '.')
 			{
 				RefVar	object(walkForPath(left, ioThrowIfNilObject));
 				if (ISNIL(object))
@@ -2671,7 +2671,7 @@ CCompiler::walkForPath(RefArg inGraph, int * ioThrowIfNilObject)
 				return GetArraySlot(right, 1);
 			}
 		}
-		else if (RINT(GetArraySlot(left, 0) == '.'))
+		else if (RINT(GetArraySlot(left, 0)) == '.')
 		{
 			RefVar	pathExpr(walkForPath(left, ioThrowIfNilObject));
 			if (NOTNIL(pathExpr))
@@ -2954,7 +2954,7 @@ CCompiler::emitPush(RefArg inValue)
 	Ref		ref = inValue;
 
 	if ((ISMAGICPTR(ref) && (RVALUE(ref) < 4096))
-	 || (!ISPTR(ref) && (ref == (ref & 0xFFFF))))
+      || (!ISPTR(ref) && (ref == static_cast<Ref>(static_cast<int16_t>(ref)))))
 	{
 		b = ref;
 		a = kOpcodePushConstant;

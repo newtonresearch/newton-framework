@@ -241,9 +241,9 @@ CFunctionState::computeArgFrame(void)
 			SetArraySlot(argFrTags, kArgFrameImplementorIndex, SYMA(_implementor));
 			fArgFrame = AllocateFrameWithMap(AllocateMapWithTags(NILREF, argFrTags));
 			if (!fIsSlotReferenced && !atTopLevel())
-				SetArraySlot(fArgFrame, kArgFrameParentIndex, RA(NILREF));			// was 0 -- did they say nil instead of NILREF? cf computeInitialVarLocs()
+				SetArraySlot(fArgFrame, kArgFrameParentIndex, INVALIDPTRREF);
 			if (!fIsMethodReferenced && !atTopLevel())
-				SetArraySlot(fArgFrame, kArgFrameImplementorIndex, RA(NILREF));	// was 0
+				SetArraySlot(fArgFrame, kArgFrameImplementorIndex, INVALIDPTRREF);
 		}
 
 		fNumOfVarLocs = localsFrameIndex - fNumOfArgs - kArgFrameArgIndex;

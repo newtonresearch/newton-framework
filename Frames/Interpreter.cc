@@ -1264,11 +1264,12 @@ CInterpreter::run1(ArrayIndex initialStackDepth)
 		/*------------------------------
 			push-constant
 			-- value
-			b is always unsigned (Newton Formats 2-11)
+			b is signed for this instruction only (Newton Formats 2-11)
 		------------------------------*/
 			case 047:
 				b = *(unsigned char *)instrPtr++ << 8;
 				b += *instrPtr++;
+        b = static_cast<int>(static_cast<int16_t>(b));
 			case 040:
 			case 041:
 			case 042:
