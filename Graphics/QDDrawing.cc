@@ -876,7 +876,7 @@ GetStdGrayPattern(ULong inR, ULong inG, ULong inB)
 	CGColorRef thePattern;
 	CGColorSpaceRef	rgbSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
 	CGContextSetFillColorSpace(quartz, rgbSpace);
-	CGFloat colorComponents[4] = { inR, inG, inB, 1.0 };
+	CGFloat colorComponents[4] = { static_cast<CGFloat>(inR), static_cast<CGFloat>(inG), static_cast<CGFloat>(inB), 1.0 };
 	thePattern = CGColorCreate(rgbSpace, colorComponents);
 	CGColorSpaceRelease(rgbSpace);
 #endif

@@ -473,7 +473,7 @@ DrawUnicodeText(const UniChar * inStr, size_t inLength, /* inFont,*/ const Rect 
 
 	//	inJustifyH -> CTParagraphStyleSetting
 	//    create paragraph style and assign text alignment to it
-	CTTextAlignment alignment = inJustify & vjHMask;
+	CTTextAlignment alignment = (CTTextAlignment)(inJustify & vjHMask);
 	CTParagraphStyleSetting _settings[] = { { kCTParagraphStyleSpecifierAlignment, sizeof(alignment), &alignment } };
 	CTParagraphStyleRef paraStyle = CTParagraphStyleCreate(_settings, sizeof(_settings) / sizeof(_settings[0]));
 

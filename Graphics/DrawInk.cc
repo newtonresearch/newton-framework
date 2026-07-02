@@ -1456,7 +1456,7 @@ AddStrokePoint(_EXPAND * ioData, int inX, int inY)	// might be Fixed
 	{
 		if (ioData->x20)
 		{
-			TabPt pt = { inX, inY /*, 0, 0*/ };
+			TabPt pt = { static_cast<float>(inX), static_cast<float>(inY) /*, 0, 0*/ };
 			CRecStroke * strok = ioData->x1C;
 			XFAIL(strok == NULL)
 #if !defined(forFramework)
