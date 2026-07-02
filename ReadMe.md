@@ -72,3 +72,18 @@ Some classes have been implemented but there is no integration with the host pla
 
 ### MPW Tools
 The REx tool builds a valid ROM extension. Other MPW tools are work in progress.
+
+## Roadmap 2026
+
+Matt: Newton Framework currently compiles for Intel CPUs only. Apple will stop support for Intel application in fall 2027, but already macOS Tahoe warns users that Intel support will run out. My plan for 2026 is porting Newton Framework to pure C++, making it compile on any 32 or 64 bit CPU. 
+
+Newton Framework build using multiple assembler files, some of them automatically generated from binary code. In order to make this library platform agnostic, every assembler file must be ported to pure "C" or "C++'. The MPW Toolds need to be ported and adapted to generate C++ code instead of assembler code. 
+
+The build system is currently limited to Xcode. Newton Framework would run on Linux and Windows easily. The Xcode targets will be portedt to CMake, so they can compile on other platforms, too. If desired, cmake can generate Xcode build files.
+
+Note that much of that work was previously done in branches of the https://github.com/MatthiasWM/newton-framework fork. The strategy is to consolidate everythin here in the canonical Newton Framework repository while staying compatible with NCX.
+
+
+
+
+
