@@ -143,6 +143,11 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 0820;
+				TargetAttributes = {
+					F42998ED069580EB00CAA2A8 = {
+						ProvisioningStyle = Manual;
+					};
+				};
 			};
 			buildConfigurationList = F4F9288F0C81CD920077CA66 /* Build configuration list for PBXProject "ResMaker" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -196,6 +201,9 @@
 		F4F9288C0C81CD920077CA66 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = x86_64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
 				COPY_PHASE_STRIP = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INFOPLIST_FILE = "$(SRCROOT)/ResMaker/Info-ResMaker.plist";
@@ -215,6 +223,9 @@
 		F4F9288D0C81CD920077CA66 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = x86_64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
 				COPY_PHASE_STRIP = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INFOPLIST_FILE = "$(SRCROOT)/ResMaker/Info-ResMaker.plist";

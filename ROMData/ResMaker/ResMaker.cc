@@ -1185,7 +1185,7 @@ ParseOptions(const char ** inArg, const char ** inArgLimit)
 /* -----------------------------------------------------------------------------
 	And this is where our story REALLY starts...
 	Extract const Ref* (RS) objects from ROM image and print their definitions.
-	foreach line in RefStarSymbols decalaration file
+	foreach line in RefStarSymbols declaration file
 		scan address(=offset into ROM image), symbol name
 		declare symbol name in header file
 		define symbol data in data file
