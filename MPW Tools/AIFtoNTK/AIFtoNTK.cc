@@ -15,6 +15,12 @@
 #include <time.h>
 #include <Carbon/Carbon.h>
 
+#ifdef __APPLE__
+//#include <CoreFoundation/CoreFoundation.h>
+//#include <Foundation/Foundation.h>
+#include <sys/xattr.h>
+#endif
+
 #define KByte  1024
 
 
@@ -637,9 +643,11 @@ StreamBinary(FILE * inFile, const char * inClass, unsigned char * inData, size_t
 ------------------------------------------------------------------------------*/
 
 int
-SortRelocs(unsigned long * a, unsigned long * b)
+SortRelocs(const void* a, const void* b)
 {
-	return *a - *b;
+  const unsigned long* pa = static_cast<const unsigned long*>(a);
+  const unsigned long* pb = static_cast<const unsigned long*>(b);
+	return *pa - *pb;
 }
 
 void
@@ -749,19 +757,15 @@ EmitNCMFrameFile(CSymbol * inFunctions)
 
 	fclose(f);
 
-// set file type/creator ntkc/NTP1
-	FSSpec	fileSpec;
-	FInfo		finderInfo;
-	OSErr		err;
-
-	err = FSMakeFSSpec(0, 0, gOutputFilename, &fileSpec);
-	if (err == noErr
-	&& (err = FSpGetFInfo(&fileSpec, &finderInfo)) == noErr)
-	{
-		finderInfo.fdType = 'ntkc';
-		finderInfo.fdCreator = 'NTP1';
-		FSpSetFInfo(&fileSpec, &finderInfo);
-	}
+#ifdef __APPLE__
+    // Set Finder type/creator using extended attributes on modern macOS
+    unsigned char finderInfo[32] = {0};
+    // 'ntkc' type, 'NTP1' creator in big endian in appropriate bytes
+    finderInfo[0] = 'n'; finderInfo[1] = 't'; finderInfo[2] = 'k'; finderInfo[3] = 'c';
+    finderInfo[4] = 'N'; finderInfo[5] = 'T'; finderInfo[6] = 'P'; finderInfo[7] = '1';
+    // Set com.apple.FinderInfo extended attribute
+    setxattr(gOutputFilename, "com.apple.FinderInfo", finderInfo, sizeof(finderInfo), 0, 0);
+#endif
 }
 
 #pragma mark -
@@ -1321,3 +1325,4 @@ main(int argc, const char * argv[])
 
 	return 0;
 }
+

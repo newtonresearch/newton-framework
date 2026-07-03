@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		F41EF3D50695ED8E00430084 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F41EF3D40695ED8E00430084 /* CoreServices.framework */; };
 		F41EF49006960E6700430084 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F41EF3D40695ED8E00430084 /* CoreServices.framework */; };
-		F429988C069492AA00CAA2A8 /* MachOtoNTK.cc in Sources */ = {isa = PBXBuildFile; fileRef = F429988B069492AA00CAA2A8 /* MachOtoNTK.cc */; };
 		F42999250695837800CAA2A8 /* MachOtoNTK.cc in Sources */ = {isa = PBXBuildFile; fileRef = F429988B069492AA00CAA2A8 /* MachOtoNTK.cc */; };
 		F4BA0D4E06948BCB00BE8E9A /* AIFtoNTK.cc in Sources */ = {isa = PBXBuildFile; fileRef = F4BA0CD9069489F500BE8E9A /* AIFtoNTK.cc */; };
 /* End PBXBuildFile section */
@@ -201,7 +200,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				F4BA0D4E06948BCB00BE8E9A /* AIFtoNTK.cc in Sources */,
-				F429988C069492AA00CAA2A8 /* MachOtoNTK.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
